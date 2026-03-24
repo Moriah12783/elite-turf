@@ -1,0 +1,181 @@
+import Link from "next/link";
+import {
+  Clock, Users, ChevronRight, Star,
+  CheckCircle2, Clock3, XCircle, Zap
+} from "lucide-react";
+
+// Map hippodrome → image de fond
+const HIPPODROME_IMAGES: Record<string, string> = {
+  "Longchamp":             "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
+  "Vincennes":             "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+  "Chantilly":             "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+  "Auteuil":               "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
+  "Deauville":             "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80",
+  "Cagnes-sur-Mer":        "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80",
+  "Hippodrome de la Riviera": "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+  "Hippodrome de Dakar":   "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+};
+const DEFAULT_IMG = "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80";
+
+const CATEGORIE_COLORS: Record<string, string> = {
+  PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  TROT:     "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  OBSTACLE: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+};
+
+const TERRAIN_LABELS: Record<string, string> = {
+  BON: "Bon", BON_SOUPLE: "Bon souple", SOUPLE: "Souple",
+  LOURD: "Lourd", TRES_LOURD: "Très lourd",
+};
+
+const STATUT_CONFIG = {
+  PROGRAMME: { label: "Programmé",  dot: "bg-text-muted",        badge: "text-text-muted bg-bg-elevated border-border" },
+  EN_COURS:  { label: "En cours",   dot: "bg-status-win animate-pulse", badge: "text-status-win bg-status-win/10 border-status-win/30" },
+  TERMINE:   { label: "Terminé",    dot: "bg-text-muted",        badge: "text-text-muted bg-bg-elevated border-border" },
+  ANNULE:    { label: "Annulé",     dot: "bg-status-loss",       badge: "text-status-loss bg-status-loss/10 border-status-loss/30" },
+};
+
+interface Props {
+  course: {
+    id: string;
+    numero_reunion: number;
+    numero_course: number;
+    libelle: string;
+    heure_depart: string;
+    distance_metres: number;
+    categorie: string;
+    terrain?: string | null;
+    nb_partants: number;
+    statut: string;
+    arrivee_officielle?: number[] | null;
+    hippodrome?: { nom: string; pays: string } | null;
+    pronostics?: Array<{ id: string; niveau_acces: string; publie: boolean }> | null;
+  };
+  userSubscription: string;
+}
+
+export default function CourseCard({ course: c, userSubscription }: Props) {
+  const statut = STATUT_CONFIG[c.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.PROGRAMME;
+  const imageUrl = HIPPODROME_IMAGES[c.hippodrome?.nom || ""] || DEFAULT_IMG;
+  const pronosticPublie = c.pronostics?.find((p) => p.publie);
+  const refCourse = `R${c.numero_reunion}C${c.numero_course}`;
+
+  const hasPronosticAccess =
+    !pronosticPublie ||
+    pronosticPublie.niveau_acces === "GRATUIT" ||
+    (pronosticPublie.niveau_acces === "PREMIUM" && (userSubscription === "PREMIUM" || userSubscription === "VIP")) ||
+    (pronosticPublie.niveau_acces === "VIP" && userSubscription === "VIP");
+
+  return (
+    <Link
+      href={`/courses/${c.id}`}
+      className="card-base overflow-hidden flex flex-col sm:flex-row group cursor-pointer hover:border-gold-primary/40 transition-all"
+    >
+      {/* ── Image latérale (desktop) / top (mobile) ── */}
+      <div className="relative sm:w-36 h-28 sm:h-auto flex-shrink-0 overflow-hidden">
+        <img
+          src={imageUrl}
+          alt={c.hippodrome?.nom || "Hippodrome"}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-bg-card/50 sm:block hidden" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-card/60 sm:hidden" />
+
+        {/* Course ref badge */}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-bg-primary/80 backdrop-blur-sm border border-border/60 rounded text-text-muted text-xs font-mono">
+          {refCourse}
+        </div>
+
+        {/* Status dot */}
+        {c.statut === "EN_COURS" && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-status-win/20 border border-status-win/40 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse" />
+            <span className="text-status-win text-[10px] font-bold">LIVE</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Contenu ── */}
+      <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between min-w-0">
+        <div>
+          {/* Top row: titre + heure */}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <h3 className="font-serif font-semibold text-text-primary text-base leading-snug group-hover:text-gold-light transition-colors truncate">
+              {c.libelle}
+            </h3>
+            <div className="flex items-center gap-1 text-gold-light font-bold text-sm flex-shrink-0">
+              <Clock className="w-3.5 h-3.5" />
+              {c.heure_depart.slice(0, 5)}
+            </div>
+          </div>
+
+          {/* Tags row */}
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${CATEGORIE_COLORS[c.categorie] || ""}`}>
+              {c.categorie}
+            </span>
+            <span className="text-text-muted text-xs">{c.distance_metres}m</span>
+            {c.terrain && (
+              <span className="text-text-muted text-xs">· {TERRAIN_LABELS[c.terrain] || c.terrain}</span>
+            )}
+            <span className={`ml-auto text-xs px-2 py-0.5 rounded-full border font-medium ${statut.badge}`}>
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${statut.dot} mr-1 align-middle`} />
+              {statut.label}
+            </span>
+          </div>
+
+          {/* Arrivée officielle (si terminé) */}
+          {c.statut === "TERMINE" && c.arrivee_officielle && c.arrivee_officielle.length > 0 && (
+            <div className="flex items-center gap-2 mb-3 p-2.5 bg-bg-elevated rounded-lg border border-border/50">
+              <CheckCircle2 className="w-3.5 h-3.5 text-status-win flex-shrink-0" />
+              <span className="text-text-muted text-xs">Arrivée :</span>
+              <div className="flex items-center gap-1.5">
+                {c.arrivee_officielle.slice(0, 5).map((n: number, idx: number) => (
+                  <span
+                    key={idx}
+                    className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-text-primary text-xs font-bold"
+                  >
+                    {n}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Pied de carte ── */}
+        <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-text-muted text-xs">
+              <Users className="w-3.5 h-3.5" />
+              {c.nb_partants} partants
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Badge pronostic */}
+            {pronosticPublie ? (
+              hasPronosticAccess ? (
+                <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold bg-status-win/10 text-status-win border border-status-win/20">
+                  <Star className="w-3 h-3" fill="currentColor" />
+                  Pronostic
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold bg-gold-faint text-gold-light border border-gold-primary/30">
+                  <Zap className="w-3 h-3" fill="currentColor" />
+                  Premium
+                </span>
+              )
+            ) : (
+              <span className="text-text-muted text-xs italic">En attente…</span>
+            )}
+
+            <span className="flex items-center gap-0.5 text-gold-primary group-hover:text-gold-light text-xs font-semibold transition-colors">
+              Voir <ChevronRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}

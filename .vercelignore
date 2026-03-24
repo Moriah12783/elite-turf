@@ -1,0 +1,6 @@
+# Scripts locaux (non requis en prod)
+scripts/
+
+# Documentation
+DEPLOY_VERCEL.md
+lighthouse-report.html

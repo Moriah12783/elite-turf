@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0D0D14;
+  --gold: #C9A84C;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0D0D14;
+  color: #F5F5F0;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D14;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A3E;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C9A84C;
+}
+
+/* Gold text gradient utility */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold divider */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #C9A84C, transparent);
+  border: none;
+}
+
+/* Card base */
+.card-base {
+  background: #161622;
+  border: 1px solid #2A2A3E;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.card-base:hover {
+  border-color: #C9A84C40;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 20px rgba(201, 168, 76, 0.08);
+}
+
+/* Premium badge shimmer */
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(201, 168, 76, 0.05) 25%,
+    rgba(201, 168, 76, 0.15) 50%,
+    rgba(201, 168, 76, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite linear;
+}
+
+/* Blur overlay for premium content */
+.paywall-blur {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #C9A84C !important;
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);
+}
+
+/* Mobile tap highlight */
+* {
+  -webkit-tap-highlight-color: rgba(201, 168, 76, 0.1);
+}
+
+/* ── Hero badge shimmer ── */
+@keyframes badgeShimmer {
+  0%   { left: -100%; }
+  60%  { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* ── Ticker scrolling animation ── */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker 28s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* ── Prose blog ── */
+.prose-elite h2 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #F5F5F0;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.prose-elite p {
+  color: #9090A0;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+.prose-elite ul {
+  color: #9090A0;
+  line-height: 1.8;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  list-style-type: disc;
+}
+.prose-elite li {
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+.prose-elite strong {
+  color: #E8D5A3;
+  font-weight: 600;
+}
+.prose-elite a {
+  color: #C9A84C;
+  text-decoration: underline;
+}
+.prose-elite a:hover {
+  color: #E8D5A3;
+}
