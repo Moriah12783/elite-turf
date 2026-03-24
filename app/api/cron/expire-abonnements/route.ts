@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, expired: 0, timestamp: now });
   }
 
-  const userIds = [...new Set(expiredAbos.map((a) => a.user_id))];
+  const userIds = Array.from(new Set(expiredAbos.map((a) => a.user_id)));
   const aboIds = expiredAbos.map((a) => a.id);
 
   // 2. Marquer les abonnements comme EXPIRE
