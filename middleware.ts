@@ -2,6 +2,18 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // ── Routes exclues du middleware (pas de vérification auth) ──
+  const bypassRoutes = [
+    "/auth/callback",       // échange du code Supabase PKCE
+    "/api/cron/",           // cron jobs Vercel (sécurisés par CRON_SECRET)
+    "/api/paiement/webhook", // webhook CinetPay (doit rester public)
+  ];
+  if (bypassRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
