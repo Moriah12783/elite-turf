@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+// VERCEL_URL est automatiquement injecté par Vercel (ex: elite-turf-xyz.vercel.app)
+// Priorité : variable explicite > URL Vercel auto > fallback prod
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://eliteturf.fr");
 
 export const metadata: Metadata = {
   title: {

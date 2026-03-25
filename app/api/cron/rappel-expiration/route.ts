@@ -13,10 +13,13 @@ import { PLAN_CONFIG } from "@/types";
  */
 export async function GET(req: NextRequest) {
   // Vérification du secret cron
+  // On ignore la vérification si le secret est absent ou encore au placeholder
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
+  const PLACEHOLDER_VALUES = ["your_cron_secret_here", "dev_cron_secret_change_in_production"];
+  const isSecretConfigured = cronSecret && !PLACEHOLDER_VALUES.includes(cronSecret);
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (isSecretConfigured && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 

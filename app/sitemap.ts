@@ -1,7 +1,9 @@
 import { MetadataRoute } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://eliteturf.fr");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

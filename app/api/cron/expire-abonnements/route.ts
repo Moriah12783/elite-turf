@@ -12,8 +12,10 @@ import { createServiceClient } from "@/lib/supabase/server";
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
+  const PLACEHOLDER_VALUES = ["your_cron_secret_here", "dev_cron_secret_change_in_production"];
+  const isSecretConfigured = cronSecret && !PLACEHOLDER_VALUES.includes(cronSecret);
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (isSecretConfigured && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
 
