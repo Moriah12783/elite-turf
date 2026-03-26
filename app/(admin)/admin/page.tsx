@@ -1,9 +1,12 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { formatMoney } from "@/lib/utils";
 import {
-  Users, Star, TrendingUp, CreditCard,
-  CalendarDays, Trophy, AlertCircle, CheckCircle2
+  Users, Star, CreditCard,
+  CalendarDays, AlertCircle, CheckCircle2
 } from "lucide-react";
+
+// 1 EUR ≈ 655.957 XOF (taux fixe CFA)
+const XOF_TO_EUR = (xof: number) =>
+  (xof / 655.957).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 0 });
 
 export const metadata = { title: "Dashboard Admin" };
 
@@ -62,7 +65,7 @@ export default async function AdminDashboard() {
     {
       icon: CreditCard,
       label: "Revenus du mois",
-      value: formatMoney(stats.revenusMois),
+      value: XOF_TO_EUR(stats.revenusMois),
       sublabel: "Transactions validées",
       color: "text-status-win",
       bg: "bg-status-win/10",

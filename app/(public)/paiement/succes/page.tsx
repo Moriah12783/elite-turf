@@ -131,7 +131,7 @@ export default async function PaiementSuccesPage({
               <div className="flex justify-between">
                 <span className="text-text-muted">Montant payé</span>
                 <span className="text-text-primary font-semibold">
-                  {plan.prix_fcfa.toLocaleString("fr-CI")} XOF
+                  {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€
                 </span>
               </div>
               <div className="flex justify-between">

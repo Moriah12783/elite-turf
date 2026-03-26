@@ -219,7 +219,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
                 Accédez aux analyses complètes
               </p>
               <p className="text-text-muted text-xs">
-                Nos experts publient des pronostics détaillés pour chaque course. À partir de 5 000 XOF/mois.
+                Nos experts publient des pronostics détaillés pour chaque course. À partir de 9,90€/mois.
               </p>
             </div>
             <Link

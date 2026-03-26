@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/utils";
-import { Plus, Star, Eye, Edit2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Star, Eye, Edit2 } from "lucide-react";
+import TogglePublieButton from "@/components/admin/TogglePublieButton";
 
 export const metadata = { title: "Pronostics — Admin" };
 
@@ -114,15 +115,7 @@ export default async function AdminPronosticsPage() {
                     </div>
                   </td>
                   <td className="px-5 py-4">
-                    {p.publie ? (
-                      <span className="flex items-center gap-1 text-status-win text-xs font-medium">
-                        <ToggleRight className="w-4 h-4" /> Publié
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-text-muted text-xs">
-                        <ToggleLeft className="w-4 h-4" /> Brouillon
-                      </span>
-                    )}
+                    <TogglePublieButton id={p.id} publie={p.publie} />
                   </td>
                   <td className="px-5 py-4">
                     <Link

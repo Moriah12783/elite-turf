@@ -250,7 +250,7 @@ export default async function EspaceMembrePage() {
                       Plan {plan?.nom || statusCfg.label}
                     </p>
                     <p className="text-text-muted text-sm">
-                      {plan?.prix_fcfa?.toLocaleString("fr-CI")} XOF/mois
+                      {planConfig?.prix_eur?.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€/mois
                     </p>
                   </div>
                 </div>
