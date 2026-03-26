@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export const FROM_EMAIL = "Elite Turf <noreply@eliteturf.fr>";
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
 
@@ -14,18 +12,24 @@ export interface SendEmailOptions {
 
 /**
  * Envoie un email via Resend.
- * En mode sandbox (clé manquante), logue uniquement dans la console.
+ * En mode sandbox (clé manquante ou placeholder), logue uniquement dans la console.
+ * Resend est instancié à l'intérieur pour éviter l'erreur "Missing API key" au build.
  */
 export async function sendEmail(opts: SendEmailOptions): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
   const isConfigured =
-    process.env.RESEND_API_KEY &&
-    process.env.RESEND_API_KEY !== "your_resend_api_key";
+    apiKey &&
+    apiKey !== "your_resend_api_key" &&
+    apiKey.startsWith("re_");
 
   if (!isConfigured) {
     console.log("[Email sandbox] À:", opts.to);
     console.log("[Email sandbox] Sujet:", opts.subject);
     return true;
   }
+
+  // Instanciation lazy — jamais au niveau module
+  const resend = new Resend(apiKey);
 
   try {
     const { error } = await resend.emails.send({
