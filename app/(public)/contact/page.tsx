@@ -44,13 +44,13 @@ export default function ContactPage() {
               Réponse prioritaire pour nos membres — disponible Lun–Sam, 8h–20h (heure de Paris)
             </p>
             <a
-              href="https://wa.me/+33700000000?text=Bonjour, j'ai une question concernant Elite Turf"
+              href="https://wa.me/+33644686720?text=Bonjour, j'ai une question concernant Elite Turf"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
-              +33 7 XX XX XX XX
+              06 44 68 67 20
             </a>
           </div>
         </div>
@@ -66,11 +66,11 @@ export default function ContactPage() {
               Pour toute demande écrite, nous répondons sous 24h ouvrées.
             </p>
             <a
-              href="mailto:contact@elite-turf.com"
+              href="mailto:contact@elite-turf.fr"
               className="inline-flex items-center gap-2 text-gold-light hover:text-gold-primary font-semibold text-sm transition-colors"
             >
               <Mail className="w-4 h-4" />
-              contact@elite-turf.com
+              contact@elite-turf.fr
             </a>
           </div>
         </div>
