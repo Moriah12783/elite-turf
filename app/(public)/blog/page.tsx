@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Clock, Tag, ArrowRight, Star, BookOpen } from "lucide-react";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { createServiceClient } from "@/lib/supabase/server";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Blog PMU — Pronostics & Guides pour l'parieurs francophones",
@@ -40,8 +41,13 @@ export default async function BlogPage() {
   } catch { /* pas de données encore */ }
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-28 pb-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-bg-primary">
+      <PageHero
+        image="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1920&q=80"
+        titre="Blog PMU & Conseils"
+        sousTitre="Analyses, guides et stratégies pour les parieurs francophones"
+      />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
 
         {/* En-tête */}
         <div className="mb-12">

@@ -6,6 +6,7 @@ import type { SubscriptionStatus } from "@/types";
 import PronosticCard from "@/components/pronostics/PronosticCard";
 import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
@@ -122,53 +123,11 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-bg-primary">
       {/* ── HERO BANNER ──────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1400&q=80"
-          alt="Pronostics hippiques Elite Turf"
-          className="w-full h-52 sm:h-64 object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-bg-primary/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg-primary/30 to-bg-primary" />
-        <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/50 via-transparent to-bg-primary/50" />
-        {/* Gold top line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <Star className="w-4 h-4 text-gold-primary" fill="currentColor" />
-            <span className="text-gold-light text-xs font-semibold uppercase tracking-widest">
-              Analyses d&apos;experts
-            </span>
-          </div>
-          <h1 className="font-serif text-2xl sm:text-4xl font-bold text-text-primary drop-shadow-lg mb-2">
-            Pronostics du Jour
-          </h1>
-          <p className="text-text-secondary text-sm sm:text-base max-w-lg">
-            Tiercé, Quarté+, Quinté+ —{" "}
-            <span className="text-gold-light font-medium">{tauxReussite}% de réussite</span>{" "}
-            sur {totalTermines} pronostics publiés
-          </p>
-
-          {/* Live stats badges */}
-          <div className="flex items-center gap-3 mt-4 flex-wrap justify-center">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
-              <Flame className="w-3.5 h-3.5 text-gold-primary" />
-              <span className="text-gold-light text-xs font-semibold">
-                {pronostics.length} pronostic{pronostics.length > 1 ? "s" : ""} disponibles
-              </span>
-            </div>
-            {totalGagnants > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-status-win/20 backdrop-blur-sm border border-status-win/30 rounded-full">
-                <Trophy className="w-3.5 h-3.5 text-status-win" />
-                <span className="text-status-win text-xs font-semibold">
-                  {totalGagnants} gagnant{totalGagnants > 1 ? "s" : ""} ce mois
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1920&q=80"
+        titre="Pronostics du Jour"
+        sousTitre={`Tiercé, Quarté+, Quinté+ — ${tauxReussite}% de réussite sur ${totalTermines} pronostics publiés`}
+      />
 
       {/* ── CONTENT ──────────────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

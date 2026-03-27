@@ -8,6 +8,7 @@ import {
 import { createServiceClient, createClient } from "@/lib/supabase/server";
 import CoursesDateNav from "@/components/courses/CoursesDateNav";
 import CourseCard from "@/components/courses/CourseCard";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Programme des Courses — Elite Turf",
@@ -96,51 +97,11 @@ export default async function CoursesPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-bg-primary">
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden h-44 sm:h-56">
-        <img
-          src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1400&q=80"
-          alt="Programme des courses hippiques"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-bg-primary/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg-primary/20 to-bg-primary" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <Calendar className="w-4 h-4 text-gold-primary" />
-            <span className="text-gold-light text-xs font-semibold uppercase tracking-widest">
-              {isToday ? "Aujourd'hui" : displayDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-            </span>
-          </div>
-          <h1 className="font-serif text-2xl sm:text-4xl font-bold text-text-primary drop-shadow-lg mb-3">
-            Programme des Courses
-          </h1>
-          {/* Stats row */}
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
-              <Flag className="w-3.5 h-3.5 text-gold-primary" />
-              <span className="text-gold-light text-xs font-semibold">
-                {courses.length} course{courses.length > 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-border/50 rounded-full">
-              <Users className="w-3.5 h-3.5 text-text-muted" />
-              <span className="text-text-secondary text-xs font-semibold">
-                {totalPartants} partants
-              </span>
-            </div>
-            {avecPronostic > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-status-win/20 backdrop-blur-sm border border-status-win/30 rounded-full">
-                <Star className="w-3.5 h-3.5 text-status-win" fill="currentColor" />
-                <span className="text-status-win text-xs font-semibold">
-                  {avecPronostic} pronostic{avecPronostic > 1 ? "s" : ""} disponibles
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=1920&q=80"
+        titre="Programme des Courses"
+        sousTitre={isToday ? `Aujourd'hui — ${courses.length} course${courses.length > 1 ? "s" : ""} programmée${courses.length > 1 ? "s" : ""}` : displayDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 

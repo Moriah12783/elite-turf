@@ -7,6 +7,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Abonnements — Pronostics PMU dès 9,90€/mois",
@@ -89,56 +90,11 @@ export default async function AbonnementsPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
 
-      {/* ── HERO ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden py-20 sm:py-28">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1400&q=80"
-            alt="Abonnements Elite Turf"
-            className="w-full h-full object-cover opacity-10"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/60 via-bg-primary/80 to-bg-primary" />
-        </div>
-        {/* Gold top line */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
-
-        <div className="relative max-w-3xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-sm border border-gold-primary/40 rounded-full mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse" />
-            <span className="text-gold-light text-xs font-semibold tracking-wide">
-              Accès immédiat après paiement
-            </span>
-          </div>
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-text-primary mb-4 leading-tight">
-            Investissez dans vos<br />
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830)" }}
-            >
-              Pronostics Gagnants
-            </span>
-          </h1>
-          <p className="text-text-secondary text-lg max-w-xl mx-auto mb-8">
-            À partir de <span className="text-gold-light font-bold">9,90€/mois</span> —
-            Payez avec Orange Money, MTN MoMo, Wave ou Carte bancaire.
-            Résiliez quand vous voulez.
-          </p>
-
-          {/* Social proof */}
-          <div className="flex items-center justify-center gap-6 text-sm">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-gold-primary" />
-              <span className="text-text-secondary"><span className="text-text-primary font-semibold">847+</span> abonnés actifs</span>
-            </div>
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3.5 h-3.5 text-gold-primary" fill="#C9A84C" />
-              ))}
-              <span className="text-text-secondary ml-1.5"><span className="text-text-primary font-semibold">4.8/5</span> avis</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1553284965-5dd3d4a1b3a1?w=1920&q=80"
+        titre="Nos Abonnements"
+        sousTitre="À partir de 9,90€/mois — Orange Money, MTN MoMo, Wave ou Carte bancaire. Accès immédiat."
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
 

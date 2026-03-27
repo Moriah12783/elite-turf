@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { MessageCircle, Mail, MapPin, AlertTriangle } from "lucide-react";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Contact — Elite Turf",
@@ -11,25 +12,11 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
 
-      {/* ── HERO ── */}
-      <div className="relative overflow-hidden py-20 sm:py-24">
-        <div className="absolute inset-0 bg-gradient-to-b from-bg-card/60 to-bg-primary" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
-        <div className="relative max-w-2xl mx-auto px-4 text-center">
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-text-primary mb-4 leading-tight">
-            Une Question ?{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830)" }}
-            >
-              Notre Équipe vous Répond
-            </span>
-          </h1>
-          <p className="text-text-secondary text-base">
-            Réponse prioritaire pour nos membres abonnés.
-          </p>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1563804447127-5f6d04b11b3c?w=1920&q=80"
+        titre="Contactez-Nous"
+        sousTitre="Une question ? Notre équipe vous répond sous 24h — priorité aux membres abonnés"
+      />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-6">
 

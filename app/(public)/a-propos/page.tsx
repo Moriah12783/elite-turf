@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { Brain, Eye, Users, ArrowRight, Trophy } from "lucide-react";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "À Propos — Elite Turf",
@@ -30,36 +31,11 @@ export default function AProposPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
 
-      {/* ── HERO ── */}
-      <div className="relative overflow-hidden py-24 sm:py-32">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1400&q=80"
-            alt="Elite Turf — À Propos"
-            className="w-full h-full object-cover opacity-8"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/70 via-bg-primary/85 to-bg-primary" />
-        </div>
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
-
-        <div className="relative max-w-3xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-sm border border-gold-primary/40 rounded-full mb-6">
-            <Trophy className="w-4 h-4 text-gold-primary" />
-            <span className="text-gold-light text-xs font-semibold tracking-wide">
-              Experts PMU depuis Paris
-            </span>
-          </div>
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-text-primary mb-6 leading-tight">
-            L&apos;Expertise derrière{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830)" }}
-            >
-              EliteTurf
-            </span>
-          </h1>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1452873976660-330dbef73ab9?w=1920&q=80"
+        titre="À Propos d'Elite Turf"
+        sousTitre="Experts PMU depuis Paris pour les parieurs francophones du monde entier"
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
 

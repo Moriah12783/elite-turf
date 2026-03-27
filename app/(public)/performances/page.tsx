@@ -12,6 +12,7 @@ import { BET_TYPE_LABELS } from "@/types";
 import type { BetType, PronosticResult } from "@/types";
 import MonthlyChart from "@/components/performances/MonthlyChart";
 import AnimatedCounter from "@/components/performances/AnimatedCounter";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Nos Résultats Prouvés — Elite Turf",
@@ -130,32 +131,11 @@ export default async function PerformancesPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
 
-      {/* ── HERO ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden h-48 sm:h-60">
-        <img
-          src="https://images.unsplash.com/photo-1609510038916-9328a3c86966?w=1400&q=80"
-          alt="Performances Elite Turf"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-bg-primary/78" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-primary" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-gold-primary" />
-            <span className="text-gold-light text-xs font-bold uppercase tracking-widest">Transparence totale</span>
-          </div>
-          <h1 className="font-serif text-2xl sm:text-4xl font-bold text-text-primary drop-shadow-lg mb-3">
-            Tableau de Bord des Performances : La Preuve par les Gains
-          </h1>
-          <p className="text-text-secondary text-sm max-w-lg">
-            La transparence est le socle de notre relation. Retrouvez ici{" "}
-            <span className="text-gold-light font-medium">l&apos;historique complet</span>{" "}
-            de nos pronostics gagnants.
-          </p>
-        </div>
-      </div>
+      <PageHero
+        image="https://images.unsplash.com/photo-1474337703060-5d6cf8a4f0b0?w=1920&q=80"
+        titre="Nos Performances"
+        sousTitre="Transparence totale — historique complet et vérifiable de nos pronostics gagnants"
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
 
