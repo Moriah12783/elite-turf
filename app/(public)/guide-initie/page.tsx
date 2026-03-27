@@ -46,7 +46,7 @@ export default function GuideInitiePage() {
 
       {/* ── HERO ── */}
       <PageHero
-        image="https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1920&q=80"
         titre="Guide Gratuit de l'Initié"
         sousTitre="5 Secrets d'Experts pour Détecter les Outsiders Gagnants au PMU"
       />

@@ -57,11 +57,11 @@ export default function PricingSection() {
                   <p className="text-text-secondary text-sm mb-4">{plan.description}</p>
                   <div className="flex items-baseline gap-2">
                     <span className={`text-3xl font-bold font-serif ${plan.populaire ? "text-gold-primary" : "text-text-primary"}`}>
-                      {formatMoney(plan.prix_fcfa)}
+                      {formatMoney(plan.prix_eur, "EUR")}
                     </span>
                     <span className="text-text-muted text-sm">/mois</span>
                   </div>
-                  <p className="text-text-muted text-xs mt-1">≈ {formatMoney(plan.prix_eur, "EUR")}/mois</p>
+                  <p className="text-text-muted text-xs mt-1">≈ {formatMoney(plan.prix_fcfa)} FCFA</p>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1">

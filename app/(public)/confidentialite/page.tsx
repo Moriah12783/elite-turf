@@ -10,7 +10,7 @@ export default function ConfidentialitePage() {
   return (
     <div className="min-h-screen bg-bg-primary">
       <PageHero
-        image="https://images.unsplash.com/photo-1474337703060-5d6cf8a4f0b0?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1509399316151-9b86c70fdd40?w=1920&q=80"
         titre="Politique de Confidentialité"
         sousTitre="Protection de vos données personnelles — RGPD"
       />

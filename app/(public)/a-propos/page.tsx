@@ -32,7 +32,7 @@ export default function AProposPage() {
     <div className="min-h-screen bg-bg-primary">
 
       <PageHero
-        image="https://images.unsplash.com/photo-1452873976660-330dbef73ab9?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1920&q=80"
         titre="À Propos d'Elite Turf"
         sousTitre="Experts PMU depuis Paris pour les parieurs francophones du monde entier"
       />

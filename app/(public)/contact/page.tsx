@@ -13,7 +13,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-bg-primary">
 
       <PageHero
-        image="https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1509399316151-9b86c70fdd40?w=1920&q=80"
         titre="Contactez-Nous"
         sousTitre="Une question ? Notre équipe vous répond sous 24h — priorité aux membres abonnés"
       />
