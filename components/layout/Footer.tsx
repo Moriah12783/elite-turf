@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 
-const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP || "+33700000000";
+const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720";
 
 export default function Footer() {
   return (
@@ -27,7 +27,7 @@ export default function Footer() {
             <div className="w-8 h-px bg-gold-primary/60" />
           </div>
           <p className="font-serif text-xl sm:text-2xl font-bold text-text-primary drop-shadow-lg mb-4">
-            Les courses PMU analysées depuis Paris,<br className="hidden sm:block" /> pour l&apos;Afrique francophone
+            Les courses PMU analysées depuis Paris,<br className="hidden sm:block" /> pour les parieurs francophones du monde entier
           </p>
           <Link
             href="/inscription"
@@ -50,9 +50,9 @@ export default function Footer() {
                 <LogoEliteTurf size="md" />
               </div>
               <p className="text-text-secondary text-sm leading-relaxed mb-4">
-                Pronostics PMU premium pour les parieurs d&apos;Afrique
-                francophone. Tiercé, Quarté+, Quinté+ analysés par nos
-                experts depuis Paris.
+                L&apos;élite du pronostic hippique à portée de main.
+                Bénéficiez d&apos;analyses Quinté+ de haute précision, édictées
+                par nos experts depuis Paris pour les parieurs francophones.
               </p>
               <a
                 href={`https://wa.me/${WHATSAPP.replace(/\s/g, "")}`}
@@ -151,7 +151,7 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-text-muted text-xs text-center sm:text-left">
               © {new Date().getFullYear()} Elite Turf · Paris, France.
-              Pronostics PMU pour l&apos;Afrique francophone. Fournis à titre informatif.
+              Pronostics PMU pour les parieurs francophones. Fournis à titre informatif.
             </p>
             <div className="flex items-center gap-4">
               {[

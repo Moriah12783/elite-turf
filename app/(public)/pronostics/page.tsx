@@ -10,7 +10,7 @@ import PaywallBanner from "@/components/pronostics/PaywallBanner";
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
   description:
-    "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Taux de réussite 73%. Analyses hippiques pour la Côte d'Ivoire et l'Afrique francophone.",
+    "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Taux de réussite 73%. Analyses hippiques pour la Côte d'Ivoire et l'parieurs francophones.",
 };
 
 // Force dynamic rendering (user session + search params)

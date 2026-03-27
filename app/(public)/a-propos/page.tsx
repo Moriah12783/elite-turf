@@ -76,7 +76,7 @@ export default function AProposPage() {
               Nous combinons <span className="text-gold-light font-medium">l&apos;intelligence artificielle</span> pour
               le traitement des données et l&apos;instinct humain pour la décision finale.
               Notre agence basée à Paris accompagne désormais des centaines de parieurs
-              à travers l&apos;Afrique francophone et l&apos;Europe dans leur quête de rentabilité.
+              à travers la francophonie et l&apos;Europe dans leur quête de rentabilité.
             </p>
           </div>
         </div>

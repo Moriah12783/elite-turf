@@ -10,11 +10,11 @@ const APP_URL =
 
 export const metadata: Metadata = {
   title: {
-    default: "Elite Turf — Pronostics PMU pour l'Afrique francophone",
+    default: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
     template: "%s | Elite Turf",
   },
   description:
-    "Elite Turf — Pronostics PMU premium pour les parieurs d'Afrique francophone. Tiercé, Quarté+, Quinté+ analysés par nos experts depuis Paris. Abonnement dès 9,90€/mois. Orange Money, MTN, Wave acceptés.",
+    "Elite Turf — Pronostics PMU premium pour les parieurs francophones. Tiercé, Quarté+, Quinté+ analysés par nos experts depuis Paris. Abonnement dès 9,90€/mois. Orange Money, MTN, Wave acceptés.",
   keywords: [
     "pronostic PMU",
     "pronostic Quinté+",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     canonical: APP_URL,
   },
   openGraph: {
-    title: "Elite Turf — Pronostics PMU pour l'Afrique francophone",
+    title: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
     description:
       "Pronostics PMU premium depuis Paris. Tiercé, Quarté+, Quinté+ analysés par nos experts. Dès 9,90€/mois — Orange Money, MTN, Wave acceptés.",
     url: APP_URL,
@@ -49,13 +49,13 @@ export const metadata: Metadata = {
         url: `${APP_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Elite Turf — Pronostics PMU pour l'Afrique francophone",
+        alt: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Elite Turf — Pronostics PMU Afrique francophone",
+    title: "Elite Turf — Pronostics PMU parieurs francophones",
     description: "Pronostics PMU experts depuis Paris. Tiercé, Quarté+, Quinté+ dès 9,90€/mois.",
     images: [`${APP_URL}/og-image.jpg`],
   },

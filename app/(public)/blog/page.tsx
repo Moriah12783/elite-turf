@@ -5,9 +5,9 @@ import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Blog PMU — Pronostics & Guides pour l'Afrique francophone",
+  title: "Blog PMU — Pronostics & Guides pour l'parieurs francophones",
   description:
-    "Articles et guides PMU pour les parieurs d'Afrique francophone : Quinté+, Tiercé, Quarté+, hippodromes français, stratégies de paris. Expertise depuis Paris.",
+    "Articles et guides PMU pour les parieurs francophones : Quinté+, Tiercé, Quarté+, hippodromes français, stratégies de paris. Expertise depuis Paris.",
   keywords: [
     "blog pronostic PMU",
     "guide paris PMU Afrique",
@@ -56,7 +56,7 @@ export default async function BlogPage() {
           </h1>
           <p className="text-text-secondary text-lg max-w-2xl">
             Tout ce qu&apos;il faut savoir pour parier intelligemment sur les courses françaises
-            depuis l&apos;Afrique francophone. Par nos experts depuis Paris.
+            depuis l&apos;parieurs francophones. Par nos experts depuis Paris.
           </p>
         </div>
 

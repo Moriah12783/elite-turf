@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Elite Turf — Pronostics PMU pour l'Afrique francophone";
+export const alt = "Elite Turf — Pronostics PMU pour les parieurs francophones";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -147,7 +147,7 @@ export default async function OGImage() {
         >
           Tiercé · Quarté+ · Quinté+ — Analyses d&apos;experts depuis Paris
           <br />
-          pour l&apos;Afrique francophone
+          pour les parieurs francophones
         </p>
 
         {/* Stats row */}

@@ -68,7 +68,7 @@ export function emailBase(content: string, previewText = ""): string {
                 Elite Turf · 75008 Paris, France · <a href="mailto:contact@eliteturf.fr" style="color:#5A5A7A;">contact@eliteturf.fr</a>
               </p>
               <p style="margin:0;color:#3A3A5A;font-size:10px;">
-                Pronostics PMU pour l'Afrique francophone — Les courses françaises, analysées depuis Paris.
+                Pronostics PMU pour l'parieurs francophones — Les courses françaises, analysées depuis Paris.
               </p>
               <p style="margin:8px 0 0 0;color:#3A3A5A;font-size:10px;">
                 <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr"}/confidentialite" style="color:#3A3A5A;">Politique de confidentialité</a>

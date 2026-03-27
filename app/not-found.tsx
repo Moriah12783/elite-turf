@@ -58,7 +58,7 @@ export default function NotFound() {
       </div>
 
       <p className="mt-8 text-text-muted text-xs">
-        Elite Turf · Paris, France · Pronostics PMU pour l&apos;Afrique francophone
+        Elite Turf · Paris, France · Pronostics PMU pour les parieurs francophones
       </p>
 
     </div>

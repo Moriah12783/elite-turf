@@ -11,7 +11,7 @@ import PaiementButton from "@/components/abonnements/PaiementButton";
 export const metadata: Metadata = {
   title: "Abonnements — Pronostics PMU dès 9,90€/mois",
   description:
-    "Accédez aux meilleurs pronostics PMU pour l'Afrique francophone. Plans à partir de 9,90€/mois. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
+    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. Plans à partir de 9,90€/mois. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
 };
 
 export const dynamic = "force-dynamic";

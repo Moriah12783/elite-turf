@@ -140,7 +140,7 @@ export default function TestimonialsSection() {
             </span>
           </h2>
           <p className="text-text-secondary text-base max-w-xl mx-auto">
-            Des parieurs d&apos;Afrique francophone et de la diaspora nous font confiance pour les courses PMU françaises.
+            Des parieurs d&apos;parieurs francophones et de la diaspora nous font confiance pour les courses PMU françaises.
           </p>
         </div>
 
@@ -209,7 +209,7 @@ export default function TestimonialsSection() {
             reçoivent un mois d&apos;abonnement offert.
           </p>
           <a
-            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP || "+33700000000").replace(/\s/g, "")}?text=Bonjour, je voudrais partager mon gain avec Elite Turf !`}
+            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720").replace(/\s/g, "")}?text=Bonjour, je voudrais partager mon gain avec Elite Turf !`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"
