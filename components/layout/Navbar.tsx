@@ -69,6 +69,7 @@ export default function Navbar() {
             <NavLink href="/performances">Nos résultats</NavLink>
             <NavLink href="/abonnements">Abonnements</NavLink>
             <NavLink href="/blog">Blog PMU</NavLink>
+            <NavLink href="/a-propos">À Propos</NavLink>
           </div>
 
           {/* Desktop CTA */}
@@ -165,6 +166,7 @@ export default function Navbar() {
               { href: "/performances",label: "Nos résultats" },
               { href: "/abonnements", label: "Abonnements"   },
               { href: "/blog",        label: "Blog PMU"      },
+              { href: "/a-propos",    label: "À Propos"      },
             ].map(({ href, label }) => (
               <MobileNavLink key={href} href={href} onClick={() => setIsOpen(false)}>
                 {label}

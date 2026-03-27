@@ -97,13 +97,13 @@ export default function HeroSection() {
             transition: "opacity 0.8s ease 0.15s, transform 0.8s ease 0.15s",
           }}
         >
-          <span className="text-white">Les Pronostics</span>
+          <span className="text-white">EliteTurf : L&apos;Alliance de l&apos;Expertise Hippique</span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
           >
-            Qui Font la Différence
+            et de la Précision Digitale
           </span>
         </h1>
 
@@ -116,10 +116,9 @@ export default function HeroSection() {
             transition: "opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s",
           }}
         >
-          Tiercé, Quarté+, Quinté+ — Analyses d&apos;experts pour les turfistes
-          de Côte d&apos;Ivoire et d&apos;Afrique francophone.{" "}
+          Optimisez vos paris avec des pronostics de haut niveau.{" "}
           <span className="text-gold-light font-medium">
-            Payez avec Orange Money, MTN MoMo ou Wave.
+            Nous transformons les données en victoires pour les parieurs exigeants.
           </span>
         </p>
 
@@ -136,7 +135,7 @@ export default function HeroSection() {
             href="/pronostics"
             className="flex items-center gap-2 px-8 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-base rounded-xl transition-all shadow-gold w-full sm:w-auto justify-center"
           >
-            Voir les Pronostics
+            Découvrir la sélection du jour
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link

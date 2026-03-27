@@ -147,11 +147,12 @@ export default async function PerformancesPage() {
             <span className="text-gold-light text-xs font-bold uppercase tracking-widest">Transparence totale</span>
           </div>
           <h1 className="font-serif text-2xl sm:text-4xl font-bold text-text-primary drop-shadow-lg mb-3">
-            Nos Résultats Prouvés
+            Tableau de Bord des Performances : La Preuve par les Gains
           </h1>
           <p className="text-text-secondary text-sm max-w-lg">
-            Nous publions <span className="text-gold-light font-medium">tous nos pronostics</span> —
-            les victoires comme les défaites. La confiance se mérite avec des chiffres réels.
+            La transparence est le socle de notre relation. Retrouvez ici{" "}
+            <span className="text-gold-light font-medium">l&apos;historique complet</span>{" "}
+            de nos pronostics gagnants.
           </p>
         </div>
       </div>
@@ -368,7 +369,7 @@ export default async function PerformancesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    {["Date", "Course", "Hippodrome", "Type", "Niveau", "Résultat"].map(h => (
+                    {["Événement", "Course", "Discipline", "Niveau", "Statut", "Rapport Moyen"].map(h => (
                       <th key={h} className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>

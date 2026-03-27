@@ -85,8 +85,7 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
               ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
               : "bg-gold-faint text-gold-light border-gold-primary/30"
           }`}>
-            {p.niveau_acces === "GRATUIT" ? "✓" : p.niveau_acces === "VIP" ? "★" : "⭐"}
-            {" "}{p.niveau_acces}
+            {p.niveau_acces === "GRATUIT" ? "✓ La Base Solide" : p.niveau_acces === "VIP" ? "★ L'Outsider Elite" : "⭐ Le Duo de Choc"}
           </span>
 
           {/* Type de pari */}

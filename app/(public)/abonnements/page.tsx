@@ -172,8 +172,16 @@ export default async function AbonnementsPage() {
                     <div className={`w-12 h-12 rounded-2xl border ${styles.iconBg} flex items-center justify-center mb-4`}>
                       <Icon className={`w-6 h-6 ${styles.iconText}`} />
                     </div>
-                    <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">Plan {plan.nom}</h2>
-                    <p className="text-text-secondary text-sm mb-5">{plan.description}</p>
+                    <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">
+                      {plan.nom === "Starter" ? "PACK DÉCOUVERTE" : plan.nom === "Pro" ? "PACK PERFORMANCE" : "PACK ELITE"}
+                    </h2>
+                    <p className="text-text-secondary text-sm mb-5">
+                      {plan.nom === "Starter"
+                        ? "Testez l'excellence. Idéal pour découvrir notre rigueur d'analyse."
+                        : plan.nom === "Pro"
+                        ? "Le choix des gagnants. 1 mois complet de sélections VIP et de conseils de mise."
+                        : "L'engagement total. Accès prioritaire et alertes exclusives pour maximiser vos profits."}
+                    </p>
                     <div className="flex items-baseline gap-2">
                       <span className={`text-4xl font-bold font-serif ${styles.price}`}>
                         {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -214,9 +222,15 @@ export default async function AbonnementsPage() {
           </div>
 
           {/* Garantie */}
-          <div className="mt-6 flex items-center justify-center gap-2 text-text-muted text-xs">
-            <Shield className="w-4 h-4 text-status-win" />
-            Paiement 100% sécurisé par CinetPay · Sans engagement · Résiliation en 1 clic
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs">
+            <div className="flex items-center gap-2 px-4 py-2 bg-status-win/5 border border-status-win/20 rounded-full text-status-win">
+              <Shield className="w-3.5 h-3.5" />
+              Paiement 100% Sécurisé (Orange Money, Wave, Carte)
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-gold-faint border border-gold-primary/20 rounded-full text-gold-light">
+              <span>⚡</span>
+              Activation instantanée de votre accès
+            </div>
           </div>
         </div>
 

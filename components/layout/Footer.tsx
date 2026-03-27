@@ -95,6 +95,8 @@ export default function Footer() {
                   { label: "Plan Elite — 34,90€/mois",   href: "/abonnements#elite"   },
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },
+                  { label: "À Propos",                    href: "/a-propos"            },
+                  { label: "Contact",                     href: "/contact"             },
                 ].map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className="text-text-secondary hover:text-gold-light text-sm transition-colors">
