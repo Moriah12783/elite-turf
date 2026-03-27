@@ -177,7 +177,7 @@ export default async function PaiementSuccesPage({
             Rejoignez notre groupe WhatsApp VIP pour recevoir les pronostics du matin à 7h30.
           </p>
           <a
-            href="https://wa.me/+22507000000?text=Bonjour, je viens de souscrire à Elite Turf !"
+            href="https://wa.me/+33644686720?text=Bonjour, je viens de souscrire à Elite Turf !"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-flex items-center gap-2 text-[#25D366] text-sm font-semibold hover:underline"

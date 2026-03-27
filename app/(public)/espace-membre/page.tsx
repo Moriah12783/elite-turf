@@ -495,7 +495,7 @@ export default async function EspaceMembrePage() {
             <p className="text-text-muted text-xs">Réponse en moins de 30 min sur WhatsApp</p>
           </div>
           <a
-            href="https://wa.me/+22507000000"
+            href="https://wa.me/+33644686720"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap flex-shrink-0"

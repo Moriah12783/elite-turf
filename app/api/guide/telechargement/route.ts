@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest) {
     }
 
     const prenom = nom?.split(" ")[0] || "Turfiste";
+
+    // Sauvegarder le lead dans Supabase
+    const supabase = createServiceClient();
+    await supabase.from("leads").insert({ prenom, email, source: "guide-gratuit" });
 
     // Envoyer le guide par email
     await sendEmail({

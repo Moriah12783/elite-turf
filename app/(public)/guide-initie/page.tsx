@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, CheckCircle2, ArrowRight, Loader2, Lock, TrendingUp, Users, BarChart2 } from "lucide-react";
+import PageHero from "@/components/layout/PageHero";
 
 const SECRETS = [
   { num: "01", titre: "Décrypter la Musique du Cheval", texte: "Au-delà des chiffres — comment lire un CV de cheval comme un pro." },
@@ -44,16 +45,11 @@ export default function GuideInitiePage() {
     <div className="min-h-screen bg-bg-primary">
 
       {/* ── HERO ── */}
-      <div className="relative overflow-hidden py-20 sm:py-28">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1400&q=80"
-            alt="Guide PMU EliteTurf"
-            className="w-full h-full object-cover opacity-8"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/60 via-bg-primary/85 to-bg-primary" />
-        </div>
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/60 to-transparent" />
+      <PageHero
+        image="https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=1920&q=80"
+        titre="Guide Gratuit de l'Initié"
+        sousTitre="5 Secrets d'Experts pour Détecter les Outsiders Gagnants au PMU"
+      />
 
         <div className="relative max-w-4xl mx-auto px-4 text-center">
           {/* Badge */}
@@ -95,7 +91,6 @@ export default function GuideInitiePage() {
             ))}
           </div>
         </div>
-      </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">

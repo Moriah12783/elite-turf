@@ -98,6 +98,25 @@ export default async function AbonnementsPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
 
+        {/* ── CTA Guide Gratuit ─────────────────────────────────────── */}
+        <div className="mt-8 p-4 rounded-xl bg-gold-faint border border-gold-primary/30 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <div className="text-2xl">📥</div>
+          <div className="flex-1">
+            <p className="text-text-primary font-semibold text-sm">
+              Nouveau sur Elite Turf ?
+            </p>
+            <p className="text-text-secondary text-sm">
+              Commencez par notre guide gratuit — <span className="text-gold-light font-medium">5 secrets pour détecter les outsiders gagnants</span>
+            </p>
+          </div>
+          <a
+            href="/guide-initie"
+            className="flex-shrink-0 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors shadow-gold-sm whitespace-nowrap"
+          >
+            Télécharger gratuitement →
+          </a>
+        </div>
+
         {/* ── PLANS ────────────────────────────────────────────────── */}
         <div id="plans" className="-mt-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -294,7 +313,7 @@ export default async function AbonnementsPage() {
             Notre équipe répond sur WhatsApp en moins de 30 minutes
           </p>
           <a
-            href="https://wa.me/+22507000000?text=Bonjour, j'aimerais des informations sur les abonnements Elite Turf"
+            href="https://wa.me/+33644686720?text=Bonjour, j'aimerais des informations sur les abonnements Elite Turf"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"

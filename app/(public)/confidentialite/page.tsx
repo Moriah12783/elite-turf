@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité — Elite Turf",
@@ -7,8 +8,13 @@ export const metadata: Metadata = {
 
 export default function ConfidentialitePage() {
   return (
-    <div className="min-h-screen bg-bg-primary py-16">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-bg-primary">
+      <PageHero
+        image="https://images.unsplash.com/photo-1474337703060-5d6cf8a4f0b0?w=1920&q=80"
+        titre="Politique de Confidentialité"
+        sousTitre="Protection de vos données personnelles — RGPD"
+      />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         <div className="mb-10">
           <h1 className="font-serif text-3xl font-bold text-text-primary mb-2">

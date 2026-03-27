@@ -19,8 +19,8 @@ export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
         className="object-cover object-center"
         sizes="100vw"
       />
-      {/* Overlay sombre 45% */}
-      <div className="absolute inset-0 bg-black/45" />
+      {/* Overlay sombre 50% */}
+      <div className="absolute inset-0 bg-black/50" />
       {/* Gradient bas pour transition douce */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg-primary/60" />
 

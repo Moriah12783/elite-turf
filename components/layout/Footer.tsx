@@ -61,7 +61,7 @@ export default function Footer() {
                 className="inline-flex items-center gap-2 text-xs text-[#25D366] hover:text-green-400 transition-colors font-medium"
               >
                 <MessageCircle className="w-4 h-4" />
-                WhatsApp Support (FR)
+                WhatsApp : +33 6 44 68 67 20
               </a>
             </div>
 
@@ -75,6 +75,7 @@ export default function Footer() {
                   { label: "Pronostic Vincennes",   href: "/pronostics?hippodrome=vincennes" },
                   { label: "Programme du jour",     href: "/courses" },
                   { label: "Nos performances",      href: "/performances" },
+                  { label: "📥 Guide Gratuit",       href: "/guide-initie"  },
                 ].map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className="text-text-secondary hover:text-gold-light text-sm transition-colors">

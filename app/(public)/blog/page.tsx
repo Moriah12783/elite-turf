@@ -43,7 +43,7 @@ export default async function BlogPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
       <PageHero
-        image="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1575936123452-b67c3203c357?w=1920&q=80"
         titre="Blog PMU & Conseils"
         sousTitre="Analyses, guides et stratégies pour les parieurs francophones"
       />
