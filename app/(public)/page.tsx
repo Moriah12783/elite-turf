@@ -1,4 +1,5 @@
 import HeroSection from "@/components/home/HeroSection";
+import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 import CoursesSection from "@/components/home/CoursesSection";
 import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
@@ -11,6 +12,7 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
+      <WhyChooseUsSection />
       <CoursesSection />
       <PronosticsSection />
       <StatsSection />
