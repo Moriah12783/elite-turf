@@ -141,9 +141,18 @@ export default function GuideInitiePage() {
                 <p className="text-text-secondary text-sm mb-6">
                   Vérifiez votre boîte email (et vos spams). Le guide arrive dans quelques secondes.
                 </p>
+                <a
+                  href="/guide-initie.pdf"
+                  download="EliteTurf_Guide_Initie.pdf"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold mb-3"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Télécharger le guide PDF
+                </a>
+                <br />
                 <Link
                   href="/pronostics"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold"
+                  className="inline-flex items-center gap-2 text-gold-light hover:text-gold-primary text-sm font-medium transition-colors"
                 >
                   Voir les pronostics du jour
                   <ArrowRight className="w-4 h-4" />

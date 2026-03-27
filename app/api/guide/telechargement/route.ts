@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
           </div>
 
           <div style="text-align:center;margin-bottom:28px;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr"}/guide-initie"
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr"}/guide-initie.pdf"
                style="display:inline-block;background:#C9A84C;color:#0D0D14;font-weight:700;padding:14px 32px;border-radius:12px;text-decoration:none;font-size:14px;">
               📥 Télécharger mon guide PDF
             </a>
