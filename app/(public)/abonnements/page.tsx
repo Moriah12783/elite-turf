@@ -91,7 +91,7 @@ export default async function AbonnementsPage() {
     <div className="min-h-screen bg-bg-primary">
 
       <PageHero
-        image="https://images.unsplash.com/photo-1553284965-5dd3d4a1b3a1?w=1920&q=80"
+        image="https://images.unsplash.com/photo-1635895882609-942f36e1db5d?w=1920&q=80"
         titre="Nos Abonnements"
         sousTitre="À partir de 9,90€/mois — Orange Money, MTN MoMo, Wave ou Carte bancaire. Accès immédiat."
       />
