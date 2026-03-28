@@ -216,15 +216,19 @@ export default async function AbonnementsPage() {
             })}
           </div>
 
-          {/* Garantie */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs">
+          {/* Garantie + réassurance */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 bg-status-win/5 border border-status-win/20 rounded-full text-status-win">
               <Shield className="w-3.5 h-3.5" />
-              Paiement 100% Sécurisé (Orange Money, Wave, Carte)
+              Paiement 100% Sécurisé
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-gold-faint border border-gold-primary/20 rounded-full text-gold-light">
               <span>⚡</span>
-              Activation instantanée de votre accès
+              Activation instantanée après paiement
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-bg-elevated border border-border rounded-full text-text-secondary">
+              <span>↩️</span>
+              Résiliable à tout moment
             </div>
           </div>
         </div>

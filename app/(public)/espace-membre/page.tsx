@@ -142,6 +142,10 @@ export default async function EspaceMembrePage() {
   const tauxReussite = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
   const prenom = profile?.nom_complet?.split(" ")[0] || "Membre";
 
+  // Indicateur rentabilité sur les 10 derniers pronostics terminés
+  const dix_derniers = recentPronostics.filter((p) => p.resultat !== "EN_ATTENTE").slice(0, 10);
+  const dix_gagnants = dix_derniers.filter((p) => p.resultat === "GAGNANT").length;
+
   return (
     <div className="min-h-screen bg-bg-primary">
 
@@ -313,6 +317,44 @@ export default async function EspaceMembrePage() {
             </div>
           )}
         </div>
+
+        {/* ── INDICATEUR RENTABILITÉ ────────────────────────────────── */}
+        {dix_derniers.length > 0 && (
+          <div className={`p-4 rounded-xl border flex items-center gap-4 ${
+            dix_gagnants >= 7
+              ? "bg-status-win/8 border-status-win/25"
+              : dix_gagnants >= 5
+              ? "bg-gold-faint border-gold-primary/30"
+              : "bg-bg-elevated border-border"
+          }`}>
+            <div className="w-12 h-12 rounded-2xl bg-bg-card border border-border flex items-center justify-center flex-shrink-0">
+              <Trophy className={`w-6 h-6 ${dix_gagnants >= 7 ? "text-status-win" : dix_gagnants >= 5 ? "text-gold-primary" : "text-text-muted"}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary font-bold text-sm">
+                Sur vos {dix_derniers.length} derniers pronostics :{" "}
+                <span className={dix_gagnants >= 7 ? "text-status-win" : dix_gagnants >= 5 ? "text-gold-primary" : "text-text-secondary"}>
+                  {dix_gagnants} gagnant{dix_gagnants > 1 ? "s" : ""}
+                </span>
+              </p>
+              <div className="mt-1.5 h-2 bg-bg-card rounded-full overflow-hidden max-w-xs">
+                <div
+                  className={`h-full rounded-full transition-all ${dix_gagnants >= 7 ? "bg-status-win" : dix_gagnants >= 5 ? "bg-gold-primary" : "bg-text-muted"}`}
+                  style={{ width: `${(dix_gagnants / Math.max(dix_derniers.length, 1)) * 100}%` }}
+                />
+              </div>
+              <p className="text-text-muted text-xs mt-1">
+                {dix_gagnants >= 7 ? "🔥 Excellent score !" : dix_gagnants >= 5 ? "👍 Bon score" : "Continuez à suivre nos analyses"}
+              </p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className={`text-3xl font-bold font-serif ${dix_gagnants >= 7 ? "text-status-win" : dix_gagnants >= 5 ? "text-gold-primary" : "text-text-secondary"}`}>
+                {Math.round((dix_gagnants / Math.max(dix_derniers.length, 1)) * 100)}%
+              </p>
+              <p className="text-text-muted text-xs">de réussite</p>
+            </div>
+          </div>
+        )}
 
         {/* ── STATS RAPIDES ─────────────────────────────────────────── */}
         <div>

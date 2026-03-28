@@ -174,27 +174,28 @@ export const PLAN_CONFIG: Plan[] = [
   {
     id: "starter",
     nom: "Starter",
-    prix_fcfa: 6490,   // équivalent XOF pour CinetPay Mobile Money
-    prix_eur: 9.90,    // prix affiché en €
+    prix_fcfa: 19023,  // 29€ × 655.957 XOF
+    prix_eur: 29,      // PACK DÉCOUVERTE
     duree_jours: 7,
     acces_premium: true,
     acces_vip: false,
     nb_alertes: 5,
-    description: "Faites vos premiers pas",
+    description: "7 jours pour tester l'excellence",
     features: [
+      "🎁 Essai 7 jours — accès immédiat",
       "~70% de réussite sur nos sélections",
       "3 pronostics Tiercé / Quarté par semaine",
       "Analyse courte incluse",
-      "5 alertes SMS/Push par mois",
-      "Statistiques basiques",
+      "5 alertes SMS/Push",
+      "Résiliable à tout moment",
     ],
     actif: true,
   },
   {
     id: "pro",
     nom: "Pro",
-    prix_fcfa: 13050,  // équivalent XOF pour CinetPay Mobile Money
-    prix_eur: 19.90,   // prix affiché en €
+    prix_fcfa: 45261,  // 69€ × 655.957 XOF
+    prix_eur: 69,      // PACK PERFORMANCE
     duree_jours: 30,
     acces_premium: true,
     acces_vip: false,
@@ -208,6 +209,7 @@ export const PLAN_CONFIG: Plan[] = [
       "20 alertes SMS/Push par mois",
       "Statistiques complètes",
       "Support WhatsApp 48h",
+      "Résiliable à tout moment",
     ],
     actif: true,
     populaire: true,
@@ -215,8 +217,8 @@ export const PLAN_CONFIG: Plan[] = [
   {
     id: "elite",
     nom: "Elite",
-    prix_fcfa: 22890,  // équivalent XOF pour CinetPay Mobile Money
-    prix_eur: 34.90,   // prix affiché en €
+    prix_fcfa: 97738,  // 149€ × 655.957 XOF
+    prix_eur: 149,     // PACK ELITE
     duree_jours: 90,
     acces_premium: true,
     acces_vip: true,
@@ -226,11 +228,12 @@ export const PLAN_CONFIG: Plan[] = [
       "+92% de précision sur nos sélections VIP",
       "Tout Pack Performance inclus",
       "Pronostics VIP exclusifs (sélection réduite)",
-      "Tuyaux Dernière Minute sur WhatsApp",
+      "Tuyaux WhatsApp Dernière Minute",
       "Gestion de mise personnalisée",
       "Alertes illimitées",
       "Export statistiques (Excel/PDF)",
       "Support WhatsApp prioritaire",
+      "💰 Économisez 30% vs abonnement mensuel",
     ],
     actif: true,
   },

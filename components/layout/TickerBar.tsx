@@ -1,25 +1,48 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { TrendingUp, Trophy, Minus } from "lucide-react";
 
-const items = [
-  { label: "R1 Vincennes",       result: "Quinté+ : 7 - 3 - 1 - 5 - 9",  status: "win"     },
-  { label: "R2 Longchamp",       result: "Tiercé : 4 - 11 - 2",            status: "win"     },
-  { label: "R3 Chantilly",       result: "Quarté+ : 1 - 6 - 3 - 8",        status: "win"     },
-  { label: "R4 Deauville",       result: "Tiercé : 2 - 9 - 5",             status: "partial" },
-  { label: "R5 Saint-Cloud",     result: "Quarté+ : 6 - 1 - 4 - 10",       status: "win"     },
-  { label: "R6 Auteuil",         result: "Tiercé obstacle : 3 - 7 - 11",   status: "win"     },
+interface TickerItem {
+  label:  string;
+  result: string;
+  status: "win" | "partial" | "pending";
+}
+
+// Données de fallback statiques si Supabase est indisponible
+const FALLBACK_ITEMS: TickerItem[] = [
+  { label: "R1 Vincennes",   result: "Quinté+ : Programme disponible à 8h00",  status: "pending" },
+  { label: "R2 Longchamp",   result: "Tiercé : Sélection à venir",             status: "pending" },
+  { label: "R3 Chantilly",   result: "Quarté+ : Nos experts analysent",        status: "pending" },
+  { label: "Elite Turf",     result: "Pronostics PMU — Abonnez-vous",          status: "pending" },
 ];
 
 const StatusIcon = ({ status }: { status: string }) => {
-  if (status === "win")
-    return <Trophy className="w-3 h-3 text-status-win flex-shrink-0" />;
-  if (status === "partial")
-    return <Minus className="w-3 h-3 text-status-partial flex-shrink-0" />;
-  return <TrendingUp className="w-3 h-3 text-text-muted flex-shrink-0" />;
+  if (status === "win")     return <Trophy    className="w-3 h-3 text-status-win flex-shrink-0" />;
+  if (status === "partial") return <Minus     className="w-3 h-3 text-status-partial flex-shrink-0" />;
+  return                           <TrendingUp className="w-3 h-3 text-text-muted flex-shrink-0" />;
 };
 
 export default function TickerBar() {
+  const [items, setItems] = useState<TickerItem[]>(FALLBACK_ITEMS);
+
+  useEffect(() => {
+    async function loadArrivees() {
+      try {
+        const res = await fetch("/api/ticker-data", { next: { revalidate: 900 } });
+        if (!res.ok) return;
+        const data: TickerItem[] = await res.json();
+        if (data?.length) setItems(data);
+      } catch {
+        // Utilise le fallback
+      }
+    }
+    loadArrivees();
+    // Rafraîchir toutes les 15 min
+    const interval = setInterval(loadArrivees, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const doubled = [...items, ...items];
 
   return (
