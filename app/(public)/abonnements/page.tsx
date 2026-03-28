@@ -150,18 +150,38 @@ export default async function AbonnementsPage() {
                     <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">
                       {plan.nom === "Starter" ? "PACK DÉCOUVERTE" : plan.nom === "Pro" ? "PACK PERFORMANCE" : "PACK ELITE"}
                     </h2>
-                    <p className="text-text-secondary text-sm mb-5">
-                      {plan.nom === "Starter"
-                        ? "Testez l'excellence. Idéal pour découvrir notre rigueur d'analyse."
-                        : plan.nom === "Pro"
-                        ? "Le choix des gagnants. 1 mois complet de sélections VIP et de conseils de mise."
-                        : "L'engagement total. Accès prioritaire et alertes exclusives pour maximiser vos profits."}
-                    </p>
+                    <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
+
+                    {/* Taux de réussite */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-text-muted">Taux de réussite</span>
+                        <span className={`text-xs font-bold ${plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"}`}>
+                          {plan.nom === "Starter" ? "~70%" : plan.nom === "Pro" ? "~82%" : "+92%"}
+                        </span>
+                      </div>
+                      <div className="w-full bg-bg-elevated rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${plan.nom === "Elite" ? "bg-purple-400" : plan.populaire ? "bg-gold-primary" : "bg-status-win"}`}
+                          style={{ width: plan.nom === "Starter" ? "70%" : plan.nom === "Pro" ? "82%" : "92%" }}
+                        />
+                      </div>
+                      <div className="flex mt-1 gap-0.5">
+                        {[1,2,3,4,5].map(s => (
+                          <span key={s} className={`text-xs ${
+                            (plan.nom === "Starter" && s <= 3) || (plan.nom === "Pro" && s <= 4) || plan.nom === "Elite"
+                              ? plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"
+                              : "text-text-muted"
+                          }`}>⭐</span>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="flex items-baseline gap-2">
                       <span className={`text-4xl font-bold font-serif ${styles.price}`}>
                         {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                      <span className="text-text-muted text-sm">€/mois</span>
+                      <span className="text-text-muted text-sm">€</span>
                     </div>
                     <p className="text-text-muted text-xs mt-1">
                       {plan.duree_jours} jours · Orange Money, MTN, Wave acceptés
@@ -254,15 +274,20 @@ export default async function AbonnementsPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {[
-                  { label: "Pronostics Tiercé",           values: ["3/sem", "Illimité", "Illimité"] },
-                  { label: "Pronostics Quarté+",           values: ["—", "✓", "✓"] },
+                  { label: "Durée",                        values: ["7 jours", "30 jours", "90 jours"] },
+                  { label: "Objectif de réussite",         values: ["~70%", "~82%", "+92%"] },
+                  { label: "Indice de confiance",          values: ["⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"] },
+                  { label: "Pronostics Tiercé / Quarté",   values: ["3/sem", "Illimité", "Illimité"] },
                   { label: "Pronostics Quinté+",           values: ["—", "✓", "✓"] },
                   { label: "Pronostics VIP exclusifs",     values: ["—", "—", "✓"] },
-                  { label: "Analyse complète d'expert",    values: ["Courte", "Complète", "Complète + Vidéo"] },
+                  { label: "Type de sélection",            values: ["Standard", "Optimisée", "Expert (réduite)"] },
+                  { label: "Alerte Dernière Minute",       values: ["—", "Email", "WhatsApp"] },
+                  { label: "Gestion de mise",              values: ["Basique", "Détaillée", "Personnalisée"] },
+                  { label: "Analyse d'expert",             values: ["Courte", "Complète", "Complète + Vidéo"] },
                   { label: "Alertes SMS/Push",             values: ["5/mois", "20/mois", "Illimitées"] },
                   { label: "Statistiques",                 values: ["Basiques", "Complètes", "Export Excel/PDF"] },
                   { label: "Support WhatsApp",             values: ["—", "48h", "Prioritaire"] },
-                  { label: "Hippodromes couverts",         values: ["France + CI", "France + CI + SN", "Tous"] },
+                  { label: "Hippodromes couverts",         values: ["Vincennes, Longchamp", "V, LC, Chantilly, Deauville", "Tous (8 hippodromes FR)"] },
                 ].map((row, i) => (
                   <tr key={i} className="hover:bg-bg-hover transition-colors">
                     <td className="px-5 py-3 text-text-secondary text-sm">{row.label}</td>
