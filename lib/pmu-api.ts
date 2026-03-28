@@ -1,0 +1,128 @@
+/**
+ * PMU Open Data API client
+ * Documentation : https://opendata.pmu.fr
+ *
+ * Endpoints gratuits utilisés :
+ *  - Programme complet du jour  : GET /programmeComplet/{YYYYMMDD}
+ *  - Résultats d'une course     : GET /resultats/{YYYYMMDD}/R{R}/C{C}
+ */
+
+const PMU_BASE = "https://online.turfinfo.api.pmu.fr/rest/client/1";
+
+export interface PmuReunion {
+  numOrdre:       number;
+  hippodrome:     { libelleCourt: string; libelleLong: string; pays: { code: string } };
+  dateReunion:    { date: number[] };    // [year, month, day]
+  courses:        PmuCourse[];
+}
+
+export interface PmuCourse {
+  numOrdre:          number;
+  libelle:           string;
+  heureDepart:       number;             // timestamp ms
+  distance:          number;             // mètres
+  nombreDeclaresPartants: number;
+  discipline:        string;             // "PLAT" | "TROT_ATTELE" | "OBSTACLE"
+  conditions:        string;
+}
+
+export interface PmuProgramme {
+  programme: { reunions: PmuReunion[] };
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/** Formate un Date en YYYYMMDD */
+export function toDateStr(d: Date = new Date()): string {
+  const y  = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const da = String(d.getDate()).padStart(2, "0");
+  return `${y}${mo}${da}`;
+}
+
+/** Convertit un tableau [year,month,day] PMU en "YYYY-MM-DD" */
+function pmuDateToISO(arr: number[]): string {
+  return `${arr[0]}-${String(arr[1]).padStart(2, "0")}-${String(arr[2]).padStart(2, "0")}`;
+}
+
+/** Timestamp ms → "HH:MM:SS" */
+function tsToTime(ts: number): string {
+  const d = new Date(ts);
+  const h = String(d.getUTCHours()).padStart(2, "0");
+  const m = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${h}:${m}:00`;
+}
+
+/** Discipline PMU → CourseCategory */
+function toCategorie(discipline: string): "PLAT" | "TROT" | "OBSTACLE" {
+  if (discipline?.includes("TROT")) return "TROT";
+  if (discipline?.includes("OBSTACLE") || discipline?.includes("HAIE") || discipline?.includes("STEEPLE")) return "OBSTACLE";
+  return "PLAT";
+}
+
+// ── API calls ────────────────────────────────────────────────────────────
+
+/**
+ * Récupère le programme complet PMU pour une date donnée
+ */
+export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
+  const d = dateStr || toDateStr();
+  const url = `${PMU_BASE}/programmeComplet/${d}?specialisation=INTERNET`;
+
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    next: { revalidate: 1800 },   // cache 30 min
+  });
+
+  if (!res.ok) {
+    throw new Error(`PMU API error ${res.status} for date ${d}`);
+  }
+
+  const json = await res.json();
+  return json?.programme?.reunions ?? [];
+}
+
+// ── Normalisation pour Supabase ──────────────────────────────────────────
+
+export interface NormalizedCourse {
+  hippodromeName: string;
+  hippodromePays: string;
+  dateCourse:     string;          // "YYYY-MM-DD"
+  heureDepart:    string;          // "HH:MM:SS"
+  numeroReunion:  number;
+  numeroCourse:   number;
+  libelle:        string;
+  distanceMetres: number;
+  categorie:      "PLAT" | "TROT" | "OBSTACLE";
+  nbPartants:     number;
+}
+
+/**
+ * Transforme les réunions PMU en liste de courses normalisées
+ */
+export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[] {
+  const courses: NormalizedCourse[] = [];
+
+  for (const reunion of reunions) {
+    const dateCourse = pmuDateToISO(reunion.dateReunion.date);
+    const hipNom     = reunion.hippodrome?.libelleLong || reunion.hippodrome?.libelleCourt || "Inconnu";
+    const hipPays    = reunion.hippodrome?.pays?.code === "FRA" ? "France" : (reunion.hippodrome?.pays?.code || "France");
+
+    for (const c of reunion.courses ?? []) {
+      courses.push({
+        hippodromeName: hipNom,
+        hippodromePays: hipPays,
+        dateCourse,
+        heureDepart:    tsToTime(c.heureDepart),
+        numeroReunion:  reunion.numOrdre,
+        numeroCourse:   c.numOrdre,
+        libelle:        c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`,
+        distanceMetres: c.distance || 0,
+        categorie:      toCategorie(c.discipline),
+        nbPartants:     c.nombreDeclaresPartants || 0,
+      });
+    }
+  }
+
+  return courses;
+}

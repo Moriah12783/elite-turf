@@ -105,6 +105,26 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+        {/* ── Badge PMU officiel + stats rapides ─────────────────── */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#003189]/10 border border-[#003189]/30 rounded-full">
+            <span className="text-xs">🇫🇷</span>
+            <span className="text-[#4A7FD4] text-xs font-semibold">Données officielles PMU France</span>
+          </div>
+          {courses.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-border rounded-full">
+                <Star className="w-3.5 h-3.5 text-gold-primary" />
+                <span className="text-text-secondary text-xs font-medium">{avecPronostic} pronostic{avecPronostic > 1 ? "s" : ""} Elite</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-border rounded-full">
+                <Users className="w-3.5 h-3.5 text-text-muted" />
+                <span className="text-text-muted text-xs">{totalPartants} partants au total</span>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* ── Navigation de dates ────────────────────────────────── */}
         <div className="mb-6">
           <Suspense fallback={<div className="h-10 bg-bg-elevated rounded-xl animate-pulse" />}>
@@ -251,8 +271,8 @@ function EmptyState({ date, isToday }: { date: string; isToday: boolean }) {
       </h3>
       <p className="text-text-secondary text-sm max-w-xs mx-auto mb-6">
         {isToday
-          ? "Le programme du jour n'a pas encore été importé. Revenez bientôt."
-          : "Aucune course n'est enregistrée pour cette date."}
+          ? "Le programme PMU du jour sera disponible à partir de 6h00 Paris. Revenez bientôt."
+          : "Aucune course PMU n'est enregistrée pour cette date."}
       </p>
       <Link
         href="/courses"

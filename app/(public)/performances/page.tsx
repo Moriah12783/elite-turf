@@ -13,6 +13,7 @@ import type { BetType, PronosticResult } from "@/types";
 import MonthlyChart from "@/components/performances/MonthlyChart";
 import AnimatedCounter from "@/components/performances/AnimatedCounter";
 import PageHero from "@/components/layout/PageHero";
+import { buildGenyUrlAuto } from "@/lib/geny";
 
 export const metadata: Metadata = {
   title: "Nos Résultats Prouvés — Elite Turf",
@@ -50,6 +51,7 @@ export default async function PerformancesPage() {
       arrivee_reelle, rapport_gagnant, lien_geny,
       course:courses(
         libelle, date_course, heure_depart,
+        numero_reunion, numero_course,
         hippodrome:hippodromes(nom, pays)
       )
     `)
@@ -154,9 +156,9 @@ export default async function PerformancesPage() {
           {quartes30j > 0 && <span className="text-gold-light font-bold text-sm">✓ {quartes30j} Quarté+ gagné{quartes30j > 1 ? "s" : ""}</span>}
           {tierces30j > 0 && <span className="text-text-secondary font-bold text-sm">✓ {tierces30j} Tiercé{tierces30j > 1 ? "s" : ""} gagné{tierces30j > 1 ? "s" : ""}</span>}
           {gains30j > 0 && <span className="text-gold-primary font-bold text-sm">💰 +{gains30j.toFixed(0)}€ de rapports cumulés</span>}
-          <a href="https://www.geny.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.geny.com/resultats-pmu" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1 text-gold-primary text-xs underline-offset-2 hover:underline">
-            <ExternalLink className="w-3 h-3" />Vérifiable sur Geny Courses
+            <ExternalLink className="w-3 h-3" />Vérifier sur Geny Courses
           </a>
         </div>
       </div>
@@ -420,14 +422,20 @@ export default async function PerformancesPage() {
                             : <span className="text-text-muted text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3">
-                          {p.lien_geny ? (
-                            <a href={p.lien_geny} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-gold-primary hover:text-gold-light transition-colors underline-offset-2 hover:underline whitespace-nowrap">
-                              <ExternalLink className="w-3 h-3" />Geny
-                            </a>
-                          ) : (
-                            <span className="text-text-muted text-xs">—</span>
-                          )}
+                          {(() => {
+                            const c = p.course as any;
+                            const genyUrl = c?.date_course && c?.numero_reunion && c?.numero_course
+                              ? buildGenyUrlAuto(c.date_course, c.numero_reunion, c.numero_course)
+                              : p.lien_geny || null;
+                            return genyUrl ? (
+                              <a href={genyUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-gold-primary hover:text-gold-light transition-colors underline-offset-2 hover:underline whitespace-nowrap">
+                                <ExternalLink className="w-3 h-3" />Geny
+                              </a>
+                            ) : (
+                              <span className="text-text-muted text-xs">—</span>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );

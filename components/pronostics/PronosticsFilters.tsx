@@ -21,7 +21,8 @@ const NIVEAUX = [
 ];
 
 const PERIODES = [
-  { value: "", label: "Aujourd'hui" },
+  { value: "", label: "30 derniers jours" },
+  { value: "aujourd_hui", label: "Aujourd'hui" },
   { value: "semaine", label: "Cette semaine" },
   { value: "mois", label: "Ce mois" },
 ];
