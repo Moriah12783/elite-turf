@@ -75,7 +75,8 @@ export default async function PronosticDetailPage({ params }: PageProps) {
         id, libelle, date_course, heure_depart,
         distance_metres, categorie, terrain, nb_partants,
         arrivee_officielle,
-        hippodrome:hippodromes(nom, pays, ville)
+        hippodrome:hippodromes(nom, pays, ville),
+        partants(id, numero, nom_cheval, jockey, cote, musique, non_partant)
       )
     `)
     .eq("id", params.id)
@@ -89,6 +90,9 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const resultatConf = RESULTAT_CONFIG[p.resultat as PronosticResult];
   const ResultatIcon = resultatConf.icon;
   const course = p.course as any;
+  const partants: any[] = (course?.partants || [])
+    .filter((pt: any) => !pt.non_partant)
+    .sort((a: any, b: any) => a.numero - b.numero);
 
   // Incrémenter les vues (best effort)
   supabase
@@ -231,33 +235,88 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                 Sélection conseillée
               </h2>
               {hasAccess ? (
-                <div className="flex items-center gap-3 flex-wrap">
-                  {p.selection.map((n: number, idx: number) => (
-                    <div key={idx} className="flex flex-col items-center gap-1">
-                      <span className="w-12 h-12 rounded-full bg-gold-faint border-2 border-gold-primary/50 flex items-center justify-center text-gold-light font-bold text-lg shadow-gold-sm">
-                        {n}
-                      </span>
-                      <span className="text-text-muted text-[10px]">
-                        {idx === 0 ? "1er" : idx === 1 ? "2e" : idx === 2 ? "3e" : `${idx + 1}e`}
-                      </span>
-                    </div>
-                  ))}
-                  {p.resultat !== "EN_ATTENTE" && course?.arrivee_officielle?.length > 0 && (
-                    <div className="ml-4 pl-4 border-l border-border/50">
-                      <p className="text-text-muted text-xs mb-1">Arrivée officielle</p>
-                      <div className="flex items-center gap-2">
-                        {course.arrivee_officielle.slice(0, p.selection.length).map((n: number, idx: number) => (
-                          <span
-                            key={idx}
-                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm ${
-                              p.selection.includes(n)
-                                ? "border-status-win bg-status-win/10 text-status-win"
-                                : "border-border bg-bg-elevated text-text-muted"
-                            }`}
-                          >
+                <div className="space-y-2">
+                  {/* Chevaux sélectionnés avec noms */}
+                  <div className="space-y-1.5">
+                    {p.selection.map((n: number, idx: number) => {
+                      const horse = partants.find((pt: any) => pt.numero === n);
+                      const isInArrivee = course?.arrivee_officielle?.includes(n);
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
+                            isInArrivee && p.resultat !== "EN_ATTENTE"
+                              ? "bg-status-win/10 border-status-win/30"
+                              : "bg-bg-elevated border-border/50"
+                          }`}
+                        >
+                          <span className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${
+                            isInArrivee && p.resultat !== "EN_ATTENTE"
+                              ? "bg-status-win/20 border-2 border-status-win/50 text-status-win"
+                              : "bg-gold-faint border-2 border-gold-primary/50 text-gold-light"
+                          }`}>
                             {n}
                           </span>
-                        ))}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-text-primary text-sm font-semibold leading-tight">
+                              {horse ? horse.nom_cheval : `Cheval n°${n}`}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-text-muted text-xs">
+                                {idx === 0 ? "1er choix" : idx === 1 ? "2e choix" : idx === 2 ? "3e choix" : `${idx+1}e choix`}
+                              </span>
+                              {horse?.cote && (
+                                <span className="text-gold-light text-xs font-medium">
+                                  · cote {Number(horse.cote).toFixed(1)}
+                                </span>
+                              )}
+                              {horse?.jockey && (
+                                <span className="text-text-muted text-xs hidden sm:inline">
+                                  · {horse.jockey}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {isInArrivee && p.resultat !== "EN_ATTENTE" && (
+                            <span className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-status-win/20 text-status-win border border-status-win/30 font-bold">
+                              ✓ Placé
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Arrivée officielle comparée */}
+                  {p.resultat !== "EN_ATTENTE" && course?.arrivee_officielle?.length > 0 && (
+                    <div className="mt-3 p-3 bg-bg-elevated rounded-xl border border-border/50">
+                      <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-2">
+                        Arrivée officielle
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {course.arrivee_officielle.slice(0, Math.max(p.selection.length, 5)).map((n: number, idx: number) => {
+                          const isSelected = p.selection.includes(n);
+                          const horse = partants.find((pt: any) => pt.numero === n);
+                          return (
+                            <div key={idx} className="flex flex-col items-center gap-0.5">
+                              <span className={`w-9 h-9 rounded-full border-2 flex items-center justify-center font-bold text-sm ${
+                                isSelected
+                                  ? "border-status-win bg-status-win/10 text-status-win"
+                                  : "border-border bg-bg-elevated text-text-muted"
+                              }`}>
+                                {n}
+                              </span>
+                              <span className="text-[9px] text-text-muted">
+                                {idx + 1}{idx === 0 ? "er" : "e"}
+                              </span>
+                              {horse && (
+                                <span className="text-[8px] text-text-muted max-w-[50px] text-center leading-tight">
+                                  {horse.nom_cheval.split(" ")[0]}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

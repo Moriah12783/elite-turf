@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/utils";
-import { Plus, Star, Eye, Edit2 } from "lucide-react";
+import { Plus, Star, Eye, Edit2, Download } from "lucide-react";
 import TogglePublieButton from "@/components/admin/TogglePublieButton";
 
 export const metadata = { title: "Pronostics — Admin" };
@@ -39,13 +39,23 @@ export default async function AdminPronosticsPage() {
           <h1 className="font-serif text-2xl font-bold text-text-primary">Pronostics</h1>
           <p className="text-text-secondary text-sm mt-1">{pronostics?.length || 0} pronostic(s) au total</p>
         </div>
-        <Link
-          href="/admin/pronostics/nouveau"
-          className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-semibold text-sm rounded-xl transition-colors shadow-gold-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Nouveau pronostic
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href="/modele-import-elite-turf.xlsx"
+            download
+            className="flex items-center gap-2 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border hover:border-gold-primary/40 text-text-secondary hover:text-text-primary font-medium text-sm rounded-xl transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Modèle Excel
+          </a>
+          <Link
+            href="/admin/pronostics/nouveau"
+            className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-semibold text-sm rounded-xl transition-colors shadow-gold-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Nouveau pronostic
+          </Link>
+        </div>
       </div>
 
       {/* Table */}
