@@ -10,11 +10,11 @@ const APP_URL =
 
 export const metadata: Metadata = {
   title: {
-    default: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
+    default: "Elite Turf — Pronostics PMU pour les parieurs francophones",
     template: "%s | Elite Turf",
   },
   description:
-    "Elite Turf — Pronostics PMU premium pour les parieurs francophones. Tiercé, Quarté+, Quinté+ analysés par nos experts depuis Paris. Abonnement dès 9,90€/mois. Orange Money, MTN, Wave acceptés.",
+    "Elite Turf — Pronostics PMU premium pour les parieurs francophones. Tiercé, Quarté+, Quinté+ analysés par nos experts depuis Paris. Abonnement dès 29€. Orange Money, MTN, Wave acceptés.",
   keywords: [
     "pronostic PMU",
     "pronostic Quinté+",
@@ -37,9 +37,9 @@ export const metadata: Metadata = {
     canonical: APP_URL,
   },
   openGraph: {
-    title: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
+    title: "Elite Turf — Pronostics PMU pour les parieurs francophones",
     description:
-      "Pronostics PMU premium depuis Paris. Tiercé, Quarté+, Quinté+ analysés par nos experts. Dès 9,90€/mois — Orange Money, MTN, Wave acceptés.",
+      "Pronostics PMU premium depuis Paris. Tiercé, Quarté+, Quinté+ analysés par nos experts. Dès 29€ — Orange Money, MTN, Wave acceptés.",
     url: APP_URL,
     siteName: "Elite Turf",
     locale: "fr_FR",
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
         url: `${APP_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Elite Turf — Pronostics PMU pour l'parieurs francophones",
+        alt: "Elite Turf — Pronostics PMU pour les parieurs francophones",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Elite Turf — Pronostics PMU parieurs francophones",
-    description: "Pronostics PMU experts depuis Paris. Tiercé, Quarté+, Quinté+ dès 9,90€/mois.",
+    description: "Pronostics PMU experts depuis Paris. Tiercé, Quarté+, Quinté+ dès 29€.",
     images: [`${APP_URL}/og-image.jpg`],
   },
   robots: {

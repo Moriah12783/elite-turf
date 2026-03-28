@@ -58,7 +58,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
     </p>
     <p style="margin:0;color:#9090A0;font-size:13px;text-align:center;line-height:1.6;">
       Accédez aux analyses complètes Tiercé · Quarté+ · Quinté+<br/>
-      dès <strong style="color:#C9A84C;">9,90€/mois</strong>
+      dès <strong style="color:#C9A84C;">29€</strong>
     </p>
 
     ${emailButton(`${appUrl}/abonnements`, "Voir les formules d'abonnement")}

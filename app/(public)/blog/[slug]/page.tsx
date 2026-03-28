@@ -152,7 +152,7 @@ export default async function BlogArticlePage({
                 ))}
               </div>
               <Link href="/abonnements" className="btn-primary w-full flex items-center justify-center gap-2 text-sm">
-                Dès 9,90€/mois
+                Dès 29€
               </Link>
             </div>
 

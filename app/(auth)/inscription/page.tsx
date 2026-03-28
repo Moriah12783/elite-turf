@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 const PAYS_OPTIONS = [
   "Côte d'Ivoire",
   "Sénégal",
+  "Maroc",
   "Cameroun",
   "Burkina Faso",
   "Mali",

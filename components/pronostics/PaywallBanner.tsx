@@ -49,7 +49,7 @@ export default function PaywallBanner({ niveau, compact = false }: PaywallBanner
       <p className="text-text-secondary text-sm mb-5 max-w-xs mx-auto">
         {isVip
           ? "Ce pronostic VIP est réservé aux membres du Plan Elite. Accès complet + analyses vidéo."
-          : "Abonnez-vous à partir de 9,90€/mois pour accéder à l'analyse complète et à la sélection."}
+          : "Abonnez-vous à partir de 29€ pour accéder à l'analyse complète et à la sélection."}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

@@ -106,8 +106,8 @@ export default function CguPage() {
             <p className="mt-3">
               Aucun remboursement ne sera effectué pour la période déjà consommée. En cas de
               problème technique empêchant l&apos;accès au service, contactez-nous à{" "}
-              <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
-                contact@elite-turf.fr
+              <a href="mailto:contact@eliteturf.fr" className="text-gold-light hover:underline">
+                contact@eliteturf.fr
               </a>.
             </p>
           </section>

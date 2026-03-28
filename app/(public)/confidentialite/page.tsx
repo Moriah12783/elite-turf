@@ -64,8 +64,8 @@ export default function ConfidentialitePage() {
             </ul>
             <p className="mt-3">
               Pour exercer ces droits, écrivez-nous à :{" "}
-              <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
-                contact@elite-turf.fr
+              <a href="mailto:contact@eliteturf.fr" className="text-gold-light hover:underline">
+                contact@eliteturf.fr
               </a>
             </p>
           </section>
@@ -96,8 +96,8 @@ export default function ConfidentialitePage() {
             <h2 className="font-serif font-bold text-text-primary text-lg mb-4">Contact DPO</h2>
             <p>
               Pour toute question relative à la protection de vos données personnelles :{" "}
-              <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
-                contact@elite-turf.fr
+              <a href="mailto:contact@eliteturf.fr" className="text-gold-light hover:underline">
+                contact@eliteturf.fr
               </a>
             </p>
           </section>

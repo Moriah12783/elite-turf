@@ -53,11 +53,11 @@ export default function ContactPage() {
               Pour toute demande écrite, nous répondons sous 24h ouvrées.
             </p>
             <a
-              href="mailto:contact@elite-turf.fr"
+              href="mailto:contact@eliteturf.fr"
               className="inline-flex items-center gap-2 text-gold-light hover:text-gold-primary font-semibold text-sm transition-colors"
             >
               <Mail className="w-4 h-4" />
-              contact@elite-turf.fr
+              contact@eliteturf.fr
             </a>
           </div>
         </div>

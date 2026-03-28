@@ -11,7 +11,7 @@ import PageHero from "@/components/layout/PageHero";
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
   description:
-    "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Taux de réussite 73%. Analyses hippiques pour la Côte d'Ivoire et l'parieurs francophones.",
+    "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Taux de réussite 73%. Analyses hippiques pour la Côte d'Ivoire et les parieurs francophones.",
 };
 
 // Force dynamic rendering (user session + search params)
@@ -143,7 +143,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
             <p className="text-text-secondary text-sm flex-1">
               <span className="text-gold-light font-semibold">{lockedCount} pronostic{lockedCount > 1 ? "s" : ""} Premium</span>{" "}
               masqués. Abonnez-vous à partir de{" "}
-              <span className="text-gold-light font-semibold">9,90€/mois</span> pour tout voir.
+              <span className="text-gold-light font-semibold">29€</span> pour tout voir.
             </p>
             <a
               href="/abonnements"

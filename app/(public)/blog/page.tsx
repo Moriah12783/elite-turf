@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
-  title: "Blog PMU — Pronostics & Guides pour l'parieurs francophones",
+  title: "Blog PMU — Pronostics & Guides pour les parieurs francophones",
   description:
     "Articles et guides PMU pour les parieurs francophones : Quinté+, Tiercé, Quarté+, hippodromes français, stratégies de paris. Expertise depuis Paris.",
   keywords: [
@@ -128,7 +128,7 @@ export default async function BlogPage() {
             <div className="card-base border-gold-primary/30 p-5 text-center">
               <Star className="w-8 h-8 text-gold-primary mx-auto mb-3" />
               <h3 className="font-serif font-bold text-text-primary text-lg mb-2">
-                Pronostics dès 9,90€
+                Pronostics dès 29€
               </h3>
               <p className="text-text-secondary text-sm mb-4">
                 Accédez à nos pronostics experts du Quinté+ et Tiercé. Analysés depuis Paris.

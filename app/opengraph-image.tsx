@@ -160,7 +160,7 @@ export default async function OGImage() {
           {[
             { value: "73%", label: "Taux de réussite" },
             { value: "847+", label: "Membres actifs" },
-            { value: "9,90€", label: "À partir de /mois" },
+            { value: "29€", label: "À partir de" },
           ].map((stat, i) => (
             <div
               key={i}

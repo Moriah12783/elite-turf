@@ -91,9 +91,9 @@ export default function Footer() {
               <h3 className="font-serif font-semibold text-text-primary mb-4">Abonnements</h3>
               <ul className="space-y-2">
                 {[
-                  { label: "Plan Starter — 9,90€/mois",  href: "/abonnements#starter" },
-                  { label: "Plan Pro — 19,90€/mois",     href: "/abonnements#pro"     },
-                  { label: "Plan Elite — 34,90€/mois",   href: "/abonnements#elite"   },
+                  { label: "Pack Découverte — 29€",   href: "/abonnements#starter" },
+                  { label: "Pack Performance — 69€", href: "/abonnements#pro"     },
+                  { label: "Pack Elite — 149€",      href: "/abonnements#elite"   },
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },
                   { label: "À Propos",                    href: "/a-propos"            },

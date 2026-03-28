@@ -8,7 +8,7 @@ import {
 
 const INITIAL = {
   appName:       "Elite Turf",
-  emailContact:  "contact@elite-turf.fr",
+  emailContact:  "contact@eliteturf.fr",
   whatsapp:      "+33 6 44 68 67 20",
   tickerText:    "R1 Vincennes — Quinté+ : Sélection disponible | R2 Longchamp — Tiercé : En attente | Abonnez-vous pour les pronostics complets",
   maintenance:   false,
@@ -75,7 +75,7 @@ export default function ParametresPage() {
               value={form.emailContact}
               onChange={e => update("emailContact", e.target.value)}
               className="input-admin pl-9"
-              placeholder="contact@elite-turf.fr"
+              placeholder="contact@eliteturf.fr"
             />
           </div>
         </Field>

@@ -44,7 +44,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p>L'heure de départ du Quinté+ est généralement <strong>15h50 heure de Paris</strong> — soit 15h50 à Abidjan / Dakar / Casablanca (même fuseau UTC+1 en hiver, UTC+2 en été pour Paris).</p>
 
 <h2>Nos conseils pour le Quinté+</h2>
-<p>Un abonnement <strong>Elite Turf Plan Pro à 19,90€/mois</strong> vous donne accès à notre analyse complète du Quinté+ chaque matin avant 8h heure de Paris. Résultat : nos abonnés ont enregistré un taux de réussite moyen de <strong>64%</strong> sur les 6 derniers mois.</p>
+<p>Un abonnement <strong>Elite Turf Pack Performance à 69€</strong> vous donne accès à notre analyse complète du Quinté+ chaque matin avant 8h heure de Paris. Résultat : nos abonnés ont enregistré un taux de réussite moyen de <strong>64%</strong> sur les 6 derniers mois.</p>
     `,
   },
   {
@@ -78,7 +78,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 <p><strong>Vincennes</strong> (Trot) est l'hippodrome le plus couru pour les parieurs africains : courses de trot chaque semaine, Quinté+ fréquent. <strong>Longchamp</strong> et <strong>Chantilly</strong> (Galop) sont incontournables pour les grandes courses de plat comme le Prix de l'Arc de Triomphe.</p>
 
 <h2>Pourquoi utiliser Elite Turf ?</h2>
-<p>Nos experts sont basés à <strong>Paris</strong>, à proximité des hippodromes. Nous suivons les entraînements, analysons les paddocks et captons les informations de dernière minute — des informations inaccessibles depuis l'Afrique. Pour 9,90€/mois (Plan Starter), accédez à 3 pronostics Tiercé par semaine.</p>
+<p>Nos experts sont basés à <strong>Paris</strong>, à proximité des hippodromes. Nous suivons les entraînements, analysons les paddocks et captons les informations de dernière minute — des informations inaccessibles depuis l'Afrique. Pour 29€ (Pack Découverte), accédez à 3 pronostics Tiercé par semaine.</p>
     `,
   },
   {
@@ -111,7 +111,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 
 <h2>Comment adapter vos pronostics selon l'hippodrome ?</h2>
 <p>Nos experts Elite Turf tiennent compte de chaque spécificité. Sur <strong>Vincennes</strong>, nous privilégions les trotteurs réguliers et bien classés. Sur <strong>Longchamp</strong>, l'analyse de la distance et de l'état du terrain est primordiale.</p>
-<p>Avec le <strong>Plan Elite à 34,90€/mois</strong>, accédez à nos analyses vidéo post-course pour comprendre nos sélections.</p>
+<p>Avec le <strong>Pack Elite à 149€</strong>, accédez à nos analyses vidéo post-course pour comprendre nos sélections.</p>
     `,
   },
   {

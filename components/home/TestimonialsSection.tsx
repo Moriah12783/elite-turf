@@ -56,7 +56,7 @@ const testimonials = [
     plan: "Plan Starter",
     planColor: "text-text-secondary bg-bg-elevated border-border",
     texte:
-      "Commencé avec le Starter à 9,90€. Dès la 2ème semaine, j'ai gagné +120€ sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse très vite !",
+      "Commencé avec le Pack Découverte à 29€. Dès la 2ème semaine, j'ai gagné +120€ sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse très vite !",
     stars: 5,
     initiale: "F",
     gain: "+120 €",
@@ -88,7 +88,7 @@ const testimonials = [
     plan: "Plan Pro",
     planColor: "text-gold-primary bg-gold-faint border-gold-primary/30",
     texte:
-      "La carte VEDETTE DU JOUR est ma préférée. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Le ROI est impressionnant pour 19,90€/mois.",
+      "La carte VEDETTE DU JOUR est ma préférée. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Le ROI est impressionnant pour 69€.",
     stars: 4,
     initiale: "B",
     gain: "+540 €",
