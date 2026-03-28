@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, Award, Flame, CheckCircle2, XCircle,
   Minus, Clock3, Star, Zap, BarChart3, Trophy,
-  ArrowRight, Calendar
+  ArrowRight, Calendar, ExternalLink
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BET_TYPE_LABELS } from "@/types";
@@ -46,7 +46,8 @@ export default async function PerformancesPage() {
     .from("pronostics")
     .select(`
       id, type_pari, resultat, niveau_acces,
-      date_publication, nb_vues,
+      date_publication, nb_vues, selection,
+      arrivee_reelle, rapport_gagnant, lien_geny,
       course:courses(
         libelle, date_course, heure_depart,
         hippodrome:hippodromes(nom, pays)
@@ -97,6 +98,14 @@ export default async function PerformancesPage() {
     };
   });
 
+  // ── Stats 30 derniers jours ─────────────────────────────────────
+  const date30ago  = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const prono30j   = pronostics.filter(p => p.date_publication && p.date_publication >= date30ago);
+  const quintes30j = prono30j.filter(p => p.type_pari === "QUINTE_PLUS" && p.resultat === "GAGNANT").length;
+  const quartes30j = prono30j.filter(p => (p.type_pari === "QUARTE" || p.type_pari === "QUARTE_PLUS") && p.resultat === "GAGNANT").length;
+  const tierces30j = prono30j.filter(p => p.type_pari === "TIERCE" && p.resultat === "GAGNANT").length;
+  const gains30j   = prono30j.reduce((acc: number, p: any) => acc + (p.rapport_gagnant || 0), 0);
+
   // ── Stats par type de pari ───────────────────────────────────────
   const types = Array.from(new Set(pronostics.map((p: any) => p.type_pari))) as BetType[];
   const statsByType = types.map(type => {
@@ -136,6 +145,21 @@ export default async function PerformancesPage() {
         titre="Nos Performances"
         sousTitre="Transparence totale — historique complet et vérifiable de nos pronostics gagnants"
       />
+
+      {/* ── BANDEAU 30 JOURS ─────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-bg-elevated via-gold-faint/40 to-bg-elevated border-y border-gold-primary/20 py-3 px-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-center gap-6 flex-wrap text-center">
+          <span className="text-text-muted text-xs font-semibold uppercase tracking-wider">📊 30 derniers jours</span>
+          {quintes30j > 0 && <span className="text-status-win font-bold text-sm">✓ {quintes30j} Quinté+ gagné{quintes30j > 1 ? "s" : ""}</span>}
+          {quartes30j > 0 && <span className="text-gold-light font-bold text-sm">✓ {quartes30j} Quarté+ gagné{quartes30j > 1 ? "s" : ""}</span>}
+          {tierces30j > 0 && <span className="text-text-secondary font-bold text-sm">✓ {tierces30j} Tiercé{tierces30j > 1 ? "s" : ""} gagné{tierces30j > 1 ? "s" : ""}</span>}
+          {gains30j > 0 && <span className="text-gold-primary font-bold text-sm">💰 +{gains30j.toFixed(0)}€ de rapports cumulés</span>}
+          <a href="https://www.geny.com" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-gold-primary text-xs underline-offset-2 hover:underline">
+            <ExternalLink className="w-3 h-3" />Vérifiable sur Geny Courses
+          </a>
+        </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
 
@@ -348,8 +372,8 @@ export default async function PerformancesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border/50">
-                    {["Événement", "Course", "Discipline", "Niveau", "Statut", "Rapport Moyen"].map(h => (
+                  <tr className="border-b border-border/50 bg-bg-elevated">
+                    {["Date", "Course / Hippodrome", "Sélection Elite", "Arrivée Réelle", "Résultat", "Rapport", "Vérifier"].map(h => (
                       <th key={h} className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
@@ -358,43 +382,30 @@ export default async function PerformancesPage() {
                 </thead>
                 <tbody className="divide-y divide-border/30">
                   {recent.map((p: any) => {
-                    const res = RESULTAT_CONFIG[p.resultat as PronosticResult] || RESULTAT_CONFIG.EN_ATTENTE;
+                    const res    = RESULTAT_CONFIG[p.resultat as PronosticResult] || RESULTAT_CONFIG.EN_ATTENTE;
                     const ResIcon = res.icon;
-                    const course = p.course as any;
+                    const course  = p.course as any;
+                    const dateStr = p.date_publication
+                      ? new Date(p.date_publication).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" })
+                      : "—";
+                    const selStr     = Array.isArray(p.selection)     ? p.selection.join(" - ")      : "—";
+                    const arriveeStr = Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle.join(" - ") : "—";
                     return (
                       <tr key={p.id} className="hover:bg-bg-hover transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-text-muted text-xs">
-                            {p.date_publication
-                              ? new Date(p.date_publication).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
-                              : "—"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 min-w-[150px]">
-                          <Link
-                            href={`/pronostics/${p.id}`}
-                            className="text-text-primary text-sm font-medium hover:text-gold-light transition-colors truncate block max-w-[180px]"
-                          >
+                        <td className="px-4 py-3 whitespace-nowrap text-text-muted text-xs">{dateStr}</td>
+                        <td className="px-4 py-3 min-w-[160px]">
+                          <Link href={`/pronostics/${p.id}`}
+                            className="text-text-primary text-sm font-medium hover:text-gold-light transition-colors truncate block max-w-[180px]">
                             {course?.libelle || "—"}
                           </Link>
+                          <span className="text-text-muted text-xs">{course?.hippodrome?.nom || ""} · {BET_TYPE_LABELS[p.type_pari as BetType] || p.type_pari}</span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-text-secondary text-sm">{course?.hippodrome?.nom || "—"}</span>
+                          <span className="text-gold-light font-mono text-xs font-bold tracking-wide">{selStr}</span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-xs px-2 py-0.5 rounded bg-bg-elevated border border-border text-text-secondary">
-                            {BET_TYPE_LABELS[p.type_pari as BetType] || p.type_pari}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-                            p.niveau_acces === "GRATUIT"
-                              ? "bg-status-win/10 text-status-win border-status-win/20"
-                              : p.niveau_acces === "VIP"
-                              ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                              : "bg-gold-faint text-gold-light border-gold-primary/30"
-                          }`}>
-                            {p.niveau_acces}
+                          <span className={`font-mono text-xs ${p.arrivee_reelle ? "text-text-secondary" : "text-text-muted"}`}>
+                            {arriveeStr}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -402,6 +413,21 @@ export default async function PerformancesPage() {
                             <ResIcon className="w-3 h-3" />
                             {res.label}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {p.rapport_gagnant
+                            ? <span className="text-status-win font-bold text-sm">{Number(p.rapport_gagnant).toFixed(2)} €</span>
+                            : <span className="text-text-muted text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {p.lien_geny ? (
+                            <a href={p.lien_geny} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-gold-primary hover:text-gold-light transition-colors underline-offset-2 hover:underline whitespace-nowrap">
+                              <ExternalLink className="w-3 h-3" />Geny
+                            </a>
+                          ) : (
+                            <span className="text-text-muted text-xs">—</span>
+                          )}
                         </td>
                       </tr>
                     );
