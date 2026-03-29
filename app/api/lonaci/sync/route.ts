@@ -1,5 +1,5 @@
 /**
- * POST /api/lonaci/sync
+ * POST /api/lonaci/sync  (v2)
  *
  * Synchronise le programme LONACI du jour dans Supabase.
  * - Insère les hippodromes manquants
