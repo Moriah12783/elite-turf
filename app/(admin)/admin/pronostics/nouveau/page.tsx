@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Save, Send, Plus, X } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+type CourseOption = {
+  id: string;
+  libelle: string;
+  date_course: string;
+  heure_depart: string;
+  hippodrome: { nom: string } | null;
+};
+
 export default function NouveauPronosticPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
   const [form, setForm] = useState({
     course_id: "",
     niveau_acces: "GRATUIT",
@@ -20,6 +29,19 @@ export default function NouveauPronosticPage() {
   });
   const [selection, setSelection] = useState<number[]>([]);
   const [newNumero, setNewNumero] = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    const from7 = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+    supabase
+      .from("courses")
+      .select("id, libelle, date_course, heure_depart, hippodrome:hippodromes(nom)")
+      .gte("date_course", from7)
+      .order("date_course", { ascending: false })
+      .order("heure_depart", { ascending: true })
+      .limit(60)
+      .then(({ data }) => setCourses((data as any) || []));
+  }, []);
 
   const addNumero = () => {
     const n = parseInt(newNumero);
@@ -76,21 +98,35 @@ export default function NouveauPronosticPage() {
       </div>
 
       <div className="card-base p-6 space-y-6">
-        {/* Course ID */}
+        {/* Course selector */}
         <div>
           <label className="block text-text-secondary text-sm font-medium mb-2">
-            ID de la course <span className="text-status-loss">*</span>
+            Course concernée <span className="text-status-loss">*</span>
           </label>
-          <input
-            type="text"
+          <select
             value={form.course_id}
             onChange={(e) => setForm({ ...form, course_id: e.target.value })}
-            placeholder="UUID de la course (copier depuis la liste des courses)"
-            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
-          />
-          <p className="mt-1 text-text-muted text-xs">
-            💡 Allez dans <Link href="/admin/courses" className="text-gold-primary">Courses</Link> pour copier l&apos;ID de la course concernée
-          </p>
+            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:border-gold-primary transition-colors"
+            required
+          >
+            <option value="">Sélectionner une course (7 derniers jours)…</option>
+            {courses.map((c) => {
+              const hip = (c.hippodrome as any)?.nom || "?";
+              const heure = (c.heure_depart || "").substring(0, 5);
+              const date = new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+              return (
+                <option key={c.id} value={c.id}>
+                  {date} — {c.libelle} ({hip} {heure})
+                </option>
+              );
+            })}
+          </select>
+          {courses.length === 0 && (
+            <p className="mt-1 text-text-muted text-xs">
+              Aucune course trouvée.{" "}
+              <Link href="/admin/courses/nouvelle" className="text-gold-primary">Créer une course d&apos;abord</Link>
+            </p>
+          )}
         </div>
 
         {/* Niveau + Type + Confiance */}

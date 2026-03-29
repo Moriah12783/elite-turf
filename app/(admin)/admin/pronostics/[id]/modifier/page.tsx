@@ -7,6 +7,14 @@ import { ArrowLeft, Save, Send, Plus, X, Eye, EyeOff, CheckCircle2, XCircle } fr
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+type CourseOption = {
+  id: string;
+  libelle: string;
+  date_course: string;
+  heure_depart: string;
+  hippodrome: { nom: string } | null;
+};
+
 export default function ModifierPronosticPage() {
   const router = useRouter();
   const params = useParams();
@@ -14,6 +22,7 @@ export default function ModifierPronosticPage() {
 
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
   const [selection, setSelection] = useState<number[]>([]);
   const [newNumero, setNewNumero] = useState("");
   const [form, setForm] = useState({
@@ -26,6 +35,20 @@ export default function ModifierPronosticPage() {
     publie: false,
     resultat: "EN_ATTENTE",
   });
+
+  // Charger les courses disponibles
+  useEffect(() => {
+    const supabase = createClient();
+    const from7 = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+    supabase
+      .from("courses")
+      .select("id, libelle, date_course, heure_depart, hippodrome:hippodromes(nom)")
+      .gte("date_course", from7)
+      .order("date_course", { ascending: false })
+      .order("heure_depart", { ascending: true })
+      .limit(60)
+      .then(({ data }) => setCourses((data as any) || []));
+  }, []);
 
   // Charger le pronostic existant
   useEffect(() => {
@@ -162,18 +185,29 @@ export default function ModifierPronosticPage() {
       </div>
 
       <div className="card-base p-6 space-y-6">
-        {/* Course ID */}
+        {/* Course selector */}
         <div>
           <label className="block text-text-secondary text-sm font-medium mb-2">
-            ID de la course <span className="text-status-loss">*</span>
+            Course concernée <span className="text-status-loss">*</span>
           </label>
-          <input
-            type="text"
+          <select
             value={form.course_id}
             onChange={(e) => setForm({ ...form, course_id: e.target.value })}
-            placeholder="UUID de la course"
-            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm font-mono"
-          />
+            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:border-gold-primary transition-colors"
+            required
+          >
+            <option value="">Sélectionner une course…</option>
+            {courses.map((c) => {
+              const hip = (c.hippodrome as any)?.nom || "?";
+              const heure = (c.heure_depart || "").substring(0, 5);
+              const date = new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+              return (
+                <option key={c.id} value={c.id}>
+                  {date} — {c.libelle} ({hip} {heure})
+                </option>
+              );
+            })}
+          </select>
         </div>
 
         {/* Niveau + Type + Confiance */}
