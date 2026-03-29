@@ -55,12 +55,12 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     const monday = new Date(today);
     monday.setDate(today.getDate() - today.getDay() + 1);
     dateFrom = monday.toISOString().split("T")[0];
-  } else if (searchParams.periode === "aujourd_hui") {
-    dateFrom = today.toISOString().split("T")[0];
-  } else {
-    // Défaut : 30 derniers jours — toujours afficher du contenu
+  } else if (searchParams.periode === "30_jours") {
     const d30 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
     dateFrom = d30.toISOString().split("T")[0];
+  } else {
+    // Défaut : aujourd'hui — cohérence avec le programme du jour
+    dateFrom = today.toISOString().split("T")[0];
   }
 
   // ── 3. Requête Supabase (service client pour récupérer tout) ────────

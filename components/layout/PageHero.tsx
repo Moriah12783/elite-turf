@@ -13,10 +13,11 @@ export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
         src={image}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover grayscale brightness-[0.45]"
+        className="absolute inset-0 w-full h-full object-cover"
+      style={{ filter: "grayscale(100%) brightness(0.42)" }}
       />
       {/* Overlay sombre uniforme */}
-      <div className="absolute inset-0 bg-[#0D0D14]/60" />
+      <div className="absolute inset-0 bg-[#0D0D14]/55" />
       {/* Gradient bas vers fond */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0D0D14]/90" />
 

@@ -45,21 +45,21 @@ export default function LogoEliteTurf({
 
   const inner = (
     <span className={cn("flex items-center group", s.gap, className)}>
-      {/* Horse icon circle */}
+      {/* Horse icon — fond vert dégradé (identique au favicon) */}
       <span
         className={cn(
           s.wrap,
-          "rounded-full bg-gold-faint border border-gold-primary/40",
-          "flex items-center justify-center flex-shrink-0",
-          "group-hover:border-gold-primary transition-colors duration-200"
+          "rounded-lg flex items-center justify-center flex-shrink-0 flex-shrink-0",
+          "transition-opacity duration-200 group-hover:opacity-90"
         )}
+        style={{ background: "linear-gradient(135deg, #1B5E20, #2E7D32)" }}
       >
         <span
           className={cn(s.emoji, "leading-none select-none")}
           role="img"
           aria-label="cheval de course"
         >
-          🐎
+          🏇
         </span>
       </span>
 

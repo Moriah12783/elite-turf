@@ -19,8 +19,9 @@ export default async function PronosticsSection() {
   const today    = new Date().toISOString().split("T")[0];
   const weekAgo  = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
-  // ── 1. Pronostics publiés récents avec info course ──────────────────
-  const { data: rawProno } = await supabase
+  // ── 1. Pronostics du JOUR publiés, sans filtre de marché
+  //        (= tous les pronostics publiés aujourd'hui, triés par confiance desc)
+  const { data: todayPronoRaw } = await supabase
     .from("pronostics")
     .select(`
       id, niveau_acces, type_pari, confiance, analyse_courte, selection, nb_vues, date_publication,
@@ -31,30 +32,42 @@ export default async function PronosticsSection() {
       )
     `)
     .eq("publie", true)
-    .gte("date_publication", weekAgo)
+    .gte("date_publication", today)
     .order("date_publication", { ascending: false })
     .order("confiance",        { ascending: false })
-    .limit(20);
+    .limit(10);
 
-  // Filtrer : courses du marché africain uniquement
-  const africanProno = (rawProno || []).filter((p: any) =>
-    isJouableAfrique(p.course?.paris_disponibles || [])
-  );
+  // Fallback : si aucun pronostic aujourd'hui → derniers 7 jours
+  let rawProno = todayPronoRaw || [];
+  if (rawProno.length === 0) {
+    const { data: recentProno } = await supabase
+      .from("pronostics")
+      .select(`
+        id, niveau_acces, type_pari, confiance, analyse_courte, selection, nb_vues, date_publication,
+        course:courses(
+          id, libelle, heure_depart, numero_reunion, numero_course, date_course,
+          paris_disponibles,
+          hippodrome:hippodromes(nom)
+        )
+      `)
+      .eq("publie", true)
+      .gte("date_publication", weekAgo)
+      .order("date_publication", { ascending: false })
+      .order("confiance",        { ascending: false })
+      .limit(6);
+    rawProno = recentProno || [];
+  }
 
-  // Aujourd'hui en priorité, sinon plus récents
-  const todayProno = africanProno.filter((p: any) =>
-    (p.date_publication || "").startsWith(today)
-  );
-  const displayList = (todayProno.length > 0 ? todayProno : africanProno).slice(0, 3);
+  const displayList = rawProno.slice(0, 3);
 
-  // Vedette = Nationale 1 en priorité, sinon Nat2, sinon premier dispo
+  // Vedette = Quinté+ en priorité, sinon Quarté+, sinon Tiercé, sinon premier
   const vedetteProno: any =
-    displayList.find((p: any) => getNatNum(p.course?.paris_disponibles || []) === 1) ||
-    displayList.find((p: any) => getNatNum(p.course?.paris_disponibles || []) === 2) ||
+    displayList.find((p: any) => getNatNum(Array.isArray((p.course as any)?.paris_disponibles) ? (p.course as any).paris_disponibles : []) === 1) ||
+    displayList.find((p: any) => getNatNum(Array.isArray((p.course as any)?.paris_disponibles) ? (p.course as any).paris_disponibles : []) === 2) ||
     displayList[0] ||
     null;
 
-  // ── 2. Si aucun pronostic africain → courses du jour comme placeholder ─
+  // ── 2. Si aucun pronostic publié → courses du jour comme placeholder ──
   let placeholderCourses: any[] = [];
   if (!vedetteProno) {
     const { data: todayCourses } = await supabase
@@ -66,11 +79,9 @@ export default async function PronosticsSection() {
       `)
       .eq("date_course", today)
       .order("heure_depart", { ascending: true })
-      .limit(10);
+      .limit(6);
 
-    placeholderCourses = ((todayCourses || []) as any[])
-      .filter((c: any) => isJouableAfrique(c.paris_disponibles || []))
-      .slice(0, 3);
+    placeholderCourses = ((todayCourses || []) as any[]).slice(0, 3);
   }
 
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────
