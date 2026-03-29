@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #1A1A2E;
+  --bg-primary: #1C1C1C;
   --gold: #C9A84C;
 }
 
@@ -18,7 +18,7 @@ html {
 }
 
 body {
-  background-color: #1A1A2E;
+  background-color: #1C1C1C;
   color: #F5F5F0;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -30,7 +30,7 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1A1A2E;
+  background: #1C1C1C;
 }
 ::-webkit-scrollbar-thumb {
   background: #2A2A3E;
