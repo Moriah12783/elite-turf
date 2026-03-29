@@ -14,11 +14,11 @@ export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
       }}
       className="relative w-full h-[200px] md:h-[280px]"
     >
-      {/* Overlay sombre */}
-      <div className="absolute inset-0 bg-black/70" />
-      <div className="absolute inset-0 bg-bg-primary/40" />
-      {/* Gradient bas */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg-primary/60" />
+      {/* Overlays purement noirs — pas de teinte chaude */}
+      <div className="absolute inset-0 bg-black/75" />
+      <div className="absolute inset-0 bg-black/35" />
+      {/* Gradient bas vers fond sombre */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60" />
 
       {/* Contenu centré */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">

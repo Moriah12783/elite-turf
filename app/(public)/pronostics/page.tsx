@@ -76,6 +76,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
       course:courses(
         id, libelle, date_course, heure_depart,
         distance_metres, categorie, terrain, nb_partants,
+        paris_disponibles,
         hippodrome:hippodromes(nom, pays)
       )
     `
@@ -96,10 +97,20 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
   const { data: allPronostics } = await query.limit(50);
 
   // Filtre hippodrome (côté serveur après récupération)
-  const pronostics = (allPronostics || []).filter((p: any) => {
+  const pronosticsFiltered = (allPronostics || []).filter((p: any) => {
     if (!searchParams.hippodrome) return true;
     return p.course?.hippodrome?.nom === searchParams.hippodrome;
   });
+
+  // Trier : courses du marché africain en premier, puis les autres
+  const pronostics = [
+    ...pronosticsFiltered.filter((p: any) =>
+      Array.isArray(p.course?.paris_disponibles) && p.course.paris_disponibles.length > 0
+    ),
+    ...pronosticsFiltered.filter((p: any) =>
+      !Array.isArray(p.course?.paris_disponibles) || p.course.paris_disponibles.length === 0
+    ),
+  ];
 
   // ── 4. Stats rapides ───────────────────────────────────────────────
   const { data: statsData } = await supabase

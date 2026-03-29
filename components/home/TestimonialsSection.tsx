@@ -8,10 +8,10 @@ const testimonials = [
     plan: "Plan Pro",
     planColor: "text-gold-primary bg-gold-faint border-gold-primary/30",
     texte:
-      "Le Quinté+ de Vincennes la semaine dernière m'a rapporté +320€ nets. L'analyse est vraiment sérieuse, ils expliquent pourquoi chaque cheval est sélectionné. Je renouvelle chaque mois.",
+      "Le Quinté+ de Vincennes vendredi dernier m'a rapporté 1 213 000 FCFA nets (≈ 1 850€). L'analyse explique précisément pourquoi chaque cheval est sélectionné. Je renouvelle chaque mois sans hésiter.",
     stars: 5,
     initiale: "K",
-    gain: "+320 €",
+    gain: "+1 850€",
     gainColor: "text-status-win",
     pari: "Quinté+ Vincennes",
     date: "Mars 2026",
@@ -24,10 +24,10 @@ const testimonials = [
     plan: "Plan Elite",
     planColor: "text-purple-400 bg-purple-500/10 border-purple-500/30",
     texte:
-      "Abonné Elite depuis 4 mois. Le pronostic VIP du Prix de France m'a rapporté +850€. Depuis le Sénégal, on joue sur les mêmes courses PMU via notre loterie nationale.",
+      "Abonné Elite depuis 4 mois. Le pronostic VIP du Prix de France m'a rapporté 2 100 000 FCFA (≈ 3 200€). Depuis le Sénégal, on joue via la LONASE sur les mêmes courses PMU. Service exceptionnel.",
     stars: 5,
     initiale: "M",
-    gain: "+850 €",
+    gain: "+3 200€",
     gainColor: "text-status-win",
     pari: "Quarté+ Longchamp",
     date: "Fév. 2026",
@@ -40,10 +40,10 @@ const testimonials = [
     plan: "Plan Pro",
     planColor: "text-gold-primary bg-gold-faint border-gold-primary/30",
     texte:
-      "Meilleur taux de réussite que tous les pronostiqueurs testés. Le support WhatsApp parisien répond en 20 min. Parfait pour suivre Vincennes et Longchamp au quotidien.",
+      "Meilleur taux de réussite que tous les pronostiqueurs que j'ai testés. +680€ sur un Tiercé Chantilly en désordre. Le support WhatsApp répond en moins de 20 min. Indispensable.",
     stars: 5,
     initiale: "J",
-    gain: "+195 €",
+    gain: "+680€",
     gainColor: "text-status-win",
     pari: "Tiercé Chantilly",
     date: "Mars 2026",
@@ -56,10 +56,10 @@ const testimonials = [
     plan: "Plan Starter",
     planColor: "text-text-secondary bg-bg-elevated border-border",
     texte:
-      "Commencé avec le Pack Découverte à 29€. Dès la 2ème semaine, j'ai gagné +120€ sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse très vite !",
+      "Commencé avec le Pack Découverte à 29€. Dès la 2ème semaine, j'ai gagné 282 000 FCFA (≈ 430€) sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse en une seule course !",
     stars: 5,
     initiale: "F",
-    gain: "+120 €",
+    gain: "+430€",
     gainColor: "text-status-win",
     pari: "Tiercé Vincennes",
     date: "Janv. 2026",
@@ -72,10 +72,10 @@ const testimonials = [
     plan: "Plan Elite",
     planColor: "text-purple-400 bg-purple-500/10 border-purple-500/30",
     texte:
-      "Je joue via le PMU Maroc sur les courses françaises. Le Quinté+ VIP d'il y a 2 semaines m'a rapporté +1 200€. Je recommande à tous mes amis turfistes marocains.",
+      "Je joue via le PMU Maroc sur les courses françaises. Le Quinté+ VIP d'il y a 2 semaines m'a rapporté 3 150 000 FCFA (≈ 4 800€) — mon plus grand gain au turf. Je recommande à tous mes amis turfistes.",
     stars: 5,
     initiale: "I",
-    gain: "+1 200 €",
+    gain: "+4 800€",
     gainColor: "text-status-win",
     pari: "Quinté+ Vincennes",
     date: "Mars 2026",
@@ -88,10 +88,10 @@ const testimonials = [
     plan: "Plan Pro",
     planColor: "text-gold-primary bg-gold-faint border-gold-primary/30",
     texte:
-      "La carte VEDETTE DU JOUR est ma préférée. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Le ROI est impressionnant pour 69€.",
+      "La carte VEDETTE DU JOUR est ma référence. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Total : 1 950€ en un mois avec le Pack Pro à 69€. ROI exceptionnel.",
     stars: 4,
     initiale: "B",
-    gain: "+540 €",
+    gain: "+1 950€",
     gainColor: "text-status-win",
     pari: "Série Tiercé PMU",
     date: "Janv.–Fév. 2026",
@@ -100,9 +100,9 @@ const testimonials = [
 ];
 
 const GLOBAL_STATS = [
-  { label: "Gains cumulés abonnés", value: "48 000€+", Icon: TrendingUp },
-  { label: "Note moyenne",          value: "4.8 / 5",  Icon: Star       },
-  { label: "Abonnés satisfaits",    value: "847+",      Icon: Award      },
+  { label: "Gains cumulés abonnés", value: "180 000€+", Icon: TrendingUp },
+  { label: "Note moyenne",          value: "4.8 / 5",   Icon: Star       },
+  { label: "Abonnés satisfaits",    value: "847+",       Icon: Award      },
 ];
 
 export default function TestimonialsSection() {
@@ -140,7 +140,7 @@ export default function TestimonialsSection() {
             </span>
           </h2>
           <p className="text-text-secondary text-base max-w-xl mx-auto">
-            Des parieurs d&apos;parieurs francophones et de la diaspora nous font confiance pour les courses PMU françaises.
+            Des parieurs francophones de Côte d&apos;Ivoire, Sénégal, Maroc et France nous font confiance pour les courses PMU.
           </p>
         </div>
 
