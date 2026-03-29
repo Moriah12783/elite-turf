@@ -197,7 +197,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide débutants",
     date: "2026-03-18",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1547234935-80c7145ec969?w=1200&q=80",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
     keywords: [
       "différence tiercé quarté quinté",
       "guide paris PMU débutant",

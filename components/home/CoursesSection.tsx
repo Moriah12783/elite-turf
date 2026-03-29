@@ -9,7 +9,15 @@ const CATEGORIE_COLORS: Record<string, string> = {
   OBSTACLE: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
-function hippoImage(nom: string): string {
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
+  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
+  "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+  "https://images.unsplash.com/photo-1635895882609-942f36e1db5d?w=600&q=80",
+  "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80",
+];
+
+function hippoImage(nom: string, idx: number = 0): string {
   const n = nom.toLowerCase();
   if (n.includes("vincenn"))   return "https://images.unsplash.com/photo-1635895882609-942f36e1db5d?w=600&q=80";
   if (n.includes("longchamp")) return "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80";
@@ -17,7 +25,14 @@ function hippoImage(nom: string): string {
   if (n.includes("chantilly"))  return "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80";
   if (n.includes("marrakech") || n.includes("casabl") || n.includes("abidjan") || n.includes("dakar"))
     return "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&q=80";
-  return "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80";
+  if (n.includes("chatel") || n.includes("la teste") || n.includes("deauville") || n.includes("clairef"))
+    return "https://images.unsplash.com/photo-1507514604110-ba3347c457f6?w=600&q=80";
+  if (n.includes("fontaine") || n.includes("maisons") || n.includes("compiegne") || n.includes("compiègne"))
+    return "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80";
+  if (n.includes("lyon") || n.includes("parilly") || n.includes("bordeaux") || n.includes("toulouse"))
+    return "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80";
+  // Fallback indexé pour varier les images entre courses
+  return FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
 }
 
 export default async function CoursesSection() {
@@ -93,7 +108,7 @@ export default async function CoursesSection() {
         {header}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {courses.map((course: any) => {
+          {courses.map((course: any, idx: number) => {
             const hipNom     = course.hippodrome?.nom || "Hippodrome";
             const pays       = course.hippodrome?.pays || "France";
             const nationale  = getNationaleLabel(course.paris_disponibles || []);
@@ -110,7 +125,7 @@ export default async function CoursesSection() {
                 {/* Image hippodrome */}
                 <div className="relative overflow-hidden">
                   <img
-                    src={hippoImage(hipNom)}
+                    src={hippoImage(hipNom, idx)}
                     alt={hipNom}
                     className="w-full h-32 object-cover rounded-t-xl transition-transform duration-500 group-hover:scale-105"
                   />

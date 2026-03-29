@@ -180,9 +180,9 @@ export default async function PronosticsSection() {
         <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=1200&q=80"
+              src="https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=1200&q=80"
               alt="Cheval vedette"
-              className="w-full h-full object-cover opacity-15"
+              className="w-full h-full object-cover opacity-20"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-bg-card/95 via-bg-card/80 to-bg-card/95" />
           </div>
