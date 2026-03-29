@@ -10,7 +10,7 @@ const config: Config = {
     extend: {
       colors: {
         bg: {
-          primary: "#0D0D14",
+          primary: "#1A1A2E",
           card: "#161622",
           hover: "#1E1E2E",
           elevated: "#1A1A28",
@@ -49,8 +49,8 @@ const config: Config = {
       },
       backgroundImage: {
         "gold-gradient": "linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830)",
-        "dark-gradient": "linear-gradient(180deg, #0D0D14 0%, #161622 100%)",
-        "hero-overlay": "linear-gradient(180deg, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.85) 60%, #0D0D14 100%)",
+        "dark-gradient": "linear-gradient(180deg, #1A1A2E 0%, #161622 100%)",
+        "hero-overlay": "linear-gradient(180deg, rgba(26,26,46,0.3) 0%, rgba(26,26,46,0.85) 60%, #1A1A2E 100%)",
         "card-gradient": "linear-gradient(135deg, #161622 0%, #1E1E2E 100%)",
         "gold-line": "linear-gradient(90deg, transparent, #C9A84C, transparent)",
       },
