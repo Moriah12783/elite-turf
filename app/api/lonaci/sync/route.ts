@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     // ── 2. Hippodromes ────────────────────────────────────────────────
     const hipMap: Record<string, string> = {};
-    const hipNoms = [...new Set(courses.map(c => c.hippodrome))];
+    const hipNoms = Array.from(new Set(courses.map(c => c.hippodrome)));
 
     for (const nom of hipNoms) {
       const pays = courses.find(c => c.hippodrome === nom)?.pays || "France";

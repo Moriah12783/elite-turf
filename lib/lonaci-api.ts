@@ -128,13 +128,11 @@ export function normalizeLonaciReunions(
 
     for (const c of r.races ?? []) {
       const parisLonaciCodes = Object.keys(c.libelleJeux ?? {});
-      const parisDisponibles = [
-        ...new Set(
-          parisLonaciCodes
-            .map(code => LONACI_PARIS_MAP[code])
-            .filter(Boolean)
-        ),
-      ];
+      const parisDisponibles = Array.from(new Set(
+        parisLonaciCodes
+          .map(code => LONACI_PARIS_MAP[code])
+          .filter(Boolean)
+      ));
 
       // Heure départ depuis racedt "YYYY-MM-DD HH:mm:ss"
       const [datePart, timePart] = (c.racedt || "").split(" ");
