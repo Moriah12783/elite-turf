@@ -32,6 +32,7 @@ export default async function AdminCoursesPage() {
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
       categorie, terrain, nb_partants, statut,
+      paris_disponibles,
       hippodrome:hippodromes(nom, pays),
       pronostics(id, publie)
     `)
@@ -86,7 +87,7 @@ export default async function AdminCoursesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Date", "Course", "Hippodrome", "Catégorie", "Heure", "Partants", "Statut", "Pronostic", ""].map((h) => (
+                {["Date", "Course", "Hippodrome", "Catégorie", "Heure", "Partants", "Paris", "Statut", "Pronostic", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -134,6 +135,15 @@ export default async function AdminCoursesPage() {
                         <Users className="w-3.5 h-3.5" />
                         {c.nb_partants}
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0 ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium whitespace-nowrap">
+                          🌍 {c.paris_disponibles.length} paris
+                        </span>
+                      ) : (
+                        <span className="text-text-muted text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statut.classes}`}>

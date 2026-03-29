@@ -418,17 +418,17 @@ function BannerImage({ count }: { count: number }) {
           Pronostics du Jour
         </h2>
         <p className="text-text-secondary text-sm sm:text-base max-w-lg">
-          Analyses spécialisées marché africain.{" "}
-          <span className="text-gold-light">LONACI · LONASE · PMU-Maroc</span>
+          Analyses approfondies par nos spécialistes hippiques.{" "}
+          <span className="text-gold-light">73% de réussite ce mois.</span>
         </p>
         <div className="flex items-center gap-3 mt-4">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
             <Flame className="w-3.5 h-3.5 text-gold-primary" />
             <span className="text-gold-light text-xs font-semibold">{count} pronostic{count > 1 ? "s" : ""} ce jour</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/30 rounded-full">
-            <Globe2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-emerald-400 text-xs font-semibold">Marché Africain</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-status-win/20 backdrop-blur-sm border border-status-win/30 rounded-full">
+            <Trophy className="w-3.5 h-3.5 text-status-win" />
+            <span className="text-status-win text-xs font-semibold">Experts Paris</span>
           </div>
         </div>
       </div>

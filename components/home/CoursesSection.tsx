@@ -36,10 +36,11 @@ export default async function CoursesSection() {
     .order("heure_depart", { ascending: true })
     .limit(15);
 
-  // Garder uniquement les courses jouables sur le marché africain
-  const courses = (rawCourses || [])
-    .filter((c: any) => isJouableAfrique(c.paris_disponibles || []))
-    .slice(0, 3);
+  // Garder les courses avec des paris disponibles (jouables par les abonnés)
+  // Priorité : Nationale 1, 2, 3 — puis autres courses du jour
+  const allAfrique = ((rawCourses || []) as any[])
+    .filter((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0);
+  const courses = allAfrique.slice(0, 3);
 
   const header = (
     <div className="flex items-center justify-between mb-10">
@@ -47,15 +48,12 @@ export default async function CoursesSection() {
         <div className="flex items-center gap-2 mb-2">
           <Calendar className="w-5 h-5 text-gold-primary" />
           <span className="text-gold-light text-sm font-medium uppercase tracking-wider">
-            Marché Africain — Aujourd&apos;hui
+            Aujourd&apos;hui
           </span>
         </div>
         <h2 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary">
           Programme des Courses
         </h2>
-        <p className="text-text-muted text-sm mt-1">
-          Courses disponibles LONACI · LONASE · PMU-Maroc
-        </p>
       </div>
       <Link
         href="/courses"
