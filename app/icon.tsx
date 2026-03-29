@@ -10,14 +10,14 @@ export default function Icon() {
       <div
         style={{
           fontSize: 22,
-          background: "#0D0D14",
+          background: "linear-gradient(135deg, #1B5E20, #2E7D32)",
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: "4px",
-          color: "#C9A84C",
+          borderRadius: "6px",
+          color: "#ffffff",
         }}
       >
         🏇

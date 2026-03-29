@@ -134,7 +134,7 @@ export default function Footer() {
                 </li>
                 <li className="flex items-start gap-2 text-text-secondary text-sm">
                   <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>Elite Turf<br />75008 Paris, France</span>
+                  <span>Elite Turf<br />34, boulevard des Italiens<br />75009 Paris, France</span>
                 </li>
               </ul>
               <div className="mt-4 p-3 bg-status-win/5 border border-status-win/20 rounded-lg">

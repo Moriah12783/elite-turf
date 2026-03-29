@@ -157,7 +157,7 @@ export default function HeroSection() {
         >
           {[
             { icon: TrendingUp, value: "73%",   label: "Taux de réussite",  sublabel: "ce mois" },
-            { icon: Award,      value: "847+",  label: "Membres actifs",    sublabel: "CI & diaspora" },
+            { icon: Award,      value: "847+",  label: "Membres actifs",    sublabel: "parieurs francophones" },
             { icon: Zap,        value: "5 ans", label: "D'expertise",       sublabel: "pronostics hippiques" },
             { icon: Users,      value: "312",   label: "Abonnés Premium",   sublabel: "résultats prouvés" },
           ].map((stat, i) => (

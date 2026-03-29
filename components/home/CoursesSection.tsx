@@ -88,7 +88,7 @@ export default async function CoursesSection() {
           <div className="card-base p-10 text-center">
             <Globe2 className="w-10 h-10 text-gold-primary mx-auto mb-3 opacity-60" />
             <p className="text-text-secondary text-sm">
-              Le programme du marché africain sera disponible à partir de 8h00 (heure de Paris).
+              Le programme des courses sera disponible à partir de 8h00 (heure de Paris).
             </p>
             <Link
               href="/courses"

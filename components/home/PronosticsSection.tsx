@@ -136,7 +136,7 @@ export default async function PronosticsSection() {
 
           {/* Liste des courses du jour */}
           <div className="flex items-center justify-between mb-6">
-            <p className="text-text-secondary text-sm">Courses disponibles aujourd&apos;hui — marché africain</p>
+            <p className="text-text-secondary text-sm">Courses disponibles aujourd&apos;hui</p>
             <Link href="/pronostics" className="hidden sm:flex items-center gap-1 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors">
               Tous les pronostics <ChevronRight className="w-4 h-4" />
             </Link>
@@ -274,7 +274,7 @@ export default async function PronosticsSection() {
         {/* En-tête liste */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-text-secondary text-sm">
-            Pronostics disponibles aujourd&apos;hui — marché africain
+            Pronostics disponibles aujourd&apos;hui
           </p>
           <Link
             href="/pronostics"

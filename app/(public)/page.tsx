@@ -6,7 +6,7 @@ import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertTriangle } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -39,6 +39,26 @@ export default function HomePage() {
             >
               Télécharger →
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DISCLAIMER jeu responsable ── */}
+      <section className="py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-xl border border-border bg-bg-elevated/60 p-5 flex items-start gap-4">
+            <AlertTriangle className="w-5 h-5 text-status-partial flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-text-secondary text-xs leading-relaxed">
+                <span className="text-text-primary font-semibold">Avertissement — Jeu Responsable.</span>{" "}
+                Les pronostics publiés sur Elite Turf sont fournis à titre informatif et ne constituent pas une garantie de gain.
+                Le jeu peut être dangereux. Jouez de manière responsable et ne misez que ce que vous pouvez vous permettre de perdre.
+                Si vous ressentez une dépendance, contactez{" "}
+                <a href="tel:0974751313" className="text-gold-primary hover:underline font-medium">Joueurs Info Service au 09 74 75 13 13</a>{" "}
+                (appel non surtaxé, 7j/7).
+                Elite Turf, 34 boulevard des Italiens, 75009 Paris, France.
+              </p>
+            </div>
           </div>
         </div>
       </section>

@@ -118,7 +118,7 @@ export default async function StatsSection() {
         <div className="card-base overflow-hidden">
           <div className="p-5 border-b border-border/50 flex items-center gap-2">
             <Flame className="w-4 h-4 text-gold-primary" />
-            <h3 className="font-semibold text-text-primary text-sm">Derniers résultats — Marché africain</h3>
+            <h3 className="font-semibold text-text-primary text-sm">Derniers résultats</h3>
           </div>
           <div className="divide-y divide-border/30">
             {displayResults.map((r, i) => {
