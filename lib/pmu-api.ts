@@ -16,6 +16,11 @@ export interface PmuReunion {
   courses:        PmuCourse[];
 }
 
+export interface PmuPari {
+  typePari: string;   // ex: "TIERCE", "QUARTE_PLUS", "QUINTE_PLUS", "TRIO", ...
+  enVente?: boolean;
+}
+
 export interface PmuCourse {
   numOrdre:          number;
   libelle:           string;
@@ -24,6 +29,8 @@ export interface PmuCourse {
   nombreDeclaresPartants: number;
   discipline:        string;             // "PLAT" | "TROT_ATTELE" | "OBSTACLE"
   conditions:        string;
+  paris?:            PmuPari[];          // types de paris disponibles
+  typesParis?:       string[];           // variante selon version API
 }
 
 export interface PmuProgramme {
@@ -84,17 +91,60 @@ export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]>
 
 // ── Normalisation pour Supabase ──────────────────────────────────────────
 
+// Types de paris africains reconnus (LONACI, LONASE, PMU-CI, PMU Maroc…)
+// Une course avec au moins un de ces types est "jouable en Afrique"
+const PARIS_AFRIQUE = new Set([
+  "TIERCE", "QUARTE", "QUARTE_PLUS",
+  "QUINTE", "QUINTE_PLUS",
+  "COUPLE_GAGNANT", "COUPLE_PLACE",
+  "MULTI",
+]);
+
+/** Extrait les types de paris disponibles sur une course PMU */
+function extractParisDisponibles(course: PmuCourse): string[] {
+  const types = new Set<string>();
+
+  // Variante 1 : tableau "paris" avec objets {typePari}
+  if (Array.isArray(course.paris)) {
+    for (const p of course.paris) {
+      if (p?.typePari) types.add(p.typePari.toUpperCase());
+    }
+  }
+  // Variante 2 : tableau "typesParis" de strings
+  if (Array.isArray(course.typesParis)) {
+    for (const t of course.typesParis) {
+      if (t) types.add(t.toUpperCase());
+    }
+  }
+
+  return Array.from(types);
+}
+
+/** Retourne true si la course est jouable depuis l'Afrique (LONACI…) */
+export function isJouableAfrique(paris: string[]): boolean {
+  return paris.some(p => PARIS_AFRIQUE.has(p));
+}
+
+/** Label "Nationale" LONACI selon les paris disponibles */
+export function getNationaleLabel(paris: string[]): string | null {
+  if (paris.includes("QUINTE_PLUS") || paris.includes("QUINTE")) return "Nationale 1 — Quinté+";
+  if (paris.includes("QUARTE_PLUS") || paris.includes("QUARTE"))  return "Nationale 2 — Quarté+";
+  if (paris.includes("TIERCE"))                                    return "Nationale 3 — Tiercé";
+  return null;
+}
+
 export interface NormalizedCourse {
-  hippodromeName: string;
-  hippodromePays: string;
-  dateCourse:     string;          // "YYYY-MM-DD"
-  heureDepart:    string;          // "HH:MM:SS"
-  numeroReunion:  number;
-  numeroCourse:   number;
-  libelle:        string;
-  distanceMetres: number;
-  categorie:      "PLAT" | "TROT" | "OBSTACLE";
-  nbPartants:     number;
+  hippodromeName:  string;
+  hippodromePays:  string;
+  dateCourse:      string;          // "YYYY-MM-DD"
+  heureDepart:     string;          // "HH:MM:SS"
+  numeroReunion:   number;
+  numeroCourse:    number;
+  libelle:         string;
+  distanceMetres:  number;
+  categorie:       "PLAT" | "TROT" | "OBSTACLE";
+  nbPartants:      number;
+  parisDisponibles: string[];       // ex: ["TIERCE","QUARTE_PLUS","QUINTE_PLUS"]
 }
 
 /**
@@ -110,16 +160,17 @@ export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[]
 
     for (const c of reunion.courses ?? []) {
       courses.push({
-        hippodromeName: hipNom,
-        hippodromePays: hipPays,
+        hippodromeName:  hipNom,
+        hippodromePays:  hipPays,
         dateCourse,
-        heureDepart:    tsToTime(c.heureDepart),
-        numeroReunion:  reunion.numOrdre,
-        numeroCourse:   c.numOrdre,
-        libelle:        c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`,
-        distanceMetres: c.distance || 0,
-        categorie:      toCategorie(c.discipline),
-        nbPartants:     c.nombreDeclaresPartants || 0,
+        heureDepart:     tsToTime(c.heureDepart),
+        numeroReunion:   reunion.numOrdre,
+        numeroCourse:    c.numOrdre,
+        libelle:         c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`,
+        distanceMetres:  c.distance || 0,
+        categorie:       toCategorie(c.discipline),
+        nbPartants:      c.nombreDeclaresPartants || 0,
+        parisDisponibles: extractParisDisponibles(c),
       });
     }
   }

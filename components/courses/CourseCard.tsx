@@ -6,6 +6,7 @@ import {
   CheckCircle2, Zap, ExternalLink
 } from "lucide-react";
 import { buildGenyUrl } from "@/lib/geny";
+import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
 
 const HIPPODROME_IMAGES: Record<string, string> = {
   "Longchamp":             "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
@@ -62,17 +63,22 @@ interface Props {
     arrivee_officielle?: number[] | null;
     hippodrome?: { nom: string; pays: string } | null;
     pronostics?: Array<{ id: string; niveau_acces: string; publie: boolean; type_pari?: string }> | null;
+    paris_disponibles?: string[] | null;
   };
   userSubscription: string;
 }
 
 export default function CourseCard({ course: c, userSubscription }: Props) {
-  const statut         = STATUT_CONFIG[c.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.PROGRAMME;
-  const imageUrl       = HIPPODROME_IMAGES[c.hippodrome?.nom || ""] || DEFAULT_IMG;
+  const statut          = STATUT_CONFIG[c.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.PROGRAMME;
+  const imageUrl        = HIPPODROME_IMAGES[c.hippodrome?.nom || ""] || DEFAULT_IMG;
   const pronosticPublie = c.pronostics?.find((p) => p.publie);
-  const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
-  const typePari       = pronosticPublie?.type_pari;
-  const typeBadge      = typePari ? TYPE_PARI_BADGE[typePari] : null;
+  const refCourse       = `R${c.numero_reunion}C${c.numero_course}`;
+  const typePari        = pronosticPublie?.type_pari;
+  const typeBadge       = typePari ? TYPE_PARI_BADGE[typePari] : null;
+
+  const paris           = c.paris_disponibles ?? [];
+  const jouableAfrique  = isJouableAfrique(paris);
+  const nationaleLabel  = getNationaleLabel(paris);
 
   const hasPronosticAccess =
     !pronosticPublie ||
@@ -134,6 +140,14 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
               {typeBadge && (
                 <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${typeBadge.classes}`}>
                   {typeBadge.label}
+                </span>
+              )}
+              {jouableAfrique && (
+                <span
+                  title={`Jouable depuis l'Afrique — ${nationaleLabel || "Paris disponibles"}`}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                >
+                  🌍 {nationaleLabel ?? "Jouable en Afrique"}
                 </span>
               )}
               <span className="text-text-muted text-xs">{c.distance_metres}m</span>

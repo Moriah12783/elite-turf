@@ -98,24 +98,29 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (existing) {
-        // Mettre à jour nb_partants si nécessaire
+        // Mettre à jour nb_partants, libelle et paris_disponibles
         await supabase
           .from("courses")
-          .update({ nb_partants: c.nbPartants, libelle: c.libelle })
+          .update({
+            nb_partants:       c.nbPartants,
+            libelle:           c.libelle,
+            paris_disponibles: c.parisDisponibles,
+          })
           .eq("id", existing.id);
         updated++;
       } else {
         await supabase.from("courses").insert({
-          hippodrome_id:   hippodromeId,
-          date_course:     c.dateCourse,
-          heure_depart:    c.heureDepart,
-          numero_reunion:  c.numeroReunion,
-          numero_course:   c.numeroCourse,
-          libelle:         c.libelle,
-          distance_metres: c.distanceMetres,
-          categorie:       c.categorie,
-          nb_partants:     c.nbPartants,
-          statut:          "PROGRAMME",
+          hippodrome_id:    hippodromeId,
+          date_course:      c.dateCourse,
+          heure_depart:     c.heureDepart,
+          numero_reunion:   c.numeroReunion,
+          numero_course:    c.numeroCourse,
+          libelle:          c.libelle,
+          distance_metres:  c.distanceMetres,
+          categorie:        c.categorie,
+          nb_partants:      c.nbPartants,
+          statut:           "PROGRAMME",
+          paris_disponibles: c.parisDisponibles,
         });
         inserted++;
       }

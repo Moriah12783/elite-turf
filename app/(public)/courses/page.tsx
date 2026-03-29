@@ -54,6 +54,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
       categorie, terrain, nb_partants, statut, arrivee_officielle,
+      paris_disponibles,
       hippodrome:hippodromes(id, nom, pays, ville),
       pronostics(id, niveau_acces, publie, type_pari)
     `)
