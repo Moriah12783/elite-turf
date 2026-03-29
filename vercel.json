@@ -25,6 +25,14 @@
       "schedule": "30 6 * * *"
     },
     {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/geny-arrivees",
       "schedule": "0 13 * * *"
     },
