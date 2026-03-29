@@ -72,21 +72,44 @@ function toCategorie(discipline: string): "PLAT" | "TROT" | "OBSTACLE" {
 /**
  * Récupère le programme complet PMU pour une date donnée
  */
+const PMU_HEADERS = {
+  "Accept":          "application/json, text/plain, */*",
+  "Accept-Language": "fr-FR,fr;q=0.9",
+  "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "Referer":         "https://www.pmu.fr/",
+  "Origin":          "https://www.pmu.fr",
+};
+
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
-  const d = dateStr || toDateStr();
-  const url = `${PMU_BASE}/programmeComplet/${d}?specialisation=INTERNET`;
+  const d   = dateStr || toDateStr();
+  // Essayer plusieurs endpoints PMU en fallback
+  const urls = [
+    `${PMU_BASE}/programmeComplet/${d}?specialisation=INTERNET`,
+    `${PMU_BASE}/programmeComplet/${d}?specialisation=OFFLINE`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/7/programme/${d}?specialisation=OFFLINE`,
+  ];
 
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-    next: { revalidate: 1800 },   // cache 30 min
-  });
+  let lastError = "";
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: PMU_HEADERS,
+        cache: "no-store",   // pas de cache — évite de mémoriser les erreurs 420
+      });
 
-  if (!res.ok) {
-    throw new Error(`PMU API error ${res.status} for date ${d}`);
+      if (res.ok) {
+        const json = await res.json();
+        const reunions = json?.programme?.reunions ?? json?.reunions ?? [];
+        if (reunions.length > 0) return reunions;
+      }
+      lastError = `HTTP ${res.status}`;
+    } catch (e: any) {
+      lastError = e?.message;
+    }
   }
 
-  const json = await res.json();
-  return json?.programme?.reunions ?? [];
+  throw new Error(`PMU API error (tous les endpoints ont échoué): ${lastError} for date ${d}`);
 }
 
 // ── Normalisation pour Supabase ──────────────────────────────────────────
