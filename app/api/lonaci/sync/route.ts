@@ -12,8 +12,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
-  fetchLonациProgramme,
-  normalizeLonациReunions,
+  fetchLonaciProgramme,
+  normalizeLonaciReunions,
 } from "@/lib/lonaci-api";
 
 export const dynamic = "force-dynamic";
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
   try {
     // ── 1. Fetch LONACI ───────────────────────────────────────────────
-    const reunions = await fetchLonациProgramme();
-    const courses  = normalizeLonациReunions(reunions);
+    const reunions = await fetchLonaciProgramme();
+    const courses  = normalizeLonaciReunions(reunions);
 
     if (!courses.length) {
       return NextResponse.json({

@@ -96,7 +96,7 @@ function normalizeHippoName(name: string): string {
 
 // ── Fetch principal ──────────────────────────────────────────────────────
 
-export async function fetchLonациProgramme(): Promise<LonaciReunion[]> {
+export async function fetchLonaciProgramme(): Promise<LonaciReunion[]> {
   const res = await fetch(LONACI_URL, {
     headers: {
       "Accept":          "application/json",
@@ -117,7 +117,7 @@ export async function fetchLonациProgramme(): Promise<LonaciReunion[]> {
 
 // ── Normalisation ────────────────────────────────────────────────────────
 
-export function normalizeLonациReunions(
+export function normalizeLonaciReunions(
   reunions: LonaciReunion[]
 ): NormalizedLonaciCourse[] {
   const result: NormalizedLonaciCourse[] = [];
