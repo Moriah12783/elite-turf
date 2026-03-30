@@ -113,11 +113,11 @@ function InscriptionForm() {
           Compte créé !
         </h2>
         <p className="text-text-secondary text-sm mb-2">
-          Un email de confirmation a été envoyé à{" "}
+          Votre compte a été créé avec succès pour{" "}
           <strong className="text-text-primary">{form.email}</strong>.
         </p>
         <p className="text-text-secondary text-sm mb-8">
-          Cliquez sur le lien dans l&apos;email pour activer votre compte.
+          Vous pouvez maintenant vous connecter et accéder aux pronostics du jour.
         </p>
         {planSelectionne && (
           <div className="mb-6 p-4 bg-gold-faint border border-gold-primary/20 rounded-xl">
