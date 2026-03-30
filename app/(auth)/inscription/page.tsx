@@ -74,10 +74,23 @@ function InscriptionForm() {
       });
 
       if (error) {
-        if (error.message.includes("already registered")) {
+        console.error("Supabase signUp error:", error.message, error);
+        if (
+          error.message.includes("already registered") ||
+          error.message.includes("already been registered") ||
+          error.message.includes("User already registered")
+        ) {
           toast.error("Cet email est déjà utilisé. Connectez-vous.");
+        } else if (error.message.includes("rate limit") || error.message.includes("email rate")) {
+          toast.error("Trop de tentatives. Attendez quelques minutes et réessayez.");
+        } else if (error.message.includes("invalid") && error.message.includes("email")) {
+          toast.error("Adresse email invalide.");
+        } else if (error.message.includes("Password") || error.message.includes("password")) {
+          toast.error("Mot de passe trop faible. Utilisez au moins 8 caractères.");
+        } else if (error.message.includes("Database error") || error.message.includes("database")) {
+          toast.error("Erreur base de données. Contactez le support.");
         } else {
-          toast.error("Erreur lors de l'inscription. Réessayez.");
+          toast.error(`Erreur : ${error.message}`);
         }
         return;
       }
