@@ -228,7 +228,7 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
                       Passez Premium pour le Quinté+
                     </p>
                     <p style="margin:0 0 14px;font-size:13px;color:#888899;line-height:1.5;">
-                      Accédez aux analyses complètes Quarté+ et Quinté+ — dès <strong style="color:#1a1a2e;">29€/mois</strong>
+                      Accédez aux analyses complètes Quarté+ et Quinté+ — dès <strong style="color:#1a1a2e;">109€/mois</strong>
                     </p>
                     <a href="${appUrl}/abonnements"
                        style="display:inline-block;color:#C9A84C;font-size:13px;font-weight:700;text-decoration:none;">

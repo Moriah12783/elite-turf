@@ -10,9 +10,9 @@ import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 
 export const metadata: Metadata = {
-  title: "Abonnements — Pronostics PMU dès 29€",
+  title: "Abonnements — Pronostics PMU dès 69€",
   description:
-    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. Plans à partir de 29€. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
+    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. Plans à partir de 69€. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
 };
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,7 @@ const FAQ = [
   },
   {
     q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le Plan Starter (29€). Il couvre le Tiercé PMU et vous donne accès à 3 analyses par semaine sur Vincennes et Longchamp — idéal pour débuter.",
+    a: "Commencez par le Pack Découverte (69€). Il couvre le Tiercé PMU et vous donne accès à 3 analyses par semaine sur Vincennes et Longchamp — idéal pour débuter.",
   },
   {
     q: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
@@ -93,7 +93,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Nos Abonnements"
-        sousTitre="À partir de 29€ — Orange Money, MTN MoMo, Wave ou Carte bancaire. Accès immédiat."
+        sousTitre="À partir de 69€ — Orange Money, MTN MoMo, Wave ou Carte bancaire. Accès immédiat."
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
