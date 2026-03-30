@@ -9,6 +9,8 @@ import {
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG, CONFIDENCE_CONFIG, BET_TYPE_LABELS } from "@/types";
 import type { Pronostic } from "@/types";
+import PageHero from "@/components/layout/PageHero";
+import ProfileEditForm from "@/components/membre/ProfileEditForm";
 
 export const metadata: Metadata = {
   title: "Mon Espace Membre — Elite Turf",
@@ -140,14 +142,34 @@ export default async function EspaceMembrePage() {
   const gagnants = recentPronostics.filter((p) => p.resultat === "GAGNANT").length;
   const termines = recentPronostics.filter((p) => p.resultat !== "EN_ATTENTE").length;
   const tauxReussite = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
-  const prenom = profile?.nom_complet?.split(" ")[0] || "Membre";
+  // Fix 1 — prénom avec fallback sur métadonnées auth puis email
+  const prenom =
+    profile?.nom_complet?.split(" ")[0] ||
+    (user.user_metadata?.nom_complet as string | undefined)?.split(" ")[0] ||
+    user.email?.split("@")[0]?.replace(/[._\d]/g, " ").trim().split(" ")[0] ||
+    "Membre";
 
   // Indicateur rentabilité sur les 10 derniers pronostics terminés
   const dix_derniers = recentPronostics.filter((p) => p.resultat !== "EN_ATTENTE").slice(0, 10);
   const dix_gagnants = dix_derniers.filter((p) => p.resultat === "GAGNANT").length;
 
+  // Fix 2 — accès selon niveau abonnement
+  const userCanAccess = (niveau: string) => {
+    if (niveau === "GRATUIT") return true;
+    if (niveau === "PREMIUM") return statusKey === "PREMIUM" || statusKey === "VIP";
+    if (niveau === "VIP") return statusKey === "VIP";
+    return true;
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
+
+      {/* Fix 5 — Hero page espace membre */}
+      <PageHero
+        image="/images/heroes/hero-performances.jpg"
+        titre="Mon Espace Membre"
+        sousTitre="Vos pronostics, statistiques et abonnement en un coup d'œil"
+      />
 
       {/* ── HEADER MEMBRE ─────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
@@ -187,6 +209,13 @@ export default async function EspaceMembrePage() {
                   <span className="ml-2 text-text-muted">· Membre depuis {dateInscription}</span>
                 )}
               </p>
+              {/* Fix 6 — Bouton modifier profil */}
+              <ProfileEditForm
+                userId={user.id}
+                nomComplet={profile?.nom_complet || ""}
+                phone={profile?.phone || ""}
+                pays={profile?.pays || "Côte d'Ivoire"}
+              />
             </div>
 
             <Link
@@ -386,10 +415,10 @@ export default async function EspaceMembrePage() {
               },
               {
                 Icon: BarChart3,
-                label: "Jours d'abonnement",
-                value: joursRestants > 0 ? joursRestants.toString() : "0",
-                sub: "restants",
-                color: joursRestants <= 5 ? "text-status-partial" : "text-status-win",
+                label: statusKey === "GRATUIT" ? "Abonnement" : "Jours restants",
+                value: statusKey === "GRATUIT" ? "Gratuit" : joursRestants > 0 ? joursRestants.toString() : "—",
+                sub: statusKey === "GRATUIT" ? "Passer Premium →" : "avant expiration",
+                color: statusKey === "GRATUIT" ? "text-text-muted" : joursRestants <= 5 ? "text-status-partial" : "text-status-win",
               },
             ].map(({ Icon, label, value, sub, color }) => (
               <div key={label} className="card-base p-4">
@@ -435,6 +464,46 @@ export default async function EspaceMembrePage() {
                 const confCfg = CONFIDENCE_CONFIG[p.confiance];
                 const resultClass = RESULTAT_STYLES[p.resultat] || RESULTAT_STYLES.EN_ATTENTE;
                 const resultLabel = RESULTAT_LABELS[p.resultat] || "En attente";
+                const locked = !userCanAccess(p.niveau_acces);
+
+                // Fix 2 — carte verrouillée pour niveaux non accessibles
+                if (locked) {
+                  return (
+                    <Link
+                      key={p.id}
+                      href="/abonnements"
+                      className="card-base p-4 flex items-start gap-4 border-dashed hover:border-gold-primary/40 transition-colors group relative overflow-hidden"
+                    >
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        p.niveau_acces === "VIP"
+                          ? "bg-purple-500/10 border border-purple-500/30"
+                          : "bg-gold-faint border border-gold-primary/30"
+                      }`}>
+                        {p.niveau_acces === "VIP"
+                          ? <Crown className="w-4 h-4 text-purple-400" />
+                          : <Star className="w-4 h-4 text-gold-primary" />}
+                      </div>
+                      <div className="flex-1 min-w-0 blur-sm select-none">
+                        <p className="text-text-primary font-semibold text-sm">
+                          Pronostic {p.niveau_acces} — ••••••••
+                        </p>
+                        <p className="text-text-muted text-xs mt-0.5">
+                          {BET_TYPE_LABELS[p.type_pari]} · ••• •••
+                        </p>
+                        <p className="text-text-secondary text-xs mt-2">
+                          ••••••••••••••••••••••••••••
+                        </p>
+                      </div>
+                      <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                        p.niveau_acces === "VIP"
+                          ? "text-purple-400 bg-purple-500/10 border-purple-500/30"
+                          : "text-gold-primary bg-gold-faint border-gold-primary/30"
+                      }`}>
+                        🔒 {p.niveau_acces}
+                      </span>
+                    </Link>
+                  );
+                }
 
                 return (
                   <Link
