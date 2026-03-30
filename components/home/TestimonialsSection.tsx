@@ -111,7 +111,7 @@ export default function TestimonialsSection() {
 
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1516673699707-4f2a243fafaf?w=1600&q=80"
+          src="/images/heroes/hero-abonnements.jpg"
           alt="Hippodrome PMU France"
           className="w-full h-full object-cover object-center"
         />

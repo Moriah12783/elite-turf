@@ -15,7 +15,7 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
   html: string;
 } {
   const prenom = data.nomComplet.split(" ")[0] || data.nomComplet;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", {
@@ -110,7 +110,7 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
 
     <p style="margin:0;color:#5A5A7A;font-size:12px;text-align:center;line-height:1.7;">
       Votre abonnement se renouvelle manuellement — vous recevrez un rappel 3 jours avant expiration.<br/>
-      Pour toute question : <a href="mailto:contact@eliteturf.fr" style="color:#C9A84C;">contact@eliteturf.fr</a>
+      Pour toute question : <a href="mailto:contact@elite-turf.fr" style="color:#C9A84C;">contact@elite-turf.fr</a>
     </p>
   `;
 

@@ -103,7 +103,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
       {/* Hero */}
       <div className="relative overflow-hidden h-36 sm:h-48">
         <img
-          src="https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1200&q=80"
+          src="/images/heroes/hero-courses.jpg"
           alt="Course hippique"
           className="w-full h-full object-cover object-center"
         />

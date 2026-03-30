@@ -27,11 +27,12 @@ export const dynamic = "force-dynamic";
 const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
 
 const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementType; classes: string }> = {
-  GAGNANT:    { label: "Gagnant",  icon: CheckCircle2, classes: "text-status-win bg-status-win/10 border-status-win/20" },
-  PERDANT:    { label: "Perdant",  icon: XCircle,      classes: "text-status-loss bg-status-loss/10 border-status-loss/20" },
-  PARTIEL:    { label: "Partiel",  icon: Minus,        classes: "text-status-partial bg-status-partial/10 border-status-partial/20" },
-  EN_ATTENTE: { label: "En cours", icon: Clock3,       classes: "text-text-muted bg-bg-elevated border-border" },
+  GAGNANT:    { label: "Gagnant",       icon: CheckCircle2, classes: "text-status-win bg-status-win/10 border-status-win/20" },
+  PERDANT:    { label: "Perdant",       icon: XCircle,      classes: "text-status-loss bg-status-loss/10 border-status-loss/20" },
+  PARTIEL:    { label: "Partiel",       icon: Minus,        classes: "text-status-partial bg-status-partial/10 border-status-partial/20" },
+  EN_ATTENTE: { label: "En cours",      icon: Clock3,       classes: "text-text-muted bg-bg-elevated border-border" },
 };
+const RESULTAT_DEPASSE = { label: "Non actualisé", icon: Clock3, classes: "text-orange-400 bg-orange-500/10 border-orange-500/20" };
 
 function winRate(items: any[]): number {
   const done = items.filter(p => p.resultat !== "EN_ATTENTE");
@@ -138,6 +139,7 @@ export default async function PerformancesPage() {
 
   // ── Historique récent (30 derniers) ──────────────────────────────
   const recent = pronostics.slice(0, 30);
+  const todayStr = now.toISOString().split("T")[0];
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -384,7 +386,8 @@ export default async function PerformancesPage() {
                 </thead>
                 <tbody className="divide-y divide-border/30">
                   {recent.map((p: any) => {
-                    const res    = RESULTAT_CONFIG[p.resultat as PronosticResult] || RESULTAT_CONFIG.EN_ATTENTE;
+                    const courseDatePast = p.resultat === "EN_ATTENTE" && (p.course as any)?.date_course && (p.course as any).date_course < todayStr;
+                    const res    = courseDatePast ? RESULTAT_DEPASSE : (RESULTAT_CONFIG[p.resultat as PronosticResult] || RESULTAT_CONFIG.EN_ATTENTE);
                     const ResIcon = res.icon;
                     const course  = p.course as any;
                     const dateStr = p.date_publication
@@ -459,7 +462,7 @@ export default async function PerformancesPage() {
         {/* ── CTA FINAL ───────────────────────────────────────────── */}
         <div className="relative rounded-2xl overflow-hidden border border-gold-primary/30">
           <img
-            src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1200&q=80"
+            src="/images/heroes/hero-a-propos.jpg"
             alt="Rejoignez Elite Turf"
             className="absolute inset-0 w-full h-full object-cover opacity-15"
           />

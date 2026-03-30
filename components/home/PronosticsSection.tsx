@@ -191,7 +191,7 @@ export default async function PronosticsSection() {
         <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
           <div className="absolute inset-0 z-0">
             <img
-              src="https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=1200&q=80"
+              src="/images/heroes/hero-a-propos.jpg"
               alt="Cheval vedette"
               className="w-full h-full object-cover opacity-20"
             />
@@ -414,7 +414,7 @@ function BannerImage({ count }: { count: number }) {
   return (
     <div className="relative rounded-2xl overflow-hidden mb-12">
       <img
-        src="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1200&q=80"
+        src="/images/heroes/hero-legal.jpg"
         alt="Chevaux au galop"
         className="w-full h-48 object-cover rounded-xl"
       />

@@ -106,7 +106,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
       {/* ── HERO BANNER ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden h-40 sm:h-52">
         <img
-          src="https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=1200&q=80"
+          src="/images/heroes/hero-pronostics.jpg"
           alt="Course hippique"
           className="w-full h-full object-cover object-center"
         />

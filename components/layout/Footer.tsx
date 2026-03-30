@@ -11,7 +11,7 @@ export default function Footer() {
       {/* ── SECTION AMBIANCE ── */}
       <div className="relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1509399316151-9b86c70fdd40?w=1600&q=80"
+          src="/images/heroes/hero-courses.jpg"
           alt="Hippodrome PMU France — Elite Turf"
           className="w-full h-52 sm:h-64 object-cover object-center"
         />
@@ -114,11 +114,11 @@ export default function Footer() {
               <ul className="space-y-3">
                 <li>
                   <a
-                    href="mailto:contact@eliteturf.fr"
+                    href="mailto:contact@elite-turf.fr"
                     className="flex items-center gap-2 text-text-secondary hover:text-gold-light text-sm transition-colors"
                   >
                     <Mail className="w-4 h-4 flex-shrink-0" />
-                    contact@eliteturf.fr
+                    contact@elite-turf.fr
                   </a>
                 </li>
                 <li>

@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://eliteturf.fr");
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://elite-turf.fr");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

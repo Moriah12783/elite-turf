@@ -35,8 +35,8 @@ export default function MentionsLegalesPage() {
             </p>
             <p className="mt-2">
               <strong className="text-text-primary">Contact :</strong>{" "}
-              <a href="mailto:contact@eliteturf.fr" className="text-gold-light hover:underline">
-                contact@eliteturf.fr
+              <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
+                contact@elite-turf.fr
               </a>
             </p>
           </section>

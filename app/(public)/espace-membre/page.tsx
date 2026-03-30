@@ -58,9 +58,9 @@ const RESULTAT_STYLES = {
 };
 
 const RESULTAT_LABELS = {
-  GAGNANT: "✓ Gagnant",
-  PERDANT: "✗ Perdant",
-  PARTIEL: "~ Partiel",
+  GAGNANT:    "✓ Gagnant",
+  PERDANT:    "✗ Perdant",
+  PARTIEL:    "~ Partiel",
   EN_ATTENTE: "En attente",
 };
 
@@ -394,9 +394,9 @@ export default async function EspaceMembrePage() {
             {[
               {
                 Icon: Eye,
-                label: "Pronostics consultés",
+                label: "Pronostics récents",
                 value: recentPronostics.length.toString(),
-                sub: "ce mois",
+                sub: "8 derniers publiés",
                 color: "text-gold-primary",
               },
               {
@@ -455,15 +455,20 @@ export default async function EspaceMembrePage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentPronostics.map((p) => {
+              {(() => {
+                const todayDateStr = new Date().toISOString().split("T")[0];
+                return recentPronostics.map((p) => {
                 const course = p.course as {
                   libelle?: string;
                   date_course?: string;
                   hippodrome?: { nom: string };
                 } | undefined;
                 const confCfg = CONFIDENCE_CONFIG[p.confiance];
-                const resultClass = RESULTAT_STYLES[p.resultat] || RESULTAT_STYLES.EN_ATTENTE;
-                const resultLabel = RESULTAT_LABELS[p.resultat] || "En attente";
+                const raceDatePast = p.resultat === "EN_ATTENTE" && course?.date_course && course.date_course < todayDateStr;
+                const resultClass = raceDatePast
+                  ? "text-orange-400 bg-orange-500/10 border-orange-500/20"
+                  : (RESULTAT_STYLES[p.resultat] || RESULTAT_STYLES.EN_ATTENTE);
+                const resultLabel = raceDatePast ? "Non actualisé" : (RESULTAT_LABELS[p.resultat] || "En attente");
                 const locked = !userCanAccess(p.niveau_acces);
 
                 // Fix 2 — carte verrouillée pour niveaux non accessibles
@@ -566,7 +571,7 @@ export default async function EspaceMembrePage() {
                     </div>
                   </Link>
                 );
-              })}
+              }); })()}
             </div>
           )}
         </div>

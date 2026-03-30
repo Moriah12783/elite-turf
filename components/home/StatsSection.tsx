@@ -73,7 +73,7 @@ export default async function StatsSection() {
       {/* Fond hippodrome */}
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1609510038916-9328a3c86966?w=1600&q=80"
+          src="/images/heroes/hero-performances.jpg"
           alt="Hippodrome"
           className="w-full h-full object-cover object-center"
         />

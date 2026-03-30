@@ -9,15 +9,15 @@ import { buildGenyUrl } from "@/lib/geny";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
 
 const HIPPODROME_IMAGES: Record<string, string> = {
-  "Longchamp":             "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
-  "Vincennes":             "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
-  "Chantilly":             "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
-  "Auteuil":               "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
-  "Deauville":             "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80",
-  "Cagnes-sur-Mer":        "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=600&q=80",
-  "Hippodrome de la Riviera": "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80",
+  "Longchamp":             "/images/heroes/hero-a-propos.jpg",
+  "Vincennes":             "/images/heroes/hero-pronostics.jpg",
+  "Chantilly":             "/images/heroes/hero-abonnements.jpg",
+  "Auteuil":               "/images/heroes/hero-legal.jpg",
+  "Deauville":             "/images/heroes/hero-blog.jpg",
+  "Cagnes-sur-Mer":        "/images/heroes/hero-contact.jpg",
+  "Hippodrome de la Riviera": "/images/heroes/hero-guide.jpg",
 };
-const DEFAULT_IMG = "https://images.unsplash.com/photo-1526094633853-031707a44819?w=600&q=80";
+const DEFAULT_IMG = "/images/heroes/hero-courses.jpg";
 
 const CATEGORIE_COLORS: Record<string, string> = {
   PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",

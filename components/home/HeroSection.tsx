@@ -41,7 +41,7 @@ export default function HeroSection() {
         className="absolute inset-0 z-0 will-change-transform"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1920&q=80')",
+            "url('/images/heroes/hero-courses.jpg')",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
           backgroundPosition: `center calc(30% + ${parallaxY}px)`,

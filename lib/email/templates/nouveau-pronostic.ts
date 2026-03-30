@@ -17,7 +17,7 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   html: string;
 } {
   const prenom = data.nomComplet.split(" ")[0] || data.nomComplet;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
   const isVip = data.niveauAcces === "VIP";
   const isPremium = data.niveauAcces === "PREMIUM";

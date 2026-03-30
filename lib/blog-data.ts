@@ -21,7 +21,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Stratégie",
     date: "2026-03-28",
     readTime: "9 min",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
+    image: "/images/heroes/hero-pronostics.jpg",
     popular: true,
     keywords: [
       "comment gagner au Quinté+",
@@ -58,7 +58,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide",
     date: "2026-03-27",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1526094633853-031707a44819?w=1200&q=80",
+    image: "/images/heroes/hero-performances.jpg",
     keywords: [
       "pronostics PMU Côte d'Ivoire",
       "LONACI pronostics",
@@ -94,7 +94,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Gestion",
     date: "2026-03-25",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1516673699707-4f2a243fafaf?w=1200&q=80",
+    image: "/images/heroes/hero-blog.jpg",
     keywords: [
       "gestion bankroll turf",
       "gestion mise PMU",
@@ -127,7 +127,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Technique",
     date: "2026-03-22",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1200&q=80",
+    image: "/images/heroes/hero-abonnements.jpg",
     keywords: [
       "cheval déferré D4",
       "déferrage cheval turf",
@@ -162,7 +162,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Grands Prix",
     date: "2026-03-20",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=600&q=80",
+    image: "/images/heroes/hero-a-propos.jpg",
     keywords: [
       "Prix de l'Arc de Triomphe",
       "Grand Prix d'Amérique",
@@ -197,7 +197,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide débutants",
     date: "2026-03-18",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
+    image: "/images/heroes/hero-pronostics.jpg",
     keywords: [
       "différence tiercé quarté quinté",
       "guide paris PMU débutant",
@@ -233,7 +233,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Technique",
     date: "2026-03-15",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1635895882609-942f36e1db5d?w=600&q=80",
+    image: "/images/heroes/hero-courses.jpg",
     keywords: [
       "lire musique cheval PMU",
       "musique hippique",
@@ -277,7 +277,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Innovation",
     date: "2026-03-12",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1635895901494-539a6b2647af?w=600&q=80",
+    image: "/images/heroes/hero-guide.jpg",
     keywords: [
       "intelligence artificielle pronostics hippiques",
       "IA turf PMU",
@@ -312,7 +312,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Témoignages",
     date: "2026-03-10",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1609510038916-9328a3c86966?w=1600&q=80",
+    image: "/images/heroes/hero-contact.jpg",
     keywords: [
       "avis Elite Turf",
       "témoignages Elite Turf",
@@ -348,7 +348,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Actualité",
     date: "2026-03-08",
     readTime: "5 min",
-    image: "https://images.unsplash.com/photo-1507514604110-ba3347c457f6?w=1920&q=80",
+    image: "/images/heroes/hero-legal.jpg",
     keywords: [
       "meilleurs jockeys 2026",
       "jockey PMU à suivre",
@@ -387,7 +387,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Quinté+",
     date: "2026-03-24",
     readTime: "7 min",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80",
+    image: "/images/heroes/hero-pronostics.jpg",
     keywords: [
       "pronostic Quinté+ du jour",
       "analyse Quinté+ PMU",
@@ -422,7 +422,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide",
     date: "2026-03-20",
     readTime: "10 min",
-    image: "https://images.unsplash.com/photo-1526094633853-031707a44819?w=1200&q=80",
+    image: "/images/heroes/hero-performances.jpg",
     keywords: [
       "PMU Côte d'Ivoire",
       "PMU Maroc",
@@ -453,7 +453,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide hippodromes",
     date: "2026-03-15",
     readTime: "8 min",
-    image: "https://images.unsplash.com/photo-1708882308455-cd5f478f7bf9?w=1200&q=80",
+    image: "/images/heroes/hero-abonnements.jpg",
     keywords: [
       "Vincennes hippodrome trot",
       "Longchamp hippodrome",
@@ -479,7 +479,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     categorie: "Guide paris",
     date: "2026-03-10",
     readTime: "6 min",
-    image: "https://images.unsplash.com/photo-1516673699707-4f2a243fafaf?w=1200&q=80",
+    image: "/images/heroes/hero-blog.jpg",
     keywords: [
       "tiercé quarté quinté guide",
       "paris PMU Afrique",
@@ -501,3 +501,4 @@ export const BLOG_ARTICLES: BlogArticle[] = [
 export function getArticle(slug: string): BlogArticle | undefined {
   return BLOG_ARTICLES.find((a) => a.slug === slug);
 }
+

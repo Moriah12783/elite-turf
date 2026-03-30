@@ -10,7 +10,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
   html: string;
 } {
   const prenom = nomComplet.split(" ")[0] || nomComplet;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
   const content = `
     <!-- Titre -->

@@ -65,15 +65,15 @@ export function emailBase(content: string, previewText = ""): string {
           <tr>
             <td style="background:#111118;border:1px solid #1E1E2E;border-top:0;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
               <p style="margin:0 0 6px 0;color:#5A5A7A;font-size:11px;">
-                Elite Turf · 75008 Paris, France · <a href="mailto:contact@eliteturf.fr" style="color:#5A5A7A;">contact@eliteturf.fr</a>
+                Elite Turf · 75008 Paris, France · <a href="mailto:contact@elite-turf.fr" style="color:#5A5A7A;">contact@elite-turf.fr</a>
               </p>
               <p style="margin:0;color:#3A3A5A;font-size:10px;">
                 Pronostics PMU pour les parieurs francophones — Les courses françaises, analysées depuis Paris.
               </p>
               <p style="margin:8px 0 0 0;color:#3A3A5A;font-size:10px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr"}/confidentialite" style="color:#3A3A5A;">Politique de confidentialité</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr"}/confidentialite" style="color:#3A3A5A;">Politique de confidentialité</a>
                 &nbsp;·&nbsp;
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr"}/abonnements" style="color:#3A3A5A;">Gérer mon abonnement</a>
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr"}/abonnements" style="color:#3A3A5A;">Gérer mon abonnement</a>
               </p>
             </td>
           </tr>

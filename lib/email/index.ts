@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
-export const FROM_EMAIL = "Elite Turf <noreply@eliteturf.fr>";
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://eliteturf.fr";
+export const FROM_EMAIL = "Elite Turf <noreply@elite-turf.fr>";
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -37,7 +37,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<boolean> {
       to: Array.isArray(opts.to) ? opts.to : [opts.to],
       subject: opts.subject,
       html: opts.html,
-      replyTo: opts.replyTo ?? "contact@eliteturf.fr",
+      replyTo: opts.replyTo ?? "contact@elite-turf.fr",
     });
 
     if (error) {

@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 // Priorité : variable explicite > URL Vercel auto > fallback prod
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://eliteturf.fr");
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://elite-turf.fr");
 
 export const metadata: Metadata = {
   title: {

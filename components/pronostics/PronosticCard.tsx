@@ -51,6 +51,8 @@ const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementTyp
   EN_ATTENTE: { label: "En cours",  icon: Clock3,       classes: "bg-bg-elevated text-text-muted border-border" },
 };
 
+const RESULTAT_CONFIG_DEPASSE = { label: "Non actualisé", icon: Clock3, classes: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
+
 const CATEGORIE_COLORS: Record<string, string> = {
   PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",
   TROT:     "bg-purple-500/10 text-purple-400 border-purple-500/20",
@@ -60,7 +62,10 @@ const CATEGORIE_COLORS: Record<string, string> = {
 export default function PronosticCard({ pronostic: p, userSubscription }: PronosticCardProps) {
   const hasAccess = canAccess(p.niveau_acces, userSubscription);
   const conf = CONFIDENCE_CONFIG[p.confiance];
-  const resultatConf = RESULTAT_CONFIG[p.resultat];
+  // Si le résultat est EN_ATTENTE mais que la date de course est passée → "Non actualisé"
+  const today = new Date().toISOString().split("T")[0];
+  const racePast = p.resultat === "EN_ATTENTE" && p.course?.date_course && p.course.date_course < today;
+  const resultatConf = racePast ? RESULTAT_CONFIG_DEPASSE : RESULTAT_CONFIG[p.resultat];
   const ResultatIcon = resultatConf.icon;
 
   return (
