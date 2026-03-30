@@ -72,9 +72,13 @@ const PAYS_HIPPO: Record<string, string> = {
   "MARRAKECH":        "Maroc",
   "DAKAR":            "Sénégal",
   "CASABLANCA":       "Maroc",
+  "ANFA":             "Maroc",       // Hippodrome d'Anfa = Casablanca
   "ABIDJAN":          "Côte d'Ivoire",
   "TUNIS":            "Tunisie",
   "SOUSSE":           "Tunisie",
+  "MONS":             "Belgique",
+  "OSTENDE":          "Belgique",
+  "BRUSSELS":         "Belgique",
 };
 
 function getPays(hippodrome: string): string {

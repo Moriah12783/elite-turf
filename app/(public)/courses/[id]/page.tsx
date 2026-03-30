@@ -94,9 +94,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
     c.numero_course,
     c.statut === "TERMINE" ? "resultats" : "partants"
   );
-  const dateStr  = c.date_course.replace(/-/g, "");
-  const hippoSlug = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
-  const pmuUrl   = `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}`;
+  const dateStr    = c.date_course.replace(/-/g, "");
+  const isFrance   = !c.hippodrome?.pays || c.hippodrome.pays === "France";
+  const hippoSlug  = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
+  const pmuUrl     = isFrance ? `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}` : null;
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -155,14 +156,16 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   )}
                   {/* External links */}
                   <div className="ml-auto flex items-center gap-2">
-                    <a
-                      href={pmuUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[#003189]/10 hover:bg-[#003189]/20 text-[#4A7FD4] border border-[#003189]/20 transition-colors"
-                    >
-                      <ExternalLink className="w-3 h-3" /> PMU.fr
-                    </a>
+                    {pmuUrl && (
+                      <a
+                        href={pmuUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[#003189]/10 hover:bg-[#003189]/20 text-[#4A7FD4] border border-[#003189]/20 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" /> PMU.fr
+                      </a>
+                    )}
                     <a
                       href={genyUrl}
                       target="_blank"
