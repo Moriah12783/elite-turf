@@ -33,6 +33,30 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/pmu-sync",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/pmu-sync",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/pmu-sync",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "0 14 * * *"
+    },
+    {
       "path": "/api/cron/geny-arrivees",
       "schedule": "0 13 * * *"
     },
