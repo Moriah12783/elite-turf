@@ -19,17 +19,21 @@ export default function OneSignalInit() {
           await OneSignal.init({
             appId: "${APP_ID}",
             notifyButton: { enable: false },
+            welcomeNotification: {
+              title: "Elite Turf",
+              message: "Merci ! Vous recevrez les pronostics du jour 🏇",
+            },
             promptOptions: {
               slidedown: {
                 prompts: [{
                   type: "push",
                   autoPrompt: true,
                   text: {
-                    actionMessage: "🏇 Recevez les pronostics Elite Turf directement sur votre téléphone !",
+                    actionMessage: "🏇 Recevez les pronostics Elite Turf directement sur votre appareil !",
                     acceptButton: "Oui, m'abonner",
                     cancelButton: "Plus tard"
                   },
-                  delay: { timeDelay: 5, pageViews: 2 }
+                  delay: { timeDelay: 5, pageViews: 1 }
                 }]
               }
             }
