@@ -30,27 +30,63 @@ export async function GET() {
   const items: { label: string; result: string; status: "win" | "partial" | "pending" }[] = [];
 
   try {
-    // ── 1. Arrivées réelles du jour (courses terminées) ──────────────────────
+    // ── 1. Arrivées réelles du jour (via table arrivees) ─────────────────────
     const { data: arrivees } = await supabase
       .from("arrivees")
       .select(`
         ordre_arrivee,
         course:course_id(
-          numero_reunion, numero_course,
+          numero_reunion, numero_course, heure_depart,
           hippodrome:hippodromes(nom)
         )
       `)
       .gte("horodatage", `${today}T00:00:00`)
       .order("horodatage", { ascending: false })
-      .limit(5);
+      .limit(8);
 
     if (arrivees?.length) {
       arrivees.forEach((a: any) => {
+        const nums = Array.isArray(a.ordre_arrivee)
+          ? a.ordre_arrivee.slice(0, 5).join(" - ")
+          : a.ordre_arrivee;
         items.push({
-          label:  `R${a.course?.numero_reunion} ${a.course?.hippodrome?.nom || "PMU"}`,
-          result: `✅ Arrivée : ${(a.ordre_arrivee as number[]).slice(0, 5).join(" - ")}`,
+          label:  `R${a.course?.numero_reunion}C${a.course?.numero_course} ${a.course?.hippodrome?.nom || "PMU"}`,
+          result: `🏁 Arrivée : ${nums}`,
           status: "win",
         });
+      });
+    }
+
+    // ── 1b. Courses terminées du jour (statut TERMINE, avec arrivée dans courses) ──
+    const { data: coursesTerminees } = await supabase
+      .from("courses")
+      .select(`
+        numero_reunion, numero_course, heure_depart, nom_course,
+        arrivee_officielle,
+        hippodrome:hippodromes(nom)
+      `)
+      .eq("date_course", today)
+      .eq("statut", "TERMINE")
+      .not("arrivee_officielle", "is", null)
+      .order("heure_depart", { ascending: false })
+      .limit(8);
+
+    if (coursesTerminees?.length) {
+      coursesTerminees.forEach((c: any) => {
+        const nums = Array.isArray(c.arrivee_officielle)
+          ? c.arrivee_officielle.slice(0, 5).join(" - ")
+          : c.arrivee_officielle;
+        // Eviter les doublons avec la table arrivees
+        const dejaDans = items.some(
+          i => i.label.includes(`R${c.numero_reunion}C${c.numero_course}`)
+        );
+        if (!dejaDans) {
+          items.push({
+            label:  `R${c.numero_reunion}C${c.numero_course} ${c.hippodrome?.nom || "PMU"}`,
+            result: `🏁 Arrivée : ${nums}`,
+            status: "win",
+          });
+        }
       });
     }
 
