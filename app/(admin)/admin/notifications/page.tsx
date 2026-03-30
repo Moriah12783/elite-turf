@@ -1,50 +1,89 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Send, Users, Tag, Info, Megaphone, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Send, Users, Tag, Info, Megaphone, AlertTriangle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const TYPE_CONFIG = {
-  info:   { label: "Information",  icon: Info,         color: "text-blue-400",         bg: "bg-blue-400/10 border-blue-400/30" },
-  promo:  { label: "Promotion",    icon: Megaphone,    color: "text-gold-primary",     bg: "bg-gold-faint border-gold-primary/30" },
-  alerte: { label: "Alerte",       icon: AlertTriangle, color: "text-status-partial",  bg: "bg-status-partial/10 border-status-partial/30" },
+  info:   { label: "Information",  icon: Info,          color: "text-blue-400",       bg: "bg-blue-400/10 border-blue-400/30" },
+  promo:  { label: "Promotion",    icon: Megaphone,     color: "text-gold-primary",   bg: "bg-gold-faint border-gold-primary/30" },
+  alerte: { label: "Alerte",       icon: AlertTriangle, color: "text-status-partial", bg: "bg-status-partial/10 border-status-partial/30" },
 };
 
 const SEGMENT_CONFIG = [
-  { value: "tous",     label: "Tous les membres",   count: "—", icon: Users },
-  { value: "premium",  label: "Abonnés Premium",    count: "—", icon: Tag },
-  { value: "gratuit",  label: "Membres Gratuit",    count: "—", icon: Bell },
-  { value: "expires",  label: "Abonnements expirés", count: "—", icon: AlertTriangle },
+  { value: "tous",    label: "Tous les membres",    icon: Users },
+  { value: "premium", label: "Abonnés Premium",     icon: Tag },
+  { value: "gratuit", label: "Membres Gratuit",     icon: Bell },
+  { value: "expires", label: "Abonnements expirés", icon: AlertTriangle },
 ];
 
-const HISTORIQUE_MOCK = [
-  { titre: "🏇 Quinté+ gagnant aujourd'hui !", type: "alerte", segment: "Tous", date: "2026-03-28 07:30", ouvertures: 412 },
-  { titre: "Nouveau pronostic VIP disponible", type: "promo", segment: "Premium", date: "2026-03-27 08:00", ouvertures: 189 },
-  { titre: "Votre abonnement expire dans 3 jours", type: "info", segment: "Expirés", date: "2026-03-26 09:00", ouvertures: 67 },
-  { titre: "Guide gratuit : 5 secrets du Quinté+", type: "promo", segment: "Gratuit", date: "2026-03-25 10:00", ouvertures: 823 },
-];
+type Notif = {
+  id: string;
+  headings?: { fr?: string; en?: string };
+  contents?: { fr?: string; en?: string };
+  completed_at?: number;
+  successful?: number;
+};
 
 export default function NotificationsPage() {
-  const [titre, setTitre] = useState("");
+  const [titre,   setTitre]   = useState("");
   const [message, setMessage] = useState("");
-  const [type, setType] = useState<"info" | "promo" | "alerte">("info");
+  const [type,    setType]    = useState<"info" | "promo" | "alerte">("info");
   const [segment, setSegment] = useState("tous");
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [status,  setStatus]  = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [statusMsg, setStatusMsg] = useState("");
+  const [recipients, setRecipients] = useState<number | null>(null);
+  const [history,  setHistory]  = useState<Notif[]>([]);
+  const [histLoading, setHistLoading] = useState(true);
+
+  // Charger l'historique au montage
+  useEffect(() => {
+    fetch("/api/notifications/send")
+      .then(r => r.json())
+      .then(d => setHistory(d.notifications || []))
+      .catch(() => {})
+      .finally(() => setHistLoading(false));
+  }, []);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!titre.trim() || !message.trim()) return;
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSent(true);
-    setLoading(false);
-    setTitre("");
-    setMessage("");
+    setStatus("loading");
+    setStatusMsg("");
+
+    try {
+      const res = await fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titre, message, type, segment }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus("error");
+        setStatusMsg(data.error || "Erreur lors de l'envoi");
+        return;
+      }
+
+      setStatus("success");
+      setRecipients(data.recipients);
+      setStatusMsg(`Notification envoyée à ${data.recipients} abonné(s) !`);
+      setTitre("");
+      setMessage("");
+
+      // Rafraîchir l'historique
+      fetch("/api/notifications/send")
+        .then(r => r.json())
+        .then(d => setHistory(d.notifications || []))
+        .catch(() => {});
+
+    } catch {
+      setStatus("error");
+      setStatusMsg("Erreur réseau — réessayez");
+    }
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="font-serif text-2xl font-bold text-text-primary">Notifications</h1>
         <p className="text-text-secondary text-sm mt-1">Envoyer des push notifications à vos membres</p>
@@ -59,10 +98,16 @@ export default function NotificationsPage() {
             Nouvelle notification
           </h2>
 
-          {sent && (
+          {status === "success" && (
             <div className="mb-4 p-3 bg-status-win/10 border border-status-win/20 rounded-xl flex items-center gap-2 text-status-win text-sm">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-              Notification envoyée avec succès !
+              {statusMsg}
+            </div>
+          )}
+          {status === "error" && (
+            <div className="mb-4 p-3 bg-status-loss/10 border border-status-loss/20 rounded-xl flex items-center gap-2 text-status-loss text-sm">
+              <XCircle className="w-4 h-4 flex-shrink-0" />
+              {statusMsg}
             </div>
           )}
 
@@ -136,15 +181,14 @@ export default function NotificationsPage() {
 
             <button
               type="submit"
-              disabled={loading || !titre.trim() || !message.trim()}
+              disabled={status === "loading" || !titre.trim() || !message.trim()}
               className="w-full py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+              {status === "loading" ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
               ) : (
-                <Send className="w-4 h-4" />
+                <><Send className="w-4 h-4" /> Envoyer la notification</>
               )}
-              {loading ? "Envoi en cours..." : "Envoyer la notification"}
             </button>
           </form>
         </div>
@@ -156,30 +200,41 @@ export default function NotificationsPage() {
             Historique récent
           </h2>
 
-          <div className="space-y-3">
-            {HISTORIQUE_MOCK.map((n, i) => {
-              const cfg = TYPE_CONFIG[n.type as keyof typeof TYPE_CONFIG];
-              return (
-                <div key={i} className="p-3 bg-bg-elevated rounded-xl border border-border">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-text-primary text-sm font-semibold leading-snug">{n.titre}</span>
-                    <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
-                      {cfg.label}
-                    </span>
+          {histLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-gold-primary" />
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <Bell className="w-8 h-8 text-text-muted mx-auto mb-2" />
+              <p className="text-text-muted text-sm">Aucune notification envoyée</p>
+              <p className="text-text-muted text-xs mt-1">
+                Les notifications apparaîtront ici après l&apos;envoi
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((n) => {
+                const titreNotif = n.headings?.fr || n.headings?.en || "—";
+                const contenu    = n.contents?.fr  || n.contents?.en  || "";
+                const date       = n.completed_at
+                  ? new Date(n.completed_at * 1000).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+                  : "—";
+                return (
+                  <div key={n.id} className="p-3 bg-bg-elevated rounded-xl border border-border">
+                    <p className="text-text-primary text-sm font-semibold leading-snug mb-1">{titreNotif}</p>
+                    {contenu && <p className="text-text-muted text-xs mb-2 line-clamp-2">{contenu}</p>}
+                    <div className="flex items-center gap-3 text-xs text-text-muted">
+                      <span>📅 {date}</span>
+                      {(n.successful ?? 0) > 0 && (
+                        <span className="text-status-win font-medium">✓ {n.successful} reçues</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-text-muted">
-                    <span>👥 {n.segment}</span>
-                    <span>📅 {n.date}</span>
-                    <span className="text-status-win font-medium">👁 {n.ouvertures} ouvertures</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <p className="text-text-muted text-xs mt-4 text-center">
-            Les données réelles s&apos;afficheront une fois OneSignal configuré.
-          </p>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

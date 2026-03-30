@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import OneSignalInit from "@/components/OneSignalInit";
 
 // VERCEL_URL est automatiquement injecté par Vercel (ex: elite-turf-xyz.vercel.app)
 // Priorité : variable explicite > URL Vercel auto > fallback prod
@@ -80,6 +81,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="bg-bg-primary text-text-primary font-sans antialiased">
+        <OneSignalInit />
         {children}
         <Toaster
           position="top-right"
