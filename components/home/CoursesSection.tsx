@@ -9,30 +9,32 @@ const CATEGORIE_COLORS: Record<string, string> = {
   OBSTACLE: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
-const FALLBACK_IMAGES = [
+const ALL_IMAGES = [
   "/images/heroes/hero-courses.jpg",
+  "/images/heroes/hero-pronostics.jpg",
+  "/images/heroes/hero-performances.jpg",
+  "/images/heroes/hero-a-propos.jpg",
   "/images/heroes/hero-legal.jpg",
   "/images/heroes/hero-guide.jpg",
-  "/images/heroes/hero-pronostics.jpg",
+  "/images/heroes/hero-blog.jpg",
+  "/images/heroes/hero-abonnements.jpg",
   "/images/heroes/hero-contact.jpg",
 ];
 
+// idx assure qu'on n'affiche jamais 2 fois la même image dans la grille (max 3 cartes)
 function hippoImage(nom: string, idx: number = 0): string {
   const n = nom.toLowerCase();
-  if (n.includes("vincenn"))   return "/images/heroes/hero-pronostics.jpg";
-  if (n.includes("longchamp")) return "/images/heroes/hero-a-propos.jpg";
-  if (n.includes("saint-cloud") || n.includes("saint cloud")) return "/images/heroes/hero-courses.jpg";
-  if (n.includes("chantilly"))  return "/images/heroes/hero-abonnements.jpg";
-  if (n.includes("marrakech") || n.includes("casabl") || n.includes("abidjan") || n.includes("dakar"))
-    return "/images/heroes/hero-guide.jpg";
-  if (n.includes("chatel") || n.includes("la teste") || n.includes("deauville") || n.includes("clairef"))
-    return "/images/heroes/hero-blog.jpg";
-  if (n.includes("fontaine") || n.includes("maisons") || n.includes("compiegne") || n.includes("compiègne"))
-    return "/images/heroes/hero-legal.jpg";
-  if (n.includes("lyon") || n.includes("parilly") || n.includes("bordeaux") || n.includes("toulouse"))
-    return "/images/heroes/hero-contact.jpg";
-  // Fallback indexé pour varier les images entre courses
-  return FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+  let seed = 0;
+  if (n.includes("vincenn"))                                            seed = 1;
+  else if (n.includes("longchamp"))                                     seed = 0;
+  else if (n.includes("saint-cloud") || n.includes("saint cloud"))      seed = 2;
+  else if (n.includes("chantilly"))                                     seed = 3;
+  else if (n.includes("abidjan") || n.includes("dakar") || n.includes("marrakech") || n.includes("casabl")) seed = 5;
+  else if (n.includes("deauville") || n.includes("la teste") || n.includes("clairef")) seed = 6;
+  else if (n.includes("fontaine") || n.includes("maisons") || n.includes("compiegne") || n.includes("compiègne")) seed = 7;
+  else if (n.includes("lyon") || n.includes("parilly") || n.includes("bordeaux") || n.includes("toulouse")) seed = 8;
+  else seed = n.charCodeAt(0) % ALL_IMAGES.length;
+  return ALL_IMAGES[(seed + idx) % ALL_IMAGES.length];
 }
 
 export default async function CoursesSection() {

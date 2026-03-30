@@ -8,16 +8,45 @@ import {
 import { buildGenyUrl } from "@/lib/geny";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
 
-const HIPPODROME_IMAGES: Record<string, string> = {
-  "Longchamp":             "/images/heroes/hero-a-propos.jpg",
-  "Vincennes":             "/images/heroes/hero-pronostics.jpg",
-  "Chantilly":             "/images/heroes/hero-abonnements.jpg",
-  "Auteuil":               "/images/heroes/hero-legal.jpg",
-  "Deauville":             "/images/heroes/hero-blog.jpg",
-  "Cagnes-sur-Mer":        "/images/heroes/hero-contact.jpg",
-  "Hippodrome de la Riviera": "/images/heroes/hero-guide.jpg",
+// Pool complet des 9 photos PMU locales
+const ALL_IMAGES = [
+  "/images/heroes/hero-courses.jpg",
+  "/images/heroes/hero-pronostics.jpg",
+  "/images/heroes/hero-performances.jpg",
+  "/images/heroes/hero-a-propos.jpg",
+  "/images/heroes/hero-legal.jpg",
+  "/images/heroes/hero-guide.jpg",
+  "/images/heroes/hero-blog.jpg",
+  "/images/heroes/hero-abonnements.jpg",
+  "/images/heroes/hero-contact.jpg",
+];
+
+// Offset de base par hippodrome — garantit que des hippodromes différents
+// commencent sur des images différentes, et numero_course assure la variété
+// au sein du même hippodrome (R9C1 ≠ R9C2 ≠ R9C3…)
+const HIPPODROME_SEED: Record<string, number> = {
+  "Longchamp":                0,
+  "ParisLongchamp":           0,
+  "Vincennes":                1,
+  "Chantilly":                2,
+  "Auteuil":                  3,
+  "Deauville":                4,
+  "Saint-Cloud":              5,
+  "Maisons-Laffitte":         6,
+  "Compiegne":                7,
+  "Fontainebleau":            8,
+  "Cagnes-sur-Mer":           3,
+  "Hippodrome de la Riviera": 4,
+  "Lyon-Parilly":             5,
+  "Bordeaux":                 6,
+  "Toulouse":                 7,
+  "La Teste":                 8,
 };
-const DEFAULT_IMG = "/images/heroes/hero-courses.jpg";
+
+function getCourseImage(hippodromeName: string, numeroCourse: number): string {
+  const seed = HIPPODROME_SEED[hippodromeName] ?? Math.abs(hippodromeName.charCodeAt(0) % ALL_IMAGES.length);
+  return ALL_IMAGES[(seed + numeroCourse - 1) % ALL_IMAGES.length];
+}
 
 const CATEGORIE_COLORS: Record<string, string> = {
   PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -70,7 +99,7 @@ interface Props {
 
 export default function CourseCard({ course: c, userSubscription }: Props) {
   const statut          = STATUT_CONFIG[c.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.PROGRAMME;
-  const imageUrl        = HIPPODROME_IMAGES[c.hippodrome?.nom || ""] || DEFAULT_IMG;
+  const imageUrl        = getCourseImage(c.hippodrome?.nom || "", c.numero_course || 1);
   const pronosticPublie = c.pronostics?.find((p) => p.publie);
   const refCourse       = `R${c.numero_reunion}C${c.numero_course}`;
   const typePari        = pronosticPublie?.type_pari;
