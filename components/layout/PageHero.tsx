@@ -14,11 +14,11 @@ export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
           backgroundImage: `url('${image}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          filter: "grayscale(100%) brightness(0.45)",
+          filter: "grayscale(100%) brightness(0.65)",
         }}
       />
       {/* Overlay noir 50% */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/30" />
       {/* Gradient bas vers fond */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1C1C1C]/90" />
 
