@@ -79,7 +79,7 @@ export default async function EspaceMembrePage() {
   const [profileRes, abonnementRes, pronosticsRes] = await Promise.all([
     serviceClient
       .from("profiles")
-      .select("nom_complet, email, pays, ville, statut_abonnement, date_inscription, date_expiration_abonnement, avatar_url")
+      .select("nom_complet, email, phone, pays, ville, statut_abonnement, date_inscription, date_expiration_abonnement, avatar_url")
       .eq("id", user.id)
       .single(),
 
