@@ -19,7 +19,7 @@ export function buildGenyUrl(
   if (type === "resultats") {
     return `https://www.geny.com/resultats-pmu/${slug}`;
   }
-  return `https://www.geny.com/programme-complet/partants-pmu/${slug}`;
+  return `https://www.geny.com/partants-pmu/${slug}`;
 }
 
 /**
