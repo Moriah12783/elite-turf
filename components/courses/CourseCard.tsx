@@ -116,10 +116,11 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
     (pronosticPublie.niveau_acces === "VIP" && userSubscription === "VIP");
 
   // URLs externes
-  const dateStr   = c.date_course.replace(/-/g, "");   // YYYYMMDD
-  const hippoSlug = (c.hippodrome?.nom || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  const pmuUrl    = `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}`;
-  const genyUrl   = buildGenyUrl(c.date_course, c.numero_reunion, c.numero_course, "partants");
+  const dateStr    = c.date_course.replace(/-/g, "");   // YYYYMMDD
+  const isFrance   = !c.hippodrome?.pays || c.hippodrome.pays === "France";
+  const hippoSlug  = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
+  const pmuUrl     = isFrance ? `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}` : null;
+  const genyUrl    = buildGenyUrl(c.date_course, c.numero_reunion, c.numero_course, "partants");
 
   return (
     <div className="card-base overflow-hidden group hover:border-gold-primary/40 transition-all">
@@ -215,17 +216,19 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Bouton PMU.fr */}
-              <a
-                href={pmuUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[#003189]/10 hover:bg-[#003189]/20 text-[#4A7FD4] border border-[#003189]/20 transition-colors whitespace-nowrap"
-              >
-                <ExternalLink className="w-3 h-3" />
-                PMU.fr
-              </a>
+              {/* Bouton PMU.fr — uniquement pour les hippodromes français */}
+              {pmuUrl && (
+                <a
+                  href={pmuUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[#003189]/10 hover:bg-[#003189]/20 text-[#4A7FD4] border border-[#003189]/20 transition-colors whitespace-nowrap"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  PMU.fr
+                </a>
+              )}
 
               {/* Bouton Geny */}
               <a
