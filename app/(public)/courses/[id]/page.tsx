@@ -95,7 +95,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
     c.statut === "TERMINE" ? "resultats" : "partants"
   );
   const dateStr  = c.date_course.replace(/-/g, "");
-  const hippoSlug = (c.hippodrome?.nom || "").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const hippoSlug = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
   const pmuUrl   = `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}`;
 
   return (
