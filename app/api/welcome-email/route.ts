@@ -73,127 +73,118 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bienvenue chez Elite Turf</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0D0D14;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:#F7F5F0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
 
-  <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0D0D14;padding:40px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F7F5F0;padding:40px 20px;">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
-          <!-- ── HEADER / LOGO ── -->
+          <!-- ── HEADER ── -->
           <tr>
-            <td align="center" style="padding-bottom:32px;">
+            <td align="center" style="padding-bottom:36px;">
               <table cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:linear-gradient(135deg,#1B5E20,#2E7D32);border-radius:12px;padding:10px 14px;text-align:center;">
-                    <span style="font-size:22px;">🏇</span>
+                  <td style="background-color:#1a1a2e;border-radius:12px;padding:10px 16px;text-align:center;">
+                    <span style="font-size:20px;">🏇</span>
                   </td>
-                  <td style="padding-left:12px;">
-                    <div style="font-size:22px;font-weight:800;background:linear-gradient(135deg,#C9A84C,#E8D5A3,#A07830);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px;">ELITE</div>
-                    <div style="font-size:11px;font-weight:600;color:#A07830;letter-spacing:4px;margin-top:-2px;">TURF</div>
+                  <td style="padding-left:10px;">
+                    <div style="font-size:20px;font-weight:900;color:#C9A84C;letter-spacing:3px;">ELITE</div>
+                    <div style="font-size:10px;font-weight:700;color:#A07830;letter-spacing:5px;margin-top:-3px;">TURF</div>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- ── HERO CARD ── -->
+          <!-- ── CARTE PRINCIPALE ── -->
           <tr>
-            <td style="background:linear-gradient(135deg,#161622 0%,#1A1A2E 50%,#161622 100%);border-radius:20px;border:1px solid #2A2A3E;overflow:hidden;">
+            <td style="background-color:#ffffff;border-radius:16px;overflow:hidden;">
 
-              <!-- Gold top bar -->
-              <div style="height:4px;background:linear-gradient(90deg,#C9A84C,#E8D5A3,#C9A84C);"></div>
+              <!-- Barre dorée en haut -->
+              <div style="height:3px;background:linear-gradient(90deg,#C9A84C,#E8D5A3,#C9A84C);"></div>
 
-              <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 40px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="padding:48px 48px 40px;">
 
-                <!-- Bienvenue badge -->
+                <!-- Salutation -->
                 <tr>
-                  <td align="center" style="padding-bottom:24px;">
-                    <span style="display:inline-block;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:50px;padding:6px 18px;font-size:12px;font-weight:700;color:#C9A84C;letter-spacing:2px;text-transform:uppercase;">
-                      ✨ Compte activé
-                    </span>
+                  <td style="padding-bottom:8px;">
+                    <p style="margin:0;font-size:14px;font-weight:600;color:#A07830;letter-spacing:2px;text-transform:uppercase;">Bienvenue chez Elite Turf</p>
                   </td>
                 </tr>
 
-                <!-- Titre -->
+                <!-- Titre principal -->
                 <tr>
-                  <td align="center" style="padding-bottom:12px;">
-                    <h1 style="margin:0;font-size:32px;font-weight:800;color:#F5F5F0;line-height:1.2;">
-                      Bienvenue, ${prenom} ! 🎉
+                  <td style="padding-bottom:20px;">
+                    <h1 style="margin:0;font-size:34px;font-weight:800;color:#1a1a2e;line-height:1.2;">
+                      Bonjour, ${prenom} ! 🎉
                     </h1>
                   </td>
                 </tr>
 
-                <!-- Sous-titre -->
+                <!-- Texte intro -->
                 <tr>
-                  <td align="center" style="padding-bottom:32px;">
-                    <p style="margin:0;font-size:16px;color:#9898A8;line-height:1.6;max-width:480px;">
-                      Vous faites maintenant partie des <strong style="color:#C9A84C;">parieurs les mieux informés</strong>
-                      d'Afrique francophone. Nos experts parisiens analysent chaque jour le Quinté+ PMU pour vous.
+                  <td style="padding-bottom:32px;">
+                    <p style="margin:0 0 14px;font-size:16px;color:#444455;line-height:1.7;">
+                      Nous sommes ravis de vous accueillir au sein de la communauté <strong style="color:#1a1a2e;">Elite Turf</strong>.
+                      Vous faites désormais partie du cercle restreint des parieurs qui font confiance à l'analyse et à la précision.
+                    </p>
+                    <p style="margin:0;font-size:16px;color:#444455;line-height:1.7;">
+                      Nos experts parisiens analysent chaque jour le Quinté+ PMU pour vous offrir les meilleures sélections —
+                      des courses jouables depuis <strong style="color:#1a1a2e;">${pays || "l'Afrique francophone"}</strong>.
                     </p>
                   </td>
                 </tr>
 
-                <!-- CTA Principal -->
-                <tr>
-                  <td align="center" style="padding-bottom:40px;">
-                    <a href="${appUrl}/pronostics"
-                       style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#A07830);color:#0D0D14;font-size:15px;font-weight:800;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.5px;box-shadow:0 4px 20px rgba(201,168,76,0.3);">
-                      🏇 Voir les pronostics du jour
-                    </a>
-                  </td>
-                </tr>
-
-                <!-- Divider -->
+                <!-- Séparateur -->
                 <tr>
                   <td style="padding-bottom:32px;">
-                    <div style="height:1px;background:linear-gradient(90deg,transparent,#2A2A3E,transparent);"></div>
+                    <div style="height:1px;background-color:#EEEBE4;"></div>
                   </td>
                 </tr>
 
                 <!-- Ce que vous obtenez -->
                 <tr>
-                  <td style="padding-bottom:24px;">
-                    <p style="margin:0 0 20px;font-size:14px;font-weight:700;color:#F5F5F0;text-transform:uppercase;letter-spacing:1.5px;">
+                  <td style="padding-bottom:32px;">
+                    <p style="margin:0 0 20px;font-size:12px;font-weight:700;color:#A07830;text-transform:uppercase;letter-spacing:2px;">
                       Ce que vous obtenez gratuitement
                     </p>
 
                     <!-- Feature 1 -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
                       <tr>
-                        <td width="44" valign="top">
-                          <div style="width:36px;height:36px;background:rgba(201,168,76,0.1);border-radius:10px;text-align:center;line-height:36px;font-size:18px;">📊</div>
+                        <td width="40" valign="top">
+                          <div style="width:32px;height:32px;background-color:#F7F5F0;border-radius:8px;text-align:center;line-height:32px;font-size:16px;">📊</div>
                         </td>
-                        <td style="padding-left:12px;" valign="top">
-                          <p style="margin:0;font-size:14px;font-weight:700;color:#F5F5F0;">Programme complet PMU</p>
-                          <p style="margin:4px 0 0;font-size:13px;color:#9898A8;">Toutes les courses du jour — hippodromes, horaires, partants</p>
+                        <td style="padding-left:14px;" valign="top">
+                          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a2e;">Programme complet PMU</p>
+                          <p style="margin:3px 0 0;font-size:13px;color:#888899;line-height:1.5;">Toutes les courses du jour — hippodromes, horaires, partants</p>
                         </td>
                       </tr>
                     </table>
 
                     <!-- Feature 2 -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
                       <tr>
-                        <td width="44" valign="top">
-                          <div style="width:36px;height:36px;background:rgba(201,168,76,0.1);border-radius:10px;text-align:center;line-height:36px;font-size:18px;">⭐</div>
+                        <td width="40" valign="top">
+                          <div style="width:32px;height:32px;background-color:#F7F5F0;border-radius:8px;text-align:center;line-height:32px;font-size:16px;">⭐</div>
                         </td>
-                        <td style="padding-left:12px;" valign="top">
-                          <p style="margin:0;font-size:14px;font-weight:700;color:#F5F5F0;">Pronostic Tiercé gratuit</p>
-                          <p style="margin:4px 0 0;font-size:13px;color:#9898A8;">Accès au pronostic Nationale 3 — Tiercé chaque jour</p>
+                        <td style="padding-left:14px;" valign="top">
+                          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a2e;">Pronostic Tiercé gratuit</p>
+                          <p style="margin:3px 0 0;font-size:13px;color:#888899;line-height:1.5;">Accès au pronostic Nationale 3 — Tiercé chaque jour</p>
                         </td>
                       </tr>
                     </table>
 
                     <!-- Feature 3 -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
                       <tr>
-                        <td width="44" valign="top">
-                          <div style="width:36px;height:36px;background:rgba(201,168,76,0.1);border-radius:10px;text-align:center;line-height:36px;font-size:18px;">🌍</div>
+                        <td width="40" valign="top">
+                          <div style="width:32px;height:32px;background-color:#F7F5F0;border-radius:8px;text-align:center;line-height:32px;font-size:16px;">🌍</div>
                         </td>
-                        <td style="padding-left:12px;" valign="top">
-                          <p style="margin:0;font-size:14px;font-weight:700;color:#F5F5F0;">Courses jouables depuis ${pays || "l'Afrique"}</p>
-                          <p style="margin:4px 0 0;font-size:13px;color:#9898A8;">LONACI, LONASE, PMU Maroc — toutes les Nationales 1/2/3</p>
+                        <td style="padding-left:14px;" valign="top">
+                          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a2e;">Courses jouables depuis ${pays || "l'Afrique"}</p>
+                          <p style="margin:3px 0 0;font-size:13px;color:#888899;line-height:1.5;">LONACI, LONASE, PMU Maroc — toutes les Nationales 1/2/3</p>
                         </td>
                       </tr>
                     </table>
@@ -201,38 +192,57 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
                     <!-- Feature 4 -->
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr>
-                        <td width="44" valign="top">
-                          <div style="width:36px;height:36px;background:rgba(201,168,76,0.1);border-radius:10px;text-align:center;line-height:36px;font-size:18px;">📚</div>
+                        <td width="40" valign="top">
+                          <div style="width:32px;height:32px;background-color:#F7F5F0;border-radius:8px;text-align:center;line-height:32px;font-size:16px;">📚</div>
                         </td>
-                        <td style="padding-left:12px;" valign="top">
-                          <p style="margin:0;font-size:14px;font-weight:700;color:#F5F5F0;">Guide & Blog PMU</p>
-                          <p style="margin:4px 0 0;font-size:13px;color:#9898A8;">Stratégies, analyses et conseils de nos experts parisiens</p>
+                        <td style="padding-left:14px;" valign="top">
+                          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a2e;">Guide & Blog PMU</p>
+                          <p style="margin:3px 0 0;font-size:13px;color:#888899;line-height:1.5;">Stratégies, analyses et conseils de nos experts parisiens</p>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
 
-                <!-- Divider -->
+                <!-- CTA Principal -->
                 <tr>
-                  <td style="padding-bottom:28px;">
-                    <div style="height:1px;background:linear-gradient(90deg,transparent,#2A2A3E,transparent);"></div>
+                  <td align="center" style="padding-bottom:32px;">
+                    <a href="${appUrl}/pronostics"
+                       style="display:inline-block;background-color:#C9A84C;color:#ffffff;font-size:15px;font-weight:800;padding:16px 44px;border-radius:8px;text-decoration:none;letter-spacing:0.5px;">
+                      🏇 Voir les pronostics du jour
+                    </a>
                   </td>
                 </tr>
 
-                <!-- Upgrade CTA -->
+                <!-- Séparateur -->
                 <tr>
-                  <td style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:24px;" align="center">
-                    <p style="margin:0 0 6px;font-size:16px;font-weight:800;color:#C9A84C;">
+                  <td style="padding-bottom:28px;">
+                    <div style="height:1px;background-color:#EEEBE4;"></div>
+                  </td>
+                </tr>
+
+                <!-- Bloc Premium -->
+                <tr>
+                  <td style="background-color:#FDFAF3;border-left:3px solid #C9A84C;border-radius:0 8px 8px 0;padding:20px 24px;">
+                    <p style="margin:0 0 4px;font-size:15px;font-weight:800;color:#1a1a2e;">
                       Passez Premium pour le Quinté+
                     </p>
-                    <p style="margin:0 0 16px;font-size:13px;color:#9898A8;">
-                      Accédez aux analyses complètes Quarté+ et Quinté+ — dès <strong style="color:#F5F5F0;">29€/mois</strong>
+                    <p style="margin:0 0 14px;font-size:13px;color:#888899;line-height:1.5;">
+                      Accédez aux analyses complètes Quarté+ et Quinté+ — dès <strong style="color:#1a1a2e;">29€/mois</strong>
                     </p>
                     <a href="${appUrl}/abonnements"
-                       style="display:inline-block;background:transparent;color:#C9A84C;font-size:13px;font-weight:700;padding:10px 28px;border-radius:10px;text-decoration:none;border:1px solid rgba(201,168,76,0.4);">
+                       style="display:inline-block;color:#C9A84C;font-size:13px;font-weight:700;text-decoration:none;">
                       Voir les offres →
                     </a>
+                  </td>
+                </tr>
+
+                <!-- Signature -->
+                <tr>
+                  <td style="padding-top:36px;">
+                    <p style="margin:0 0 4px;font-size:15px;color:#444455;">À très vite sur la piste,</p>
+                    <p style="margin:0;font-size:15px;font-weight:700;color:#1a1a2e;">L'Équipe Elite Turf</p>
+                    <p style="margin:4px 0 0;font-size:13px;color:#A07830;">L'élite du pronostic hippique.</p>
                   </td>
                 </tr>
 
@@ -242,25 +252,25 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
 
           <!-- ── LIENS RAPIDES ── -->
           <tr>
-            <td style="padding:24px 0 0;">
+            <td style="padding:20px 0 0;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="33%" align="center" style="padding:0 6px;">
-                    <a href="${appUrl}/pronostics" style="display:block;background:#161622;border:1px solid #2A2A3E;border-radius:12px;padding:16px 12px;text-decoration:none;text-align:center;">
+                  <td width="33%" align="center" style="padding:0 5px;">
+                    <a href="${appUrl}/pronostics" style="display:block;background-color:#ffffff;border-radius:10px;padding:14px 10px;text-decoration:none;text-align:center;">
                       <div style="font-size:20px;margin-bottom:6px;">🏇</div>
-                      <div style="font-size:12px;font-weight:700;color:#F5F5F0;">Pronostics</div>
+                      <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Pronostics</div>
                     </a>
                   </td>
-                  <td width="33%" align="center" style="padding:0 6px;">
-                    <a href="${appUrl}/courses" style="display:block;background:#161622;border:1px solid #2A2A3E;border-radius:12px;padding:16px 12px;text-decoration:none;text-align:center;">
+                  <td width="33%" align="center" style="padding:0 5px;">
+                    <a href="${appUrl}/courses" style="display:block;background-color:#ffffff;border-radius:10px;padding:14px 10px;text-decoration:none;text-align:center;">
                       <div style="font-size:20px;margin-bottom:6px;">📅</div>
-                      <div style="font-size:12px;font-weight:700;color:#F5F5F0;">Courses</div>
+                      <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Courses</div>
                     </a>
                   </td>
-                  <td width="33%" align="center" style="padding:0 6px;">
-                    <a href="${appUrl}/espace-membre" style="display:block;background:#161622;border:1px solid #2A2A3E;border-radius:12px;padding:16px 12px;text-decoration:none;text-align:center;">
+                  <td width="33%" align="center" style="padding:0 5px;">
+                    <a href="${appUrl}/espace-membre" style="display:block;background-color:#ffffff;border-radius:10px;padding:14px 10px;text-decoration:none;text-align:center;">
                       <div style="font-size:20px;margin-bottom:6px;">👤</div>
-                      <div style="font-size:12px;font-weight:700;color:#F5F5F0;">Mon espace</div>
+                      <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Mon espace</div>
                     </a>
                   </td>
                 </tr>
@@ -270,15 +280,15 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
 
           <!-- ── FOOTER ── -->
           <tr>
-            <td align="center" style="padding:32px 0 0;">
-              <p style="margin:0 0 8px;font-size:12px;color:#555566;">
+            <td align="center" style="padding:28px 0 0;">
+              <p style="margin:0 0 6px;font-size:12px;color:#AAAAAA;">
                 Vous recevez cet email car vous venez de créer un compte sur
                 <a href="${appUrl}" style="color:#C9A84C;text-decoration:none;">elite-turf.fr</a>
               </p>
-              <p style="margin:0 0 8px;font-size:12px;color:#555566;">
+              <p style="margin:0 0 6px;font-size:12px;color:#AAAAAA;">
                 Une question ? <a href="mailto:contact@elite-turf.fr" style="color:#C9A84C;text-decoration:none;">contact@elite-turf.fr</a>
               </p>
-              <p style="margin:0;font-size:11px;color:#3A3A4A;">
+              <p style="margin:0;font-size:11px;color:#CCCCCC;">
                 © ${year} Elite Turf · Experts PMU depuis Paris · Les pronostics sont fournis à titre informatif
               </p>
             </td>
