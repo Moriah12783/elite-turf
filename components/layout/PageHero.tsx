@@ -6,20 +6,21 @@ interface PageHeroProps {
 
 export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
   return (
-    <div className="relative w-full h-[200px] md:h-[280px] overflow-hidden bg-[#0D0D14]">
-      {/* Image en niveaux de gris très sombres — zéro teinte chaude */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={image}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover"
-      style={{ filter: "grayscale(100%) brightness(0.42)" }}
+    <div className="relative w-full h-[200px] md:h-[280px] overflow-hidden bg-[#1C1C1C]">
+      {/* Background image via CSS inline — grayscale + assombri */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url('${image}')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "grayscale(100%) brightness(0.45)",
+        }}
       />
-      {/* Overlay sombre uniforme */}
-      <div className="absolute inset-0 bg-[#0D0D14]/55" />
+      {/* Overlay noir 50% */}
+      <div className="absolute inset-0 bg-black/50" />
       {/* Gradient bas vers fond */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0D0D14]/90" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#1C1C1C]/90" />
 
       {/* Contenu centré */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">

@@ -10,7 +10,7 @@ export default function CguPage() {
   return (
     <div className="min-h-screen bg-bg-primary">
       <PageHero
-        image="https://images.unsplash.com/photo-1474337703060-5d6cf8a4f0b0?w=1920&q=80"
+        image="/images/heroes/hero-legal.jpg"
         titre="Conditions Générales d'Utilisation"
         sousTitre="Règles d'utilisation de la plateforme Elite Turf"
       />

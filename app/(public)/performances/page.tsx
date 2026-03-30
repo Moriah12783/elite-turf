@@ -143,7 +143,7 @@ export default async function PerformancesPage() {
     <div className="min-h-screen bg-bg-primary">
 
       <PageHero
-        image="https://images.unsplash.com/photo-1495543377553-b2aba1f925d7?w=1920&q=80"
+        image="/images/heroes/hero-performances.jpg"
         titre="Nos Performances"
         sousTitre="Transparence totale — historique complet et vérifiable de nos pronostics gagnants"
       />

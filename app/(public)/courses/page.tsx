@@ -99,7 +99,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
       <PageHero
-        image="https://images.unsplash.com/photo-1526094633853-031707a44819?w=1920&q=80"
+        image="/images/heroes/hero-courses.jpg"
         titre="Programme des Courses"
         sousTitre={isToday ? `Aujourd'hui — ${courses.length} course${courses.length > 1 ? "s" : ""} programmée${courses.length > 1 ? "s" : ""}` : displayDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
       />

@@ -139,7 +139,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-bg-primary">
       {/* ── HERO BANNER ──────────────────────────────────────────────── */}
       <PageHero
-        image="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80"
+        image="/images/heroes/hero-pronostics.jpg"
         titre="Pronostics du Jour"
         sousTitre={`Tiercé, Quarté+, Quinté+ — ${tauxReussite}% de réussite sur ${totalTermines} pronostics publiés`}
       />
