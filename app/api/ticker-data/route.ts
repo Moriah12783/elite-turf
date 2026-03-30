@@ -19,7 +19,6 @@ const BET_LABELS: Record<string, string> = {
 const MARKETING_ITEMS = [
   { label: "🏇 Elite Turf",  result: "Pronostics PMU experts — Abonnez-vous dès 29€/mois", status: "pending" as const },
   { label: "💡 Conseil",     result: "Nos experts analysent chaque Quinté+ pour vous",     status: "pending" as const },
-  { label: "🌍 LONACI",      result: "Courses jouables depuis la Côte d'Ivoire disponibles", status: "pending" as const },
   { label: "⭐ Premium",     result: "Accédez au Quarté+ et Quinté+ — Rejoignez l'élite",  status: "pending" as const },
 ];
 
