@@ -14,7 +14,7 @@ export default function PageHero({ image, titre, sousTitre }: PageHeroProps) {
           backgroundImage: `url('${image}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          filter: "grayscale(100%) brightness(0.65)",
+          filter: "brightness(0.75)",
         }}
       />
       {/* Overlay noir 50% */}
