@@ -95,6 +95,17 @@ function InscriptionForm() {
         return;
       }
 
+      // Envoyer l'email de bienvenue (non-bloquant)
+      fetch("/api/welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          nomComplet: form.nomComplet,
+          pays: form.pays,
+        }),
+      }).catch(() => {}); // Silencieux si échec
+
       setStep("success");
     } catch {
       toast.error("Une erreur est survenue");
