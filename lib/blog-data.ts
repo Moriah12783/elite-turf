@@ -15,9 +15,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   // ── Articles originaux (mis à jour) ────────────────────────────────
   {
     slug: "comment-gagner-au-quinte-plus",
-    titre: "Comment gagner au Quinté+ ? La méthode complète",
+    titre: "Comment gagner au Quinté+ ? 5 Stratégies d'Experts",
     description:
-      "Le Quinté+ est la course reine du PMU. Découvrez la méthode étape par étape utilisée par nos experts pour sélectionner les 5 premiers — accessible depuis la Côte d'Ivoire, le Sénégal et le Maroc.",
+      "Découvrez les méthodes de pros pour maximiser vos gains au Quinté+. Analyse de données et astuces pour valider vos tickets gagnants.",
     categorie: "Stratégie",
     date: "2026-03-28",
     readTime: "9 min",
@@ -25,9 +25,10 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     popular: true,
     keywords: [
       "comment gagner au Quinté+",
-      "méthode Quinté+ PMU",
+      "stratégies Quinté+ PMU",
       "pronostic Quinté+ gagnant",
-      "stratégie Quinté+ Afrique",
+      "méthode Quinté+ experts",
+      "tickets gagnants Quinté+",
     ],
     contenu: `
 <h2>Qu'est-ce que le Quinté+ PMU ?</h2>
@@ -52,17 +53,18 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "meilleurs-pronostics-pmu-cote-ivoire",
-    titre: "Meilleurs pronostics PMU Côte d'Ivoire — Guide pour parieurs ivoiriens",
+    titre: "Meilleurs Pronostics PMU Côte d'Ivoire & Afrique",
     description:
-      "Comment accéder aux meilleurs pronostics PMU depuis la Côte d'Ivoire ? LONACI, courses françaises, Nationale 1/2/3 — tout ce qu'il faut savoir pour parier intelligemment depuis Abidjan.",
+      "Accédez aux pronostics PMU n°1 en Afrique francophone. Analyses précises depuis Paris pour les parieurs de Côte d'Ivoire, Sénégal, Burkina.",
     categorie: "Guide",
     date: "2026-03-27",
     readTime: "8 min",
     image: "/images/heroes/hero-performances.jpg",
     keywords: [
       "pronostics PMU Côte d'Ivoire",
+      "pronostics PMU Afrique francophone",
       "LONACI pronostics",
-      "turf Abidjan",
+      "pronostic PMU Sénégal Burkina",
       "meilleurs pronostics ivoiriens",
     ],
     contenu: `
@@ -88,9 +90,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "gestion-bankroll-turf-3-erreurs",
-    titre: "Gestion de bankroll turf : les 3 erreurs fatales à éviter",
+    titre: "Gestion de Bankroll Turf : Évitez ces 3 Erreurs",
     description:
-      "La gestion de bankroll est le secret des turfistes qui gagnent sur le long terme. Voici les 3 erreurs que commettent 90% des parieurs africains — et comment les éviter.",
+      "Apprenez à gérer votre capital de jeu comme un pro. La règle des 5% et nos conseils pour ne plus jamais tout perdre au PMU.",
     categorie: "Gestion",
     date: "2026-03-25",
     readTime: "7 min",
@@ -98,7 +100,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     keywords: [
       "gestion bankroll turf",
       "gestion mise PMU",
-      "stratégie paris hippiques",
+      "règle 5% paris hippiques",
+      "capital pari PMU",
       "bankroll parieurs africains",
     ],
     contenu: `
@@ -121,17 +124,18 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "chevaux-deferrés-4-pieds-d4",
-    titre: "Pourquoi suivre les chevaux déferrés des 4 pieds (D4) ?",
+    titre: "Pourquoi parier sur un cheval déferré des 4 pieds ?",
     description:
-      "Les chevaux D4 (déferrés des 4 pieds) sont l'un des secrets les mieux gardés du turf. Comprendre ce signal technique peut vous donner un avantage considérable au Quinté+.",
+      "Comprenez l'impact du déferrage (D4, DA, DP) sur les performances. Le secret technique pour repérer les futurs gagnants au trot.",
     categorie: "Technique",
     date: "2026-03-22",
     readTime: "6 min",
     image: "/images/heroes/hero-abonnements.jpg",
     keywords: [
       "cheval déferré D4",
-      "déferrage cheval turf",
+      "déferrage DA DP trot",
       "signal turf D4",
+      "cheval déferré gagnant",
       "analyse hippique avancée",
     ],
     contenu: `
@@ -156,18 +160,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "analyse-prix-arc-triomphe-prix-amerique",
-    titre: "Prix de l'Arc de Triomphe et Prix d'Amérique : les 2 courses les plus suivies au monde",
+    titre: "Analyse des Grands Prix : Prix d'Amérique & Arc de Triomphe",
     description:
-      "Prix de l'Arc de Triomphe (galop) et Grand Prix d'Amérique (trot) : tout ce qu'il faut savoir sur ces deux événements hippiques mondiaux et comment les jouer depuis l'Afrique.",
+      "Décryptage des plus grandes courses mondiales. Statistiques, favoris et enjeux des sommets du galop et du trot.",
     categorie: "Grands Prix",
     date: "2026-03-20",
     readTime: "8 min",
     image: "/images/heroes/hero-a-propos.jpg",
     keywords: [
-      "Prix de l'Arc de Triomphe",
-      "Grand Prix d'Amérique",
-      "grande course PMU",
-      "pronostic Arc Triomphe",
+      "Prix de l'Arc de Triomphe analyse",
+      "Grand Prix d'Amérique pronostic",
+      "grandes courses PMU",
+      "favoris Arc Triomphe",
+      "statistiques grands prix hippiques",
     ],
     contenu: `
 <h2>Le Prix de l'Arc de Triomphe — La course de galop du siècle</h2>
@@ -191,18 +196,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "difference-tierce-quarte-quinte-guide-complet",
-    titre: "Différence entre Tiercé, Quarté et Quinté : le guide complet pour débutants",
+    titre: "Tiercé, Quarté, Quinté : Le Guide Complet du Débutant",
     description:
-      "Vous débutez au PMU ? Ce guide explique simplement la différence entre Tiercé, Quarté+ et Quinté+, les mises minimales et la meilleure stratégie pour commencer.",
+      "Vous débutez au Turf ? Apprenez les bases : types de paris, fonctionnement des cotes et premières stratégies pour gagner.",
     categorie: "Guide débutants",
     date: "2026-03-18",
     readTime: "6 min",
     image: "/images/heroes/hero-pronostics.jpg",
     keywords: [
+      "guide débutant PMU turf",
       "différence tiercé quarté quinté",
-      "guide paris PMU débutant",
-      "comment jouer tiercé",
-      "PMU Afrique débutant",
+      "comment jouer PMU débutant",
+      "cotes PMU explication",
+      "stratégie débutant turf",
     ],
     contenu: `
 <h2>Le Tiercé — Le pari idéal pour commencer</h2>
@@ -227,18 +233,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "comment-lire-musique-cheval-course",
-    titre: "Comment lire la musique d'un cheval de course ? Guide pratique",
+    titre: "Comment lire la musique d'un cheval de course ?",
     description:
-      "La musique d'un cheval, c'est son palmarès en chiffres. Savoir la déchiffrer correctement vous donne un avantage énorme sur la majorité des parieurs. Tutoriel complet.",
+      "Apprenez à décoder les performances passées (2a, Da, 4m...). Le guide pour comprendre le CV d'un cheval en un coup d'œil.",
     categorie: "Technique",
     date: "2026-03-15",
     readTime: "7 min",
     image: "/images/heroes/hero-courses.jpg",
     keywords: [
       "lire musique cheval PMU",
-      "musique hippique",
+      "décoder musique hippique",
+      "performances passées cheval 2a Da",
       "palmarès cheval course",
-      "analyse musique turf",
+      "analyse musique turf débutant",
     ],
     contenu: `
 <h2>Qu'est-ce que la "musique" d'un cheval ?</h2>
@@ -271,18 +278,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "intelligence-artificielle-pronostics-hippiques",
-    titre: "L'intelligence artificielle révolutionne les pronostics hippiques",
+    titre: "Intelligence Artificielle et Turf : L'Avenir du Pari",
     description:
-      "Comment l'IA analyse des milliers de données en quelques secondes pour identifier les meilleurs pronostics. Elite Turf à la pointe de la technologie au service des parieurs africains.",
+      "Découvrez comment l'IA et le Machine Learning révolutionnent les pronostics hippiques chez EliteTurf. La donnée au service du gain.",
     categorie: "Innovation",
     date: "2026-03-12",
     readTime: "8 min",
     image: "/images/heroes/hero-guide.jpg",
     keywords: [
-      "intelligence artificielle pronostics hippiques",
-      "IA turf PMU",
+      "intelligence artificielle turf PMU",
+      "IA pronostics hippiques",
+      "machine learning paris hippiques",
       "algorithme pronostic cheval",
-      "technologie paris hippiques",
+      "EliteTurf technologie IA",
     ],
     contenu: `
 <h2>Pourquoi l'IA change tout dans le turf</h2>
@@ -306,18 +314,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "avis-elite-turf-temoignages-resultats",
-    titre: "Avis Elite Turf : témoignages et résultats réels de nos membres",
+    titre: "Avis EliteTurf : Ils gagnent avec nos pronostics VIP",
     description:
-      "Que disent vraiment nos abonnés ? Témoignages authentiques, résultats documentés et taux de réussite vérifiables. La transparence totale sur les performances d'Elite Turf.",
+      "Découvrez les témoignages et les derniers résultats de nos membres. La preuve par les gains : rejoignez l'élite des parieurs.",
     categorie: "Témoignages",
     date: "2026-03-10",
     readTime: "6 min",
     image: "/images/heroes/hero-contact.jpg",
     keywords: [
-      "avis Elite Turf",
-      "témoignages Elite Turf",
-      "résultats pronostics PMU",
-      "Elite Turf fiable",
+      "avis EliteTurf membres",
+      "témoignages pronostics PMU VIP",
+      "résultats gains EliteTurf",
+      "Elite Turf fiable sérieux",
+      "pronostics VIP gagnants",
     ],
     contenu: `
 <h2>Notre philosophie : transparence totale</h2>
@@ -342,18 +351,19 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   },
   {
     slug: "top-5-jockeys-saison-2026",
-    titre: "Top 5 des jockeys à suivre cette saison 2026",
+    titre: "Top 5 des meilleurs jockeys et drivers à suivre",
     description:
-      "Qui sont les jockeys les plus performants de la saison en cours ? Notre palmarès des 5 meilleurs jockeys PMU sur lesquels miser en priorité pour vos pronostics Quinté+.",
+      "Qui sont les maîtres de la piste cette saison ? Analyse des statistiques de réussite des meilleurs jockeys pour vos jeux.",
     categorie: "Actualité",
     date: "2026-03-08",
     readTime: "5 min",
     image: "/images/heroes/hero-legal.jpg",
     keywords: [
-      "meilleurs jockeys 2026",
-      "jockey PMU à suivre",
-      "top jockeys saison",
-      "jockey pronostic turf",
+      "meilleurs jockeys PMU 2026",
+      "top drivers trot",
+      "statistiques jockeys saison",
+      "jockey pronostic Quinté+",
+      "meilleurs jockeys galop trot",
     ],
     contenu: `
 <h2>Pourquoi le jockey est-il si important dans vos pronostics ?</h2>
