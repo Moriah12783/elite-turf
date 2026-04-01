@@ -69,7 +69,7 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   const ResultatIcon = resultatConf.icon;
 
   return (
-    <article className="card-base overflow-hidden group">
+    <article className="card-base relative overflow-hidden group">
       {/* Premium shimmer */}
       {p.niveau_acces === "PREMIUM" && (
         <div className="absolute inset-0 shimmer-bg pointer-events-none rounded-xl" />
