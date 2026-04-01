@@ -70,13 +70,22 @@ export async function POST(req: NextRequest) {
   const envoyes = resultats.filter(r => !r.error).length;
   const echecs  = resultats.filter(r =>  r.error).length;
 
+  // Log détaillé des erreurs pour le diagnostic
+  const erreursDetail = resultats
+    .filter(r => r.error)
+    .map(r => ({ to: r.to, error: r.error }));
+
   console.log(`[SMS] Segment: ${segment} — Envoyés: ${envoyes}, Échecs: ${echecs}`);
+  if (erreursDetail.length > 0) {
+    console.error("[SMS] Erreurs détaillées:", JSON.stringify(erreursDetail));
+  }
 
   return NextResponse.json({
     envoyes,
     echecs,
     total: destinataires.length,
     message_envoye: corps,
+    erreurs: erreursDetail, // remonte les erreurs détaillées au frontend
   });
 }
 
