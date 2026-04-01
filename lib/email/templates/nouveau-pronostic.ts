@@ -2,12 +2,11 @@ import { emailBase, emailButton, emailDivider, emailBadge } from "../base";
 
 interface NouveauPronosticData {
   nomComplet: string;
-  // Infos course
   hippodrome: string;
-  dateString: string;     // ex: "Mercredi 25 mars 2026"
-  typePari: string;       // ex: "Quinté+"
+  dateString: string;
+  typePari: string;
   niveauAcces: "GRATUIT" | "PREMIUM" | "VIP";
-  analysesCourte: string; // résumé de l'analyse (non-floutée)
+  analysesCourte: string;
   nbPartants: number;
   pronosticId: string;
 }
@@ -23,20 +22,20 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   const isPremium = data.niveauAcces === "PREMIUM";
 
   const niveauLabel = isVip ? "✦ VIP Exclusif" : isPremium ? "★ Premium" : "Gratuit";
-  const niveauColor = isVip ? "#A855F7" : isPremium ? "#C9A84C" : "#22C55E";
+  const niveauColor = isVip ? "#7C3AED" : isPremium ? "#C9A84C" : "#16A34A";
 
   const content = `
     <!-- En-tête course -->
-    <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);
+    <div style="background:#FFFBF0;border:1px solid rgba(201,168,76,0.35);
                 border-radius:10px;padding:16px 20px;margin-bottom:24px;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td>
-            <p style="margin:0 0 4px 0;color:#9090A0;font-size:11px;
+            <p style="margin:0 0 4px 0;color:#9CA3AF;font-size:11px;
                       text-transform:uppercase;letter-spacing:1px;">Nouveau pronostic publié</p>
-            <p style="margin:0;color:#F5F5F0;font-size:18px;font-weight:700;
+            <p style="margin:0;color:#1E3A5F;font-size:18px;font-weight:700;
                       font-family:Georgia,serif;">${data.hippodrome}</p>
-            <p style="margin:4px 0 0 0;color:#C9A84C;font-size:13px;">
+            <p style="margin:4px 0 0 0;color:#C9A84C;font-size:13px;font-weight:600;">
               ${data.dateString} · ${data.typePari}
             </p>
           </td>
@@ -48,23 +47,23 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
     </div>
 
     <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:22px;
-               font-weight:700;color:#F5F5F0;line-height:1.3;">
+               font-weight:700;color:#1E3A5F;line-height:1.3;">
       ${data.typePari} du jour — Nos experts ont parlé 🏇
     </h1>
-    <p style="margin:0 0 20px 0;color:#9090A0;font-size:14px;line-height:1.6;">
+    <p style="margin:0 0 20px 0;color:#1F2937;font-size:14px;line-height:1.6;">
       Bonjour ${prenom}, notre analyse pour le <strong style="color:#C9A84C;">${data.typePari}</strong>
-      de <strong style="color:#F5F5F0;">${data.hippodrome}</strong> est disponible.
+      de <strong style="color:#1E3A5F;">${data.hippodrome}</strong> est disponible.
     </p>
 
     <!-- Aperçu analyse -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background:#0F0F1A;border:1px solid #2A2A3E;
+           style="background:#F8FAFC;border:1px solid #E5E7EB;
                   border-radius:10px;margin:0 0 24px 0;">
       <tr>
         <td style="padding:20px 24px;">
           <p style="margin:0 0 10px 0;color:#C9A84C;font-size:12px;font-weight:700;
                     text-transform:uppercase;letter-spacing:0.5px;">Aperçu de l'analyse</p>
-          <p style="margin:0;color:#C0C0D0;font-size:14px;line-height:1.7;
+          <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;
                     font-style:italic;">
             "${data.analysesCourte}"
           </p>
@@ -77,20 +76,20 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
            style="margin:0 0 24px 0;">
       <tr>
         <td width="50%" style="padding-right:6px;">
-          <div style="background:#0F0F1A;border:1px solid #2A2A3E;border-radius:8px;
+          <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;
                       padding:14px;text-align:center;">
             <p style="margin:0 0 4px 0;font-size:22px;font-weight:700;
                       color:#C9A84C;font-family:Georgia,serif;">${data.nbPartants}</p>
-            <p style="margin:0;color:#606080;font-size:11px;text-transform:uppercase;
+            <p style="margin:0;color:#9CA3AF;font-size:11px;text-transform:uppercase;
                       letter-spacing:0.5px;">Partants</p>
           </div>
         </td>
         <td width="50%" style="padding-left:6px;">
-          <div style="background:#0F0F1A;border:1px solid #2A2A3E;border-radius:8px;
+          <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;
                       padding:14px;text-align:center;">
             <p style="margin:0 0 4px 0;font-size:22px;font-weight:700;
-                      color:#F5F5F0;font-family:Georgia,serif;">${data.typePari}</p>
-            <p style="margin:0;color:#606080;font-size:11px;text-transform:uppercase;
+                      color:#1E3A5F;font-family:Georgia,serif;">${data.typePari}</p>
+            <p style="margin:0;color:#9CA3AF;font-size:11px;text-transform:uppercase;
                       letter-spacing:0.5px;">Type de pari</p>
           </div>
         </td>
@@ -98,9 +97,9 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
     </table>
 
     ${(isPremium || isVip) ? `
-    <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);
+    <div style="background:#FFFBF0;border:1px solid rgba(201,168,76,0.35);
                 border-radius:8px;padding:14px 18px;margin-bottom:24px;text-align:center;">
-      <p style="margin:0;color:#C9A84C;font-size:13px;font-weight:600;">
+      <p style="margin:0;color:#C9A84C;font-size:13px;font-weight:700;">
         🔒 La sélection complète et l'analyse détaillée sont réservées aux abonnés ${niveauLabel}
       </p>
     </div>` : ""}
@@ -111,9 +110,9 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
 
     ${emailDivider}
 
-    <p style="margin:0;color:#5A5A7A;font-size:12px;text-align:center;line-height:1.7;">
+    <p style="margin:0;color:#9CA3AF;font-size:12px;text-align:center;line-height:1.7;">
       Vous recevez cet email car vous êtes abonné aux alertes Elite Turf.<br/>
-      <a href="${appUrl}/espace-membre" style="color:#5A5A7A;">Gérer mes alertes</a>
+      <a href="${appUrl}/espace-membre" style="color:#9CA3AF;text-decoration:none;">Gérer mes alertes</a>
     </p>
   `;
 

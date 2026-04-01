@@ -5,7 +5,7 @@ interface RappelExpirationData {
   email: string;
   planNom: string;
   dateFin: string;
-  joursRestants: number; // 3, 2, ou 1
+  joursRestants: number;
   prixEur: number;
 }
 
@@ -21,7 +21,9 @@ export function templateRappelExpiration(data: RappelExpirationData): {
       day: "numeric", month: "long", year: "numeric",
     });
 
-  const urgenceColor = data.joursRestants === 1 ? "#EF4444" : data.joursRestants === 2 ? "#F97316" : "#C9A84C";
+  const urgenceColor = data.joursRestants === 1 ? "#DC2626" : data.joursRestants === 2 ? "#EA580C" : "#C9A84C";
+  const urgenceBg = data.joursRestants === 1 ? "#FEF2F2" : data.joursRestants === 2 ? "#FFF7ED" : "#FFFBF0";
+  const urgenceBorder = data.joursRestants === 1 ? "#FECACA" : data.joursRestants === 2 ? "#FED7AA" : "rgba(201,168,76,0.35)";
   const urgenceLabel =
     data.joursRestants === 1 ? "⚠ Dernier jour !" :
     data.joursRestants === 2 ? "⏰ Plus que 2 jours" :
@@ -29,38 +31,38 @@ export function templateRappelExpiration(data: RappelExpirationData): {
 
   const content = `
     <!-- Alerte -->
-    <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);
+    <div style="background:${urgenceBg};border:1px solid ${urgenceBorder};
                 border-radius:10px;padding:16px 20px;margin-bottom:24px;text-align:center;">
       <p style="margin:0;font-size:16px;font-weight:700;color:${urgenceColor};">${urgenceLabel}</p>
     </div>
 
     <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:24px;
-               font-weight:700;color:#F5F5F0;line-height:1.3;">
+               font-weight:700;color:#1E3A5F;line-height:1.3;">
       Votre accès expire bientôt
     </h1>
-    <p style="margin:0 0 20px 0;color:#9090A0;font-size:14px;line-height:1.6;">
+    <p style="margin:0 0 20px 0;color:#1F2937;font-size:14px;line-height:1.6;">
       Bonjour ${prenom}, votre abonnement <strong style="color:#C9A84C;">Plan ${data.planNom}</strong>
-      expire le <strong style="color:#F5F5F0;">${fmtDate(data.dateFin)}</strong>.
+      expire le <strong style="color:#1E3A5F;">${fmtDate(data.dateFin)}</strong>.
     </p>
 
     <!-- Compte à rebours -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background:#0F0F1A;border:1px solid ${urgenceColor}33;
+           style="background:#F8FAFC;border:2px solid ${urgenceColor}33;
                   border-radius:10px;margin:0 0 24px 0;">
       <tr>
-        <td style="padding:20px 24px;text-align:center;">
-          <p style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:48px;
+        <td style="padding:24px;text-align:center;">
+          <p style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:52px;
                     font-weight:700;color:${urgenceColor};line-height:1;">
             ${data.joursRestants}
           </p>
-          <p style="margin:0;color:#9090A0;font-size:14px;">
+          <p style="margin:0;color:#6B7280;font-size:14px;">
             ${data.joursRestants === 1 ? "jour restant" : "jours restants"}
           </p>
         </td>
       </tr>
     </table>
 
-    <p style="margin:0 0 16px 0;color:#C0C0D0;font-size:15px;line-height:1.7;">
+    <p style="margin:0 0 12px 0;color:#1E3A5F;font-size:14px;font-weight:700;">
       Sans renouvellement, vous perdrez l'accès à :
     </p>
 
@@ -69,16 +71,20 @@ export function templateRappelExpiration(data: RappelExpirationData): {
        "Alertes avant le départ des courses",
        "Historique de performances complet"
       ].map(f => `
-    <p style="margin:0 0 10px 0;color:#9090A0;font-size:14px;">
-      <span style="color:#EF4444;margin-right:8px;">✕</span>${f}
-    </p>`).join("")}
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #F3F4F6;">
+      <tr>
+        <td style="padding:8px 0;color:#1F2937;font-size:14px;line-height:1.5;">
+          <span style="color:#DC2626;margin-right:8px;font-weight:700;">✕</span>${f}
+        </td>
+      </tr>
+    </table>`).join("")}
 
     ${emailDivider}
 
-    <p style="margin:0 0 8px 0;color:#F5F5F0;font-size:15px;font-weight:600;text-align:center;">
+    <p style="margin:0 0 8px 0;color:#1E3A5F;font-size:15px;font-weight:700;text-align:center;">
       Continuez sans interruption
     </p>
-    <p style="margin:0 0 4px 0;color:#9090A0;font-size:13px;text-align:center;">
+    <p style="margin:0 0 4px 0;color:#6B7280;font-size:13px;text-align:center;">
       Renouvelez votre Plan ${data.planNom} — <strong style="color:#C9A84C;">${data.prixEur.toFixed(2).replace(".", ",")} €/mois</strong>
     </p>
 
@@ -86,7 +92,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
 
     ${emailDivider}
 
-    <p style="margin:0;color:#5A5A7A;font-size:12px;text-align:center;line-height:1.7;">
+    <p style="margin:0;color:#9CA3AF;font-size:12px;text-align:center;line-height:1.7;">
       Si vous ne souhaitez pas renouveler, vous conserverez l'accès gratuit après expiration.<br/>
       Questions ? <a href="mailto:contact@elite-turf.fr" style="color:#C9A84C;">contact@elite-turf.fr</a>
     </p>
