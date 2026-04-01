@@ -5,20 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
-  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp
+  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 
 const navItems = [
-  { href: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
-  { href: "/admin/courses", icon: CalendarDays, label: "Courses" },
-  { href: "/admin/pronostics", icon: Star, label: "Pronostics" },
-  { href: "/admin/utilisateurs", icon: Users, label: "Utilisateurs" },
-  { href: "/admin/paiements", icon: CreditCard, label: "Paiements" },
-  { href: "/admin/notifications", icon: Bell, label: "Notifications" },
-  { href: "/admin/statistiques", icon: TrendingUp, label: "Statistiques" },
-  { href: "/admin/parametres", icon: Settings, label: "Paramètres" },
+  { href: "/admin",               icon: LayoutDashboard, label: "Dashboard",     exact: true },
+  { href: "/admin/courses",       icon: CalendarDays,    label: "Courses" },
+  { href: "/admin/pronostics",    icon: Star,            label: "Pronostics" },
+  { href: "/admin/utilisateurs",  icon: Users,           label: "Utilisateurs" },
+  { href: "/admin/paiements",     icon: CreditCard,      label: "Paiements" },
+  { href: "/admin/notifications", icon: Bell,            label: "Notifications" },
+  { href: "/admin/newsletter",    icon: Newspaper,       label: "Newsletter" },
+  { href: "/admin/statistiques",  icon: TrendingUp,      label: "Statistiques" },
+  { href: "/admin/parametres",    icon: Settings,        label: "Paramètres" },
 ];
 
 export default function AdminSidebar() {
