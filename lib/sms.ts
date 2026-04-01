@@ -4,7 +4,8 @@
  * Variables d'environnement requises :
  *   TWILIO_ACCOUNT_SID
  *   TWILIO_AUTH_TOKEN
- *   TWILIO_PHONE_NUMBER  (ex: +12015551234 ou Sender ID "EliteTurf" si autorisé dans le pays)
+ *   TWILIO_MESSAGING_SERVICE_SID  (recommandé — Messaging Service Twilio)
+ *   TWILIO_PHONE_NUMBER           (fallback si pas de Messaging Service)
  */
 
 const TWILIO_BASE = `https://api.twilio.com/2010-04-01/Accounts`;
@@ -17,15 +18,22 @@ export interface SMSResult {
 
 /** Envoie un SMS à un seul numéro. Retourne le SID Twilio ou l'erreur. */
 export async function sendSMS(to: string, body: string): Promise<SMSResult> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken  = process.env.TWILIO_AUTH_TOKEN;
-  const from       = process.env.TWILIO_PHONE_NUMBER;
+  const accountSid        = process.env.TWILIO_ACCOUNT_SID;
+  const authToken         = process.env.TWILIO_AUTH_TOKEN;
+  const messagingService  = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const fromNumber        = process.env.TWILIO_PHONE_NUMBER;
 
-  if (!accountSid || !authToken || !from) {
+  if (!accountSid || !authToken || (!messagingService && !fromNumber)) {
     return { to, error: "Twilio non configuré (variables manquantes)" };
   }
 
   const credentials = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+
+  // Utilise le Messaging Service SID en priorité (meilleure délivrabilité internationale)
+  // sinon fallback sur le numéro direct
+  const senderParams = messagingService
+    ? { MessagingServiceSid: messagingService }
+    : { From: fromNumber! };
 
   try {
     const res = await fetch(`${TWILIO_BASE}/${accountSid}/Messages.json`, {
@@ -34,13 +42,14 @@ export async function sendSMS(to: string, body: string): Promise<SMSResult> {
         Authorization: `Basic ${credentials}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
+      body: new URLSearchParams({ To: to, ...senderParams, Body: body }).toString(),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      return { to, error: data.message || `Erreur Twilio (${res.status})` };
+      // Retourne le message d'erreur Twilio détaillé pour faciliter le diagnostic
+      return { to, error: data.message || `Erreur Twilio ${res.status} (code: ${data.code})` };
     }
 
     return { to, sid: data.sid };
@@ -51,7 +60,7 @@ export async function sendSMS(to: string, body: string): Promise<SMSResult> {
 
 /** Formate le message final (préfixe + corps + lien). Max 160 chars. */
 export function formatSMSMessage(corps: string): string {
-  const prefix = "EliteTurf VIP : ";
+  const prefix = "EliteTurf : ";
   const suffix = " elite-turf.fr";
   const truncated = corps.slice(0, 160 - prefix.length - suffix.length);
   return `${prefix}${truncated}${suffix}`;

@@ -226,9 +226,22 @@ function SMSTab() {
       });
       const data = await res.json();
       if (!res.ok) { setStatus("error"); setStatusMsg(data.error || "Erreur"); return; }
-      setStatus("success");
-      setStatusMsg(`✓ SMS envoyé à ${data.envoyes} abonné(s)${data.echecs > 0 ? ` (${data.echecs} échec${data.echecs > 1 ? "s" : ""})` : ""}.`);
-      setMessage("");
+
+      if (data.echecs > 0 && data.envoyes === 0) {
+        // Tous les envois ont échoué — affiche le détail de l'erreur Twilio
+        const detail = data.erreurs?.[0]?.error || "Erreur inconnue";
+        setStatus("error");
+        setStatusMsg(`✗ Échec d'envoi : ${detail}`);
+      } else if (data.echecs > 0) {
+        // Envoi partiel
+        setStatus("success");
+        setStatusMsg(`✓ SMS envoyé à ${data.envoyes} abonné(s) — ${data.echecs} échec(s)`);
+        setMessage("");
+      } else {
+        setStatus("success");
+        setStatusMsg(`✓ SMS envoyé à ${data.envoyes} abonné(s) avec succès !`);
+        setMessage("");
+      }
     } catch {
       setStatus("error"); setStatusMsg("Erreur réseau — réessayez");
     }
