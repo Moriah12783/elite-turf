@@ -180,23 +180,35 @@ function PushTab() {
 
 // ─── Onglet SMS ───────────────────────────────────────────────────────────────
 
-const SMS_PREFIX  = "EliteTurf VIP : ";
-const SMS_SUFFIX  = " elite-turf.fr";
-const SMS_MAX_BODY = 160 - SMS_PREFIX.length - SMS_SUFFIX.length; // 130 chars
+const SMS_PREFIX   = "EliteTurf : ";
+const SMS_SUFFIX   = " elite-turf.fr";
+const SMS_MAX_BODY = 160 - SMS_PREFIX.length - SMS_SUFFIX.length; // 134 chars
+
+type SmsSegment = "tous" | "premium" | "vip";
+
+const SMS_SEGMENTS: { value: SmsSegment; label: string; sublabel: string; color: string }[] = [
+  { value: "tous",    label: "Tous les abonnés",   sublabel: "Premium + VIP",           color: "text-gold-primary" },
+  { value: "premium", label: "Pack Découverte/Pro", sublabel: "Abonnés Premium",         color: "text-blue-400" },
+  { value: "vip",     label: "Pack Elite",          sublabel: "Abonnés VIP uniquement",  color: "text-purple-400" },
+];
+
+type CountsState = { tous: number | null; premium: number | null; vip: number | null };
 
 function SMSTab() {
   const [message,   setMessage]   = useState("");
+  const [segment,   setSegment]   = useState<SmsSegment>("tous");
   const [status,    setStatus]    = useState<"idle" | "loading" | "success" | "error">("idle");
   const [statusMsg, setStatusMsg] = useState("");
-  const [eligible,  setEligible]  = useState<number | null>(null);
+  const [counts,    setCounts]    = useState<CountsState>({ tous: null, premium: null, vip: null });
 
   useEffect(() => {
     fetch("/api/sms/send")
       .then(r => r.json())
-      .then(d => setEligible(d.eligible ?? 0))
+      .then(d => setCounts({ tous: d.tous ?? 0, premium: d.premium ?? 0, vip: d.vip ?? 0 }))
       .catch(() => {});
   }, []);
 
+  const currentCount = counts[segment];
   const preview = message.trim()
     ? `${SMS_PREFIX}${message.trim().slice(0, SMS_MAX_BODY)}${SMS_SUFFIX}`
     : "";
@@ -210,12 +222,12 @@ function SMSTab() {
       const res = await fetch("/api/sms/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ message: message.trim(), segment }),
       });
       const data = await res.json();
       if (!res.ok) { setStatus("error"); setStatusMsg(data.error || "Erreur"); return; }
       setStatus("success");
-      setStatusMsg(`✓ SMS envoyé à ${data.envoyes} abonné(s) VIP${data.echecs > 0 ? ` (${data.echecs} échec${data.echecs > 1 ? "s" : ""})` : ""}.`);
+      setStatusMsg(`✓ SMS envoyé à ${data.envoyes} abonné(s)${data.echecs > 0 ? ` (${data.echecs} échec${data.echecs > 1 ? "s" : ""})` : ""}.`);
       setMessage("");
     } catch {
       setStatus("error"); setStatusMsg("Erreur réseau — réessayez");
@@ -228,22 +240,38 @@ function SMSTab() {
       <div className="card-base p-6">
         <h2 className="font-semibold text-text-primary text-base mb-2 flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-gold-primary" />
-          Alerte SMS VIP
+          Alerte SMS
         </h2>
         <p className="text-text-muted text-xs mb-5">
-          Envoyé uniquement aux abonnés <span className="text-purple-400 font-semibold">VIP Elite</span> ayant renseigné leur numéro.
+          Envoyé aux abonnés ayant renseigné leur numéro de téléphone.
         </p>
 
-        {/* Compteur éligibles */}
-        <div className="flex items-center gap-3 p-3 bg-bg-elevated border border-border rounded-xl mb-5">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-            <Crown className="w-4 h-4 text-purple-400" />
-          </div>
-          <div>
-            <p className="text-text-primary font-bold text-sm">
-              {eligible === null ? "—" : eligible} destinataire{eligible !== 1 ? "s" : ""} éligible{eligible !== 1 ? "s" : ""}
-            </p>
-            <p className="text-text-muted text-xs">Abonnés VIP avec numéro de téléphone</p>
+        {/* Sélecteur de segment */}
+        <div className="mb-5">
+          <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider block mb-2">
+            Destinataires
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {SMS_SEGMENTS.map(s => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setSegment(s.value)}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  segment === s.value
+                    ? "bg-bg-card border-gold-primary/50"
+                    : "bg-bg-elevated border-border hover:border-border/80"
+                }`}
+              >
+                <p className={`text-xs font-bold mb-0.5 ${segment === s.value ? "text-gold-primary" : "text-text-primary"}`}>
+                  {s.label}
+                </p>
+                <p className="text-text-muted text-xs">{s.sublabel}</p>
+                <p className={`text-sm font-bold mt-1 ${s.color}`}>
+                  {counts[s.value] === null ? "—" : counts[s.value]}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -275,12 +303,12 @@ function SMSTab() {
 
           <button
             type="submit"
-            disabled={status === "loading" || !message.trim() || (eligible ?? 0) === 0}
+            disabled={status === "loading" || !message.trim() || (currentCount ?? 0) === 0}
             className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {status === "loading"
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
-              : <><Smartphone className="w-4 h-4" /> Envoyer l&apos;alerte SMS</>}
+              : <><Smartphone className="w-4 h-4" /> Envoyer à {currentCount ?? "—"} abonné{(currentCount ?? 0) > 1 ? "s" : ""}</>}
           </button>
         </form>
       </div>
@@ -321,7 +349,7 @@ function SMSTab() {
             { icon: "🌍", text: "Couverture : France, Belgique, Côte d'Ivoire, Sénégal, Maroc et +50 pays" },
             { icon: "⚡", text: "Livraison : moins de 2 minutes en général" },
             { icon: "📱", text: "Fonctionne sans internet — livraison directe sur le téléphone" },
-            { icon: "🔒", text: "Réservé aux abonnés VIP Elite (189€/90 jours)" },
+            { icon: "🏇", text: "Disponible pour tous les abonnés payants (Découverte 5/mois · Pro · Elite illimité)" },
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <span className="flex-shrink-0 text-sm">{item.icon}</span>
