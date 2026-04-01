@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
@@ -9,9 +9,15 @@ const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://elite-turf.fr");
 
+// Next.js 14 : themeColor/appleWebApp/formatDetection dans viewport, pas metadata
+export const viewport: Viewport = {
+  themeColor: "#C9A84C",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   manifest: "/manifest.json",
-  themeColor: "#C9A84C",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
