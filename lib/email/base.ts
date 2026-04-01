@@ -12,7 +12,7 @@ export function emailBase(content: string, previewText = ""): string {
   <title>Elite Turf</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
-    body { margin:0; padding:0; background:#F9FAFB; font-family:'Helvetica Neue',Arial,sans-serif; }
+    body { margin:0; padding:0; background:#F3F4F6; font-family:'Helvetica Neue',Arial,sans-serif; }
     a { color:#C9A84C; }
     @media only screen and (max-width:600px) {
       .container { width:100% !important; padding:0 12px !important; }
@@ -20,12 +20,12 @@ export function emailBase(content: string, previewText = ""): string {
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#F9FAFB;">
+<body style="margin:0;padding:0;background:#F3F4F6;">
 
-  ${previewText ? `<div style="display:none;font-size:1px;color:#F9FAFB;overflow:hidden;max-height:0;">${previewText}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>` : ""}
+  ${previewText ? `<div style="display:none;font-size:1px;color:#F3F4F6;overflow:hidden;max-height:0;">${previewText}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>` : ""}
 
   <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F9FAFB;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:32px 0;">
     <tr>
       <td align="center">
         <!-- Container -->
@@ -65,11 +65,37 @@ export function emailBase(content: string, previewText = ""): string {
 
           <!-- Footer -->
           <tr>
-            <td style="background:#F3F4F6;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
-              <p style="margin:0 0 6px 0;color:#9CA3AF;font-size:11px;">
-                Elite Turf · Paris, France · <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;">contact@elite-turf.fr</a>
+            <td style="background:#F3F4F6;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 12px 12px;padding:24px 40px;text-align:center;">
+
+              <!-- Icônes réseaux sociaux -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px auto;">
+                <tr>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">f</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:12px;color:#FFFFFF;font-weight:700;">▶</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">♪</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">𝕏</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 5px 0;color:#6B7280;font-size:11px;font-weight:600;">
+                Elite Turf
               </p>
-              <p style="margin:0 0 6px 0;color:#D1D5DB;font-size:10px;">
+              <p style="margin:0 0 4px 0;color:#9CA3AF;font-size:11px;">
+                📍 34, boulevard des Italiens, 75009 Paris, France
+              </p>
+              <p style="margin:0 0 8px 0;color:#9CA3AF;font-size:11px;">
+                📞 +33 6 44 68 67 20 &nbsp;·&nbsp;
+                <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;">contact@elite-turf.fr</a>
+              </p>
+              <p style="margin:0 0 8px 0;color:#D1D5DB;font-size:10px;">
                 Pronostics PMU pour les parieurs francophones — Analyses depuis Paris.
               </p>
               <p style="margin:0;font-size:10px;">

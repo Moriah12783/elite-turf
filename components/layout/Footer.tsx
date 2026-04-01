@@ -91,9 +91,9 @@ export default function Footer() {
               <h3 className="font-serif font-semibold text-text-primary mb-4">Abonnements</h3>
               <ul className="space-y-2">
                 {[
-                  { label: "Pack Découverte — 29€",   href: "/abonnements#starter" },
-                  { label: "Pack Performance — 69€", href: "/abonnements#pro"     },
-                  { label: "Pack Elite — 149€",      href: "/abonnements#elite"   },
+                  { label: "Pack Découverte — 65€",    href: "/abonnements#starter" },
+                  { label: "Pack Performance — 152€", href: "/abonnements#pro"     },
+                  { label: "Pack Elite — 208€",       href: "/abonnements#elite"   },
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },
                   { label: "À Propos",                    href: "/a-propos"            },
@@ -148,22 +148,59 @@ export default function Footer() {
 
           <hr className="gold-divider my-8" />
 
-          {/* Bas de footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-text-muted text-xs text-center sm:text-left">
-              © {new Date().getFullYear()} Elite Turf · Paris, France.
-              Pronostics PMU pour les parieurs francophones. Fournis à titre informatif.
-            </p>
-            <div className="flex items-center gap-4">
-              {[
-                { label: "Mentions légales", href: "/mentions-legales" },
-                { label: "Confidentialité",  href: "/confidentialite"  },
-                { label: "CGU",              href: "/cgu"              },
-              ].map((link) => (
-                <Link key={link.href} href={link.href} className="text-text-muted hover:text-text-secondary text-xs transition-colors">
-                  {link.label}
-                </Link>
-              ))}
+          {/* Réseaux sociaux + bas de footer */}
+          <div className="flex flex-col items-center gap-5">
+
+            {/* Icônes réseaux sociaux */}
+            <div className="flex items-center gap-3">
+              {/* Facebook */}
+              <a href="#" aria-label="Facebook Elite Turf"
+                className="w-9 h-9 rounded-full bg-border/40 hover:bg-border/70 flex items-center justify-center transition-colors group">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-text-muted group-hover:text-text-secondary transition-colors">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+              {/* YouTube */}
+              <a href="#" aria-label="YouTube Elite Turf"
+                className="w-9 h-9 rounded-full bg-border/40 hover:bg-border/70 flex items-center justify-center transition-colors group">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-text-muted group-hover:text-text-secondary transition-colors">
+                  <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+              {/* TikTok */}
+              <a href="#" aria-label="TikTok Elite Turf"
+                className="w-9 h-9 rounded-full bg-border/40 hover:bg-border/70 flex items-center justify-center transition-colors group">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="text-text-muted group-hover:text-text-secondary transition-colors">
+                  <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+              {/* X (Twitter) */}
+              <a href="#" aria-label="X (Twitter) Elite Turf"
+                className="w-9 h-9 rounded-full bg-border/40 hover:bg-border/70 flex items-center justify-center transition-colors group">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-text-muted group-hover:text-text-secondary transition-colors">
+                  <path d="M4 4l16 16M4 20L20 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </a>
+            </div>
+            <p className="text-text-muted text-xs text-center">Retrouvez-nous bientôt sur les réseaux sociaux</p>
+
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-text-muted text-xs text-center sm:text-left">
+                © {new Date().getFullYear()} Elite Turf · Paris, France.
+                Pronostics PMU pour les parieurs francophones. Fournis à titre informatif.
+              </p>
+              <div className="flex items-center gap-4">
+                {[
+                  { label: "Mentions légales", href: "/mentions-legales" },
+                  { label: "Confidentialité",  href: "/confidentialite"  },
+                  { label: "CGU",              href: "/cgu"              },
+                ].map((link) => (
+                  <Link key={link.href} href={link.href} className="text-text-muted hover:text-text-secondary text-xs transition-colors">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

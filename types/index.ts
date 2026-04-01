@@ -174,8 +174,8 @@ export const PLAN_CONFIG: Plan[] = [
   {
     id: "starter",
     nom: "Starter",
-    prix_fcfa: 45261,  // 69€ × 655.957 XOF
-    prix_eur: 69,      // PACK DÉCOUVERTE
+    prix_fcfa: 42637,  // 65€ × 655.957 XOF
+    prix_eur: 65,      // PACK DÉCOUVERTE
     duree_jours: 7,
     acces_premium: true,
     acces_vip: false,
@@ -194,8 +194,8 @@ export const PLAN_CONFIG: Plan[] = [
   {
     id: "pro",
     nom: "Pro",
-    prix_fcfa: 71499,  // 109€ × 655.957 XOF
-    prix_eur: 109,     // PACK PERFORMANCE
+    prix_fcfa: 99705,  // 152€ × 655.957 XOF
+    prix_eur: 152,     // PACK PERFORMANCE
     duree_jours: 30,
     acces_premium: true,
     acces_vip: false,
@@ -217,8 +217,8 @@ export const PLAN_CONFIG: Plan[] = [
   {
     id: "elite",
     nom: "Elite",
-    prix_fcfa: 123976, // 189€ × 655.957 XOF
-    prix_eur: 189,     // PACK ELITE
+    prix_fcfa: 136439, // 208€ × 655.957 XOF
+    prix_eur: 208,     // PACK ELITE
     duree_jours: 90,
     acces_premium: true,
     acces_vip: true,

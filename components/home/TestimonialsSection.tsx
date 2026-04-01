@@ -88,7 +88,7 @@ const testimonials = [
     plan: "Plan Pro",
     planColor: "text-gold-primary bg-gold-faint border-gold-primary/30",
     texte:
-      "La carte VEDETTE DU JOUR est ma référence. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Total : 1 950€ en un mois avec le Pack Pro à 69€. ROI exceptionnel.",
+      "La carte VEDETTE DU JOUR est ma référence. 3 Tiercés gagnants consécutifs en janvier sur Longchamp et Saint-Cloud. Total : 1 950€ en un mois avec le Pack Performance à 152€. ROI exceptionnel.",
     stars: 4,
     initiale: "B",
     gain: "+1 950€",
