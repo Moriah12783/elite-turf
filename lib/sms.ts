@@ -29,20 +29,24 @@ export async function sendSMS(to: string, body: string): Promise<SMSResult> {
 
   const credentials = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
-  // Utilise le Messaging Service SID en priorité (meilleure délivrabilité internationale)
-  // sinon fallback sur le numéro direct
-  const senderParams = messagingService
-    ? { MessagingServiceSid: messagingService }
-    : { From: fromNumber! };
-
   try {
+    // Construit les paramètres selon la source disponible
+    const params = new URLSearchParams();
+    params.append("To", to);
+    params.append("Body", body);
+    if (messagingService) {
+      params.append("MessagingServiceSid", messagingService);
+    } else {
+      params.append("From", fromNumber!);
+    }
+
     const res = await fetch(`${TWILIO_BASE}/${accountSid}/Messages.json`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${credentials}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ To: to, ...senderParams, Body: body }).toString(),
+      body: params.toString(),
     });
 
     const data = await res.json();
