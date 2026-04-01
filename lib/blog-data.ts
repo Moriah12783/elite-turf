@@ -443,6 +443,8 @@ export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return BLOG_ARTICLES.find((a) => a.slug === slug);
 }
 
+export const getArticle = getArticleBySlug;
+
 export function getArticlesByCategory(cat: string): BlogArticle[] {
   return BLOG_ARTICLES.filter((a) => a.categorie === cat);
 }
