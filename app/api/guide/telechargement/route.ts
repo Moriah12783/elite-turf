@@ -41,17 +41,17 @@ function buildGuideEmail(prenom: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Elite Turf — Votre Guide de l'Initié</title>
   <style>
-    body { margin:0;padding:0;background:#F9FAFB;font-family:'Helvetica Neue',Arial,sans-serif; }
+    body { margin:0;padding:0;background:#F3F4F6;font-family:'Helvetica Neue',Arial,sans-serif; }
     @media only screen and (max-width:600px) {
       .container { width:100% !important; padding:0 12px !important; }
       .btn { width:100% !important; display:block !important; text-align:center !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#F9FAFB;">
+<body style="margin:0;padding:0;background:#F3F4F6;">
 
   <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F9FAFB;padding:32px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F3F4F6;padding:32px 0;">
     <tr>
       <td align="center">
         <table class="container" width="580" cellpadding="0" cellspacing="0" border="0"
@@ -172,14 +172,41 @@ function buildGuideEmail(prenom: string): string {
           <!-- Footer -->
           <tr>
             <td style="background:#F3F4F6;border:1px solid #E5E7EB;border-top:0;
-                       border-radius:0 0 12px 12px;padding:20px 40px;text-align:center;">
-              <p style="margin:0 0 6px 0;color:#9CA3AF;font-size:11px;">
+                       border-radius:0 0 12px 12px;padding:24px 40px;text-align:center;">
+
+              <!-- Icônes réseaux sociaux -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px auto;">
+                <tr>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">f</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:12px;color:#FFFFFF;font-weight:700;">▶</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">♪</a>
+                  </td>
+                  <td style="padding:0 5px;">
+                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">𝕏</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 4px 0;color:#6B7280;font-size:11px;font-weight:600;">Elite Turf</p>
+              <p style="margin:0 0 3px 0;color:#9CA3AF;font-size:11px;">
+                📍 34, boulevard des Italiens, 75009 Paris, France
+              </p>
+              <p style="margin:0 0 8px 0;color:#9CA3AF;font-size:11px;">
+                📞 +33 6 44 68 67 20 &nbsp;·&nbsp;
+                <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;text-decoration:none;">contact@elite-turf.fr</a>
+              </p>
+              <p style="margin:0 0 6px 0;color:#D1D5DB;font-size:10px;">
                 Jouer comporte des risques. Pour être aidé : 09 74 75 13 13 (non surtaxé).
               </p>
               <p style="margin:0;font-size:10px;">
-                EliteTurf · Paris, France &nbsp;·&nbsp;
-                <a href="${APP_URL}/confidentialite"
-                   style="color:#D1D5DB;text-decoration:none;">Se désabonner</a>
+                <a href="${APP_URL}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Politique de confidentialité</a>
+                &nbsp;·&nbsp;
+                <a href="${APP_URL}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Se désabonner</a>
               </p>
             </td>
           </tr>
