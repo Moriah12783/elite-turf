@@ -11,6 +11,7 @@ import { PLAN_CONFIG, CONFIDENCE_CONFIG, BET_TYPE_LABELS } from "@/types";
 import type { Pronostic } from "@/types";
 import PageHero from "@/components/layout/PageHero";
 import ProfileEditForm from "@/components/membre/ProfileEditForm";
+import TransactionsHistory from "@/components/membre/TransactionsHistory";
 
 export const metadata: Metadata = {
   title: "Mon Espace Membre — Elite Turf",
@@ -574,6 +575,14 @@ export default async function EspaceMembrePage() {
               }); })()}
             </div>
           )}
+        </div>
+
+        {/* ── HISTORIQUE DES TRANSACTIONS ───────────────────────────── */}
+        <div>
+          <h2 className="font-serif font-bold text-text-primary text-lg mb-4">
+            Historique des paiements
+          </h2>
+          <TransactionsHistory />
         </div>
 
         {/* ── ACCÈS RAPIDES ─────────────────────────────────────────── */}
