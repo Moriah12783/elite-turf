@@ -9,10 +9,13 @@ import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+
 export const metadata: Metadata = {
   title: "Abonnements — Pronostics PMU dès 65€",
   description:
     "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. Plans à partir de 65€. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
+  alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
 export const dynamic = "force-dynamic";

@@ -53,7 +53,43 @@ export default async function BlogArticlePage({
 
   const autresArticles = BLOG_ARTICLES.filter((a) => a.slug !== slug).slice(0, 3);
 
+  // ── JSON-LD : schéma Article pour Google ─────────────────────────────
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.titre,
+    description: article.description,
+    image: article.image.startsWith("http") ? article.image : `${APP_URL}${article.image}`,
+    datePublished: article.date,
+    dateModified: article.date,
+    author: {
+      "@type": "Organization",
+      name: "Elite Turf",
+      url: APP_URL,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Elite Turf",
+      logo: {
+        "@type": "ImageObject",
+        url: `${APP_URL}/og-image.jpg`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${APP_URL}/blog/${article.slug}`,
+    },
+    keywords: article.keywords.join(", "),
+    articleSection: article.categorie,
+    inLanguage: "fr-FR",
+  };
+
   return (
+    <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
     <div className="min-h-screen bg-bg-primary pt-24 pb-16">
 
       {/* Hero image */}
@@ -152,7 +188,7 @@ export default async function BlogArticlePage({
                 ))}
               </div>
               <Link href="/abonnements" className="btn-primary w-full flex items-center justify-center gap-2 text-sm">
-                Dès 29€
+                Dès 65€
               </Link>
             </div>
 
@@ -181,5 +217,6 @@ export default async function BlogArticlePage({
         </div>
       </div>
     </div>
+    </>
   );
 }

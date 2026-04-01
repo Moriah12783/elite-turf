@@ -8,10 +8,13 @@ import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
   description:
     "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Taux de réussite 73%. Analyses hippiques pour la Côte d'Ivoire et les parieurs francophones.",
+  alternates: { canonical: `${APP_URL}/pronostics` },
 };
 
 // Force dynamic rendering (user session + search params)

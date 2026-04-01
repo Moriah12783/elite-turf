@@ -1,0 +1,52 @@
+{
+  "name": "Elite Turf — Pronostics PMU",
+  "short_name": "Elite Turf",
+  "description": "Pronostics PMU premium pour les parieurs francophones. Tiercé, Quarté+, Quinté+ analysés par nos experts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0D0D14",
+  "theme_color": "#C9A84C",
+  "lang": "fr",
+  "categories": ["sports", "entertainment"],
+  "icons": [
+    {
+      "src": "/images/heroes/hero-pronostics.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/heroes/hero-pronostics.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pronostics du jour",
+      "short_name": "Pronostics",
+      "description": "Voir les pronostics PMU du jour",
+      "url": "/pronostics",
+      "icons": [{ "src": "/images/heroes/hero-pronostics.jpg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Programme courses",
+      "short_name": "Courses",
+      "description": "Programme hippique du jour",
+      "url": "/courses",
+      "icons": [{ "src": "/images/heroes/hero-courses.jpg", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/heroes/hero-pronostics.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Pronostics PMU Elite Turf"
+    }
+  ]
+}
