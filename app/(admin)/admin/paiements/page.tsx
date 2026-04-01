@@ -2,17 +2,17 @@ import { Metadata } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   CreditCard, CheckCircle2, XCircle, Clock3,
-  TrendingUp, Filter, Download
+  TrendingUp, Download, AlertCircle,
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Paiements — Admin Elite Turf" };
 export const dynamic = "force-dynamic";
 
 const STATUT_CONFIG = {
-  SUCCES:     { label: "Validé",     classes: "text-status-win bg-status-win/10 border-status-win/20",       icon: CheckCircle2 },
+  SUCCES:     { label: "Validé",     classes: "text-status-win bg-status-win/10 border-status-win/20",             icon: CheckCircle2 },
   EN_ATTENTE: { label: "En attente", classes: "text-status-partial bg-status-partial/10 border-status-partial/20", icon: Clock3 },
-  ECHEC:      { label: "Échoué",     classes: "text-status-loss bg-status-loss/10 border-status-loss/20",    icon: XCircle },
-  REMBOURSE:  { label: "Remboursé",  classes: "text-blue-400 bg-blue-400/10 border-blue-400/20",             icon: CreditCard },
+  ECHEC:      { label: "Échoué",     classes: "text-status-loss bg-status-loss/10 border-status-loss/20",          icon: XCircle },
+  REMBOURSE:  { label: "Remboursé",  classes: "text-blue-400 bg-blue-400/10 border-blue-400/20",                   icon: CreditCard },
 };
 
 const METHODE_LABELS: Record<string, string> = {
@@ -23,9 +23,13 @@ const METHODE_LABELS: Record<string, string> = {
   PAYPAL:       "PayPal",
 };
 
-export default async function PaiementsPage() {
+interface Props {
+  searchParams: { success?: string; error?: string; expire?: string };
+}
+
+export default async function PaiementsPage({ searchParams }: Props) {
   const supabase = createServiceClient();
-  const now = new Date();
+  const now      = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   const [{ data: transactions }, { data: monthTx }] = await Promise.all([
@@ -44,7 +48,7 @@ export default async function PaiementsPage() {
       .gte("date_transaction", firstOfMonth),
   ]);
 
-  const txList = transactions || [];
+  const txList   = transactions || [];
   const monthList = monthTx || [];
 
   // KPIs
@@ -54,14 +58,27 @@ export default async function PaiementsPage() {
   const revenusTotal = txList.filter((t: any) => t.statut === "SUCCES").reduce((s: number, t: any) => s + (t.montant_fcfa || 0), 0);
 
   const kpis = [
-    { label: "Revenus ce mois",    value: `${(revenusMois / 655.957).toFixed(0)} €`,  sub: `${(revenusMois).toLocaleString("fr-CI")} FCFA`, color: "text-status-win",    border: "border-status-win/20" },
-    { label: "Transactions totales", value: txList.length.toString(),                  sub: `${txSucces} validées`,                           color: "text-gold-primary",  border: "border-gold-primary/20" },
-    { label: "En attente",         value: enAttente.toString(),                        sub: "à valider manuellement",                         color: "text-status-partial", border: "border-status-partial/20" },
-    { label: "Revenus cumulés",    value: `${(revenusTotal / 655.957).toFixed(0)} €`,  sub: "toutes périodes confondues",                     color: "text-blue-400",      border: "border-blue-400/20" },
+    { label: "Revenus ce mois",     value: `${(revenusMois  / 655.957).toFixed(0)} €`, sub: `${revenusMois.toLocaleString("fr-CI")} FCFA`,  color: "text-status-win",     border: "border-status-win/20" },
+    { label: "Transactions totales",value: txList.length.toString(),                    sub: `${txSucces} validées`,                          color: "text-gold-primary",   border: "border-gold-primary/20" },
+    { label: "En attente",          value: enAttente.toString(),                        sub: "à valider manuellement",                        color: "text-status-partial", border: "border-status-partial/20" },
+    { label: "Revenus cumulés",     value: `${(revenusTotal / 655.957).toFixed(0)} €`, sub: "toutes périodes confondues",                    color: "text-blue-400",       border: "border-blue-400/20" },
   ];
+
+  // Feedback URL params
+  const successStatut = searchParams.success; // "VIP" | "PREMIUM"
+  const errorCode     = searchParams.error;
+  const expireDate    = searchParams.expire;
+
+  const errorMessages: Record<string, string> = {
+    id_manquant:           "Identifiant de transaction manquant.",
+    transaction_introuvable: "Transaction introuvable en base de données.",
+    deja_valide:           "Cette transaction est déjà validée.",
+    erreur_transaction:    "Erreur lors de la mise à jour de la transaction.",
+  };
 
   return (
     <div className="space-y-8">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -73,6 +90,33 @@ export default async function PaiementsPage() {
           Exporter CSV
         </button>
       </div>
+
+      {/* ── Feedback succès ────────────────────────────────────────────────── */}
+      {successStatut && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-win/10 border border-status-win/30">
+          <CheckCircle2 className="w-5 h-5 text-status-win flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-status-win font-semibold text-sm">
+              Paiement validé — Abonnement {successStatut} activé avec succès
+            </p>
+            {expireDate && (
+              <p className="text-text-secondary text-xs mt-0.5">
+                Accès jusqu'au {new Date(expireDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Feedback erreur ─────────────────────────────────────────────────── */}
+      {errorCode && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-loss/10 border border-status-loss/30">
+          <AlertCircle className="w-5 h-5 text-status-loss flex-shrink-0 mt-0.5" />
+          <p className="text-status-loss font-semibold text-sm">
+            {errorMessages[errorCode] || `Erreur : ${errorCode}`}
+          </p>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -114,7 +158,7 @@ export default async function PaiementsPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {txList.map((tx: any) => {
-                  const cfg = STATUT_CONFIG[tx.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.EN_ATTENTE;
+                  const cfg  = STATUT_CONFIG[tx.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.EN_ATTENTE;
                   const Icon = cfg.icon;
                   return (
                     <tr key={tx.id} className="hover:bg-bg-hover transition-colors">
@@ -149,7 +193,7 @@ export default async function PaiementsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {tx.statut === "EN_ATTENTE" && (
-                          <form action={`/api/admin/paiements/valider`} method="POST">
+                          <form action="/api/admin/paiements/valider" method="POST">
                             <input type="hidden" name="id" value={tx.id} />
                             <button
                               type="submit"
@@ -168,6 +212,17 @@ export default async function PaiementsPage() {
           </div>
         )}
       </div>
+
+      {/* ── Info technique ───────────────────────────────────────────────────── */}
+      <div className="p-4 rounded-xl bg-bg-elevated border border-border">
+        <p className="text-text-muted text-xs leading-relaxed flex items-start gap-2">
+          <TrendingUp className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gold-primary" />
+          Cliquer sur <strong className="text-text-secondary">✓ Valider</strong> met à jour automatiquement :
+          la transaction (→ Validé), l&apos;abonnement (→ Actif) et le profil de l&apos;abonné (→ PREMIUM ou VIP)
+          selon le plan souscrit.
+        </p>
+      </div>
+
     </div>
   );
 }
