@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { buildGenyUrl } from "@/lib/geny";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
+import CountdownTimer from "@/components/courses/CountdownTimer";
 
 // Pool complet des 9 photos PMU locales
 const ALL_IMAGES = [
@@ -156,9 +157,18 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
               <Link href={`/courses/${c.id}`} className="font-serif font-semibold text-text-primary text-base leading-snug group-hover:text-gold-light transition-colors truncate">
                 {c.libelle}
               </Link>
-              <div className="flex items-center gap-1 text-gold-light font-bold text-sm flex-shrink-0">
-                <Clock className="w-3.5 h-3.5" />
-                {c.heure_depart.slice(0, 5)}
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                <div className="flex items-center gap-1 text-gold-light font-bold text-sm">
+                  <Clock className="w-3.5 h-3.5" />
+                  {c.heure_depart.slice(0, 5)}
+                </div>
+                {c.statut === "PROGRAMME" && (
+                  <CountdownTimer
+                    dateCourse={c.date_course}
+                    heureDepart={c.heure_depart}
+                    compact
+                  />
+                )}
               </div>
             </div>
 

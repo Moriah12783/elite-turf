@@ -170,6 +170,100 @@ export interface NormalizedCourse {
   parisDisponibles: string[];       // ex: ["TIERCE","QUARTE_PLUS","QUINTE_PLUS"]
 }
 
+// ── Partants & Côtes (live) ───────────────────────────────────────────────
+
+export interface PmuParticipant {
+  numPmu:            number;
+  nom:               string;
+  coteProbable?:     number;
+  coteDefinitive?:   number;
+  dernierRapportDirect?: { rapport?: number };
+  jockey?:           { nom: string };
+  entraineur?:       { nom: string };
+  musique?:          string;
+  poids?:            number;
+  age?:              number;
+  sexe?:             string;
+  handicapPoids?:    number;
+  placeCorde?:       number;
+}
+
+/**
+ * Récupère les partants + côtes temps réel pour une course PMU
+ * Endpoint : GET /partants/{YYYYMMDD}/R{R}/C{C}?specialisation=INTERNET
+ */
+export async function fetchPmuPartants(
+  dateStr: string,
+  R: number,
+  C: number,
+): Promise<PmuParticipant[]> {
+  const urls = [
+    `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store" });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const list: PmuParticipant[] =
+        json?.participants ?? json?.partants ?? json?.programme?.participants ?? [];
+      if (list.length > 0) return list;
+    } catch { /* silently continue */ }
+  }
+  return [];
+}
+
+// ── Résultats & Rapports ──────────────────────────────────────────────────
+
+export interface PmuDividende {
+  combinaison: string;   // ex: "1", "1-3-7"
+  rapport:     number;   // en centimes × 10 → diviser par 10 pour avoir € pour 1€ misé
+}
+
+export interface PmuRapport {
+  typePari:    string;
+  dividendes?: PmuDividende[];
+}
+
+export interface PmuResultat {
+  arrivee:  number[];
+  rapports: PmuRapport[];
+}
+
+/**
+ * Récupère l'arrivée officielle + rapports (dividendes) d'une course terminée
+ * Endpoint : GET /resultats/{YYYYMMDD}/R{R}/C{C}?specialisation=INTERNET
+ */
+export async function fetchPmuResultats(
+  dateStr: string,
+  R: number,
+  C: number,
+): Promise<PmuResultat | null> {
+  const urls = [
+    `${PMU_BASE}/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_BASE}/resultats/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store" });
+      if (!res.ok) continue;
+      const json = await res.json();
+      // L'API PMU peut imbriquer les résultats sous "resultats" ou à la racine
+      const root = json?.resultats ?? json;
+      const arrivee: number[] = root?.arrivee ?? root?.ordreArrivee ?? [];
+      const rapports: PmuRapport[] =
+        root?.rapports ?? root?.dividendes ?? json?.rapports ?? [];
+      if (arrivee.length > 0 || rapports.length > 0) {
+        return { arrivee, rapports };
+      }
+    } catch { /* silently continue */ }
+  }
+  return null;
+}
+
 /**
  * Transforme les réunions PMU en liste de courses normalisées
  */

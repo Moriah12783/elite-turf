@@ -1,16 +1,16 @@
-import type { ElementType } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
 import {
   MapPin, Clock, Users, TrendingUp, ArrowLeft,
-  Star, CheckCircle2, Lock, ChevronRight, Flag,
-  Zap, BarChart3, Calendar, ExternalLink
+  Star, CheckCircle2, Lock, ChevronRight,
+  Zap, BarChart3, Calendar, ExternalLink,
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
-import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { buildGenyUrl } from "@/lib/geny";
+import CountdownTimer from "@/components/courses/CountdownTimer";
+import CourseTabsClient from "@/components/courses/CourseTabsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,7 @@ function canAccess(niveau: string, sub: SubscriptionStatus) {
 }
 
 export default async function CourseDetailPage({ params }: PageProps) {
-  // Session
+  // ── Auth ─────────────────────────────────────────────────────────────────
   const supabaseClient = await createClient();
   const { data: { user } } = await supabaseClient.auth.getUser();
   let userSubscription: SubscriptionStatus = "GRATUIT";
@@ -58,7 +58,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
     if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
   }
 
-  // Data
+  // ── Données ───────────────────────────────────────────────────────────────
   const supabase = createServiceClient();
   const { data: course } = await supabase
     .from("courses")
@@ -82,7 +82,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
   if (!course) notFound();
 
   const c = course as any;
-  const refCourse = `R${c.numero_reunion}C${c.numero_course}`;
+  const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
   const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
   const partants: any[] = (c.partants || [])
     .filter((p: any) => !p.non_partant)
@@ -92,12 +92,18 @@ export default async function CourseDetailPage({ params }: PageProps) {
     c.date_course,
     c.numero_reunion,
     c.numero_course,
-    c.statut === "TERMINE" ? "resultats" : "partants"
+    c.statut === "TERMINE" ? "resultats" : "partants",
   );
-  const dateStr    = c.date_course.replace(/-/g, "");
-  const isFrance   = !c.hippodrome?.pays || c.hippodrome.pays === "France";
-  const hippoSlug  = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
-  const pmuUrl     = isFrance ? `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}` : null;
+
+  const dateStr   = c.date_course.replace(/-/g, "");
+  const isFrance  = !c.hippodrome?.pays || c.hippodrome.pays === "France";
+  const hippoSlug = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
+  const pmuUrl    = isFrance
+    ? `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}`
+    : null;
+
+  // Déterminer si on doit afficher le countdown (avant le départ)
+  const isUpcoming = c.statut === "PROGRAMME" || c.statut === "EN_COURS";
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -113,13 +119,16 @@ export default async function CourseDetailPage({ params }: PageProps) {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 relative z-10 pb-16">
-        {/* Back */}
+        {/* Retour */}
         <Link
           href={`/courses?date=${c.date_course}`}
           className="inline-flex items-center gap-1.5 text-text-secondary hover:text-gold-light text-sm font-medium transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Programme du {new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+          Programme du{" "}
+          {new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
+            day: "numeric", month: "long",
+          })}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,15 +136,17 @@ export default async function CourseDetailPage({ params }: PageProps) {
           {/* ── Colonne principale ── */}
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Course info card */}
+            {/* ── Fiche course ── */}
             <div className="card-base overflow-hidden">
+              {/* Barre de statut */}
               <div className={`h-1 w-full ${
                 c.statut === "EN_COURS" ? "bg-status-win" :
                 c.statut === "TERMINE"  ? "bg-text-muted" :
                 "bg-gradient-to-r from-gold-primary to-gold-light"
               }`} />
+
               <div className="p-6">
-                {/* Badges */}
+                {/* Badges + liens externes */}
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                   <span className="text-xs px-2.5 py-1 rounded bg-bg-elevated border border-border text-text-muted font-mono">
                     {refCourse}
@@ -143,6 +154,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${CATEGORIE_COLORS[c.categorie] || ""}`}>
                     {c.categorie}
                   </span>
+
                   {c.statut === "EN_COURS" && (
                     <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-bold bg-status-win/10 text-status-win border border-status-win/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse" />
@@ -154,7 +166,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
                       <CheckCircle2 className="w-3 h-3" /> Terminé
                     </span>
                   )}
-                  {/* External links */}
+
+                  {/* Liens externes */}
                   <div className="ml-auto flex items-center gap-2">
                     {pmuUrl && (
                       <a
@@ -177,17 +190,37 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
+                {/* Titre */}
                 <h1 className="font-serif text-xl sm:text-2xl font-bold text-text-primary mb-5">
                   {c.libelle}
                 </h1>
 
-                {/* Details grid */}
+                {/* Countdown banner (avant le départ) */}
+                {isUpcoming && c.date_course && c.heure_depart && (
+                  <div className="mb-5 p-3 rounded-xl bg-bg-elevated border border-gold-primary/20 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-text-muted text-xs mb-0.5">Départ dans</p>
+                      <CountdownTimer
+                        dateCourse={c.date_course}
+                        heureDepart={c.heure_depart}
+                      />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-text-muted text-xs mb-0.5">Heure prévue</p>
+                      <p className="text-gold-light font-mono font-semibold text-sm">
+                        {c.heure_depart?.slice(0, 5)} UTC
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Grille d'infos */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { icon: MapPin,      label: "Hippodrome",  value: c.hippodrome?.nom,    sub: c.hippodrome?.pays },
-                    { icon: Clock,       label: "Départ",      value: c.heure_depart?.slice(0,5), sub: c.date_course, gold: true },
-                    { icon: TrendingUp,  label: "Distance",    value: `${c.distance_metres}m`, sub: TERRAIN_LABELS[c.terrain] || c.terrain },
-                    { icon: Users,       label: "Partants",    value: `${partants.length || c.nb_partants}`, sub: `${c.nb_partants} engagés` },
+                    { icon: MapPin,     label: "Hippodrome", value: c.hippodrome?.nom,         sub: c.hippodrome?.pays },
+                    { icon: Clock,      label: "Départ",     value: c.heure_depart?.slice(0,5), sub: c.date_course, gold: true },
+                    { icon: TrendingUp, label: "Distance",   value: `${c.distance_metres}m`,   sub: TERRAIN_LABELS[c.terrain] || c.terrain },
+                    { icon: Users,      label: "Partants",   value: `${partants.length || c.nb_partants}`, sub: `${c.nb_partants} engagés` },
                   ].map((item, i) => (
                     <div key={i} className="p-3 bg-bg-elevated rounded-xl border border-border/50">
                       <item.icon className="w-4 h-4 text-gold-primary mb-1.5" />
@@ -200,7 +233,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   ))}
                 </div>
 
-                {/* Arrivée officielle */}
+                {/* Arrivée officielle (résumé rapide si TERMINÉ) */}
                 {c.statut === "TERMINE" && c.arrivee_officielle?.length > 0 && (
                   <div className="mt-4 p-4 bg-status-win/5 border border-status-win/20 rounded-xl">
                     <p className="text-status-win text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -231,153 +264,16 @@ export default async function CourseDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* ── Tableau des partants ── */}
-            {partants.length > 0 ? (
-              <div className="card-base overflow-hidden">
-                <div className="p-4 border-b border-border flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-gold-primary" />
-                  <h2 className="font-serif font-semibold text-text-primary text-base">
-                    Partants ({partants.length})
-                  </h2>
-                  <span className="ml-auto text-text-muted text-xs">Données Geny.com</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border/50 bg-bg-elevated/50">
-                        <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">N°</th>
-                        <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Cheval</th>
-                        <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Jockey / Entraîneur</th>
-                        <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Musique</th>
-                        <th className="text-right px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Cote</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/30">
-                      {partants.map((p: any) => {
-                        const isInArrivee = c.arrivee_officielle?.slice(0, 3).includes(p.numero);
-                        const isSelected  = pronosticPublie?.selection?.includes(p.numero);
-                        return (
-                          <tr
-                            key={p.id}
-                            className={`transition-colors ${
-                              isInArrivee ? "bg-status-win/5" :
-                              isSelected  ? "bg-gold-faint/30" :
-                              "hover:bg-bg-hover"
-                            }`}
-                          >
-                            {/* Numéro */}
-                            <td className="px-4 py-3">
-                              <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                                isInArrivee
-                                  ? "bg-status-win/20 border border-status-win/50 text-status-win"
-                                  : isSelected
-                                  ? "bg-gold-faint border border-gold-primary/50 text-gold-light"
-                                  : "bg-bg-elevated border border-border text-text-muted"
-                              }`}>
-                                {p.numero}
-                              </span>
-                            </td>
+            {/* ── Onglets : Partants / Côtes / Arrivées & Rapports / Statistiques ── */}
+            <CourseTabsClient
+              courseId={c.id}
+              partants={partants}
+              arriveeOfficielle={c.arrivee_officielle}
+              pronosticSelection={pronosticPublie?.selection}
+              statut={c.statut}
+              genyUrl={genyUrl}
+            />
 
-                            {/* Cheval */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <div>
-                                  <p className="font-semibold text-text-primary text-sm leading-tight">
-                                    {p.nom_cheval}
-                                  </p>
-                                  {p.poids_kg && (
-                                    <p className="text-text-muted text-xs">{p.poids_kg} kg</p>
-                                  )}
-                                </div>
-                                {isSelected && (
-                                  <span className="flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-gold-faint text-gold-primary border border-gold-primary/30 font-bold uppercase">
-                                    Sélec.
-                                  </span>
-                                )}
-                                {isInArrivee && (
-                                  <span className="flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-status-win/20 text-status-win border border-status-win/30 font-bold uppercase">
-                                    ✓ Placé
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Jockey / Entraîneur */}
-                            <td className="px-4 py-3 hidden md:table-cell">
-                              <p className="text-text-secondary text-sm">{p.jockey || "—"}</p>
-                              {p.entraineur && (
-                                <p className="text-text-muted text-xs">Entr. {p.entraineur}</p>
-                              )}
-                            </td>
-
-                            {/* Musique */}
-                            <td className="px-4 py-3 hidden sm:table-cell">
-                              {p.musique ? (
-                                <span className="font-mono text-xs text-text-secondary bg-bg-elevated px-2 py-1 rounded border border-border/50">
-                                  {p.musique}
-                                </span>
-                              ) : (
-                                <span className="text-text-muted text-xs">—</span>
-                              )}
-                            </td>
-
-                            {/* Cote */}
-                            <td className="px-4 py-3 text-right">
-                              {p.cote ? (
-                                <span className={`font-bold text-sm ${
-                                  p.cote <= 3 ? "text-status-win" :
-                                  p.cote <= 7 ? "text-gold-light" :
-                                  "text-text-secondary"
-                                }`}>
-                                  {Number(p.cote).toFixed(1)}
-                                </span>
-                              ) : (
-                                <span className="text-text-muted text-xs">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Footer note */}
-                <div className="px-4 py-3 border-t border-border/30 flex items-center justify-between">
-                  <p className="text-text-muted text-xs">
-                    🟡 Sélection Elite Turf · ✓ Placé dans l&apos;arrivée officielle
-                  </p>
-                  <a
-                    href={genyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-gold-light hover:text-gold-primary transition-colors"
-                  >
-                    Voir sur Geny <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-            ) : (
-              /* Pas encore de partants → placeholder avec lien Geny */
-              <div className="card-base p-6 text-center">
-                <BarChart3 className="w-8 h-8 text-text-muted mx-auto mb-3" />
-                <p className="text-text-secondary text-sm font-medium mb-1">
-                  Liste des partants non disponible
-                </p>
-                <p className="text-text-muted text-xs mb-4">
-                  Les partants seront disponibles la veille de la course
-                </p>
-                <a
-                  href={genyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gold-faint hover:bg-gold-faint/80 text-gold-light border border-gold-primary/20 rounded-xl text-sm font-medium transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Voir les partants sur Geny.com
-                </a>
-              </div>
-            )}
           </div>
 
           {/* ── Sidebar : Pronostic ── */}
@@ -413,9 +309,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                                   {n}
                                 </span>
                                 {horse ? (
-                                  <span className="text-text-secondary text-xs font-medium">
-                                    {horse.nom_cheval}
-                                  </span>
+                                  <span className="text-text-secondary text-xs font-medium">{horse.nom_cheval}</span>
                                 ) : (
                                   <span className="text-text-muted text-xs">
                                     {idx === 0 ? "1er choix" : idx === 1 ? "2e choix" : `${idx+1}e choix`}
@@ -482,6 +376,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               Tous les pronostics
             </Link>
           </div>
+
         </div>
       </div>
     </div>
