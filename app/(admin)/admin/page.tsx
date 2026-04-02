@@ -1,8 +1,9 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import {
   Users, Star, CreditCard,
-  CalendarDays, AlertCircle, CheckCircle2
+  CalendarDays, AlertCircle, CheckCircle2, RefreshCw
 } from "lucide-react";
+import SyncResultatsButton from "@/components/admin/SyncResultatsButton";
 
 // 1 EUR ≈ 655.957 XOF (taux fixe CFA)
 const XOF_TO_EUR = (xof: number) =>
@@ -153,6 +154,20 @@ export default async function AdminDashboard() {
             </a>
           ))}
         </div>
+      </div>
+
+      {/* ── Synchronisation Résultats ────────────────────────────────── */}
+      <div>
+        <h2 className="font-serif text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
+          <RefreshCw className="w-5 h-5 text-gold-primary" />
+          Synchronisation des Résultats
+        </h2>
+        <p className="text-text-secondary text-sm mb-4">
+          Met à jour automatiquement le résultat (GAGNANT / PARTIEL / PERDANT) de tous les pronostics
+          EN_ATTENTE dont la course est passée. Le cron s&apos;exécute chaque soir à 21h, mais vous pouvez
+          le lancer manuellement ici.
+        </p>
+        <SyncResultatsButton />
       </div>
 
       {/* Status automatisations */}

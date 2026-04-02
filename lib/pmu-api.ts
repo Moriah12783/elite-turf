@@ -170,6 +170,65 @@ export interface NormalizedCourse {
   parisDisponibles: string[];       // ex: ["TIERCE","QUARTE_PLUS","QUINTE_PLUS"]
 }
 
+// ── Résultats PMU ────────────────────────────────────────────────────────
+
+export interface PmuResultat {
+  arrivee: number[];   // numéros de chevaux dans l'ordre officiel d'arrivée
+}
+
+/**
+ * Récupère l'arrivée officielle d'une course PMU passée.
+ * Endpoint : GET /resultats/{YYYYMMDD}/R{R}/C{C}?specialisation=INTERNET
+ * Retourne null si la course n'est pas encore disponible.
+ */
+export async function fetchPmuResultats(
+  dateStr: string,     // YYYYMMDD
+  numReunion: number,
+  numCourse: number,
+): Promise<PmuResultat | null> {
+  const urls = [
+    `${PMU_BASE}/resultats/${dateStr}/R${numReunion}/C${numCourse}?specialisation=INTERNET`,
+    `${PMU_BASE}/resultats/${dateStr}/R${numReunion}/C${numCourse}?specialisation=OFFLINE`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store" });
+      if (!res.ok) continue;
+
+      const json = await res.json();
+
+      // L'arrivée est dans plusieurs chemins possibles selon la version de l'API
+      const arriveeRaw: unknown[] =
+        json?.ordre
+        ?? json?.arrivee
+        ?? json?.rapports?.arrivee
+        ?? json?.resultats?.ordre
+        ?? [];
+
+      if (!Array.isArray(arriveeRaw) || arriveeRaw.length === 0) continue;
+
+      // Chaque élément peut être un numéro direct ou un objet { numPmu, ... }
+      const arrivee: number[] = arriveeRaw
+        .map((item: unknown) => {
+          if (typeof item === "number") return item;
+          if (typeof item === "object" && item !== null) {
+            const obj = item as Record<string, unknown>;
+            return Number(obj.numPmu ?? obj.numero ?? obj.num ?? 0);
+          }
+          return 0;
+        })
+        .filter((n: number) => n > 0);
+
+      if (arrivee.length > 0) return { arrivee };
+    } catch {
+      // Ignore et essaie le prochain endpoint
+    }
+  }
+
+  return null;
+}
+
 /**
  * Transforme les réunions PMU en liste de courses normalisées
  */
