@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // VERCEL_URL est automatiquement injecté par Vercel (ex: elite-turf-xyz.vercel.app)
 // Priorité : variable explicite > URL Vercel auto > fallback prod
@@ -143,6 +145,8 @@ export default function RootLayout({
             },
           }}
         />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
