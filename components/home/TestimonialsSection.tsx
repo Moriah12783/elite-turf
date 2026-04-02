@@ -56,7 +56,7 @@ const testimonials = [
     plan: "Plan Starter",
     planColor: "text-text-secondary bg-bg-elevated border-border",
     texte:
-      "Commencé avec le Pack Découverte à 29€. Dès la 2ème semaine, j'ai gagné 282 000 FCFA (≈ 430€) sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse en une seule course !",
+      "Commencé avec le Plan Starter à 65€. Dès la 2ème semaine, j'ai gagné 282 000 FCFA (≈ 430€) sur un Tiercé Vincennes via le PMU-CI. Le plan se rembourse en une seule course !",
     stars: 5,
     initiale: "F",
     gain: "+430€",

@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
 
     try {
       let arriveeOfficielle: number[] | null = course.arrivee_officielle;
+      let pmuResultCache: Awaited<ReturnType<typeof fetchPmuResultats>> = null;
 
       // Si la course n'a pas encore d'arrivée enregistrée → appel API PMU
       if (!arriveeOfficielle || arriveeOfficielle.length === 0) {
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest) {
 
         if (pmuResult && pmuResult.arrivee.length > 0) {
           arriveeOfficielle = pmuResult.arrivee;
+          pmuResultCache = pmuResult;
 
           // Sauvegarder l'arrivée dans la table courses pour les prochains appels
           await supabase
@@ -172,6 +174,14 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", course.id);
         }
+      } else {
+        // L'arrivée était déjà en base → on récupère quand même les rapports PMU
+        const datePmu = course.date_course.replace(/-/g, "");
+        pmuResultCache = await fetchPmuResultats(
+          datePmu,
+          course.numero_reunion,
+          course.numero_course,
+        );
       }
 
       // Si toujours pas d'arrivée disponible → skip (résultats pas encore publiés)
@@ -186,10 +196,37 @@ export async function POST(req: NextRequest) {
 
       const resultat = calculerResultat(selection, arriveeOfficielle, typePari);
 
+      // ── 3b. Extraire le rapport gagnant réel (dividende PMU) ───────
+      // On récupère le rapport Quinté+ / Quarté+ / Tiercé depuis pmuResult.rapports
+      let rapportGagnant: number | null = null;
+      if (resultat !== "PERDANT" && pmuResultCache) {
+        const typesOrdonnes = ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE", "COUPLE_GAGNANT", "SIMPLE_GAGNANT"];
+        const typeNorm = typePari.toUpperCase().replace(/[^A-Z_]/g, "").replace("QUARTE$", "QUARTE_PLUS");
+        // Cherche le rapport correspondant au type de pari joué
+        const rapportMatch = pmuResultCache.rapports?.find(
+          (r) => r.typePari === typePari.toUpperCase() ||
+                 r.typePari === typeNorm ||
+                 typesOrdonnes.some((t) => t === r.typePari && t.includes(typeNorm.split("_")[0]))
+        );
+        if (rapportMatch?.dividendes && rapportMatch.dividendes.length > 0) {
+          // PMU exprime les rapports en centimes × 10 → diviser par 10 pour €/1€ misé
+          const rawRapport = rapportMatch.dividendes[0].rapport;
+          rapportGagnant = rawRapport > 100 ? Math.round(rawRapport / 10 * 100) / 100 : rawRapport;
+        }
+      }
+
       // ── 4. Mettre à jour le pronostic ─────────────────────────────
+      const updatePayload: Record<string, unknown> = {
+        resultat,
+        arrivee_reelle: arriveeOfficielle,
+      };
+      if (rapportGagnant !== null) {
+        updatePayload.rapport_gagnant = rapportGagnant;
+      }
+
       const { error: updateErr } = await supabase
         .from("pronostics")
-        .update({ resultat })
+        .update(updatePayload)
         .eq("id", prono.id);
 
       if (updateErr) {

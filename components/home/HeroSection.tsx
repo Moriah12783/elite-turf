@@ -4,9 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, Users, Award, Zap } from "lucide-react";
 
+interface LiveStats {
+  tauxMois:       number;   // ex: 76
+  totalMembers:   number;   // ex: 124
+  premiumMembers: number;   // ex: 47
+}
+
 export default function HeroSection() {
-  const [scrollY, setScrollY] = useState(0);
+  const [scrollY,      setScrollY]      = useState(0);
   const [badgeVisible, setBadgeVisible] = useState(false);
+  const [liveStats,    setLiveStats]    = useState<LiveStats | null>(null);
   const ticking = useRef(false);
 
   /* ── Parallax scroll tracker (passive, RAF-throttled) ── */
@@ -30,8 +37,21 @@ export default function HeroSection() {
     return () => clearTimeout(t);
   }, []);
 
-  /* parallax offset: image monte 30% plus vite que le scroll */
+  /* ── Fetch live stats depuis /api/stats ── */
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data: LiveStats) => setLiveStats(data))
+      .catch(() => {/* silently ignore — fallback values used */});
+  }, []);
+
+  /* parallax offset: image monte 35% plus vite que le scroll */
   const parallaxY = scrollY * 0.35;
+
+  /* Valeurs affichées : réelles si disponibles, sinon vide pendant le chargement */
+  const tauxMois       = liveStats ? `${liveStats.tauxMois}%`        : "—";
+  const totalMembers   = liveStats ? `${liveStats.totalMembers}+`    : "—";
+  const premiumMembers = liveStats ? `${liveStats.premiumMembers}`   : "—";
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -146,7 +166,7 @@ export default function HeroSection() {
           </Link>
         </div>
 
-        {/* ── Stats grid 2×2 → 1×4 ── */}
+        {/* ── Stats grid 2×2 → 1×4 (valeurs RÉELLES) ── */}
         <div
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto"
           style={{
@@ -156,10 +176,10 @@ export default function HeroSection() {
           }}
         >
           {[
-            { icon: TrendingUp, value: "73%",   label: "Taux de réussite",  sublabel: "ce mois" },
-            { icon: Award,      value: "847+",  label: "Membres actifs",    sublabel: "parieurs francophones" },
-            { icon: Zap,        value: "5 ans", label: "D'expertise",       sublabel: "pronostics hippiques" },
-            { icon: Users,      value: "312",   label: "Abonnés Premium",   sublabel: "résultats prouvés" },
+            { icon: TrendingUp, value: tauxMois,       label: "Taux de réussite",  sublabel: "ce mois" },
+            { icon: Award,      value: totalMembers,   label: "Membres actifs",    sublabel: "parieurs francophones" },
+            { icon: Zap,        value: "5 ans",        label: "D'expertise",       sublabel: "pronostics hippiques" },
+            { icon: Users,      value: premiumMembers, label: "Abonnés Premium",   sublabel: "résultats prouvés" },
           ].map((stat, i) => (
             <div
               key={i}
