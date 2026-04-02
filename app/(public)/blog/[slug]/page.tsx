@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Clock, ArrowLeft, Star, ArrowRight, Tag, Zap } from "lucide-react";
 import { BLOG_ARTICLES, getArticle } from "@/lib/blog-data";
 import NewsletterSignup from "@/components/blog/NewsletterSignup";
+import StickyBanner from "@/components/blog/StickyBanner";
+import ExitIntentPopup from "@/components/blog/ExitIntentPopup";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
@@ -104,6 +106,9 @@ export default async function BlogArticlePage({
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
+    {/* Bannière sticky + popup exit-intent — client components */}
+    <StickyBanner />
+    <ExitIntentPopup />
     <div className="min-h-screen bg-bg-primary pt-24 pb-16">
 
       {/* Hero image */}
