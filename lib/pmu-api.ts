@@ -198,7 +198,7 @@ export async function fetchPmuPartants(
   C: number,
 ): Promise<PmuParticipant[]> {
   const urls = [
-    `${PMU_BASE}/partants/${dateStr}/R${R}/C${R}?specialisation=INTERNET`,
+    `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
     `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
   ];
 
