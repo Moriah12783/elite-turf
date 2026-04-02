@@ -1,11 +1,15 @@
 /**
  * GET /api/stats
- * Retourne les statistiques globales temps réel depuis Supabase :
- *  - taux de réussite du mois en cours
- *  - nombre de membres actifs
- *  - nombre d'abonnés Premium/VIP
- * Utilisé par HeroSection pour remplacer les valeurs hardcodées.
- * Cache 30 minutes (revalidate).
+ * Retourne les statistiques globales crédibles pour la Hero Section.
+ *
+ * Stratégie "smart display" :
+ *  - tauxGlobal   : taux sur TOUT l'historique (plus stable et plus élevé que le mois)
+ *  - totalPronostics : nombre total de pronostics publiés + terminés
+ *  - meilleurRapport : meilleur rapport_gagnant enregistré (le plus impressionnant)
+ *  - coursesAnalysees : nombre de courses distinctes analysées
+ *
+ * Ces 4 métriques sont toujours fortes même pour un site jeune.
+ * Cache 30 min côté serveur.
  */
 
 import { NextResponse } from "next/server";
@@ -18,46 +22,51 @@ export async function GET() {
   try {
     const supabase = createServiceClient();
 
-    const now = new Date();
-    const moisDebut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
     const [
-      { data: pronosMois },
-      { count: totalMembers },
-      { count: premiumMembers },
+      { data: allPronostics },
+      { data: topRapport },
+      { count: totalCourses },
     ] = await Promise.all([
-      // Pronostics du mois courant terminés
+      // Tous les pronostics publiés terminés (pour taux global)
       supabase
         .from("pronostics")
         .select("resultat")
         .eq("publie", true)
-        .neq("resultat", "EN_ATTENTE")
-        .gte("date_publication", moisDebut),
+        .neq("resultat", "EN_ATTENTE"),
 
-      // Membres actifs total
+      // Meilleur rapport_gagnant enregistré
       supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("actif", true),
+        .from("pronostics")
+        .select("rapport_gagnant")
+        .eq("publie", true)
+        .eq("resultat", "GAGNANT")
+        .not("rapport_gagnant", "is", null)
+        .order("rapport_gagnant", { ascending: false })
+        .limit(1),
 
-      // Abonnés Premium + VIP
+      // Nombre de courses distinctes analysées
       supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .in("statut_abonnement", ["PREMIUM", "VIP"]),
+        .from("courses")
+        .select("*", { count: "exact", head: true }),
     ]);
 
-    const termines  = pronosMois?.length ?? 0;
-    const gagnants  = pronosMois?.filter((p) => p.resultat === "GAGNANT").length ?? 0;
-    const tauxMois  = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
+    const termines     = allPronostics?.length ?? 0;
+    const gagnants     = allPronostics?.filter((p) => p.resultat === "GAGNANT").length ?? 0;
+    const tauxGlobal   = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
+    const meilleurRapport = topRapport?.[0]?.rapport_gagnant ?? null;
 
     return NextResponse.json({
-      tauxMois,          // ex: 76
-      totalMembers:  totalMembers  ?? 0,
-      premiumMembers: premiumMembers ?? 0,
+      tauxGlobal,                         // ex: 76
+      totalPronostics: termines,          // ex: 25
+      meilleurRapport,                    // ex: 93.20
+      coursesAnalysees: totalCourses ?? 0,// ex: 112
     });
   } catch {
-    // Fallback silencieux — le front affichera ses valeurs par défaut
-    return NextResponse.json({ tauxMois: 0, totalMembers: 0, premiumMembers: 0 });
+    return NextResponse.json({
+      tauxGlobal: 0,
+      totalPronostics: 0,
+      meilleurRapport: null,
+      coursesAnalysees: 0,
+    });
   }
 }
