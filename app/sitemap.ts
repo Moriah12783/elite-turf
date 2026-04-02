@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
+import { BLOG_ARTICLES } from "@/lib/blog-data";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -47,5 +48,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase pas encore configuré — on continue
   }
 
-  return [...staticPages, ...pronosticUrls];
+  // Articles de blog — 1 URL par article avec date réelle
+  const blogArticleUrls: MetadataRoute.Sitemap = BLOG_ARTICLES.map((a) => ({
+    url: `${APP_URL}/blog/${a.slug}`,
+    lastModified: new Date(a.date),
+    changeFrequency: "monthly" as const,
+    priority: 0.75,
+  }));
+
+  return [...staticPages, ...blogArticleUrls, ...pronosticUrls];
 }
