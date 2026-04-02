@@ -33,13 +33,14 @@ const CATEGORIE_COLORS: Record<string, string> = {
   "Communauté":   "text-pink-400 bg-pink-400/10 border-pink-400/20",
   "Acteurs":      "text-orange-400 bg-orange-400/10 border-orange-400/20",
   "Marché":       "text-indigo-400 bg-indigo-400/10 border-indigo-400/20",
+  "Actualités":   "text-red-400 bg-red-400/10 border-red-400/20",
 };
 
 // Groupes de filtres
 const FILTRES = [
   { label: "Tous les articles", value: "all" },
   { label: "Expertise & Stratégie", value: "expertise", cats: ["Stratégie", "Expertise", "Technique", "Finance"] },
-  { label: "Actualités & Marché", value: "actu", cats: ["Grands Prix", "Communauté", "Acteurs", "Marché", "Innovation"] },
+  { label: "Actualités & Marché", value: "actu", cats: ["Actualités", "Grands Prix", "Communauté", "Acteurs", "Marché", "Innovation"] },
   { label: "Débutants", value: "debutants", cats: ["Débutants"] },
 ];
 
