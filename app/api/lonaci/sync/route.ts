@@ -2,11 +2,8 @@
  * POST /api/lonaci/sync  (v2)
  *
  * Synchronise le programme LONACI du jour dans Supabase.
- * - Insère les hippodromes manquants
- * - Insère ou met à jour toutes les courses disponibles sur LONACI
- * - Marque les Nationales 1/2/3 avec paris_disponibles correct
- *
- * Header requis : Authorization: Bearer <CRON_SECRET>
+ * Appelé par /api/cron/lonaci-sync (cron Vercel) et /api/admin/force-sync.
+ * La protection auth est gérée en amont par ces routes.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -18,15 +15,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
-
 export async function POST(req: NextRequest) {
-  // ── Auth ────────────────────────────────────────────────────────────
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const supabase = createServiceClient();
 
   try {
@@ -145,10 +134,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function GET() {
   return NextResponse.json({ ok: true, message: "LONACI Sync endpoint actif" });
 }
