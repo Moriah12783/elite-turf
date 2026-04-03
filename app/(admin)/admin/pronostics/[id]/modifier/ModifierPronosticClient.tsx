@@ -53,6 +53,7 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
       return;
     }
     setLoading(true);
+    const etaitBrouillon = !pronostic.publie; // brouillon → publié = première publication
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -72,6 +73,19 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
         .eq("id", pronostic.id);
 
       if (error) throw error;
+
+      // Notifier les abonnés uniquement lors de la 1ère publication (brouillon → publié)
+      if (publie && etaitBrouillon) {
+        fetch("/api/admin/pronostics/notifier", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pronosticId: pronostic.id }),
+        }).then(async (res) => {
+          const d = await res.json();
+          if (d.sent > 0) toast.success(`📧 ${d.sent} abonné(s) notifié(s) par email`);
+        }).catch(() => {/* non bloquant */});
+      }
+
       toast.success(publie ? "Pronostic publié !" : "Modifications enregistrées");
       router.push("/admin/pronostics");
     } catch {
