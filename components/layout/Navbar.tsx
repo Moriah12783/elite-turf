@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Menu, X, Star, LogIn, User, ChevronDown, LogOut, Crown, BookOpen } from "lucide-react";
+import { Menu, X, Star, LogIn, User, ChevronDown, LogOut, Crown, BookOpen, Archive } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/client";
@@ -99,6 +99,7 @@ export default function Navbar() {
                         { href: "/espace-membre",  label: "Mon espace",        Icon: User    },
                         { href: "/abonnements",    label: "Mes abonnements",   Icon: Crown   },
                         { href: "/pronostics",     label: "Mes pronostics",    Icon: Star    },
+                        { href: "/archives",       label: "Archives résultats", Icon: Archive },
                         { href: "/blog",           label: "Blog PMU",          Icon: BookOpen},
                       ].map(({ href, label, Icon }) => (
                         <Link
