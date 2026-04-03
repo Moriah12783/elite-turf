@@ -47,11 +47,15 @@ export async function POST(req: NextRequest) {
     const data = await res.json().catch(() => ({}));
     const duration_ms = Date.now() - t0;
 
+    // Propager le message d'erreur au niveau supérieur pour le CronMonitorPanel
+    const errorMsg = res.ok ? undefined : (data?.error ?? `HTTP ${res.status} — ${endpoint.url}`);
+
     return NextResponse.json({
       ok: res.ok,
       target,
       duration_ms,
       result: data,
+      error: errorMsg,
       timestamp: new Date().toISOString(),
     }, { status: res.ok ? 200 : 500 });
 
