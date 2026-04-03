@@ -4,7 +4,7 @@ import {
   MapPin, Clock, TrendingUp, Zap, Globe2,
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
-import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
+import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
 
 /** Retourne 1 si Nationale 1, 2 si Nat2, 3 si Nat3, 0 sinon */
 function getNatNum(paris: string[]): number {
@@ -183,6 +183,30 @@ export default async function PronosticsSection() {
   const vCourse: any = Array.isArray(vedette?.course) ? vedette.course[0] : vedette?.course;
   const listWithoutVedette = displayList.filter((p: any) => p.id !== vedette?.id);
 
+  // ── 3. Favori automatique : cheval avec la cote la plus basse (PMU) ──
+  let favoriAuto: { nom: string; cote: number; numero: number } | null = null;
+  if (vCourse) {
+    try {
+      const dateStrFav = (vCourse.date_course || today).replace(/-/g, "");
+      const participants = await fetchPmuPartants(
+        dateStrFav,
+        vCourse.numero_reunion,
+        vCourse.numero_course,
+      );
+      const avecCote = participants
+        .filter((p) => p.coteProbable || p.coteDefinitive)
+        .map((p) => ({
+          numero: p.numPmu,
+          nom:    p.nom,
+          cote:   p.coteDefinitive ?? p.coteProbable ?? 99,
+        }))
+        .sort((a, b) => a.cote - b.cote);
+      if (avecCote.length > 0) favoriAuto = avecCote[0];
+    } catch {
+      // PMU indisponible — on n'affiche pas le favori
+    }
+  }
+
   return (
     <section className="py-16 sm:py-20 bg-bg-card/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -259,9 +283,22 @@ export default async function PronosticsSection() {
                 </div>
 
                 {vedette.analyse_courte && (
-                  <p className="text-text-secondary text-sm leading-relaxed mb-5 italic border-l-2 border-gold-primary/40 pl-3">
+                  <p className="text-text-secondary text-sm leading-relaxed mb-4 italic border-l-2 border-gold-primary/40 pl-3">
                     &ldquo;{vedette.analyse_courte}&rdquo;
                   </p>
+                )}
+
+                {/* Favori automatique PMU */}
+                {favoriAuto && (
+                  <div className="flex items-center gap-3 mb-5 px-3 py-2.5 bg-bg-elevated border border-gold-primary/20 rounded-xl w-fit">
+                    <span className="text-gold-light text-xs font-semibold uppercase tracking-wider">Favori</span>
+                    <span className="w-px h-4 bg-border" />
+                    <span className="w-6 h-6 rounded-full bg-gold-faint border border-gold-primary/40 flex items-center justify-center text-gold-primary font-bold text-xs flex-shrink-0">
+                      {favoriAuto.numero}
+                    </span>
+                    <span className="text-text-primary font-semibold text-sm">{favoriAuto.nom}</span>
+                    <span className="text-gold-light font-bold text-sm">{favoriAuto.cote.toFixed(1)}</span>
+                  </div>
                 )}
 
                 <Link

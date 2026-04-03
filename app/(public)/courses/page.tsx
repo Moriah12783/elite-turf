@@ -9,6 +9,7 @@ import { createServiceClient, createClient } from "@/lib/supabase/server";
 import CoursesDateNav from "@/components/courses/CoursesDateNav";
 import CourseCard from "@/components/courses/CourseCard";
 import PageHero from "@/components/layout/PageHero";
+import TermineesCollapse from "@/components/courses/TermineesCollapse";
 
 export const metadata: Metadata = {
   title: "Programme des Courses — Elite Turf",
@@ -28,19 +29,20 @@ interface PageProps {
 }
 
 export default async function CoursesPage({ searchParams }: PageProps) {
-  // ── Date cible ────────────────────────────────────────────────────
+  // ── Date cible ────────────────────────────────────────────────
   const today = new Date();
-  const targetDate = searchParams.date || today.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split("T")[0];
+  const targetDate = searchParams.date || todayStr;
 
   const displayDate = new Date(targetDate + "T12:00:00");
-  const isToday = targetDate === today.toISOString().split("T")[0];
+  const isToday = targetDate === todayStr;
 
   // ── Session (pour savoir si l'user a un abonnement) ───────────────
   const supabaseClient = await createClient();
   const { data: { user } } = await supabaseClient.auth.getUser();
   let userSubscription = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await createServiceClient()
       .from("profiles").select("statut_abonnement").eq("id", user.id).single();
     if (profile) userSubscription = profile.statut_abonnement;
   }
@@ -62,6 +64,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
     .order("heure_depart", { ascending: true });
 
   if (searchParams.categorie) query = query.eq("categorie", searchParams.categorie);
+  // Note: si filtre statut explicite, l'appliquer — sinon on gère nous-mêmes
   if (searchParams.statut)    query = query.eq("statut", searchParams.statut);
 
   const { data: allCourses } = await query;
@@ -72,27 +75,56 @@ export default async function CoursesPage({ searchParams }: PageProps) {
     return c.hippodrome?.nom === searchParams.hippodrome;
   });
 
+  // ── Séparation actives / terminées (seulement pour aujourd'hui, sans filtre statut explicite) ──
+  const separerParStatut = isToday && !searchParams.statut;
+
+  const coursesActives   = separerParStatut
+    ? courses.filter((c: any) => c.statut !== "TERMINE")
+    : courses;
+  const coursesTerminees = separerParStatut
+    ? courses.filter((c: any) => c.statut === "TERMINE")
+    : [];
+
   // ── Hippodromes distincts pour filtre ─────────────────────────────
   const { data: hippodromes } = await supabase
     .from("hippodromes").select("nom, pays").eq("actif", true).order("nom");
 
-  // ── Regrouper par hippodrome ──────────────────────────────────────
-  const grouped: Record<string, { hippodrome: any; courses: any[] }> = {};
-  for (const c of courses) {
-    // Supabase returns joined FK as array in types but object at runtime — cast to any
-    const hippo = (c.hippodrome as any);
-    const hippoObj = Array.isArray(hippo) ? hippo[0] : hippo;
-    const key = hippoObj?.nom || "Autre";
-    if (!grouped[key]) grouped[key] = { hippodrome: hippoObj, courses: [] };
-    grouped[key].courses.push({ ...c, hippodrome: hippoObj });
+  // ── Regrouper par hippodrome (pour courses actives) ──────────────
+  function groupByHippodrome(list: any[]) {
+    const grouped: Record<string, { hippodrome: any; courses: any[] }> = {};
+    for (const c of list) {
+      const hippo = (c.hippodrome as any);
+      const hippoObj = Array.isArray(hippo) ? hippo[0] : hippo;
+      const key = hippoObj?.nom || "Autre";
+      if (!grouped[key]) grouped[key] = { hippodrome: hippoObj, courses: [] };
+      grouped[key].courses.push({ ...c, hippodrome: hippoObj });
+    }
+    return Object.values(grouped);
   }
-  const groups = Object.values(grouped);
+
+  const groups          = groupByHippodrome(coursesActives);
+  const groupsTerminees = groupByHippodrome(coursesTerminees);
 
   // ── Stats rapides ─────────────────────────────────────────────────
   const totalPartants = courses.reduce((s: number, c: any) => s + (c.nb_partants || 0), 0);
   const avecPronostic = courses.filter((c: any) =>
     c.pronostics?.some((p: any) => p.publie)
   ).length;
+  const nbEnCours   = courses.filter((c: any) => c.statut === "EN_COURS").length;
+  const nbProgramme = courses.filter((c: any) => c.statut === "PROGRAMME").length;
+  const nbTermine   = courses.filter((c: any) => c.statut === "TERMINE").length;
+
+  // ── Sous-titre hero dynamique ──────────────────────────────────────
+  let heroSubtitle = "";
+  if (!isToday) {
+    heroSubtitle = displayDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  } else {
+    const parts: string[] = [];
+    if (nbEnCours > 0)   parts.push(`${nbEnCours} en cours`);
+    if (nbProgramme > 0) parts.push(`${nbProgramme} à venir`);
+    if (nbTermine > 0)   parts.push(`${nbTermine} terminée${nbTermine > 1 ? "s" : ""}`);
+    heroSubtitle = parts.length > 0 ? parts.join(" · ") : `${courses.length} course${courses.length > 1 ? "s" : ""} programmée${courses.length > 1 ? "s" : ""}`;
+  }
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -101,7 +133,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
       <PageHero
         image="/images/heroes/hero-courses.jpg"
         titre="Programme des Courses"
-        sousTitre={isToday ? `Aujourd'hui — ${courses.length} course${courses.length > 1 ? "s" : ""} programmée${courses.length > 1 ? "s" : ""}` : displayDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+        sousTitre={heroSubtitle}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -114,6 +146,12 @@ export default async function CoursesPage({ searchParams }: PageProps) {
           </div>
           {courses.length > 0 && (
             <>
+              {nbEnCours > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-status-win/10 border border-status-win/30 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse" />
+                  <span className="text-status-win text-xs font-semibold">{nbEnCours} course{nbEnCours > 1 ? "s" : ""} en direct</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-border rounded-full">
                 <Star className="w-3.5 h-3.5 text-gold-primary" />
                 <span className="text-text-secondary text-xs font-medium">{avecPronostic} pronostic{avecPronostic > 1 ? "s" : ""} Elite</span>
@@ -182,14 +220,37 @@ export default async function CoursesPage({ searchParams }: PageProps) {
           <EmptyState date={targetDate} isToday={isToday} />
         ) : (
           <div className="space-y-8">
-            {groups.map((group) => (
-              <HippodromeGroup
-                key={group.hippodrome?.nom || "autre"}
-                hippodrome={group.hippodrome}
-                courses={group.courses}
+
+            {/* Courses actives (EN_COURS + PROGRAMME) */}
+            {coursesActives.length === 0 && separerParStatut ? (
+              <div className="card-base p-8 text-center">
+                <Clock className="w-8 h-8 text-text-muted mx-auto mb-3" />
+                <p className="text-text-secondary text-sm font-medium mb-1">
+                  Toutes les courses du jour sont terminées
+                </p>
+                <p className="text-text-muted text-xs">
+                  Consultez les résultats ci-dessous ou revenez demain pour le programme.
+                </p>
+              </div>
+            ) : (
+              groups.map((group) => (
+                <HippodromeGroup
+                  key={group.hippodrome?.nom || "autre"}
+                  hippodrome={group.hippodrome}
+                  courses={group.courses}
+                  userSubscription={userSubscription}
+                />
+              ))
+            )}
+
+            {/* Courses terminées — section collapsible */}
+            {separerParStatut && coursesTerminees.length > 0 && (
+              <TermineesCollapse
+                count={coursesTerminees.length}
+                groups={groupsTerminees}
                 userSubscription={userSubscription}
               />
-            ))}
+            )}
           </div>
         )}
 
