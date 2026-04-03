@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, TrendingUp, Trophy, RefreshCw,
   ExternalLink, Users, Star, CheckCircle2,
@@ -243,11 +243,16 @@ function TabPartants({
 
 // ── Tab : Côtes en direct ──────────────────────────────────────────────────
 
-function TabCotes({ courseId, partants }: { courseId: string; partants: Partant[] }) {
-  const [cotes, setCotes]     = useState<CoteItem[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+const LIVE_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes en ms
+
+function TabCotes({ courseId, partants, statut }: { courseId: string; partants: Partant[]; statut: string }) {
+  const [cotes,      setCotes]      = useState<CoteItem[] | null>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [countdown,  setCountdown]  = useState<number>(LIVE_REFRESH_INTERVAL / 1000);
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -258,15 +263,37 @@ function TabCotes({ courseId, partants }: { courseId: string; partants: Partant[
       if (!res.ok) throw new Error(data.error ?? "Erreur inconnue");
       setCotes(data.cotes ?? []);
       setLoadedOnce(true);
-    } catch (e: any) {
-      setError(e.message);
+      setCountdown(LIVE_REFRESH_INTERVAL / 1000);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Erreur inconnue");
     } finally {
       setLoading(false);
     }
   }, [courseId]);
 
-  // Charger automatiquement à la première affichage de cet onglet
-  if (!loadedOnce && !loading && !error) {
+  // Auto-refresh quand la course est EN_COURS
+  useEffect(() => {
+    if (statut !== "EN_COURS") return;
+
+    // Premier chargement
+    load();
+
+    // Refresh toutes les 5 min
+    intervalRef.current = setInterval(load, LIVE_REFRESH_INTERVAL);
+
+    // Countdown secondes
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => (c <= 1 ? LIVE_REFRESH_INTERVAL / 1000 : c - 1));
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current)  clearInterval(intervalRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [statut, load]);
+
+  // Charger automatiquement à la première affichage de cet onglet (hors EN_COURS)
+  if (statut !== "EN_COURS" && !loadedOnce && !loading && !error) {
     load();
   }
 
@@ -322,14 +349,25 @@ function TabCotes({ courseId, partants }: { courseId: string; partants: Partant[
 
   return (
     <div>
-      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between flex-wrap gap-2">
         <p className="text-text-muted text-xs">Côtes PMU temps réel · triées par probabilité</p>
-        <button
-          onClick={load}
-          className="inline-flex items-center gap-1 text-xs text-gold-light hover:text-gold-primary transition-colors"
-        >
-          <RefreshCw className="w-3 h-3" /> Actualiser
-        </button>
+        <div className="flex items-center gap-3">
+          {statut === "EN_COURS" && (
+            <span className="flex items-center gap-1.5 text-xs text-status-win font-semibold">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-win opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-status-win" />
+              </span>
+              Live · actu dans {countdown}s
+            </span>
+          )}
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-1 text-xs text-gold-light hover:text-gold-primary transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" /> Actualiser
+          </button>
+        </div>
       </div>
       <CotesBars items={cotes} maxCote={maxCote} />
     </div>
@@ -705,7 +743,7 @@ export default function CourseTabsClient({
         />
       )}
       {activeTab === "cotes" && (
-        <TabCotes courseId={courseId} partants={partants} />
+        <TabCotes courseId={courseId} partants={partants} statut={statut} />
       )}
       {activeTab === "arrivees" && (
         <TabArrivees
