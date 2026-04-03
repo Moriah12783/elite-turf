@@ -86,8 +86,8 @@ export default function CronMonitorPanel() {
         cronName,
         ok:  res.ok,
         msg: res.ok
-          ? `✅ Terminé en ${data.duration_ms}ms — ${data.result?.inserted ?? data.result?.traites ?? "OK"}`
-          : `❌ Erreur : ${data.error ?? "inconnue"}`,
+          ? `✅ Terminé en ${data.duration_ms}ms — ${data.result?.inserted ?? data.result?.traites ?? data.result?.courses ?? "OK"}`
+          : `❌ ${data.error ?? data.result?.error ?? `HTTP ${res.status}`}`,
       });
       // Rafraîchir le statut après force-sync
       await fetchStatus();
