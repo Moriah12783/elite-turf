@@ -50,6 +50,7 @@ export default async function CoursesSection() {
       pronostics(id, niveau_acces, publie)
     `)
     .eq("date_course", today)
+    .neq("statut", "TERMINE")
     .order("heure_depart", { ascending: true })
     .limit(15);
 

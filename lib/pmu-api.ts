@@ -275,7 +275,6 @@ export async function fetchPmuResultats(
       }
     } catch { /* silently continue */ }
   }
-
   return null;
 }
 

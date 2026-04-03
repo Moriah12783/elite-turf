@@ -1,7 +1,6 @@
 /**
  * GET /api/courses/[id]/cotes
  * Retourne les côtes temps réel depuis l'API PMU pour une course donnée.
- * Utilisé par le composant CourseTabsClient (onglet "Côtes en direct").
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -38,20 +37,20 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     );
 
     if (participants.length === 0) {
-      return NextResponse.json({ cotes: [], source: "pmu", message: "Côtes non disponibles" });
+      return NextResponse.json({ cotes: [], source: "pmu", message: "Côtes non encore disponibles pour cette course" });
     }
 
     // 4. Normaliser + trier par côte croissante (favori en premier)
     const cotes = participants
       .filter((p) => !p.nom?.includes("NON_PARTANT"))
       .map((p) => ({
-        numero:    p.numPmu,
-        nom:       p.nom,
-        cote:      p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
-        jockey:    p.jockey?.nom ?? null,
+        numero:     p.numPmu,
+        nom:        p.nom,
+        cote:       p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
+        jockey:     p.jockey?.nom ?? null,
         entraineur: p.entraineur?.nom ?? null,
         placeCorde: p.placeCorde ?? null,
-        poids:     p.handicapPoids ?? p.poids ?? null,
+        poids:      p.handicapPoids ?? p.poids ?? null,
       }))
       .sort((a, b) => {
         if (a.cote === null) return 1;

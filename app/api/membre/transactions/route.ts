@@ -19,7 +19,7 @@ export async function GET() {
   const serviceClient = createServiceClient();
   const { data: transactions, error } = await serviceClient
     .from("transactions")
-    .select("id, montant_fcfa, montant_eur, statut, date_transaction, methode_paiement, reference, plan_id")
+    .select("id, montant_fcfa, statut, date_transaction, methode_paiement, reference, plan_id")
     .eq("user_id", user.id)
     .order("date_transaction", { ascending: false })
     .limit(20);

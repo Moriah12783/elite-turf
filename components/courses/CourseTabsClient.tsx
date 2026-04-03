@@ -249,6 +249,8 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
   const [cotes,      setCotes]      = useState<CoteItem[] | null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState<string | null>(null);
+  const [apiMessage, setApiMessage] = useState<string | null>(null);
+  const [apiSource,  setApiSource]  = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [countdown,  setCountdown]  = useState<number>(LIVE_REFRESH_INTERVAL / 1000);
   const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -262,6 +264,8 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur inconnue");
       setCotes(data.cotes ?? []);
+      setApiMessage(data.message ?? null);
+      setApiSource(data.source ?? null);
       setLoadedOnce(true);
       setCountdown(LIVE_REFRESH_INTERVAL / 1000);
     } catch (e: unknown) {
@@ -325,6 +329,26 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
   }
 
   if (!cotes || cotes.length === 0) {
+    // Course LONACI/Afrique — pas de flux PMU
+    if (apiSource === "lonaci") {
+      return (
+        <div className="p-8 text-center">
+          <TrendingUp className="w-8 h-8 text-text-muted mx-auto mb-3" />
+          <p className="text-text-secondary text-sm font-medium mb-1">Côtes non disponibles en temps réel</p>
+          <p className="text-text-muted text-xs max-w-xs mx-auto">
+            Cette course est organisée par la LONACI. Les côtes en direct ne sont pas disponibles via l&apos;API PMU.
+          </p>
+          <a
+            href="https://www.lonaci.ci"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors"
+          >
+            Consulter LONACI.ci
+          </a>
+        </div>
+      );
+    }
     // Fallback : utiliser les côtes Supabase si dispo
     const withCote = partants.filter((p) => p.cote);
     if (withCote.length > 0) {
@@ -342,7 +366,12 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
       <div className="p-8 text-center">
         <TrendingUp className="w-8 h-8 text-text-muted mx-auto mb-3" />
         <p className="text-text-secondary text-sm">Côtes non encore disponibles</p>
-        <p className="text-text-muted text-xs mt-1">Les côtes sont publiées la veille de la course</p>
+        <p className="text-text-muted text-xs mt-1">{apiMessage ?? "Les côtes sont publiées la veille de la course"}</p>
+        {loadedOnce && (
+          <button onClick={load} className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" /> Réessayer
+          </button>
+        )}
       </div>
     );
   }
