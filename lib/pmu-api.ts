@@ -86,20 +86,18 @@ const PMU_HEADERS = {
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
   const d = dateStr || toDateStr();
 
-  // Proxy CF en premier (contourne le blocage IP Vercel/AWS), puis direct en fallback
+  // Proxy CF en premier — 2 tentatives max pour éviter le rate-limit PMU (HTTP 420)
   const urls = [
     `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=OFFLINE`,
     `${PMU_PROXY}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_PROXY}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
-    // Fallback direct (peut être bloqué par PMU sur Vercel)
-    `${PMU_DIRECT}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_DIRECT}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_DIRECT}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
   ];
 
   let lastError = "";
-  for (const url of urls) {
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i];
+    // Pause entre les tentatives pour respecter le rate-limit PMU (évite HTTP 420)
+    if (i > 0) await new Promise(r => setTimeout(r, 3000));
+
     try {
       const res = await fetch(url, {
         headers: PMU_HEADERS,
@@ -110,15 +108,15 @@ export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]>
         const json = await res.json();
         const reunions = json?.programme?.reunions ?? json?.reunions ?? [];
         if (reunions.length > 0) return reunions;
-        // Réponse 200 mais sans réunions → continuer vers le prochain endpoint
         lastError = `200 mais 0 réunions (${url})`;
         continue;
       }
 
-      // Log du corps pour diagnostiquer les 400/403
+      // Si 420 (rate limit), on arrête immédiatement — inutile d'essayer d'autres URLs
       const body = await res.text().catch(() => "");
-      lastError = `HTTP ${res.status} — ${body.slice(0, 120)}`;
+      lastError = `HTTP ${res.status} — ${body.slice(0, 200)}`;
       console.warn(`[PMU API] ${res.status} pour ${url}: ${body.slice(0, 200)}`);
+      if (res.status === 420) break;
 
     } catch (e: unknown) {
       lastError = e instanceof Error ? e.message : String(e);
