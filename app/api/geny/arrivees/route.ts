@@ -7,7 +7,6 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
 const USER_AGENT  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36";
 
 // Regex pour extraire les arrivées depuis le HTML Geny
@@ -72,11 +71,6 @@ async function scrapeGenyArrivees(): Promise<{ courseId: string; arrivee: number
 }
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const supabase = createServiceClient();
 
   try {
@@ -109,10 +103,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   // GET = même logique que POST (pour compatibilité cron Vercel GET)
   return POST(req);
 }

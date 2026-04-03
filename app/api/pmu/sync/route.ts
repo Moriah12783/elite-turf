@@ -2,10 +2,11 @@
  * POST /api/pmu/sync
  *
  * Synchronise le programme PMU du jour (ou d'une date) dans Supabase.
- * Appelé automatiquement par le cron job à 06h00 et toutes les 30 min.
+ * Appelé par :
+ *  - /api/cron/pmu-sync  (cron Vercel — protégé par CRON_SECRET côté cron)
+ *  - /api/admin/force-sync (admin dashboard — protégé par middleware admin)
  *
  * Body JSON optionnel : { date: "YYYYMMDD" }
- * Header requis       : Authorization: Bearer <CRON_SECRET>
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,14 +15,7 @@ import { fetchPmuProgramme, normalizePmuReunions, toDateStr } from "@/lib/pmu-ap
 
 export const dynamic = "force-dynamic";
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
-
 export async function POST(req: NextRequest) {
-  // ── Auth ────────────────────────────────────────────────────────────
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // ── Date cible ──────────────────────────────────────────────────────
   let dateStr: string;
@@ -149,9 +143,5 @@ export async function POST(req: NextRequest) {
 
 /** GET pour vérification rapide (ex: cron ping) */
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   return NextResponse.json({ ok: true, message: "PMU Sync endpoint actif" });
 }
