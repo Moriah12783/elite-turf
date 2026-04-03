@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { Users, Star, CreditCard, CalendarDays, RefreshCw } from "lucide-react";
+import { Users, Star, CreditCard, CalendarDays, RefreshCw, History } from "lucide-react";
 import SyncResultatsButton from "@/components/admin/SyncResultatsButton";
+import BackfillResultatsButton from "@/components/admin/BackfillResultatsButton";
 import CronMonitorPanel from "@/components/admin/CronMonitorPanel";
 
 // 1 EUR ≈ 655.957 XOF (taux fixe CFA)
@@ -166,6 +167,20 @@ export default async function AdminDashboard() {
           le lancer manuellement ici.
         </p>
         <SyncResultatsButton />
+      </div>
+
+      {/* ── Rattrapage résultats historiques ────────────────────────────── */}
+      <div>
+        <h2 className="font-serif text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
+          <History className="w-5 h-5 text-blue-400" />
+          Rattrapage des résultats (historique)
+        </h2>
+        <p className="text-text-secondary text-sm mb-4">
+          Récupère les arrivées officielles (via Geny puis PMU) et calcule automatiquement
+          GAGNANT / PARTIEL / PERDANT pour tous les pronostics EN_ATTENTE sur la période choisie.
+          Utile pour rattraper les dates manquées.
+        </p>
+        <BackfillResultatsButton />
       </div>
 
       {/* ── Monitoring Crons (dynamique, temps réel) ──────────────────── */}
