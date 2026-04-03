@@ -44,7 +44,7 @@ export default function BackfillResultatsButton() {
   const [result, setResult]       = useState<BackfillResult | null>(null);
   const [error, setError]         = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [dateDebut, setDateDebut] = useState("2026-03-29");
+  const [dateDebut, setDateDebut] = useState("2026-03-20");
   const [dateFin, setDateFin]     = useState(todayISO());
 
   async function handleBackfill() {

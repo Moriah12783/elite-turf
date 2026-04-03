@@ -118,7 +118,7 @@ async function fetchGenyArrivee(
 export async function POST(req: NextRequest) {
   const supabase = createServiceClient();
 
-  let dateDebut = "2026-03-29";
+  let dateDebut = "2026-03-20";
   let dateFin   = getTodayUTC();
 
   try {

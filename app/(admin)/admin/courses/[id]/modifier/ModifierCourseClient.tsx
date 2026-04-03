@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Trash2, Globe2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Globe2, Flag } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
@@ -31,6 +31,10 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
   const [parisDisponibles, setParisDisponibles] = useState<string[]>(
     Array.isArray(course.paris_disponibles) ? course.paris_disponibles : []
   );
+  // Arrivée officielle : stockée comme tableau [3,7,11,4,9] — saisie en texte "3 7 11 4 9"
+  const [arriveeText, setArriveeText] = useState<string>(
+    Array.isArray(course.arrivee_officielle) ? course.arrivee_officielle.join(" ") : ""
+  );
 
   const [form, setForm] = useState({
     hippodrome_id: course.hippodrome_id || "",
@@ -45,6 +49,12 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
     nb_partants: course.nb_partants || 10,
     statut: course.statut || "PROGRAMME",
   });
+
+  /** Parse "3 7 11 4 9" ou "3-7-11-4-9" en [3,7,11,4,9] */
+  function parseArriveeText(text: string): number[] | null {
+    const nums = text.trim().split(/[\s\-,]+/).map(Number).filter(n => n > 0 && n < 30);
+    return nums.length >= 3 ? nums : null;
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value, type } = e.target;
@@ -64,19 +74,41 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
     e.preventDefault();
     if (!form.hippodrome_id) return toast.error("Sélectionnez un hippodrome");
     if (!form.libelle.trim()) return toast.error("Le libellé est requis");
+
+    // Valider l'arrivée si saisie
+    const arriveeNums = arriveeText.trim() ? parseArriveeText(arriveeText) : null;
+    if (arriveeText.trim() && !arriveeNums) {
+      return toast.error("Arrivée invalide — saisissez au moins 3 numéros (ex : 3 7 11 4 9)");
+    }
+
     setLoading(true);
     try {
       const supabase = createClient();
+      const updatePayload: Record<string, unknown> = {
+        ...form,
+        heure_depart: form.heure_depart.length === 5 ? form.heure_depart + ":00" : form.heure_depart,
+        paris_disponibles: parisDisponibles,
+      };
+
+      // Arrivée officielle : mise à jour seulement si saisie
+      if (arriveeNums) {
+        updatePayload.arrivee_officielle = arriveeNums;
+        updatePayload.statut = "TERMINE"; // automatiquement terminée si arrivée renseignée
+      }
+
       const { error } = await supabase
         .from("courses")
-        .update({
-          ...form,
-          heure_depart: form.heure_depart.length === 5 ? form.heure_depart + ":00" : form.heure_depart,
-          paris_disponibles: parisDisponibles,
-        })
+        .update(updatePayload)
         .eq("id", course.id);
       if (error) throw error;
-      toast.success("Course mise à jour !");
+
+      // Si arrivée ajoutée → déclencher le calcul des résultats pronostics
+      if (arriveeNums) {
+        await fetch("/api/admin/sync-resultats", { method: "POST" }).catch(() => {});
+        toast.success("Course mise à jour + résultats pronostics synchronisés !");
+      } else {
+        toast.success("Course mise à jour !");
+      }
       router.push("/admin/courses");
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la mise à jour");
@@ -257,6 +289,52 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
           <p className="text-text-muted text-xs">
             Active les types de paris jouables. Cocher Quinté+ classe cette course en Nationale 1.
           </p>
+        </div>
+
+        {/* Arrivée officielle */}
+        <div className="card-base p-5 space-y-4 border border-orange-500/20">
+          <div className="flex items-center gap-2 border-b border-border pb-3">
+            <Flag className="w-4 h-4 text-orange-400" />
+            <h2 className="font-serif font-semibold text-text-primary text-sm">Arrivée officielle</h2>
+            {course.arrivee_officielle?.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-status-win/10 text-status-win border border-status-win/20 ml-auto">
+                ✓ Déjà enregistrée
+              </span>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>
+              Ordre d&apos;arrivée — numéros des chevaux séparés par des espaces
+            </label>
+            <input
+              type="text"
+              value={arriveeText}
+              onChange={e => setArriveeText(e.target.value)}
+              placeholder="ex : 3 7 11 4 9  (1er 2e 3e 4e 5e)"
+              className={inputClass}
+            />
+            <p className="text-text-muted text-xs mt-1.5">
+              Renseignez l&apos;arrivée pour calculer automatiquement GAGNANT / PARTIEL / PERDANT
+              sur les pronostics EN_ATTENTE de cette course. La course passera en statut TERMINÉ.
+            </p>
+            {arriveeText && parseArriveeText(arriveeText) && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className="text-text-muted text-xs">Aperçu :</span>
+                {parseArriveeText(arriveeText)!.map((n, i) => (
+                  <span
+                    key={i}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
+                      i === 0
+                        ? "bg-gold-primary/20 border-gold-primary text-gold-light"
+                        : "bg-bg-elevated border-border text-text-secondary"
+                    }`}
+                  >
+                    {n}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Submit */}
