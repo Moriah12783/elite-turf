@@ -81,13 +81,22 @@ const PMU_HEADERS = {
 };
 
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
-  const d   = dateStr || toDateStr();
-  // Essayer plusieurs endpoints PMU en fallback
+  const d = dateStr || toDateStr();
+
+  // Toutes les variantes connues de l'API PMU (avec et sans spécialisation, versions 1–7)
   const urls = [
-    `${PMU_BASE}/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_BASE}/programmeComplet/${d}?specialisation=OFFLINE`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}?specialisation=OFFLINE`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}`,
     `https://online.turfinfo.api.pmu.fr/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/2/programmeComplet/${d}`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/3/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/4/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/5/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/6/programmeComplet/${d}?specialisation=INTERNET`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
     `https://online.turfinfo.api.pmu.fr/rest/client/7/programme/${d}?specialisation=OFFLINE`,
+    `https://online.turfinfo.api.pmu.fr/rest/client/7/programme/${d}`,
   ];
 
   let lastError = "";
@@ -95,17 +104,25 @@ export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]>
     try {
       const res = await fetch(url, {
         headers: PMU_HEADERS,
-        cache: "no-store",   // pas de cache — évite de mémoriser les erreurs 420
+        cache: "no-store",
       });
 
       if (res.ok) {
         const json = await res.json();
         const reunions = json?.programme?.reunions ?? json?.reunions ?? [];
         if (reunions.length > 0) return reunions;
+        // Réponse 200 mais sans réunions → continuer vers le prochain endpoint
+        lastError = `200 mais 0 réunions (${url})`;
+        continue;
       }
-      lastError = `HTTP ${res.status}`;
-    } catch (e: any) {
-      lastError = e?.message;
+
+      // Log du corps pour diagnostiquer les 400/403
+      const body = await res.text().catch(() => "");
+      lastError = `HTTP ${res.status} — ${body.slice(0, 120)}`;
+      console.warn(`[PMU API] ${res.status} pour ${url}: ${body.slice(0, 200)}`);
+
+    } catch (e: unknown) {
+      lastError = e instanceof Error ? e.message : String(e);
     }
   }
 
