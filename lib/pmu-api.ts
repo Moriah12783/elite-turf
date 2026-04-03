@@ -7,7 +7,10 @@
  *  - Résultats d'une course     : GET /resultats/{YYYYMMDD}/R{R}/C{C}
  */
 
-const PMU_BASE = "https://online.turfinfo.api.pmu.fr/rest/client/1";
+const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
+// Cloudflare Worker proxy — contourne le blocage IP de PMU sur Vercel/AWS
+const PMU_PROXY  = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
+const PMU_BASE   = `${PMU_PROXY}/rest/client/1`;
 
 export interface PmuReunion {
   numOrdre:       number;
@@ -83,20 +86,16 @@ const PMU_HEADERS = {
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
   const d = dateStr || toDateStr();
 
-  // Toutes les variantes connues de l'API PMU (avec et sans spécialisation, versions 1–7)
+  // Proxy CF en premier (contourne le blocage IP Vercel/AWS), puis direct en fallback
   const urls = [
-    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}?specialisation=OFFLINE`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/1/programmeComplet/${d}`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/2/programmeComplet/${d}`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/3/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/4/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/5/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/6/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/7/programme/${d}?specialisation=OFFLINE`,
-    `https://online.turfinfo.api.pmu.fr/rest/client/7/programme/${d}`,
+    `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
+    `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=OFFLINE`,
+    `${PMU_PROXY}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
+    `${PMU_PROXY}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
+    // Fallback direct (peut être bloqué par PMU sur Vercel)
+    `${PMU_DIRECT}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
   ];
 
   let lastError = "";
