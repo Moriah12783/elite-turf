@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   TrendingUp, Award, Flame, CheckCircle2, XCircle,
   Minus, Clock3, Star, Zap, BarChart3, Trophy,
-  ArrowRight, Calendar, ExternalLink
+  ArrowRight, Calendar, ExternalLink, Archive
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BET_TYPE_LABELS } from "@/types";
@@ -493,6 +493,18 @@ export default async function PerformancesPage() {
               >
                 <Star className="w-4 h-4" />
                 Voir les pronostics gratuits
+              </Link>
+            </div>
+
+            {/* Archives CTA — pour les abonnés */}
+            <div className="mt-6 pt-6 border-t border-border/40">
+              <Link
+                href="/archives"
+                className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-gold-light transition-colors group"
+              >
+                <Archive className="w-4 h-4 text-gold-primary/50 group-hover:text-gold-primary transition-colors" />
+                Abonné ? Accédez à l&apos;historique complet des résultats
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
               </Link>
             </div>
           </div>
