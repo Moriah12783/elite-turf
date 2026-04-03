@@ -1,9 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import {
-  Users, Star, CreditCard,
-  CalendarDays, AlertCircle, CheckCircle2, RefreshCw
-} from "lucide-react";
+import { Users, Star, CreditCard, CalendarDays, RefreshCw } from "lucide-react";
 import SyncResultatsButton from "@/components/admin/SyncResultatsButton";
+import CronMonitorPanel from "@/components/admin/CronMonitorPanel";
 
 // 1 EUR ≈ 655.957 XOF (taux fixe CFA)
 const XOF_TO_EUR = (xof: number) =>
@@ -170,25 +168,19 @@ export default async function AdminDashboard() {
         <SyncResultatsButton />
       </div>
 
-      {/* Status automatisations */}
-      <div>
-        <h2 className="font-serif text-lg font-semibold text-text-primary mb-4">
-          Statut des Automatisations
-        </h2>
+      {/* ── Monitoring Crons (dynamique, temps réel) ──────────────────── */}
+      <CronMonitorPanel />
+
+      {/* Status automatisations (kept as fallback visual reference) */}
+      <div className="hidden">
         <div className="card-base divide-y divide-border">
-          {[
-            { name: "Scraping programmes (07h00)", status: "OK", heure: "07:03", icon: CheckCircle2, color: "text-status-win" },
-            { name: "Scraping arrivées (18h00)", status: "EN ATTENTE", heure: "—", icon: AlertCircle, color: "text-status-partial" },
-            { name: "Alertes abonnés expirants", status: "OK", heure: "09:01", icon: CheckCircle2, color: "text-status-win" },
-            { name: "Newsletter hebdomadaire", status: "OK", heure: "Lun 08:00", icon: CheckCircle2, color: "text-status-win" },
-          ].map((item, i) => (
+          {[].map((item, i) => (
             <div key={i} className="flex items-center justify-between px-5 py-4">
-              <span className="text-text-secondary text-sm">{item.name}</span>
+              <span className="text-text-secondary text-sm"></span>
               <div className="flex items-center gap-2">
-                <span className="text-text-muted text-xs">{item.heure}</span>
+                <span className="text-text-muted text-xs"></span>
                 <div className="flex items-center gap-1.5">
-                  <item.icon className={`w-4 h-4 ${item.color}`} />
-                  <span className={`text-xs font-medium ${item.color}`}>{item.status}</span>
+                  <span className={`text-xs font-medium`}></span>
                 </div>
               </div>
             </div>

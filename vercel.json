@@ -75,6 +75,10 @@
     {
       "path": "/api/admin/sync-resultats",
       "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/pmu-demain",
+      "schedule": "0 18 * * *"
     }
   ],
   "headers": [
