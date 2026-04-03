@@ -6,7 +6,6 @@ import { CreditCard, CheckCircle2, XCircle, Clock, RefreshCw, Receipt } from "lu
 interface Transaction {
   id: string;
   montant_fcfa: number | null;
-  montant_eur: number | null;
   statut: "SUCCES" | "ECHEC" | "EN_ATTENTE" | "ANNULE";
   date_transaction: string;
   methode_paiement: string | null;
@@ -91,7 +90,7 @@ export default function TransactionsHistory() {
         {transactions.map((t) => {
           const cfg = STATUT_CONFIG[t.statut] ?? STATUT_CONFIG.EN_ATTENTE;
           const StatutIcon = cfg.icon;
-          const montantEur = t.montant_eur ?? (t.montant_fcfa ? Math.round(t.montant_fcfa / 655.957) : null);
+          const montantEur = t.montant_fcfa ? Math.round(t.montant_fcfa / 655.957) : null;
           const montantFcfa = t.montant_fcfa;
           const methodeLabel = t.methode_paiement ? (METHODE_LABELS[t.methode_paiement] ?? t.methode_paiement) : "—";
 

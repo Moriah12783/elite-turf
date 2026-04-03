@@ -42,7 +42,8 @@ export default async function ArchivesPage({ searchParams }: PageProps) {
 
   let subscription = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabaseUser
+    // Utiliser createServiceClient pour contourner les éventuels problèmes RLS
+    const { data: profile } = await createServiceClient()
       .from("profiles")
       .select("statut_abonnement")
       .eq("id", user.id)
