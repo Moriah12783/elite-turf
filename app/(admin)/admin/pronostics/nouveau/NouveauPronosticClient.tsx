@@ -55,15 +55,32 @@ export default function NouveauPronosticClient({ courses }: Props) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from("pronostics").insert({
-        ...form,
-        selection,
-        publie,
-        auteur_id: user?.id,
-        date_publication: publie ? new Date().toISOString() : null,
-      });
+      const { data: inserted, error } = await supabase
+        .from("pronostics")
+        .insert({
+          ...form,
+          selection,
+          publie,
+          auteur_id: user?.id,
+          date_publication: publie ? new Date().toISOString() : null,
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      // Envoyer les emails aux abonnés si publication immédiate
+      if (publie && inserted?.id) {
+        fetch("/api/admin/pronostics/notifier", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pronosticId: inserted.id }),
+        }).then(async (res) => {
+          const d = await res.json();
+          if (d.sent > 0) toast.success(`📧 ${d.sent} abonné(s) notifié(s) par email`);
+        }).catch(() => {/* non bloquant */});
+      }
+
       toast.success(publie ? "Pronostic publié !" : "Brouillon enregistré");
       router.push("/admin/pronostics");
     } catch (err) {
