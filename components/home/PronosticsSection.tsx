@@ -14,13 +14,43 @@ function getNatNum(paris: string[]): number {
   return 0;
 }
 
-export default async function PronosticsSection() {
-  const supabase = createServiceClient();
-  const today    = new Date().toISOString().split("T")[0];
-  const weekAgo  = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+/** Extrait paris_disponibles depuis un pronostic (gère cours tableau ou objet) */
+function getCourseParisDisponibles(p: any): string[] {
+  const c = Array.isArray(p.course) ? p.course[0] : p.course;
+  return Array.isArray(c?.paris_disponibles) ? c.paris_disponibles : [];
+}
 
-  // ── 1. Pronostics du JOUR publiés, sans filtre de marché
-  //        (= tous les pronostics publiés aujourd'hui, triés par confiance desc)
+/** Heure Paris en minutes depuis minuit */
+function getNowParisMins(): number {
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  return parseInt(parts.find(p => p.type === "hour")!.value) * 60
+       + parseInt(parts.find(p => p.type === "minute")!.value);
+}
+
+/** Date du jour en heure Paris */
+function getTodayParis(): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date()).split("/").reverse().join("-");
+}
+
+/** True si la course est terminée (départ > 40 min passé) */
+function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boolean {
+  if (!heureDepart) return false;
+  const [h, m] = heureDepart.substring(0, 5).split(":").map(Number);
+  return nowMins - (h * 60 + m) > 40;
+}
+
+export default async function PronosticsSection() {
+  const supabase  = createServiceClient();
+  const today     = getTodayParis();
+  const nowMins   = getNowParisMins();
+  const weekAgo   = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+
+  // ── 1. Pronostics du JOUR publiés
   const { data: todayPronoRaw } = await supabase
     .from("pronostics")
     .select(`
@@ -37,7 +67,7 @@ export default async function PronosticsSection() {
     .order("confiance",        { ascending: false })
     .limit(10);
 
-  // Fallback : si aucun pronostic aujourd'hui → derniers 7 jours
+  // Fallback : derniers 7 jours si aucun aujourd'hui
   let rawProno = todayPronoRaw || [];
   if (rawProno.length === 0) {
     const { data: recentProno } = await supabase
@@ -58,16 +88,33 @@ export default async function PronosticsSection() {
     rawProno = recentProno || [];
   }
 
-  const displayList = rawProno.slice(0, 3);
+  // ── Marquer chaque pronostic : course terminée ou non ──────────────
+  const pronosWithStatus = rawProno.map((p: any) => {
+    const c = Array.isArray(p.course) ? p.course[0] : p.course;
+    const terminee = isCourseTerminee(c?.heure_depart, nowMins);
+    return { ...p, _terminee: terminee };
+  });
 
-  // Vedette = Quinté+ en priorité, sinon Quarté+, sinon Tiercé, sinon premier
+  // Trier : pronostics à venir / en cours en premier, terminés à la fin
+  pronosWithStatus.sort((a: any, b: any) => {
+    if (a._terminee === b._terminee) return 0;
+    return a._terminee ? 1 : -1;
+  });
+
+  const displayList = pronosWithStatus.slice(0, 3);
+
+  // Vedette = parmi les NON terminés : Quinté+ > Quarté+ > Tiercé > premier
+  const aVenir = pronosWithStatus.filter((p: any) => !p._terminee);
   const vedetteProno: any =
-    displayList.find((p: any) => getNatNum(Array.isArray((p.course as any)?.paris_disponibles) ? (p.course as any).paris_disponibles : []) === 1) ||
-    displayList.find((p: any) => getNatNum(Array.isArray((p.course as any)?.paris_disponibles) ? (p.course as any).paris_disponibles : []) === 2) ||
-    displayList[0] ||
+    aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
+    aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 2) ||
+    aVenir[0] ||
+    // fallback : même une terminée si plus rien à venir
+    pronosWithStatus.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
+    pronosWithStatus[0] ||
     null;
 
-  // ── 2. Si aucun pronostic publié → courses du jour comme placeholder ──
+  // ── 2. Placeholder : courses à venir si pas de pronostic ───────────
   let placeholderCourses: any[] = [];
   if (!vedetteProno) {
     const { data: todayCourses } = await supabase
@@ -79,9 +126,12 @@ export default async function PronosticsSection() {
       `)
       .eq("date_course", today)
       .order("heure_depart", { ascending: true })
-      .limit(6);
+      .limit(10);
 
-    placeholderCourses = ((todayCourses || []) as any[]).slice(0, 3);
+    // Ne garder que les courses non terminées
+    placeholderCourses = ((todayCourses || []) as any[])
+      .filter((c: any) => !isCourseTerminee(c.heure_depart, nowMins))
+      .slice(0, 3);
   }
 
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────

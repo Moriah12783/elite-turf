@@ -37,9 +37,34 @@ function hippoImage(nom: string, idx: number = 0): string {
   return ALL_IMAGES[(seed + idx) % ALL_IMAGES.length];
 }
 
+/** Retourne l'heure Paris en minutes depuis minuit (gère DST) */
+function getNowParisMins(): number {
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === "hour")!.value);
+  const m = parseInt(parts.find(p => p.type === "minute")!.value);
+  return h * 60 + m;
+}
+
+/** Retourne true si la course est terminée (départ > 40 min passé) */
+function isCourseFinished(heureDepart: string, nowMins: number): boolean {
+  const [h, m] = (heureDepart || "23:59").substring(0, 5).split(":").map(Number);
+  return nowMins - (h * 60 + m) > 40;
+}
+
+/** Retourne la date du jour en heure Paris (YYYY-MM-DD) */
+function getTodayParis(): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date()).split("/").reverse().join("-");
+}
+
 export default async function CoursesSection() {
-  const supabase = createServiceClient();
-  const today = new Date().toISOString().split("T")[0];
+  const supabase  = createServiceClient();
+  const today     = getTodayParis();
+  const nowMins   = getNowParisMins();
 
   const { data: rawCourses } = await supabase
     .from("courses")
@@ -50,14 +75,13 @@ export default async function CoursesSection() {
       pronostics(id, niveau_acces, publie)
     `)
     .eq("date_course", today)
-    .neq("statut", "TERMINE")
     .order("heure_depart", { ascending: true })
-    .limit(15);
+    .limit(20);
 
-  // Garder les courses avec des paris disponibles (jouables par les abonnés)
-  // Priorité : Nationale 1, 2, 3 — puis autres courses du jour
+  // Garder les courses à venir ou en cours (pas terminées) avec paris disponibles
   const allAfrique = ((rawCourses || []) as any[])
-    .filter((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0);
+    .filter((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0)
+    .filter((c: any) => !isCourseFinished(c.heure_depart, nowMins));
   const courses = allAfrique.slice(0, 3);
 
   const header = (
