@@ -235,7 +235,7 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 text-text-muted text-xs">
                 <Users className="w-3.5 h-3.5" />
-                {c.nb_partants} partants
+                {(c.partants && c.partants.length > 0 ? c.partants.length : c.nb_partants) || "?"} partants
               </div>
             </div>
 

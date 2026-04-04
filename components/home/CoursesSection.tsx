@@ -78,11 +78,15 @@ export default async function CoursesSection() {
     .order("heure_depart", { ascending: true })
     .limit(20);
 
-  // Garder les courses à venir ou en cours (pas terminées) avec paris disponibles
+  // Toutes les courses du jour avec paris disponibles (indépendamment du statut)
   const allAfrique = ((rawCourses || []) as any[])
-    .filter((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0)
-    .filter((c: any) => !isCourseFinished(c.heure_depart, nowMins));
-  const courses = allAfrique.slice(0, 3);
+    .filter((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.length > 0);
+
+  // Courses à venir / en cours
+  const upcoming = allAfrique.filter((c: any) => !isCourseFinished(c.heure_depart, nowMins));
+
+  // Si des courses sont encore à venir → on les affiche, sinon → dernières du jour
+  const courses = (upcoming.length > 0 ? upcoming : allAfrique).slice(0, 3);
 
   const header = (
     <div className="flex items-center justify-between mb-10">
@@ -106,7 +110,7 @@ export default async function CoursesSection() {
     </div>
   );
 
-  // Aucune course africaine aujourd'hui → état vide
+  // Aucune course aujourd'hui → état vide
   if (!courses.length) {
     return (
       <section className="py-16 sm:py-20">
@@ -129,10 +133,21 @@ export default async function CoursesSection() {
     );
   }
 
+  // Toutes terminées → afficher un bandeau discret
+  const allFinished = upcoming.length === 0 && allAfrique.length > 0;
+
   return (
     <section className="py-16 sm:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {header}
+
+        {/* Bandeau "toutes terminées" */}
+        {allFinished && (
+          <div className="mb-5 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-bg-elevated border border-border text-text-muted text-sm">
+            <span className="w-2 h-2 rounded-full bg-text-muted flex-shrink-0" />
+            Toutes les courses du jour sont terminées — résultats ci-dessous.
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {courses.map((course: any, idx: number) => {

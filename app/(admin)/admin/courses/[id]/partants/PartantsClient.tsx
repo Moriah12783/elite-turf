@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
 interface Partant {
@@ -57,8 +56,6 @@ interface Props {
 }
 
 export default function PartantsClient({ courseId, nbPartants, initialPartants }: Props) {
-  const supabase = createClient();
-
   const [rows, setRows] = useState<Partant[]>(() => {
     if (initialPartants.length > 0) return initialPartants.map(fromDb);
     // Pré-remplir avec le nombre de partants attendus
@@ -97,37 +94,25 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
 
     setSaving(true);
     try {
-      // Supprimer les anciens partants de cette course
-      const { error: delErr } = await supabase
-        .from("partants")
-        .delete()
-        .eq("course_id", courseId);
-
-      if (delErr) throw delErr;
-
-      // Insérer les lignes valides
-      const toInsert = valid.map(r => ({
-        course_id:    courseId,
-        numero:       Number(r.numero),
-        nom_cheval:   r.nom_cheval.trim().toUpperCase(),
-        jockey:       r.jockey.trim() || null,
-        entraineur:   r.entraineur.trim() || null,
-        cote:         r.cote !== "" ? Number(r.cote) : null,
-        musique:      r.musique.trim() || null,
-        poids_kg:     r.poids_kg !== "" ? Number(r.poids_kg) : null,
-        deferre:      r.deferre,
-        non_partant:  r.non_partant,
-        scraped_at:   new Date().toISOString(),
+      const toSend = valid.map(r => ({
+        numero:      Number(r.numero),
+        nom_cheval:  r.nom_cheval.trim().toUpperCase(),
+        jockey:      r.jockey.trim() || null,
+        entraineur:  r.entraineur.trim() || null,
+        cote:        r.cote !== "" ? Number(r.cote) : null,
+        musique:     r.musique.trim() || null,
+        poids_kg:    r.poids_kg !== "" ? Number(r.poids_kg) : null,
+        deferre:     r.deferre,
+        non_partant: r.non_partant,
       }));
 
-      const { error: insErr } = await supabase.from("partants").insert(toInsert);
-      if (insErr) throw insErr;
-
-      // Mettre à jour nb_partants sur la course
-      await supabase
-        .from("courses")
-        .update({ nb_partants: valid.length })
-        .eq("id", courseId);
+      const res = await fetch(`/api/admin/partants/${courseId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partants: toSend }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       toast.success(`${valid.length} partant(s) enregistré(s)`);
     } catch (err: any) {

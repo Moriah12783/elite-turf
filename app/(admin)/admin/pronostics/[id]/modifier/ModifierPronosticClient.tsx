@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Save, Send, Plus, X, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -55,10 +54,10 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
     setLoading(true);
     const etaitBrouillon = !pronostic.publie; // brouillon → publié = première publication
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("pronostics")
-        .update({
+      const res = await fetch(`/api/admin/pronostics/${pronostic.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           course_id: form.course_id,
           niveau_acces: form.niveau_acces,
           type_pari: form.type_pari,
@@ -69,10 +68,10 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
           publie,
           resultat: form.resultat,
           date_publication: publie ? new Date().toISOString() : null,
-        })
-        .eq("id", pronostic.id);
-
-      if (error) throw error;
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       // Notifier les abonnés uniquement lors de la 1ère publication (brouillon → publié)
       if (publie && etaitBrouillon) {
@@ -99,9 +98,11 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
     if (!confirm("Supprimer ce pronostic définitivement ?")) return;
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from("pronostics").delete().eq("id", pronostic.id);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/pronostics/${pronostic.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || `HTTP ${res.status}`);
+      }
       toast.success("Pronostic supprimé");
       router.push("/admin/pronostics");
     } catch {
