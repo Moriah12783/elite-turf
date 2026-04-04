@@ -108,7 +108,8 @@ export default async function CoursesPage({ searchParams }: PageProps) {
       categorie, terrain, nb_partants, statut, arrivee_officielle,
       paris_disponibles,
       hippodrome:hippodromes(id, nom, pays, ville),
-      pronostics(id, niveau_acces, publie, type_pari)
+      pronostics(id, niveau_acces, publie, type_pari),
+      partants(numero, nom_cheval)
     `)
     .eq("date_course", targetDate)
     .order("heure_depart", { ascending: true });

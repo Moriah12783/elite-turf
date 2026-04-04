@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   Plus, MapPin, Clock, Users, CheckCircle2,
-  XCircle, Edit2, Calendar, ChevronLeft, ChevronRight,
+  XCircle, Edit2, Calendar, ChevronLeft, ChevronRight, ListOrdered,
 } from "lucide-react";
 
 export const metadata = { title: "Courses — Admin Elite Turf" };
@@ -222,12 +222,20 @@ export default async function AdminCoursesPage({
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/courses/${c.id}/modifier`}
-                        className="flex items-center gap-1 text-gold-primary hover:text-gold-light text-xs font-medium transition-colors"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" /> Modifier
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/admin/courses/${c.id}/partants`}
+                          className="flex items-center gap-1 text-text-secondary hover:text-gold-primary text-xs font-medium transition-colors"
+                        >
+                          <ListOrdered className="w-3.5 h-3.5" /> Partants
+                        </Link>
+                        <Link
+                          href={`/admin/courses/${c.id}/modifier`}
+                          className="flex items-center gap-1 text-gold-primary hover:text-gold-light text-xs font-medium transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" /> Modifier
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

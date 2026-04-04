@@ -93,6 +93,7 @@ interface Props {
     arrivee_officielle?: number[] | null;
     hippodrome?: { nom: string; pays: string } | null;
     pronostics?: Array<{ id: string; niveau_acces: string; publie: boolean; type_pari?: string }> | null;
+    partants?: Array<{ numero: number; nom_cheval: string }> | null;
     paris_disponibles?: string[] | null;
   };
   userSubscription: string;
@@ -121,7 +122,8 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
   const isFrance   = !c.hippodrome?.pays || c.hippodrome.pays === "France";
   const hippoSlug  = (c.hippodrome?.nom || "").toUpperCase().replace(/\s+/g, "-").replace(/[^A-Z0-9-]/g, "");
   const pmuUrl     = isFrance ? `https://www.pmu.fr/turf/${dateStr}/${hippoSlug}/R${c.numero_reunion}/C${c.numero_course}` : null;
-  const genyUrl    = buildGenyUrl(c.date_course, c.numero_reunion, c.numero_course, "partants");
+  const isTermine  = c.statut === "TERMINE";
+  const genyUrl    = buildGenyUrl(c.date_course, c.numero_reunion, c.numero_course, isTermine ? "resultats" : "partants");
 
   return (
     <div className="card-base overflow-hidden group hover:border-gold-primary/40 transition-all">
@@ -202,15 +204,27 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
 
             {/* Arrivée officielle */}
             {c.statut === "TERMINE" && c.arrivee_officielle && c.arrivee_officielle.length > 0 && (
-              <div className="flex items-center gap-2 mb-3 p-2.5 bg-bg-elevated rounded-lg border border-border/50">
-                <CheckCircle2 className="w-3.5 h-3.5 text-status-win flex-shrink-0" />
-                <span className="text-text-muted text-xs">Arrivée :</span>
-                <div className="flex items-center gap-1.5">
-                  {c.arrivee_officielle.slice(0, 5).map((n: number, idx: number) => (
-                    <span key={idx} className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-text-primary text-xs font-bold">
-                      {n}
-                    </span>
-                  ))}
+              <div className="mb-3 p-2.5 bg-bg-elevated rounded-lg border border-border/50">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-status-win flex-shrink-0" />
+                  <span className="text-text-muted text-xs font-medium">Arrivée officielle</span>
+                </div>
+                <div className="mt-2 flex flex-col gap-1">
+                  {c.arrivee_officielle.slice(0, 5).map((n: number, idx: number) => {
+                    const cheval = c.partants?.find((p: any) => p.numero === n);
+                    const ordinals = ["1er", "2e", "3e", "4e", "5e"];
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-text-muted text-xs w-6 text-right flex-shrink-0">{ordinals[idx]}</span>
+                        <span className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-text-primary text-xs font-bold flex-shrink-0">
+                          {n}
+                        </span>
+                        {cheval && (
+                          <span className="text-text-secondary text-xs font-medium truncate">{cheval.nom_cheval}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
