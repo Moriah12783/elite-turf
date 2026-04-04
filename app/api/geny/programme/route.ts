@@ -190,7 +190,7 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
 
 async function syncCoursesToDB(courses: GenyCourse[]) {
   const supabase = createServiceClient();
-  const hipNoms  = [...new Set(courses.map(c => c.hippodromeNom))];
+  const hipNoms  = Array.from(new Set(courses.map(c => c.hippodromeNom)));
   const hipMap: Record<string, string> = {};
 
   for (const nom of hipNoms) {
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
       ok:       true,
       date:     dateISO,
       courses:  courses.length,
-      reunions: [...new Set(courses.map(c => c.reunionNum))].length,
+      reunions: Array.from(new Set(courses.map(c => c.reunionNum))).length,
       ...result,
     });
   } catch (err: any) {
