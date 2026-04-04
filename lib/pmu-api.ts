@@ -86,17 +86,23 @@ const PMU_HEADERS = {
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
   const d = dateStr || toDateStr();
 
-  // Proxy CF en premier — 2 tentatives max pour éviter le rate-limit PMU (HTTP 420)
+  // Stratégie multi-endpoints : proxy CF → direct PMU (plusieurs client IDs)
   const urls = [
+    // 1. Proxy Cloudflare Worker (bypass IP Vercel/AWS)
     `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
     `${PMU_PROXY}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
+    // 2. Direct PMU — client web officiel (client/61 = PMU.fr navigateur)
+    `${PMU_DIRECT}/rest/client/61/programmeComplet/${d}?specialisation=INTERNET`,
+    // 3. Direct PMU — client/7 (mobile PMU)
+    `${PMU_DIRECT}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
+    // 4. Direct PMU — client/1 sans specialisation
+    `${PMU_DIRECT}/rest/client/1/programmeComplet/${d}`,
   ];
 
   let lastError = "";
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i];
-    // Pause entre les tentatives pour respecter le rate-limit PMU (évite HTTP 420)
-    if (i > 0) await new Promise(r => setTimeout(r, 3000));
+    if (i > 0) await new Promise(r => setTimeout(r, 2000));
 
     try {
       const res = await fetch(url, {
@@ -107,19 +113,22 @@ export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]>
       if (res.ok) {
         const json = await res.json();
         const reunions = json?.programme?.reunions ?? json?.reunions ?? [];
-        if (reunions.length > 0) return reunions;
+        if (reunions.length > 0) {
+          console.log(`[PMU API] Succès via: ${url}`);
+          return reunions;
+        }
         lastError = `200 mais 0 réunions (${url})`;
         continue;
       }
 
-      // Si 420 (rate limit), on arrête immédiatement — inutile d'essayer d'autres URLs
       const body = await res.text().catch(() => "");
       lastError = `HTTP ${res.status} — ${body.slice(0, 200)}`;
       console.warn(`[PMU API] ${res.status} pour ${url}: ${body.slice(0, 200)}`);
-      if (res.status === 420) break;
+      // On continue même sur 420 pour tenter les autres endpoints
 
     } catch (e: unknown) {
       lastError = e instanceof Error ? e.message : String(e);
+      console.warn(`[PMU API] Erreur réseau sur ${url}: ${lastError}`);
     }
   }
 
@@ -212,8 +221,10 @@ export async function fetchPmuPartants(
   C: number,
 ): Promise<PmuParticipant[]> {
   const urls = [
-    `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
-    `${PMU_BASE}/partants/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
+    `${PMU_PROXY}/rest/client/1/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/61/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/7/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_PROXY}/rest/client/2/partants/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
   ];
 
   for (const url of urls) {
@@ -256,8 +267,10 @@ export async function fetchPmuResultats(
   C: number,
 ): Promise<PmuResultat | null> {
   const urls = [
-    `${PMU_BASE}/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
-    `${PMU_BASE}/resultats/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
+    `${PMU_PROXY}/rest/client/1/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/61/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/7/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
+    `${PMU_PROXY}/rest/client/2/resultats/${dateStr}/R${R}/C${C}?specialisation=OFFLINE`,
   ];
 
   for (const url of urls) {
