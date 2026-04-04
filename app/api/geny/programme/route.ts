@@ -112,74 +112,75 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
   const html = await res.text();
   const courses: GenyCourse[] = [];
 
-  // ── 1. Séparer les blocs de réunion ──────────────────────────────────
-  // Chaque réunion est délimitée par <a name="reunionN">
+  // ── 1. Séparer par ancre de réunion ──────────────────────────────────────
+  // Structure réelle : <a name="reunionN"> suivi de div.cartoucheReunion
+  // puis alternance de div.courseParis / div.courseLiens
   const reunionBlocks = html.split(/<a\s+name="reunion(\d+)"/i);
 
   for (let i = 1; i < reunionBlocks.length; i += 2) {
     const reunionNum = parseInt(reunionBlocks[i]);
     const block = reunionBlocks[i + 1] || "";
 
-    // ── 2. Extraire le nom de l'hippodrome ───────────────────────────────
-    // Pattern : "Vincennes (R1)" ou "<...>Nancy</..."
-    const hipMatch = block.match(/([A-ZÀ-Ÿa-zà-ÿ][^<\n]{2,60}?)\s*(?:\(R\d+\))?<\/(?:div|h[123456]|span|a)>/);
-    // Alternative: chercher dans le texte suivant immédiatement l'ancre
-    const hipRaw = block.match(/>\s*([A-ZÀ-Ÿ][^\n<]{3,60}?)(?:\s*\(R\d+\))?\s*<\/(?:div|span|h\d)/)?.[1]
-      || block.match(/Pariez sur la r[eé]union\s+([^\n<]{3,60})/i)?.[1]
-      || block.match(/href="[^"]*#reunion\d+"[^>]*>([^<]{3,60})<\/a>\s*(?:&nbsp;|\s)*<\/(?:div|li|td)/i)?.[1]
-      || `Réunion ${reunionNum}`;
+    // ── 2. Hippodrome depuis cartoucheReunion ─────────────────────────────
+    // Texte type : "samedi : Vincennes (R1) Début des opérations..."
+    //           ou "dimanche : Berlin-Hoppegarten (Allemagne) (R2) Début..."
+    const cartoucheMatch = block.match(
+      /class="[^"]*cartoucheReunion[^"]*"[^>]*>[\s\S]*?<div[^>]*>([\s\S]*?)<\/div>/
+    );
+    let hipNomRaw = `Réunion ${reunionNum}`;
+    if (cartoucheMatch) {
+      const text = cartoucheMatch[1]
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      // Capturer tout entre "jour :" et "(R\d+)"
+      const m = text.match(
+        /(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s*:\s*(.+?)\s*\(R\d+\)/i
+      );
+      hipNomRaw = m
+        ? m[1].trim()
+        : text.split(/Jouer|D[ée]but/)[0].replace(/^.*:\s*/, "").trim();
+    }
+    const hipNom = cleanHippodromeName(hipNomRaw);
+    const hipPays = extractPaysFromHippodrome(hipNomRaw);
 
-    const hipNomComplet = hipRaw.trim();
-    const hipNom = cleanHippodromeName(hipNomComplet);
-    const hipPays = extractPaysFromHippodrome(hipNomComplet);
+    // ── 3. Numéros et libellés depuis div.nomCourse ───────────────────────
+    // HTML : <div class="yui-u first nomCourse">N - Libellé de la course</div>
+    const nomRe = /class="[^"]*nomCourse[^"]*"[^>]*>\s*(\d+)\s*-\s*([^<\r\n]+)/g;
+    const nomMatches = Array.from(block.matchAll(nomRe));
 
-    // ── 3. Extraire les courses de cette réunion ─────────────────────────
-    // On cherche les liens partants-pmu avec accesskey (= numéro de course PMU)
-    const courseRegex = /href="\/partants-pmu\/[^"]*"\s+accesskey="(\d+)"/g;
-    // Pattern pour extraire le libellé depuis l'URL
-    const courseUrlRegex = /href="(\/partants-pmu\/(\d{4}-\d{2}-\d{2})-([^-]+(?:-[^-_]+)*)-pmu-([^_]+)_c\d+)"\s+accesskey="(\d+)"/g;
+    // ── 4. Lien partants + classe btn (btnQuinte / btnMulti / btnCourse) ──
+    // HTML : <a class=" btnQuinte" href="/partants-pmu/YYYY-MM-DD-..._cID">
+    // Un seul lien /partants-pmu/ par course (casaques/cotes ont d'autres href)
+    const linkRe = /<a[^>]+class="([^"]*btn(?:Quinte|Multi|Course)[^"]*)"[^>]*href="(\/partants-pmu\/[^"]+)"/g;
+    const linkMatches = Array.from(block.matchAll(linkRe));
 
-    // On cherche aussi les blocs btnArrivee pour heures et partants
-    // Structure : les blocs btnArrivee apparaissent dans l'ordre des courses
-    const arriveeBlocks = Array.from(block.matchAll(/<div[^>]+class="btnArrivee"[^>]*>([\s\S]*?)<\/div>/g));
+    // ── 5. Blocs btnArrivee : "9 Partants - 13h58" (futur) ou arrivée ────
+    const arriveeRe = /class="btnArrivee[^"]*"[^>]*>([\s\S]*?)<\/div>/g;
+    const arriveeMatches = Array.from(block.matchAll(arriveeRe));
 
-    let match;
-    let courseIndex = 0;
-    const courseUrlRe = /href="(\/partants-pmu\/([\d]{4}-\d{2}-\d{2})-([^_]+)_c\d+)"\s+accesskey="(\d+)"/g;
-
-    while ((match = courseUrlRe.exec(block)) !== null) {
-      const fullPath  = match[1];
-      const dateSlug  = match[2];
-      const nameSlug  = match[3];
-      const courseNum = parseInt(match[4]);
-
-      // Extraire le libellé depuis le slug : "vincennes-pmu-prix-du-gers" → "Prix du Gers"
-      const namePart = nameSlug.replace(/^[^-]+-pmu-/, "").replace(/-/g, " ");
-      const libelle  = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-
-      // Extraire la classe du btn (quinte/multi/course) depuis le contexte de l'URL
-      const ctxStart = block.indexOf(fullPath) - 200;
-      const ctx = block.slice(Math.max(0, ctxStart), block.indexOf(fullPath) + 200);
-      const btnClass = ctx.match(/class="([^"]*btn(?:Quinte|Multi|Course)[^"]*)"/i)?.[1] || "";
-
-      // Associer le bloc arrivee (heures/partants) par ordre
-      const arriveeText = arriveeBlocks[courseIndex]?.[1] || "";
-      const heureDepart = parseHeure(arriveeText);
-      const nbPartants  = parsePartants(arriveeText);
+    // ── 6. Assembler — les 3 tableaux sont dans le même ordre ────────────
+    const count = Math.min(nomMatches.length, linkMatches.length);
+    for (let j = 0; j < count; j++) {
+      const courseNum   = parseInt(nomMatches[j][1]);
+      const libelle     = nomMatches[j][2].trim();
+      const btnClass    = linkMatches[j][1];
+      const arriveeText = (arriveeMatches[j]?.[1] ?? "")
+        .replace(/<[^>]+>/g, "")
+        .trim();
 
       courses.push({
         reunionNum,
-        hippodromeNom: hipNom,
-        hippodromePays: hipPays,
+        hippodromeNom:    hipNom,
+        hippodromePays:   hipPays,
         courseNum,
         libelle,
-        heureDepart,
-        nbPartants,
+        heureDepart:      parseHeure(arriveeText),
+        nbPartants:       parsePartants(arriveeText),
         parisDisponibles: classToParisDisponibles(btnClass),
-        dateCourse: dateISO,
+        dateCourse:       dateISO,
       });
-
-      courseIndex++;
     }
   }
 
