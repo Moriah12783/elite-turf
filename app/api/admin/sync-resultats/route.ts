@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuResultats } from "@/lib/pmu-api";
+import { logCronStart } from "@/lib/cron-logger";
 
 type CourseJoin = {
   id: string;
@@ -86,12 +87,7 @@ function calculerResultat(
 // ── Route principale ──────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // Auth : CRON_SECRET OU admin connecté (route protégée par middleware)
-  const auth = req.headers.get("authorization") || "";
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
-    // La route /admin/* est protégée par le middleware d'auth Supabase
-    // On autorise donc les appels sans CRON_SECRET depuis l'admin dashboard
-  }
+  const logger = logCronStart("resultats-pronostics");
 
   const supabase = createServiceClient();
   const now = new Date();
@@ -267,7 +263,7 @@ export async function POST(req: NextRequest) {
     ? Math.round((totalGagnants / totalTermines) * 100)
     : 0;
 
-  console.log("[sync-resultats] Terminé:", { ...stats, tauxReussite });
+  await logger.finish("success", { ...stats, tauxReussite: `${tauxReussite}%` });
 
   return NextResponse.json({
     ok: true,
