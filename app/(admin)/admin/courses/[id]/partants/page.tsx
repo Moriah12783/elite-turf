@@ -41,7 +41,7 @@ export default async function PartantsPage({ params }: { params: { id: string } 
             Partants — {course.libelle}
           </h1>
           <p className="text-text-secondary text-sm mt-0.5">
-            R{course.numero_reunion}C{course.numero_course} · {course.hippodrome?.nom} ·{" "}
+            R{course.numero_reunion}C{course.numero_course} · {(course.hippodrome as any)?.nom} ·{" "}
             {new Date(course.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
               weekday: "long", day: "numeric", month: "long",
             })} · {course.heure_depart?.slice(0, 5)}
