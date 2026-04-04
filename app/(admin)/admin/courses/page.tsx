@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   Plus, MapPin, Clock, Users, CheckCircle2,
-  Clock3, XCircle, Edit2, Calendar
+  XCircle, Edit2, Calendar, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 export const metadata = { title: "Courses — Admin Elite Turf" };
@@ -20,11 +20,33 @@ const CATEGORIE_COLORS: Record<string, string> = {
   OBSTACLE: "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
-export default async function AdminCoursesPage() {
+function offsetDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function formatDateFr(dateStr: string): string {
+  return new Date(dateStr + "T12:00:00").toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+}
+
+export default async function AdminCoursesPage({
+  searchParams,
+}: {
+  searchParams: { date?: string };
+}) {
   const supabase = createServiceClient();
 
-  // Aujourd'hui par défaut
   const today = new Date().toISOString().split("T")[0];
+  const rawDate = searchParams?.date || today;
+  // Valider le format YYYY-MM-DD
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : today;
+
+  const prevDate = offsetDate(selectedDate, -1);
+  const nextDate = offsetDate(selectedDate, +1);
+  const isToday  = selectedDate === today;
 
   const { data: courses } = await supabase
     .from("courses")
@@ -36,18 +58,14 @@ export default async function AdminCoursesPage() {
       hippodrome:hippodromes(nom, pays),
       pronostics(id, publie)
     `)
-    .gte("date_course", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0])
-    .order("date_course", { ascending: false })
-    .order("heure_depart", { ascending: true })
-    .limit(100);
-
-  const { data: hippodromes } = await supabase
-    .from("hippodromes").select("id, nom").eq("actif", true).order("nom");
+    .eq("date_course", selectedDate)
+    .order("numero_reunion", { ascending: true })
+    .order("numero_course",  { ascending: true });
 
   // Stats
-  const total = courses?.length || 0;
+  const total         = courses?.length || 0;
   const avecPronostic = courses?.filter((c: any) => c.pronostics?.some((p: any) => p.publie)).length || 0;
-  const terminees = courses?.filter((c: any) => c.statut === "TERMINE").length || 0;
+  const terminees     = courses?.filter((c: any) => c.statut === "TERMINE").length || 0;
 
   return (
     <div className="space-y-6">
@@ -56,7 +74,7 @@ export default async function AdminCoursesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl font-bold text-text-primary">Courses</h1>
-          <p className="text-text-secondary text-sm mt-1">7 derniers jours · {total} course(s)</p>
+          <p className="text-text-secondary text-sm mt-1 capitalize">{formatDateFr(selectedDate)} · {total} course(s)</p>
         </div>
         <Link
           href="/admin/courses/nouvelle"
@@ -67,12 +85,64 @@ export default async function AdminCoursesPage() {
         </Link>
       </div>
 
+      {/* Navigation par date */}
+      <div className="flex items-center justify-between card-base p-3">
+        <Link
+          href={`/admin/courses?date=${prevDate}`}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {new Date(prevDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gold-primary" />
+          <span className="text-text-primary font-semibold text-sm capitalize">
+            {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+          </span>
+          {isToday && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gold-primary/10 text-gold-primary border border-gold-primary/20 font-medium">
+              Aujourd&apos;hui
+            </span>
+          )}
+        </div>
+
+        <Link
+          href={`/admin/courses?date=${nextDate}`}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
+        >
+          {new Date(nextDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Raccourcis rapides */}
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { label: "Hier",     date: offsetDate(today, -1) },
+          { label: "Aujourd'hui", date: today },
+          { label: "Demain",   date: offsetDate(today, +1) },
+        ].map(({ label, date }) => (
+          <Link
+            key={date}
+            href={`/admin/courses?date=${date}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+              selectedDate === date
+                ? "bg-gold-primary text-bg-primary border-gold-primary"
+                : "bg-bg-elevated text-text-secondary border-border hover:border-gold-primary/50 hover:text-text-primary"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
       {/* Stats rapides */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total",           value: total,         color: "text-text-primary" },
-          { label: "Avec pronostic",  value: avecPronostic, color: "text-gold-primary" },
-          { label: "Terminées",       value: terminees,     color: "text-status-win" },
+          { label: "Total",          value: total,         color: "text-text-primary" },
+          { label: "Avec pronostic", value: avecPronostic, color: "text-gold-primary" },
+          { label: "Terminées",      value: terminees,     color: "text-status-win" },
         ].map((s) => (
           <div key={s.label} className="card-base p-4 text-center">
             <div className={`text-2xl font-bold font-serif ${s.color}`}>{s.value}</div>
@@ -87,7 +157,7 @@ export default async function AdminCoursesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Date", "Course", "Hippodrome", "Catégorie", "Heure", "Partants", "Paris", "Statut", "Pronostic", ""].map((h) => (
+                {["Course", "Hippodrome", "Catégorie", "Heure", "Partants", "Paris", "Statut", "Pronostic", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -96,19 +166,11 @@ export default async function AdminCoursesPage() {
             </thead>
             <tbody className="divide-y divide-border/50">
               {courses?.map((c: any) => {
-                const statut = STATUT_CONFIG[c.statut] || STATUT_CONFIG.PROGRAMME;
+                const statut     = STATUT_CONFIG[c.statut] || STATUT_CONFIG.PROGRAMME;
                 const aPronostic = c.pronostics?.some((p: any) => p.publie);
-                const ref = `R${c.numero_reunion}C${c.numero_course}`;
+                const ref        = `R${c.numero_reunion}C${c.numero_course}`;
                 return (
                   <tr key={c.id} className="hover:bg-bg-hover transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-text-muted" />
-                        <span className="text-text-secondary text-xs">
-                          {new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                        </span>
-                      </div>
-                    </td>
                     <td className="px-4 py-3 min-w-[180px]">
                       <p className="text-text-primary font-medium truncate max-w-[200px]">{c.libelle}</p>
                       <p className="text-text-muted text-xs font-mono">{ref}</p>
@@ -133,7 +195,7 @@ export default async function AdminCoursesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 text-text-muted text-sm">
                         <Users className="w-3.5 h-3.5" />
-                        {c.nb_partants}
+                        {c.nb_partants || "—"}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -176,10 +238,15 @@ export default async function AdminCoursesPage() {
           {(!courses || courses.length === 0) && (
             <div className="py-12 text-center">
               <Calendar className="w-10 h-10 text-text-muted mx-auto mb-3" />
-              <p className="text-text-secondary text-sm">Aucune course enregistrée</p>
-              <Link href="/admin/courses/nouvelle" className="mt-3 inline-flex items-center gap-1.5 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors">
-                <Plus className="w-4 h-4" /> Ajouter la première course
-              </Link>
+              <p className="text-text-secondary text-sm">Aucune course pour le {new Date(selectedDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</p>
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <Link href={`/admin/courses?date=${prevDate}`} className="flex items-center gap-1.5 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors">
+                  <ChevronLeft className="w-4 h-4" /> Jour précédent
+                </Link>
+                <Link href="/admin/courses/nouvelle" className="flex items-center gap-1.5 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors">
+                  <Plus className="w-4 h-4" /> Ajouter une course
+                </Link>
+              </div>
             </div>
           )}
         </div>

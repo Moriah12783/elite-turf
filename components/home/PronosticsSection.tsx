@@ -67,26 +67,11 @@ export default async function PronosticsSection() {
     .order("confiance",        { ascending: false })
     .limit(10);
 
-  // Fallback : derniers 7 jours si aucun aujourd'hui
-  let rawProno = todayPronoRaw || [];
-  if (rawProno.length === 0) {
-    const { data: recentProno } = await supabase
-      .from("pronostics")
-      .select(`
-        id, niveau_acces, type_pari, confiance, analyse_courte, selection, nb_vues, date_publication,
-        course:courses(
-          id, libelle, heure_depart, numero_reunion, numero_course, date_course,
-          paris_disponibles,
-          hippodrome:hippodromes(nom)
-        )
-      `)
-      .eq("publie", true)
-      .gte("date_publication", weekAgo)
-      .order("date_publication", { ascending: false })
-      .order("confiance",        { ascending: false })
-      .limit(6);
-    rawProno = recentProno || [];
-  }
+  // Pronostics du jour uniquement — pas de fallback sur les jours précédents
+  let rawProno = (todayPronoRaw || []).filter((p: any) => {
+    const c = Array.isArray(p.course) ? p.course[0] : p.course;
+    return c?.date_course === today;
+  });
 
   // ── Marquer chaque pronostic : course terminée ou non ──────────────
   const pronosWithStatus = rawProno.map((p: any) => {
