@@ -141,7 +141,7 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
 
     // On cherche aussi les blocs btnArrivee pour heures et partants
     // Structure : les blocs btnArrivee apparaissent dans l'ordre des courses
-    const arriveeBlocks = [...block.matchAll(/<div[^>]+class="btnArrivee"[^>]*>([\s\S]*?)<\/div>/g)];
+    const arriveeBlocks = Array.from(block.matchAll(/<div[^>]+class="btnArrivee"[^>]*>([\s\S]*?)<\/div>/g));
 
     let match;
     let courseIndex = 0;
