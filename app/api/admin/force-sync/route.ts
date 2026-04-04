@@ -15,8 +15,9 @@ const CRON_SECRET = process.env.CRON_SECRET || "";
 const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
 const TARGETS: Record<string, { url: string; method: string; body?: object }> = {
-  "pmu-today":  { url: `${APP_URL}/api/pmu/sync`,           method: "POST", body: {} },
-  "pmu-demain": { url: `${APP_URL}/api/cron/pmu-demain`,    method: "GET" },
+  // PMU sync → tente d'abord l'API PMU, fallback automatique sur Geny
+  "pmu-today":  { url: `${APP_URL}/api/geny/programme`,     method: "POST", body: { date: "today" } },
+  "pmu-demain": { url: `${APP_URL}/api/geny/programme`,     method: "POST", body: { date: "demain" } },
   "lonaci":     { url: `${APP_URL}/api/lonaci/sync`,         method: "POST" },
   "arrivees":   { url: `${APP_URL}/api/geny/arrivees`,       method: "POST" },
   "resultats":  { url: `${APP_URL}/api/admin/sync-resultats`, method: "POST" },
