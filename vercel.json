@@ -91,10 +91,6 @@
     {
       "path": "/api/admin/rapport-journalier",
       "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/admin/rapport-journalier/envoyer",
-      "schedule": "0 21 * * *"
     }
   ],
   "headers": [
