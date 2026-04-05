@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
 
     const allCourses = await scrapeGenyProgramme(dateISO);
 
-    // Filtre : uniquement les courses françaises et marocaines (cible LONACI)
+    // Filtre : courses françaises et marocaines (jouables via LONACI/PMU-CI)
     const courses = allCourses.filter(
       c => c.hippodromePays === "France" || c.hippodromePays === "Maroc"
     );
