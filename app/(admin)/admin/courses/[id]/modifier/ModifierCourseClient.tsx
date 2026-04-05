@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Trash2, Globe2, Flag } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Globe2, Flag, ListOrdered } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
 const PARIS_OPTIONS = [
@@ -83,7 +82,6 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
 
     setLoading(true);
     try {
-      const supabase = createClient();
       const updatePayload: Record<string, unknown> = {
         ...form,
         heure_depart: form.heure_depart.length === 5 ? form.heure_depart + ":00" : form.heure_depart,
@@ -96,11 +94,13 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
         updatePayload.statut = "TERMINE"; // automatiquement terminée si arrivée renseignée
       }
 
-      const { error } = await supabase
-        .from("courses")
-        .update(updatePayload)
-        .eq("id", course.id);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/courses/${course.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       // Si arrivée ajoutée → déclencher le calcul des résultats pronostics
       if (arriveeNums) {
@@ -121,9 +121,9 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
     if (!confirm("Supprimer cette course ? Les pronostics associés seront aussi supprimés.")) return;
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from("courses").delete().eq("id", course.id);
-      if (error) throw error;
+      const res = await fetch(`/api/admin/courses/${course.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       toast.success("Course supprimée");
       router.push("/admin/courses");
     } catch (err: any) {
@@ -155,15 +155,24 @@ export default function ModifierCourseClient({ course, hippodromes }: Props) {
             <p className="text-text-muted text-xs mt-0.5 font-mono truncate max-w-[220px]">{course.libelle}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-2 border border-status-loss/30 hover:border-status-loss/60 text-status-loss text-xs font-medium rounded-xl transition-colors disabled:opacity-50"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Supprimer
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/admin/courses/${course.id}/partants`}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gold-primary/10 hover:bg-gold-primary/20 border border-gold-primary/30 text-gold-light text-xs font-semibold rounded-xl transition-colors"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+            Gérer les partants
+          </Link>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 border border-status-loss/30 hover:border-status-loss/60 text-status-loss text-xs font-medium rounded-xl transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Supprimer
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
