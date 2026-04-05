@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ToggleLeft, ToggleRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -18,23 +17,21 @@ export default function TogglePublieButton({ id, publie }: TogglePublieButtonPro
 
   const handleToggle = async () => {
     setLoading(true);
+    const newState = !isPublie;
     try {
-      const supabase = createClient();
-      const newState = !isPublie;
-      const { error } = await supabase
-        .from("pronostics")
-        .update({
-          publie: newState,
-          date_publication: newState ? new Date().toISOString() : null,
-        })
-        .eq("id", id);
+      const res = await fetch(`/api/admin/pronostics/${id}/publie`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publie: newState }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
-      if (error) throw error;
       setIsPublie(newState);
       toast.success(newState ? "Pronostic publié" : "Mis en brouillon");
       router.refresh();
-    } catch {
-      toast.error("Erreur lors du changement de statut");
+    } catch (err: any) {
+      toast.error(`Erreur lors du changement de statut : ${err.message}`);
     } finally {
       setLoading(false);
     }
