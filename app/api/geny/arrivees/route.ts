@@ -5,31 +5,61 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { fetchPmuResultats } from "@/lib/pmu-api";
 
 export const dynamic = "force-dynamic";
 
 const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36";
 
-// Regex pour extraire les arrivées depuis le HTML Geny
+// Extrait une suite de nombres valides (1-99) depuis une chaîne
+function extractNums(str: string): number[] {
+  return str.split(/[\s\-,\.\/|]+/).map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 99);
+}
+
+// Regex pour extraire les arrivées depuis le HTML Geny — 10 patterns
 function parseArrivee(html: string): number[] | null {
-  // Pattern 1 : données JSON dans un attribut data
-  const jsonMatch = html.match(/arrivee['":\s]+['"]?([\d][\d\s\-,]+[\d])/i);
-  if (jsonMatch) {
-    const nums = jsonMatch[1].split(/[\s\-,]+/).map(Number).filter(n => n > 0 && n < 30);
+  const patterns: RegExp[] = [
+    // P1 : "Arrivée : 3-1-7-5-12" ou "Arrivée officielle : …"
+    /[Aa]rriv[eé]e\s*(?:officielle)?\s*:?\s*((?:\d+[\s\-,]+){2,}\d+)/,
+    // P2 : attribut JSON "arrivee":"3-1-7"
+    /['"arrivee'":\s]+([\d][\d\s\-,]+[\d])/i,
+    // P3 : class contenant "arrivee" avec chiffres dedans
+    /class="[^"]*arrivee[^"]*"[^>]*>([\d\s\-,]+)/i,
+    // P4 : "ordre" avec chiffres "ordre_arrivee":"3 1 7 5 12"
+    /ordre[_\-]?arrivee["'\s:]+(["\s\d\-,]+)/i,
+    // P5 : balise <strong> ou <b> contenant des chiffres séparés par tirets (résultat typique)
+    /<(?:strong|b)[^>]*>((?:\d+\s*[\-–]\s*){2,}\d+)<\/(?:strong|b)>/i,
+    // P6 : liste de <td> ou <li> consécutifs avec un seul nombre (colonnes d'arrivée)
+    /(?:<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*){3,}/i,
+    // P7 : JSON arrivee dans data-* attribut
+    /data-(?:arrivee|ordre|result)[^=]*=["'](["\d\s,\-]+)["']/i,
+    // P8 : "Résultat" + chiffres
+    /[Rr][eé]sultat\s*:?\s*((?:\d+[\s\-,]+){2,}\d+)/,
+    // P9 : blocs "1er ... 2e ... 3e ..." avec numéros
+    /1[eèr]{1,2}[^>]*?>\s*(\d+)[\s\S]{0,50}2[eèm]{1,2}[^>]*?>\s*(\d+)[\s\S]{0,50}3[eèm]{1,2}[^>]*?>\s*(\d+)/i,
+    // P10 : séquence de 5 nombres entre 1 et 20 séparés par tirets (ex: "3-1-7-5-12")
+    /\b(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})\b/,
+  ];
+
+  for (const pattern of patterns) {
+    const m = html.match(pattern);
+    if (!m) continue;
+
+    // Pattern 9 capture groupes séparés (1er, 2e, 3e)
+    if (pattern === patterns[8] && m[1] && m[2] && m[3]) {
+      const nums = [+m[1], +m[2], +m[3]].filter(n => n >= 1 && n <= 99);
+      if (nums.length === 3) return nums;
+    }
+    // Pattern 10 capture 5 groupes séparés
+    if (pattern === patterns[9] && m[1]) {
+      const nums = [+m[1], +m[2], +m[3], +m[4], +m[5]].filter(n => n >= 1 && n <= 99);
+      if (nums.length >= 3) return nums.slice(0, 5);
+    }
+
+    const nums = extractNums(m[1] ?? m[0]);
     if (nums.length >= 3) return nums.slice(0, 5);
   }
-  // Pattern 2 : tirets dans le contenu "Arrivée : 3-7-11-4-9"
-  const textMatch = html.match(/rrivée\s*:\s*([\d][\d\-]+[\d])/i);
-  if (textMatch) {
-    const nums = textMatch[1].split("-").map(Number).filter(n => n > 0 && n < 30);
-    if (nums.length >= 3) return nums.slice(0, 5);
-  }
-  // Pattern 3 : balise <td> ou <span> contenant "1er 2e 3e …"
-  const ordreMatch = html.match(/class="[^"]*arrivee[^"]*"[^>]*>([\d\s\-]+)</i);
-  if (ordreMatch) {
-    const nums = ordreMatch[1].split(/[\s\-]+/).map(Number).filter(n => n > 0 && n < 30);
-    if (nums.length >= 3) return nums.slice(0, 5);
-  }
+
   return null;
 }
 
@@ -52,24 +82,37 @@ async function scrapeGenyArrivees(
   const dateStr = dateISO.replace(/-/g, ""); // YYYYMMDD
 
   for (const course of courses) {
+    let arrivee: number[] | null = null;
+
+    // ── Source 1 : Geny.com (scraping HTML) ──────────────────────────
     try {
-      const r = String(course.numero_reunion).padStart(2, "0");
-      const c = String(course.numero_course).padStart(2, "0");
+      const r   = String(course.numero_reunion).padStart(2, "0");
+      const c   = String(course.numero_course).padStart(2, "0");
       const url = `https://www.geny.com/resultats-pmu/${dateStr}r${r}c${c}`;
 
       const res = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, "Accept": "text/html" },
-        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml" },
+        signal: AbortSignal.timeout(10000),
       });
 
-      if (!res.ok) continue;
-      const html = await res.text();
-      const arrivee = parseArrivee(html);
-      if (arrivee) {
-        results.push({ courseId: course.id, arrivee });
+      if (res.ok) {
+        const html = await res.text();
+        arrivee = parseArrivee(html);
       }
-    } catch {
-      // Course non disponible, on continue
+    } catch { /* continue vers fallback */ }
+
+    // ── Source 2 : API PMU (fallback si Geny échoue) ──────────────────
+    if (!arrivee) {
+      try {
+        const pmuResult = await fetchPmuResultats(dateStr, course.numero_reunion, course.numero_course);
+        if (pmuResult && pmuResult.arrivee.length >= 3) {
+          arrivee = pmuResult.arrivee.slice(0, 5);
+        }
+      } catch { /* skip */ }
+    }
+
+    if (arrivee) {
+      results.push({ courseId: course.id, arrivee });
     }
   }
 
