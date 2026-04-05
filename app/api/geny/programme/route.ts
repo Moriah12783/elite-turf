@@ -261,20 +261,31 @@ export async function POST(req: NextRequest) {
         ? (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })()
         : rawDate;
 
-    const courses = await scrapeGenyProgramme(dateISO);
+    const allCourses = await scrapeGenyProgramme(dateISO);
+
+    // Filtre : uniquement les courses françaises et marocaines (cible LONACI)
+    const courses = allCourses.filter(
+      c => c.hippodromePays === "France" || c.hippodromePays === "Maroc"
+    );
 
     if (!courses.length) {
-      return NextResponse.json({ ok: true, message: `Aucune course Geny trouvée pour ${dateISO}`, inserted: 0 });
+      return NextResponse.json({
+        ok: true,
+        message: `Aucune course France/Maroc trouvée pour ${dateISO}`,
+        inserted: 0,
+        filtered_out: allCourses.length,
+      });
     }
 
     const result = await syncCoursesToDB(courses);
     console.log(`[Geny Programme] ${dateISO} → ${result.inserted} insérées, ${result.updated} mises à jour`);
 
     return NextResponse.json({
-      ok:       true,
-      date:     dateISO,
-      courses:  courses.length,
-      reunions: Array.from(new Set(courses.map(c => c.reunionNum))).length,
+      ok:           true,
+      date:         dateISO,
+      courses:      courses.length,
+      filtered_out: allCourses.length - courses.length,
+      reunions:     Array.from(new Set(courses.map(c => c.reunionNum))).length,
       ...result,
     });
   } catch (err: any) {

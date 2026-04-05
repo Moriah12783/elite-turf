@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 
 /**
@@ -50,6 +51,11 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Invalider le cache Next.js pour que les pages admin reflètent les changements
+    revalidatePath("/admin/pronostics");
+    revalidatePath(`/admin/pronostics/${params.id}/modifier`);
+    revalidatePath("/pronostics");
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("[PATCH /api/admin/pronostics] Unexpected error:", err);
@@ -68,6 +74,8 @@ export async function DELETE(
     const supabase = createServiceClient();
     const { error } = await supabase.from("pronostics").delete().eq("id", params.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidatePath("/admin/pronostics");
+    revalidatePath("/pronostics");
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 
 /**
@@ -65,6 +66,9 @@ export async function PUT(
       .from("courses")
       .update({ nb_partants: partants.length })
       .eq("id", params.courseId);
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/courses");
 
     return NextResponse.json({ inserted: partants.length });
   } catch (err: any) {
