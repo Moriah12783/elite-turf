@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, Zap, Star, Crown, ArrowRight } from "lucide-react";
+import { Loader2, Lock, CreditCard, Smartphone, ChevronDown } from "lucide-react";
 import type { Plan } from "@/types";
 
 interface Props {
@@ -12,105 +12,140 @@ interface Props {
   variant?: "primary" | "secondary" | "elite";
 }
 
-const VARIANT_STYLES = {
-  primary: "btn-primary w-full",
-  secondary: "btn-secondary w-full",
-  elite:
-    "w-full py-3 rounded-xl font-bold text-sm text-white transition-all duration-300 flex items-center justify-center gap-2 " +
-    "bg-gradient-to-r from-purple-700 via-purple-600 to-purple-700 " +
-    "hover:from-purple-600 hover:via-purple-500 hover:to-purple-600 " +
-    "shadow-[0_0_20px_rgba(168,85,247,0.25)] hover:shadow-[0_0_28px_rgba(168,85,247,0.4)]",
+type PaymentMethod = "mobilemoney" | "card" | null;
+
+const VARIANT_MAIN = {
+  primary:   "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-gold-primary hover:bg-gold-dark text-bg-primary transition-all shadow-gold-sm",
+  secondary: "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-bg-elevated hover:bg-bg-hover text-text-primary border border-border transition-all",
+  elite:     "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-purple-700 via-purple-600 to-purple-700 hover:from-purple-600 hover:via-purple-500 hover:to-purple-600 text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.25)]",
 };
 
-const PLAN_ICONS = {
-  Starter: Zap,
-  Pro: Star,
-  Elite: Crown,
-};
+export default function PaiementButton({ plan, userId, userEmail, variant = "secondary" }: Props) {
+  const [open, setOpen]       = useState(false);
+  const [loading, setLoading] = useState<PaymentMethod>(null);
+  const [error, setError]     = useState<string | null>(null);
+  const router                = useRouter();
 
-export default function PaiementButton({
-  plan,
-  userId,
-  userEmail,
-  variant = "secondary",
-}: Props) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  // Non connecté → connexion
+  if (!userId || !userEmail) {
+    return (
+      <button
+        onClick={() => router.push(`/auth/connexion?redirect=/abonnements&plan=${plan.id}`)}
+        className={`${VARIANT_MAIN[variant ?? "secondary"]} disabled:opacity-60`}
+      >
+        <Lock className="w-4 h-4" />
+        Se connecter pour souscrire
+      </button>
+    );
+  }
 
-  const Icon = PLAN_ICONS[plan.nom];
-
-  async function handleClick() {
+  async function handlePay(method: PaymentMethod) {
+    if (!method) return;
     setError(null);
+    setLoading(method);
+    setOpen(false);
 
-    // Non connecté → rediriger vers la page de connexion
-    if (!userId || !userEmail) {
-      router.push(
-        `/auth/connexion?redirect=/abonnements&plan=${plan.id}`
-      );
-      return;
-    }
+    const endpoint = method === "card"
+      ? "/api/paiement/stripe/checkout"
+      : "/api/paiement/initier";
 
-    setLoading(true);
     try {
-      const res = await fetch("/api/paiement/initier", {
-        method: "POST",
+      const res  = await fetch(endpoint, {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: plan.id,
-          userId,
-          userEmail,
-        }),
+        body:    JSON.stringify({ planId: plan.id, userId, userEmail }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.paymentUrl) {
         setError(data.error || "Une erreur est survenue. Réessayez.");
-        setLoading(false);
+        setLoading(null);
         return;
       }
 
-      // Rediriger vers la page de paiement CinetPay
       window.location.href = data.paymentUrl;
     } catch {
       setError("Erreur réseau. Vérifiez votre connexion.");
-      setLoading(false);
+      setLoading(null);
     }
   }
 
-  const btnClass =
-    variant === "elite"
-      ? VARIANT_STYLES.elite
-      : variant === "primary"
-      ? VARIANT_STYLES.primary
-      : VARIANT_STYLES.secondary;
+  const isLoading = loading !== null;
 
   return (
     <div className="space-y-2">
+      {/* Bouton principal — ouvre le sélecteur */}
       <button
-        onClick={handleClick}
-        disabled={loading}
-        className={`${btnClass} disabled:opacity-60 disabled:cursor-not-allowed`}
+        onClick={() => !isLoading && setOpen((v) => !v)}
+        disabled={isLoading}
+        className={`${VARIANT_MAIN[variant ?? "secondary"]} disabled:opacity-60 disabled:cursor-not-allowed`}
       >
-        {loading ? (
+        {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
             Redirection…
           </>
-        ) : !userId ? (
-          <>
-            <Lock className="w-4 h-4" />
-            Se connecter pour souscrire
-          </>
         ) : (
           <>
-            <Icon className="w-4 h-4" />
-            Choisir {plan.nom}
-            <ArrowRight className="w-4 h-4 ml-auto" />
+            <span className="flex-1 text-left">Choisir ce pack</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} />
           </>
         )}
       </button>
+
+      {/* Sélecteur de méthode de paiement */}
+      {open && !isLoading && (
+        <div className="rounded-xl border border-border bg-bg-card overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold px-3 pt-2.5 pb-1">
+            Choisir votre moyen de paiement
+          </p>
+
+          {/* Carte bancaire (Stripe) */}
+          <button
+            onClick={() => handlePay("card")}
+            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+              <p className="text-text-muted text-xs">Paiement sécurisé par Stripe</p>
+            </div>
+            <span className="text-text-muted text-xs font-mono">
+              {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+            </span>
+          </button>
+
+          <div className="mx-3 border-t border-border/50" />
+
+          {/* Mobile Money (CinetPay) */}
+          <button
+            onClick={() => handlePay("mobilemoney")}
+            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gold-faint border border-gold-primary/20 flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-4 h-4 text-gold-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave</p>
+              <p className="text-text-muted text-xs">Mobile Money — Afrique</p>
+            </div>
+            <span className="text-text-muted text-xs font-mono">
+              {plan.prix_fcfa.toLocaleString("fr-FR")} F
+            </span>
+          </button>
+
+          {/* Annuler */}
+          <button
+            onClick={() => setOpen(false)}
+            className="w-full text-center text-text-muted text-xs py-2 hover:text-text-secondary transition-colors border-t border-border/50"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="text-status-loss text-xs text-center">{error}</p>
