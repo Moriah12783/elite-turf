@@ -51,7 +51,7 @@ const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementTyp
   EN_ATTENTE: { label: "En cours",  icon: Clock3,       classes: "bg-bg-elevated text-text-muted border-border" },
 };
 
-const RESULTAT_CONFIG_DEPASSE = { label: "Non actualisé", icon: Clock3, classes: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
+const RESULTAT_CONFIG_DEPASSE = { label: "Archivé", icon: Clock3, classes: "bg-bg-elevated text-text-muted border-border" };
 
 const CATEGORIE_COLORS: Record<string, string> = {
   PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",

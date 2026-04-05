@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { Star, TrendingUp, Trophy, Flame, AlertCircle } from "lucide-react";
+import { Star, TrendingUp, Trophy, Flame, AlertCircle, CalendarDays, History } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
 import PronosticCard from "@/components/pronostics/PronosticCard";
@@ -46,27 +46,14 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
   }
 
-  // ── 2. Construire la plage de dates selon la période ───────────────
+  // ── 2. Dates de référence ──────────────────────────────────────────
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayStr  = today.toISOString().split("T")[0];
+  const d30 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const dateFrom30 = d30.toISOString().split("T")[0];
 
-  let dateFrom: string;
-  if (searchParams.periode === "mois") {
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    dateFrom = firstDay.toISOString().split("T")[0];
-  } else if (searchParams.periode === "semaine") {
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1);
-    dateFrom = monday.toISOString().split("T")[0];
-  } else if (searchParams.periode === "30_jours") {
-    const d30 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    dateFrom = d30.toISOString().split("T")[0];
-  } else {
-    // Défaut : aujourd'hui — cohérence avec le programme du jour
-    dateFrom = today.toISOString().split("T")[0];
-  }
-
-  // ── 3. Requête Supabase (service client pour récupérer tout) ────────
+  // ── 3. Requête Supabase — 30 derniers jours publiés ────────────────
   const supabase = createServiceClient();
 
   let query = supabase
@@ -85,35 +72,55 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     `
     )
     .eq("publie", true)
-    .gte("date_publication", dateFrom)
+    .gte("date_publication", dateFrom30)
     .order("date_publication", { ascending: false });
 
-  // Filtre type de pari
-  if (searchParams.type) {
-    query = query.eq("type_pari", searchParams.type);
-  }
-  // Filtre niveau
-  if (searchParams.niveau) {
-    query = query.eq("niveau_acces", searchParams.niveau);
-  }
+  if (searchParams.type)    query = query.eq("type_pari",    searchParams.type);
+  if (searchParams.niveau)  query = query.eq("niveau_acces", searchParams.niveau);
 
-  const { data: allPronostics } = await query.limit(50);
+  const { data: allPronostics } = await query.limit(100);
 
-  // Filtre hippodrome (côté serveur après récupération)
-  const pronosticsFiltered = (allPronostics || []).filter((p: any) => {
-    if (!searchParams.hippodrome) return true;
-    return p.course?.hippodrome?.nom === searchParams.hippodrome;
+  // ── 4. Séparer aujourd'hui / historique avec résultat ─────────────
+  // Les pronostics "périmés" (EN_ATTENTE passé) sont cachés du fil principal
+  const allFiltered = (allPronostics || []).filter((p: any) => {
+    if (searchParams.hippodrome && p.course?.hippodrome?.nom !== searchParams.hippodrome) return false;
+    return true;
   });
 
-  // Trier : courses du marché africain en premier, puis les autres
-  const pronostics = [
-    ...pronosticsFiltered.filter((p: any) =>
-      Array.isArray(p.course?.paris_disponibles) && p.course.paris_disponibles.length > 0
-    ),
-    ...pronosticsFiltered.filter((p: any) =>
-      !Array.isArray(p.course?.paris_disponibles) || p.course.paris_disponibles.length === 0
-    ),
-  ];
+  // Aujourd'hui uniquement
+  const pronosticsAujourdhui = allFiltered.filter(
+    (p: any) => p.course?.date_course === todayStr
+  );
+
+  // Historique : seulement ceux avec un résultat réel (pas EN_ATTENTE périmé)
+  const pronosticsHistorique = allFiltered.filter(
+    (p: any) =>
+      p.course?.date_course < todayStr &&
+      p.resultat !== "EN_ATTENTE"
+  );
+
+  // Vue filtrée (quand période explicite) : tout sauf les périmés
+  let dateFrom = todayStr;
+  if (searchParams.periode === "mois") {
+    dateFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
+  } else if (searchParams.periode === "semaine") {
+    const mon = new Date(today); mon.setDate(today.getDate() - today.getDay() + 1);
+    dateFrom = mon.toISOString().split("T")[0];
+  } else if (searchParams.periode === "30_jours") {
+    dateFrom = dateFrom30;
+  }
+
+  // Mode "filtre actif" : afficher avec période choisie, toujours exclure périmés
+  const periodeActive = !!(searchParams.periode || searchParams.type || searchParams.niveau || searchParams.hippodrome);
+  const pronosticsFiltre = periodeActive
+    ? allFiltered.filter((p: any) => {
+        const isStale = p.resultat === "EN_ATTENTE" && p.course?.date_course < todayStr;
+        return !isStale && (!searchParams.periode || (p.course?.date_course ?? "") >= dateFrom);
+      })
+    : [];
+
+  // Pronostics à afficher dans la liste principale (mode filtre uniquement)
+  const pronostics = periodeActive ? pronosticsFiltre : [];
 
   // ── 4. Stats rapides ───────────────────────────────────────────────
   const { data: statsData } = await supabase
@@ -173,28 +180,74 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
           <Suspense fallback={<div className="h-10 bg-bg-elevated rounded-xl animate-pulse" />}>
             <PronosticsFilters
               hippodromes={hippodromes || []}
-              totalCount={pronostics.length}
+              totalCount={periodeActive ? pronostics.length : pronosticsAujourdhui.length + pronosticsHistorique.length}
             />
           </Suspense>
         </div>
 
-        {/* Pronostics list */}
-        {pronostics.length > 0 ? (
-          <div className="space-y-4">
-            {pronostics.map((p: any) => (
-              <PronosticCard
-                key={p.id}
-                pronostic={p}
-                userSubscription={userSubscription}
-              />
-            ))}
-          </div>
+        {periodeActive ? (
+          /* ── Mode filtre actif ── */
+          pronostics.length > 0 ? (
+            <div className="space-y-4">
+              {pronostics.map((p: any) => (
+                <PronosticCard key={p.id} pronostic={p} userSubscription={userSubscription} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState periode={searchParams.periode} />
+          )
         ) : (
-          <EmptyState periode={searchParams.periode} />
+          /* ── Vue par défaut : 2 sections propres ── */
+          <>
+            {/* Section 1 : Aujourd'hui */}
+            <div className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <CalendarDays className="w-4 h-4 text-gold-primary" />
+                <h2 className="font-serif font-semibold text-text-primary text-base">
+                  Sélections du jour
+                </h2>
+                <span className="ml-auto text-xs text-text-muted">
+                  {pronosticsAujourdhui.length} pronostic{pronosticsAujourdhui.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              {pronosticsAujourdhui.length > 0 ? (
+                <div className="space-y-4">
+                  {pronosticsAujourdhui.map((p: any) => (
+                    <PronosticCard key={p.id} pronostic={p} userSubscription={userSubscription} />
+                  ))}
+                </div>
+              ) : (
+                <div className="card-base p-8 text-center text-text-muted text-sm">
+                  <Star className="w-8 h-8 mx-auto mb-3 text-text-muted/40" />
+                  Nos sélections du jour seront publiées avant 8h00.
+                </div>
+              )}
+            </div>
+
+            {/* Section 2 : Résultats récents */}
+            {pronosticsHistorique.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="w-4 h-4 text-text-muted" />
+                  <h2 className="font-serif font-semibold text-text-secondary text-base">
+                    Résultats récents
+                  </h2>
+                  <span className="ml-auto text-xs text-text-muted">
+                    30 derniers jours
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {pronosticsHistorique.slice(0, 10).map((p: any) => (
+                    <PronosticCard key={p.id} pronostic={p} userSubscription={userSubscription} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* CTA bas de page */}
-        {userSubscription === "GRATUIT" && pronostics.length > 0 && (
+        {userSubscription === "GRATUIT" && (pronosticsAujourdhui.length > 0 || pronostics.length > 0) && (
           <div className="mt-12">
             <PaywallBanner niveau="PREMIUM" />
           </div>
