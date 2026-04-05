@@ -68,7 +68,7 @@ const FAQ = [
   },
   {
     q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le Pack Découverte (65€). Il couvre le Tiercé PMU et vous donne accès à 3 analyses par semaine sur Vincennes et Longchamp — idéal pour débuter.",
+    a: "Commencez par le Pack Découverte (65€). En 7 jours, vous découvrez la méthode Elite Turf avec 3 pronostics Tiercé/Quarté par semaine, une lecture simple et structurée — idéal pour comprendre l'approche avant de s'engager.",
   },
   {
     q: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
@@ -95,8 +95,8 @@ export default async function AbonnementsPage() {
 
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
-        titre="Nos Abonnements"
-        sousTitre="À partir de 65€ — Orange Money, MTN MoMo, Wave ou Carte bancaire. Accès immédiat."
+        titre="Choisissez votre pack"
+        sousTitre="Une lecture structurée, une sélection disciplinée — à partir de 65€. Orange Money, MTN MoMo, Wave ou CB. Accès immédiat."
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
@@ -136,11 +136,18 @@ export default async function AbonnementsPage() {
                   id={plan.id}
                   className={`card-base border-2 ${styles.border} ${styles.glow} relative flex flex-col p-6 transition-all`}
                 >
-                  {/* Populaire badge */}
+                  {/* Badges */}
                   {plan.populaire && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                       <span className="px-4 py-1.5 bg-gold-primary text-bg-primary text-[11px] font-bold rounded-full whitespace-nowrap shadow-gold">
                         ⭐ LE PLUS POPULAIRE
+                      </span>
+                    </div>
+                  )}
+                  {plan.nom === "Elite" && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                      <span className="px-4 py-1.5 bg-purple-600 text-white text-[11px] font-bold rounded-full whitespace-nowrap">
+                        👑 L&apos;OFFRE LA PLUS SÉLECTIVE
                       </span>
                     </div>
                   )}
@@ -153,6 +160,16 @@ export default async function AbonnementsPage() {
                     <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">
                       {plan.nom === "Starter" ? "PACK DÉCOUVERTE" : plan.nom === "Pro" ? "PACK PERFORMANCE" : "PACK ELITE"}
                     </h2>
+                    {plan.nom === "Pro" && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-primary/80 mb-1">
+                        Le pack le plus équilibré
+                      </p>
+                    )}
+                    {plan.nom === "Elite" && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400/80 mb-1">
+                        La sélection dans la sélection
+                      </p>
+                    )}
                     <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
 
                     {/* Taux de réussite */}
@@ -282,19 +299,18 @@ export default async function AbonnementsPage() {
               <tbody className="divide-y divide-border/40">
                 {[
                   { label: "Durée",                        values: ["7 jours", "30 jours", "90 jours"] },
-                  { label: "Objectif de réussite",         values: ["~70%", "~82%", "+92%"] },
-                  { label: "Indice de confiance",          values: ["⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"] },
-                  { label: "Pronostics Tiercé / Quarté",   values: ["3/sem", "Illimité", "Illimité"] },
+                  { label: "Pronostics par jour",          values: ["3 / semaine", "1+ quotidien", "1+ premium"] },
+                  { label: "Pronostics Tiercé / Quarté",   values: ["✓", "✓", "✓"] },
                   { label: "Pronostics Quinté+",           values: ["—", "✓", "✓"] },
-                  { label: "Pronostics VIP exclusifs",     values: ["—", "—", "✓"] },
-                  { label: "Type de sélection",            values: ["Standard", "Optimisée", "Expert (réduite)"] },
+                  { label: "Type de sélection",            values: ["Lecture simple", "8 chevaux", "6 chevaux (filtrée)"] },
+                  { label: "Analyse incluse",              values: ["Courte", "Claire & structurée", "Filtrée & exigeante"] },
                   { label: "Alerte Dernière Minute",       values: ["—", "Email", "WhatsApp"] },
-                  { label: "Gestion de mise",              values: ["Basique", "Détaillée", "Personnalisée"] },
-                  { label: "Analyse d'expert",             values: ["Courte", "Complète", "Complète + Vidéo"] },
-                  { label: "Alertes SMS/Push",             values: ["5/mois", "20/mois", "Illimitées"] },
-                  { label: "Statistiques",                 values: ["Basiques", "Complètes", "Export Excel/PDF"] },
+                  { label: "Gestion de mise",              values: ["—", "Détaillée", "Personnalisée"] },
+                  { label: "Alertes SMS / Push",           values: ["5 / mois", "20 / mois", "Illimitées"] },
+                  { label: "Statistiques",                 values: ["—", "Complètes", "Export Excel / PDF"] },
                   { label: "Support WhatsApp",             values: ["—", "48h", "Prioritaire"] },
-                  { label: "Hippodromes couverts",         values: ["Vincennes, Longchamp", "V, LC, Chantilly, Deauville", "Tous (8 hippodromes FR)"] },
+                  { label: "Économie vs mensuel",          values: ["—", "—", "✓"] },
+                  { label: "Résiliable à tout moment",     values: ["✓", "✓", "✓"] },
                 ].map((row, i) => (
                   <tr key={i} className="hover:bg-bg-hover transition-colors">
                     <td className="px-5 py-3 text-text-secondary text-sm">{row.label}</td>
