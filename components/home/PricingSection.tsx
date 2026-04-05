@@ -8,11 +8,6 @@ const PACK_NAMES: Record<string, string> = {
   Elite:   "PACK ELITE",
 };
 
-const TAUX_REUSSITE: Record<string, string> = {
-  Starter: "~70%",
-  Pro:     "~82%",
-  Elite:   "+92%",
-};
 
 const PLAN_ICONS = { Starter: Zap, Pro: Star, Elite: Crown };
 
@@ -102,20 +97,21 @@ export default function PricingSection() {
                   </h3>
                   <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
 
-                  {/* Taux de réussite */}
+                  {/* Niveau de filtrage */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-text-muted">Taux de réussite</span>
+                      <span className="text-xs text-text-muted">Niveau de filtrage</span>
                       <span className={`text-xs font-bold ${styles.price}`}>
-                        {TAUX_REUSSITE[plan.nom]}
+                        {plan.nom === "Starter" ? "Standard" : plan.nom === "Pro" ? "Optimisé" : "Expert"}
                       </span>
                     </div>
                     <div className="w-full bg-bg-elevated rounded-full h-1.5">
-                      <div className={`h-1.5 rounded-full ${styles.bar}`} style={{ width: styles.barW }} />
+                      <div className={`h-1.5 rounded-full ${styles.bar}`}
+                        style={{ width: plan.nom === "Starter" ? "45%" : plan.nom === "Pro" ? "75%" : "100%" }} />
                     </div>
                     <div className="flex mt-1 gap-0.5">
                       {[1,2,3,4,5].map(s => (
-                        <span key={s} className={`text-xs ${s <= styles.stars ? styles.price : "text-text-muted"}`}>⭐</span>
+                        <span key={s} className={`text-xs ${s <= styles.stars ? styles.price : "text-text-muted"}`}>◆</span>
                       ))}
                     </div>
                   </div>

@@ -172,27 +172,27 @@ export default async function AbonnementsPage() {
                     )}
                     <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
 
-                    {/* Taux de réussite */}
+                    {/* Niveau de filtrage */}
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-text-muted">Taux de réussite</span>
+                        <span className="text-xs text-text-muted">Niveau de filtrage</span>
                         <span className={`text-xs font-bold ${plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"}`}>
-                          {plan.nom === "Starter" ? "~70%" : plan.nom === "Pro" ? "~82%" : "+92%"}
+                          {plan.nom === "Starter" ? "Standard" : plan.nom === "Pro" ? "Optimisé" : "Expert"}
                         </span>
                       </div>
                       <div className="w-full bg-bg-elevated rounded-full h-1.5">
                         <div
                           className={`h-1.5 rounded-full ${plan.nom === "Elite" ? "bg-purple-400" : plan.populaire ? "bg-gold-primary" : "bg-status-win"}`}
-                          style={{ width: plan.nom === "Starter" ? "70%" : plan.nom === "Pro" ? "82%" : "92%" }}
+                          style={{ width: plan.nom === "Starter" ? "45%" : plan.nom === "Pro" ? "75%" : "100%" }}
                         />
                       </div>
                       <div className="flex mt-1 gap-0.5">
                         {[1,2,3,4,5].map(s => (
                           <span key={s} className={`text-xs ${
-                            (plan.nom === "Starter" && s <= 3) || (plan.nom === "Pro" && s <= 4) || plan.nom === "Elite"
+                            (plan.nom === "Starter" && s <= 2) || (plan.nom === "Pro" && s <= 4) || plan.nom === "Elite"
                               ? plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"
                               : "text-text-muted"
-                          }`}>⭐</span>
+                          }`}>◆</span>
                         ))}
                       </div>
                     </div>
@@ -303,6 +303,8 @@ export default async function AbonnementsPage() {
                   { label: "Pronostics Tiercé / Quarté",   values: ["✓", "✓", "✓"] },
                   { label: "Pronostics Quinté+",           values: ["—", "✓", "✓"] },
                   { label: "Type de sélection",            values: ["Lecture simple", "8 chevaux", "6 chevaux (filtrée)"] },
+                  { label: "Niveau de filtrage",           values: ["Standard", "Optimisé", "Expert"] },
+                  { label: "Niveau d'exigence",            values: ["Accessible", "Élevé", "Maximum"] },
                   { label: "Analyse incluse",              values: ["Courte", "Claire & structurée", "Filtrée & exigeante"] },
                   { label: "Alerte Dernière Minute",       values: ["—", "Email", "WhatsApp"] },
                   { label: "Gestion de mise",              values: ["—", "Détaillée", "Personnalisée"] },
