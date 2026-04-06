@@ -4,7 +4,7 @@ import {
   Check, Star, Zap, Crown, Shield, Clock,
   MessageCircle, ChevronDown, ArrowRight, Users
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
@@ -82,7 +82,8 @@ export default async function AbonnementsPage() {
 
   let currentPlan = null;
   if (user) {
-    const { data: profile } = await supabase
+    const serviceClient = createServiceClient();
+    const { data: profile } = await serviceClient
       .from("profiles")
       .select("statut_abonnement, nom_complet")
       .eq("id", user.id)
@@ -292,7 +293,7 @@ export default async function AbonnementsPage() {
                   <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Fonctionnalité</th>
                   {PLAN_CONFIG.map((p) => (
                     <th key={p.id} className={`px-4 py-3 text-center text-xs font-bold uppercase tracking-wider ${p.populaire ? "text-gold-light" : "text-text-muted"}`}>
-                      {p.nom}
+                      {p.nom === "Starter" ? "Découverte" : p.nom === "Pro" ? "Performance" : "Elite"}
                     </th>
                   ))}
                 </tr>

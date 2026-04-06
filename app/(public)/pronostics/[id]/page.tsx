@@ -53,18 +53,18 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const supabaseClient = await createClient();
   const { data: { user } } = await supabaseClient.auth.getUser();
 
+  // ── Data ──────────────────────────────────────────────────────────
+  const supabase = createServiceClient();
+
   let userSubscription: SubscriptionStatus = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabaseClient
+    const { data: profile } = await supabase
       .from("profiles")
       .select("statut_abonnement")
       .eq("id", user.id)
       .single();
     if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
   }
-
-  // ── Data ──────────────────────────────────────────────────────────
-  const supabase = createServiceClient();
   const { data: p } = await supabase
     .from("pronostics")
     .select(`

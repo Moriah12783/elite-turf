@@ -97,7 +97,7 @@ export default function Navbar() {
                     <div className="py-1">
                       {[
                         { href: "/espace-membre",  label: "Mon espace",        Icon: User    },
-                        { href: "/abonnements",    label: "Mes abonnements",   Icon: Crown   },
+                        { href: "/espace-membre",  label: "Mon abonnement",    Icon: Crown   },
                         { href: "/pronostics",     label: "Mes pronostics",    Icon: Star    },
                         { href: "/archives",       label: "Archives résultats", Icon: Archive },
                         { href: "/blog",           label: "Blog PMU",          Icon: BookOpen},

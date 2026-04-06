@@ -53,7 +53,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const { data: { user } } = await supabaseClient.auth.getUser();
   let userSubscription: SubscriptionStatus = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabaseClient
+    const serviceClient = createServiceClient();
+    const { data: profile } = await serviceClient
       .from("profiles").select("statut_abonnement").eq("id", user.id).single();
     if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
   }

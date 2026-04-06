@@ -36,16 +36,6 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     data: { user },
   } = await supabaseClient.auth.getUser();
 
-  let userSubscription: SubscriptionStatus = "GRATUIT";
-  if (user) {
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("statut_abonnement")
-      .eq("id", user.id)
-      .single();
-    if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
-  }
-
   // ── 2. Dates de référence ──────────────────────────────────────────
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -55,6 +45,16 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
 
   // ── 3. Requête Supabase — 30 derniers jours publiés ────────────────
   const supabase = createServiceClient();
+
+  let userSubscription: SubscriptionStatus = "GRATUIT";
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("statut_abonnement")
+      .eq("id", user.id)
+      .single();
+    if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
+  }
 
   let query = supabase
     .from("pronostics")
