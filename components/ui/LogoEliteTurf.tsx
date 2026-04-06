@@ -14,10 +14,11 @@ interface LogoEliteTurfProps {
 
 /** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
 /** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
+/** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
 const sizeMap = {
-  sm: { height: 72 },    // admin sidebar
-  md: { height: 88 },    // auth / footer
-  lg: { height: 100 },   // navbar
+  sm: { height: 80 },    // admin sidebar
+  md: { height: 96 },    // auth / footer
+  lg: { height: 120 },   // navbar
 };
 
 export default function LogoEliteTurf({
