@@ -69,6 +69,7 @@ export async function PUT(
 
     revalidatePath("/admin/courses");
     revalidatePath("/courses");
+    revalidatePath(`/courses/${params.courseId}`);
 
     return NextResponse.json({ inserted: partants.length });
   } catch (err: any) {

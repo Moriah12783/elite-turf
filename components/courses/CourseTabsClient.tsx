@@ -4,8 +4,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, TrendingUp, Trophy, RefreshCw,
   ExternalLink, Users, Star, CheckCircle2,
-  AlertCircle, ChevronUp, ChevronDown,
+  AlertCircle, ChevronUp, ChevronDown, Lock, Zap,
 } from "lucide-react";
+import Link from "next/link";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,8 @@ interface Props {
   pronosticSelection?: number[] | null;
   statut: string;
   genyUrl: string;
+  isVedette?: boolean;       // course avec pronostic publié
+  isSubscribed?: boolean;    // utilisateur PREMIUM ou VIP
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -118,13 +121,71 @@ function TabButton({
 // ── Tab : Partants ─────────────────────────────────────────────────────────
 
 function TabPartants({
-  partants, arriveeOfficielle, pronosticSelection, genyUrl,
+  partants, arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed,
 }: {
   partants: Partant[];
   arriveeOfficielle?: number[] | null;
   pronosticSelection?: number[] | null;
   genyUrl: string;
+  isVedette?: boolean;
+  isSubscribed?: boolean;
 }) {
+  // Cours vedette non abonné → aperçu partiel + verrou
+  if (isVedette && !isSubscribed) {
+    const preview = partants.slice(0, 4);
+    return (
+      <div>
+        <div className="overflow-x-auto opacity-50 pointer-events-none select-none">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border/50 bg-bg-elevated/50">
+                <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">N°</th>
+                <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Cheval</th>
+                <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">Musique</th>
+                <th className="text-right px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Cote</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {preview.map((p) => (
+                <tr key={p.id} className="hover:bg-bg-hover">
+                  <td className="px-4 py-3">
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs bg-bg-elevated border border-border text-text-muted">{p.numero}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-text-primary text-sm">{p.nom_cheval}</p>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="font-mono text-xs text-text-secondary bg-bg-elevated px-2 py-1 rounded border border-border/50 blur-sm">••••••••••</span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="font-bold text-sm text-text-muted blur-sm">••</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* CTA abonnement */}
+        <div className="mx-4 mb-4 mt-2 p-5 rounded-xl bg-gradient-to-br from-gold-faint to-bg-elevated border border-gold-primary/30 text-center">
+          <Lock className="w-8 h-8 text-gold-primary mx-auto mb-3" />
+          <p className="text-text-primary font-semibold text-sm mb-1">
+            Données complètes réservées aux abonnés
+          </p>
+          <p className="text-text-muted text-xs mb-4 max-w-xs mx-auto">
+            Accédez aux cotes, musique et jockeys des {partants.length} partants pour construire votre propre analyse
+          </p>
+          <Link
+            href="/abonnements"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold-sm"
+          >
+            <Zap className="w-4 h-4" fill="currentColor" />
+            S&apos;abonner dès 65€
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (partants.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -735,6 +796,8 @@ export default function CourseTabsClient({
   pronosticSelection,
   statut,
   genyUrl,
+  isVedette = false,
+  isSubscribed = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
 
@@ -769,6 +832,8 @@ export default function CourseTabsClient({
           arriveeOfficielle={arriveeOfficielle}
           pronosticSelection={pronosticSelection}
           genyUrl={genyUrl}
+          isVedette={isVedette}
+          isSubscribed={isSubscribed}
         />
       )}
       {activeTab === "cotes" && (

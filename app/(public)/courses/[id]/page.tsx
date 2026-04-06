@@ -272,6 +272,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
               pronosticSelection={pronosticPublie?.selection}
               statut={c.statut}
               genyUrl={genyUrl}
+              isVedette={!!pronosticPublie}
+              isSubscribed={userSubscription === "PREMIUM" || userSubscription === "VIP"}
             />
 
           </div>
