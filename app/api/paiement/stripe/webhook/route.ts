@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { templateConfirmationPaiement } from "@/lib/email/templates/confirmation-paiement";
 
 export const dynamic = "force-dynamic";
 
@@ -83,23 +84,27 @@ export async function POST(req: NextRequest) {
         }).eq("reference_operateur", txId);
       }
 
-      // 3. Email de confirmation
+      // 3. Email de confirmation avec le vrai template
       if (email) {
-        await sendEmail({
-          to:      email,
-          subject: `✅ Paiement confirmé — Pack ${planNom === "Pro" ? "Performance" : planNom} activé`,
-          html: `
-            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0a0a14;color:#f0f0f5;padding:32px;border-radius:16px;">
-              <h2 style="color:#c9a84c;margin-bottom:8px;">Paiement confirmé ✅</h2>
-              <p>Votre abonnement <strong>Pack ${planNom === "Starter" ? "Découverte" : planNom === "Pro" ? "Performance" : "Elite"}</strong> est maintenant actif.</p>
-              <p style="color:#9ca3af;font-size:14px;">Accès valable jusqu'au <strong style="color:#f0f0f5;">${expiration.toLocaleDateString("fr-FR")}</strong></p>
-              <a href="https://www.elite-turf.fr/pronostics"
-                 style="display:inline-block;background:#c9a84c;color:#0a0a14;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;margin-top:16px;">
-                Accéder aux pronostics →
-              </a>
-            </div>
-          `,
+        // Récupérer le nom complet depuis profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("nom_complet")
+          .eq("id", userId)
+          .single();
+
+        const planNomAffiche = planNom === "Starter" ? "Découverte" : planNom === "Pro" ? "Performance" : "Elite";
+        const { subject, html } = templateConfirmationPaiement({
+          nomComplet:         profile?.nom_complet || email,
+          email,
+          planNom:            planNomAffiche,
+          montantEur:         session.amount_total ? session.amount_total / 100 : 0,
+          dateDebut:          now.toISOString(),
+          dateFin:            expiration.toISOString(),
+          statutAbonnement:   statut as "PREMIUM" | "VIP",
         });
+
+        await sendEmail({ to: email, subject, html });
       }
 
       console.log(`[Stripe webhook] ✅ Abonnement activé: userId=${userId}, plan=${planNom}, expire=${expiration.toISOString()}`);
