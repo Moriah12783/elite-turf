@@ -91,6 +91,10 @@
     {
       "path": "/api/admin/rapport-journalier",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/pronostic-gratuit",
+      "schedule": "0 7 * * *"
     }
   ],
   "headers": [
