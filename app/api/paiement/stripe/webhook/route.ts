@@ -16,9 +16,6 @@ import { sendEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
-// Désactiver le body parsing Next.js (Stripe a besoin du raw body pour vérifier la signature)
-export const config = { api: { bodyParser: false } };
-
 function getSubscriptionStatus(planNom: string): string {
   if (planNom === "Elite") return "VIP";
   if (planNom === "Pro")   return "PREMIUM";
