@@ -81,7 +81,17 @@ async function scrapeGenyArrivees(
   const results: { courseId: string; arrivee: number[] }[] = [];
   const dateStr = dateISO.replace(/-/g, ""); // YYYYMMDD
 
-  for (const course of courses) {
+  // Dédupliquer : ne traiter qu'une seule course par (numero_reunion, numero_course)
+  const seen = new Set<string>();
+  const uniqueCourses = courses.filter(c => {
+    const key = `${c.numero_reunion}-${c.numero_course}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  console.log(`[geny-arrivees] ${courses.length} courses → ${uniqueCourses.length} uniques après dédupliq.`);
+
+  for (const course of uniqueCourses) {
     let arrivee: number[] | null = null;
 
     // ── Source 1 : Geny.com (scraping HTML) ──────────────────────────
@@ -95,11 +105,16 @@ async function scrapeGenyArrivees(
         signal: AbortSignal.timeout(10000),
       });
 
+      console.log(`[geny-arrivees] Geny R${r}C${c} → HTTP ${res.status}`);
+
       if (res.ok) {
         const html = await res.text();
         arrivee = parseArrivee(html);
+        if (!arrivee) console.log(`[geny-arrivees] R${r}C${c} : HTML ok mais aucun pattern trouvé (${html.length} chars)`);
       }
-    } catch { /* continue vers fallback */ }
+    } catch (e: any) {
+      console.warn(`[geny-arrivees] Geny fetch error R${course.numero_reunion}C${course.numero_course}: ${e?.message}`);
+    }
 
     // ── Source 2 : API PMU (fallback si Geny échoue) ──────────────────
     if (!arrivee) {
@@ -107,8 +122,13 @@ async function scrapeGenyArrivees(
         const pmuResult = await fetchPmuResultats(dateStr, course.numero_reunion, course.numero_course);
         if (pmuResult && pmuResult.arrivee.length >= 3) {
           arrivee = pmuResult.arrivee.slice(0, 5);
+          console.log(`[geny-arrivees] PMU R${course.numero_reunion}C${course.numero_course} → arrivée: ${arrivee}`);
+        } else {
+          console.log(`[geny-arrivees] PMU R${course.numero_reunion}C${course.numero_course} → pas de résultat (${JSON.stringify(pmuResult)})`);
         }
-      } catch { /* skip */ }
+      } catch (e: any) {
+        console.warn(`[geny-arrivees] PMU fallback error: ${e?.message}`);
+      }
     }
 
     if (arrivee) {

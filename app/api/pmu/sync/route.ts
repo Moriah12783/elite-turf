@@ -45,15 +45,21 @@ export async function POST(req: NextRequest) {
     const hipNoms = Array.from(new Set(courses.map(c => c.hippodromeName)));
     const hipMap: Record<string, string> = {};
 
+    // Normalise le nom pour la comparaison (sans accents, majuscules)
+    function normalizeHipName(s: string) {
+      return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    }
+
     for (const nom of hipNoms) {
       const pays = courses.find(c => c.hippodromeName === nom)?.hippodromePays || "France";
 
-      // Upsert hippodrome (chercher par nom)
-      const { data: existing } = await supabase
+      // Chercher par nom normalisé pour éviter les doublons accent/casse
+      const { data: allHip } = await supabase
         .from("hippodromes")
         .select("id, nom")
-        .eq("nom", nom)
-        .single();
+        .eq("pays", pays);
+
+      const existing = allHip?.find(h => normalizeHipName(h.nom) === normalizeHipName(nom)) || null;
 
       if (existing) {
         hipMap[nom] = existing.id;
