@@ -13,9 +13,9 @@ interface LogoEliteTurfProps {
 }
 
 const sizeMap = {
-  sm: { width: 100, height: 34 },
-  md: { width: 120, height: 40 },
-  lg: { width: 150, height: 50 },
+  sm: { width: 72,  height: 24 },
+  md: { width: 88,  height: 29 },
+  lg: { width: 104, height: 34 },
 };
 
 export default function LogoEliteTurf({
@@ -28,7 +28,7 @@ export default function LogoEliteTurf({
 
   const inner = (
     <span className={cn("flex flex-col items-start group", className)}>
-      <span className="bg-white rounded-xl px-2 py-1 transition-opacity duration-200 group-hover:opacity-90 inline-flex items-center justify-center">
+      <span className="bg-white rounded-lg px-1.5 py-0.5 transition-opacity duration-200 group-hover:opacity-90 inline-flex items-center justify-center">
         <Image
           src="/images/logo.png"
           alt="Elite Turf"
