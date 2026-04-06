@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -56,6 +57,7 @@ interface Props {
 }
 
 export default function PartantsClient({ courseId, nbPartants, initialPartants }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<Partant[]>(() => {
     if (initialPartants.length > 0) return initialPartants.map(fromDb);
     // Pré-remplir avec le nombre de partants attendus
@@ -115,6 +117,7 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       toast.success(`${valid.length} partant(s) enregistré(s)`);
+      router.refresh();
     } catch (err: any) {
       toast.error(`Erreur : ${err.message}`);
     } finally {
