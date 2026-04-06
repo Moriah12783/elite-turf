@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Étape 1 : vérifier que l'utilisateur est connecté (via session cookie)

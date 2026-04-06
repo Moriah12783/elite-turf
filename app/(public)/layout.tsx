@@ -3,6 +3,8 @@ import TickerBar from "@/components/layout/TickerBar";
 import Footer from "@/components/layout/Footer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import DynamicPageBackground from "@/components/layout/DynamicPageBackground";
+import StickyMobileCTA from "@/components/layout/StickyMobileCTA";
+import ScrollDepthTracker from "@/components/layout/ScrollDepthTracker";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +19,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <main>{children}</main>
         <Footer />
         <ScrollToTop />
+        <StickyMobileCTA />
+        <ScrollDepthTracker />
       </div>
     </div>
   );

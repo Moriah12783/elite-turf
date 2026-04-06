@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, TrendingUp, BarChart2, Award, Trophy } from "lucide-react";
+import { Analytics } from "@/lib/analytics";
 
 interface LiveStats {
   tauxGlobal:       number;   // ex: 76
@@ -152,13 +153,13 @@ export default function HeroSection() {
             transition: "opacity 0.8s ease 0.15s, transform 0.8s ease 0.15s",
           }}
         >
-          <span className="text-white">EliteTurf : L&apos;Alliance de l&apos;Expertise Hippique</span>
+          <span className="text-white">Gagnez plus souvent</span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
           >
-            et de la Précision Digitale
+            grâce aux experts Elite Turf
           </span>
         </h1>
 
@@ -187,17 +188,19 @@ export default function HeroSection() {
           }}
         >
           <Link
-            href="/pronostics"
+            href="#pronostics"
+            onClick={() => Analytics.heroCtaClick("pronostics")}
             className="flex items-center gap-2 px-8 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-base rounded-xl transition-all shadow-gold w-full sm:w-auto justify-center"
           >
-            Découvrir la sélection du jour
+            🏆 Voir les pronostics du jour
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
-            href="/abonnements"
+            href="/performances"
+            onClick={() => Analytics.heroCtaClick("performances")}
             className="flex items-center gap-2 px-8 py-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/25 hover:border-gold-primary/50 text-white font-semibold text-base rounded-xl transition-all w-full sm:w-auto justify-center"
           >
-            Nos Abonnements
+            Nos résultats prouvés
           </Link>
         </div>
 

@@ -269,7 +269,7 @@ export default async function PronosticsSection() {
   }
 
   return (
-    <section className="py-16 sm:py-20 bg-bg-card/30">
+    <section id="pronostics" className="py-16 sm:py-20 bg-bg-card/30 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* ── CARTE VEDETTE DU JOUR ── */}

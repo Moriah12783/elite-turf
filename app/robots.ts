@@ -11,10 +11,12 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         disallow: [
+          "/admin",
           "/admin/",
+          "/espace-membre",
           "/espace-membre/",
           "/api/",
-          "/paiement/sandbox",
+          "/paiement/",
         ],
       },
     ],

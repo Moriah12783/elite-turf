@@ -5,6 +5,7 @@ import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
+import FAQSection from "@/components/home/FAQSection";
 import Link from "next/link";
 import { ArrowRight, AlertTriangle } from "lucide-react";
 
@@ -12,12 +13,13 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <WhyChooseUsSection />
-      <CoursesSection />
       <PronosticsSection />
       <StatsSection />
+      <CoursesSection />
+      <WhyChooseUsSection />
       <PricingSection />
       <TestimonialsSection />
+      <FAQSection />
 
       {/* ── CTA Guide Gratuit ── */}
       <section className="py-10 px-4">
@@ -64,7 +66,7 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 relative overflow-hidden">
+      <section id="final-cta" className="py-20 pb-32 md:pb-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-racing-green/10 via-transparent to-gold-faint" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4">
