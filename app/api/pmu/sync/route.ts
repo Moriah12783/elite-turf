@@ -13,6 +13,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuProgramme, normalizePmuReunions, toDateStr } from "@/lib/pmu-api";
 
+/** Normalise un nom d'hippodrome : sans accents, majuscules, sans espaces superflus */
+function normalizeHipName(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+}
+
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
@@ -44,11 +49,6 @@ export async function POST(req: NextRequest) {
     // ── 2. Hippodromes ────────────────────────────────────────────────
     const hipNoms = Array.from(new Set(courses.map(c => c.hippodromeName)));
     const hipMap: Record<string, string> = {};
-
-    // Normalise le nom pour la comparaison (sans accents, majuscules)
-    function normalizeHipName(s: string) {
-      return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-    }
 
     for (const nom of hipNoms) {
       const pays = courses.find(c => c.hippodromeName === nom)?.hippodromePays || "France";
