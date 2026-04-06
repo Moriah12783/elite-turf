@@ -142,7 +142,7 @@ export async function GET() {
           label:  `⭐ R${p.course?.numero_reunion} ${p.course?.hippodrome?.nom || "PMU"}`,
           result: arrivee
             ? `${bet} · Arrivée : ${arrivee}`
-            : `${bet} · Sélection Elite : ${sel}`,
+            : `${bet} · Pronostic réservé aux abonnés`,
           status: p.resultat === "GAGNANT" ? "win" : p.resultat === "PARTIEL" ? "partial" : "pending",
         });
       });
