@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoEliteTurfProps {
@@ -12,27 +13,9 @@ interface LogoEliteTurfProps {
 }
 
 const sizeMap = {
-  sm: {
-    wrap:   "w-8 h-8",
-    emoji:  "text-sm",
-    elite:  "text-sm",
-    turf:   "text-[10px]",
-    gap:    "gap-2",
-  },
-  md: {
-    wrap:   "w-9 h-9",
-    emoji:  "text-base",
-    elite:  "text-base",
-    turf:   "text-xs",
-    gap:    "gap-2",
-  },
-  lg: {
-    wrap:   "w-9 h-9 sm:w-11 sm:h-11",
-    emoji:  "text-base sm:text-lg",
-    elite:  "text-lg sm:text-xl",
-    turf:   "text-xs sm:text-sm",
-    gap:    "gap-2 sm:gap-2.5",
-  },
+  sm: { width: 100, height: 34 },
+  md: { width: 120, height: 40 },
+  lg: { width: 150, height: 50 },
 };
 
 export default function LogoEliteTurf({
@@ -44,51 +27,22 @@ export default function LogoEliteTurf({
   const s = sizeMap[size];
 
   const inner = (
-    <span className={cn("flex items-center group", s.gap, className)}>
-      {/* Horse icon — fond vert dégradé (identique au favicon) */}
-      <span
-        className={cn(
-          s.wrap,
-          "rounded-lg flex items-center justify-center flex-shrink-0 flex-shrink-0",
-          "transition-opacity duration-200 group-hover:opacity-90"
-        )}
-        style={{ background: "linear-gradient(135deg, #1B5E20, #2E7D32)" }}
-      >
-        <span
-          className={cn(s.emoji, "leading-none select-none")}
-          role="img"
-          aria-label="cheval de course"
-        >
-          🏇
-        </span>
+    <span className={cn("flex flex-col items-start group", className)}>
+      <span className="bg-white rounded-xl px-2 py-1 transition-opacity duration-200 group-hover:opacity-90 inline-flex items-center justify-center">
+        <Image
+          src="/images/logo.png"
+          alt="Elite Turf"
+          width={s.width}
+          height={s.height}
+          className="object-contain"
+          priority
+        />
       </span>
-
-      {/* Text stack */}
-      <span className="flex flex-col leading-none">
-        <span
-          className={cn(
-            "font-serif font-bold leading-tight",
-            s.elite,
-            "bg-clip-text text-transparent"
-          )}
-          style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #E8D5A3, #A07830)" }}
-        >
-          ELITE
+      {subtitle && (
+        <span className="text-[10px] text-text-muted tracking-wider mt-1 font-sans normal-case pl-1">
+          {subtitle}
         </span>
-        <span
-          className={cn(
-            "font-serif font-semibold uppercase tracking-[0.18em] text-gold-light/70 leading-tight -mt-0.5",
-            s.turf
-          )}
-        >
-          TURF
-        </span>
-        {subtitle && (
-          <span className="text-[10px] text-text-muted tracking-wider mt-0.5 font-sans normal-case">
-            {subtitle}
-          </span>
-        )}
-      </span>
+      )}
     </span>
   );
 
