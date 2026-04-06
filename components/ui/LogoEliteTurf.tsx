@@ -12,10 +12,11 @@ interface LogoEliteTurfProps {
   className?: string;
 }
 
+/** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
 const sizeMap = {
-  sm: { width: 72,  height: 24 },
-  md: { width: 88,  height: 29 },
-  lg: { width: 104, height: 34 },
+  sm: { height: 32 },   // admin sidebar
+  md: { height: 40 },   // auth / footer
+  lg: { height: 44 },   // navbar
 };
 
 export default function LogoEliteTurf({
@@ -28,16 +29,15 @@ export default function LogoEliteTurf({
 
   const inner = (
     <span className={cn("flex flex-col items-start group", className)}>
-      <span className="bg-white rounded-lg px-1.5 py-0.5 transition-opacity duration-200 group-hover:opacity-90 inline-flex items-center justify-center">
-        <Image
-          src="/images/logo.png"
-          alt="Elite Turf"
-          width={s.width}
-          height={s.height}
-          className="object-contain"
-          priority
-        />
-      </span>
+      <Image
+        src="/images/logo.png"
+        alt="Elite Turf"
+        width={2000}
+        height={2000}
+        className="object-contain transition-opacity duration-200 group-hover:opacity-90"
+        style={{ height: s.height, width: "auto" }}
+        priority
+      />
       {subtitle && (
         <span className="text-[10px] text-text-muted tracking-wider mt-1 font-sans normal-case pl-1">
           {subtitle}
