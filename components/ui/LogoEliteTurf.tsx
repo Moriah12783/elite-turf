@@ -14,9 +14,9 @@ interface LogoEliteTurfProps {
 
 /** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
 const sizeMap = {
-  sm: { height: 32 },   // admin sidebar
-  md: { height: 40 },   // auth / footer
-  lg: { height: 44 },   // navbar
+  sm: { height: 52 },   // admin sidebar
+  md: { height: 64 },   // auth / footer
+  lg: { height: 72 },   // navbar
 };
 
 export default function LogoEliteTurf({
