@@ -18,64 +18,6 @@ function getTodayParis(): string {
   }).format(new Date()).split("/").reverse().join("-");
 }
 
-// ── Algorithme de sélection ──────────────────────────────────────────────────
-
-export function scoreCourse(c: any): number {
-  let score = 0;
-  const paris: string[] = c.paris_disponibles || [];
-  // Critère principal : Tiercé disponible mais PAS Quinté+ (rester accessible)
-  if (paris.includes("TIERCE") || paris.includes("TIERCE_ORDRE")) score += 10;
-  if (!paris.includes("QUINTE_PLUS")) score += 8;
-  // Quarté = bon niveau sans être le plus complexe
-  if (paris.includes("QUARTE_PLUS") || paris.includes("QUARTE")) score += 3;
-  // Nombre de partants idéal 8-12 (ni trop simple, ni trop complexe)
-  const nb = c.nb_partants || 0;
-  if (nb >= 8 && nb <= 12) score += 5;
-  else if (nb >= 7 && nb <= 14) score += 2;
-  // Départ en après-midi (13h-17h Paris) = meilleur pour le public africain
-  const h = parseInt((c.heure_depart || "12:00").slice(0, 2));
-  if (h >= 13 && h <= 16) score += 4;
-  else if (h >= 12 && h <= 17) score += 2;
-  return score;
-}
-
-export function generateAnalyse(course: any, partants: any[], selection: number[]): string {
-  const hippodrome = course.hippodrome?.nom || "hippodrome";
-  const distance   = course.distance_metres ? ` sur ${course.distance_metres}m` : "";
-  const categorie  = course.categorie ? course.categorie.toLowerCase() : "plat";
-  const terrain    = course.terrain
-    ? ` — terrain ${course.terrain.toLowerCase().replace(/_/g, " ")}`
-    : "";
-  const nb = course.nb_partants || "?";
-
-  const selectedPartants = partants
-    .filter((p: any) => selection.includes(p.numero))
-    .sort((a: any, b: any) => selection.indexOf(a.numero) - selection.indexOf(b.numero));
-
-  const top3 = selectedPartants
-    .slice(0, 3)
-    .map((p: any) => `n°${p.numero} ${p.nom_cheval}`)
-    .join(", ");
-
-  return (
-    `Course de ${categorie} à ${hippodrome}${distance} (${nb} partants${terrain}). ` +
-    `Notre sélection du jour : ${top3}${selectedPartants.length > 3 ? " et 2 compléments." : "."} ` +
-    `Résultat vérifiable ce soir sur Geny.`
-  );
-}
-
-export function buildSelection(partants: any[]): number[] {
-  // Trier par cote croissante (favoris en tête), prendre les 5 premiers
-  const avecCote = [...partants]
-    .filter((p: any) => p.cote && Number(p.cote) > 0)
-    .sort((a: any, b: any) => Number(a.cote) - Number(b.cote));
-
-  const sansCote = partants.filter((p: any) => !p.cote || Number(p.cote) <= 0);
-
-  const ordered = [...avecCote, ...sansCote];
-  return ordered.slice(0, 5).map((p: any) => p.numero).sort((a, b) => a - b);
-}
-
 // ── POST : créer le pronostic gratuit ───────────────────────────────────────
 
 export async function POST(req: NextRequest) {

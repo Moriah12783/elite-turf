@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { logCronStart } from "@/lib/cron-logger";
-import { scoreCourse, buildSelection, generateAnalyse } from "@/app/api/admin/pronostic-gratuit/route";
+import { scoreCourse, buildSelection, generateAnalyse } from "@/lib/pronostic-gratuit";
 
 export const dynamic = "force-dynamic";
 

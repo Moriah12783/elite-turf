@@ -8,7 +8,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { Gift, Zap } from "lucide-react";
 import PronosticGratuitClient from "./PronosticGratuitClient";
-import { scoreCourse, buildSelection, generateAnalyse } from "@/app/api/admin/pronostic-gratuit/route";
+import { scoreCourse, buildSelection, generateAnalyse } from "@/lib/pronostic-gratuit";
 
 export const metadata = { title: "Pronostic Gratuit du Jour — Admin" };
 export const dynamic  = "force-dynamic";
