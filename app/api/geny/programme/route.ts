@@ -13,6 +13,19 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#0*39;/g, "'")
+    .replace(/&#0*34;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -164,7 +177,7 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
     const count = Math.min(nomMatches.length, linkMatches.length);
     for (let j = 0; j < count; j++) {
       const courseNum   = parseInt(nomMatches[j][1]);
-      const libelle     = nomMatches[j][2].trim();
+      const libelle     = decodeHtmlEntities(nomMatches[j][2].trim());
       const btnClass    = linkMatches[j][1];
       const arriveeText = (arriveeMatches[j]?.[1] ?? "")
         .replace(/<[^>]+>/g, "")

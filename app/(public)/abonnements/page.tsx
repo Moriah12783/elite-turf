@@ -128,6 +128,7 @@ export default async function AbonnementsPage() {
               const styles = PLAN_STYLES[plan.nom];
               const isCurrentPlan =
                 (plan.nom === "Starter" && currentPlan === "PREMIUM") ||
+                (plan.nom === "Pro"     && currentPlan === "PREMIUM") ||
                 (plan.nom === "Elite"   && currentPlan === "VIP");
 
               return (

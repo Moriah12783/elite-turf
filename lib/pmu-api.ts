@@ -7,6 +7,19 @@
  *  - Résultats d'une course     : GET /resultats/{YYYYMMDD}/R{R}/C{C}
  */
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#0*39;/g, "'")
+    .replace(/&#0*34;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
 const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
 // Cloudflare Worker proxy — contourne le blocage IP de PMU sur Vercel/AWS
 const PMU_PROXY  = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
@@ -310,7 +323,7 @@ export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[]
         heureDepart:     tsToTime(c.heureDepart),
         numeroReunion:   reunion.numOrdre,
         numeroCourse:    c.numOrdre,
-        libelle:         c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`,
+        libelle:         decodeHtmlEntities(c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`),
         distanceMetres:  c.distance || 0,
         categorie:       toCategorie(c.discipline),
         nbPartants:      c.nombreDeclaresPartants || 0,
