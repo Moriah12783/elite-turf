@@ -38,8 +38,15 @@ export function emailBase(content: string, previewText = ""): string {
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="background:#FFFFFF;border:1px solid #E5E7EB;border-bottom:3px solid #C9A84C;border-radius:12px 12px 0 0;padding:18px 36px;text-align:center;">
-                    <span style="font-family:Georgia,'Times New Roman',serif;font-size:11px;font-weight:400;color:#9CA3AF;letter-spacing:4px;text-transform:uppercase;display:block;margin-bottom:4px;">Maison de pronostics</span>
-                    <span style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#C9A84C;letter-spacing:3px;display:block;">ELITE <span style="color:#1E3A5F;">TURF</span></span>
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}" style="text-decoration:none;display:block;">
+                      <img
+                        src="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}/images/logo.png"
+                        alt="Elite Turf"
+                        width="200"
+                        height="200"
+                        style="display:block;margin:0 auto;width:200px;height:200px;object-fit:contain;"
+                      />
+                    </a>
                   </td>
                 </tr>
               </table>
@@ -85,9 +92,13 @@ export function emailBase(content: string, previewText = ""): string {
                 </tr>
               </table>
 
-              <p style="margin:0 0 5px 0;color:#6B7280;font-size:11px;font-weight:600;">
-                Elite Turf
-              </p>
+              <img
+                src="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}/images/logo.png"
+                alt="Elite Turf"
+                width="100"
+                height="100"
+                style="display:block;margin:0 auto 8px auto;width:100px;height:100px;object-fit:contain;"
+              />
               <p style="margin:0 0 4px 0;color:#9CA3AF;font-size:11px;">
                 📍 34, boulevard des Italiens, 75009 Paris, France
               </p>
