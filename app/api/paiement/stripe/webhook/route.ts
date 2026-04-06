@@ -69,12 +69,17 @@ export async function POST(req: NextRequest) {
       const statut      = getSubscriptionStatus(planNom);
 
       // 1. Activer l'abonnement dans profiles
-      await supabase.from("profiles").update({
+      const { error: updateErr } = await supabase.from("profiles").update({
         statut_abonnement:          statut,
         date_debut_abonnement:      now.toISOString(),
         date_expiration_abonnement: expiration.toISOString(),
         plan_id:                    planId,
       }).eq("id", userId);
+
+      if (updateErr) {
+        console.error("[Stripe webhook] Erreur update profiles:", updateErr.message);
+        throw new Error("Échec activation abonnement: " + updateErr.message);
+      }
 
       // 2. Marquer la transaction comme réussie
       if (txId) {
