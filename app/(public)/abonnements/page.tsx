@@ -128,9 +128,8 @@ export default async function AbonnementsPage() {
               const Icon   = PLAN_ICONS[plan.nom];
               const styles = PLAN_STYLES[plan.nom];
               const isCurrentPlan =
-                (plan.nom === "Starter" && currentPlan === "PREMIUM") ||
-                (plan.nom === "Pro"     && currentPlan === "PREMIUM") ||
-                (plan.nom === "Elite"   && currentPlan === "VIP");
+                (plan.nom === "Pro"   && currentPlan === "PREMIUM") ||
+                (plan.nom === "Elite" && currentPlan === "VIP");
 
               return (
                 <div
@@ -300,7 +299,7 @@ export default async function AbonnementsPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {[
-                  { label: "Durée",                        values: ["7 jours", "30 jours", "90 jours"] },
+                  { label: "Durée",                        values: ["7 jours", "30 jours", "30 jours"] },
                   { label: "Pronostics par jour",          values: ["3 / semaine", "1+ quotidien", "1+ premium"] },
                   { label: "Pronostics Tiercé / Quarté",   values: ["✓", "✓", "✓"] },
                   { label: "Pronostics Quinté+",           values: ["—", "✓", "✓"] },

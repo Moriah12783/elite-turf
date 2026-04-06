@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
+import { createClient } from "@/lib/supabase/server";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720";
 
-export default function Footer() {
+export default async function Footer() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   return (
     <footer className="mt-20">
 
@@ -29,13 +32,24 @@ export default function Footer() {
           <p className="font-serif text-xl sm:text-2xl font-bold text-text-primary drop-shadow-lg mb-4">
             Les courses PMU analysées depuis Paris,<br className="hidden sm:block" /> pour les parieurs francophones du monde entier
           </p>
-          <Link
-            href="/inscription"
-            className="flex items-center gap-2 px-6 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold"
-          >
-            <Trophy className="w-4 h-4" />
-            Créer un compte gratuit
-          </Link>
+          {!user && (
+            <Link
+              href="/inscription"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold"
+            >
+              <Trophy className="w-4 h-4" />
+              Créer un compte gratuit
+            </Link>
+          )}
+          {user && (
+            <Link
+              href="/pronostics"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold"
+            >
+              <Trophy className="w-4 h-4" />
+              Voir les pronostics du jour
+            </Link>
+          )}
         </div>
       </div>
 

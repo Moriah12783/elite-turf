@@ -20,6 +20,13 @@ export default async function AdminUtilisateursPage() {
     EXPIRE: "bg-status-loss/10 text-status-loss border-status-loss/20",
   };
 
+  const STATUT_LABEL: Record<string, string> = {
+    GRATUIT: "GRATUIT",
+    PREMIUM: "PREMIUM",
+    VIP: "ELITE",
+    EXPIRE: "EXPIRÉ",
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -30,11 +37,12 @@ export default async function AdminUtilisateursPage() {
       </div>
 
       {/* Stats rapides */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: "Total", value: users?.length || 0, icon: Users, color: "text-blue-400" },
-          { label: "Premium", value: users?.filter(u => u.statut_abonnement === "PREMIUM").length || 0, icon: Star, color: "text-gold-primary" },
-          { label: "VIP", value: users?.filter(u => u.statut_abonnement === "VIP").length || 0, icon: Crown, color: "text-purple-400" },
+          { label: "Starter + Pro", value: users?.filter(u => u.statut_abonnement === "PREMIUM").length || 0, icon: Star, color: "text-gold-primary" },
+          { label: "Elite", value: users?.filter(u => u.statut_abonnement === "VIP").length || 0, icon: Crown, color: "text-purple-400" },
+          { label: "Gratuit", value: users?.filter(u => u.statut_abonnement === "GRATUIT").length || 0, icon: Users, color: "text-text-secondary" },
           { label: "Expirés", value: users?.filter(u => u.statut_abonnement === "EXPIRE").length || 0, icon: Users, color: "text-status-loss" },
         ].map((s, i) => (
           <div key={i} className="card-base p-4">
@@ -75,7 +83,7 @@ export default async function AdminUtilisateursPage() {
                   <td className="px-5 py-4 text-text-secondary text-sm">{user.pays || "—"}</td>
                   <td className="px-5 py-4">
                     <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUT_BADGE[user.statut_abonnement] || ""}`}>
-                      {user.statut_abonnement}
+                      {STATUT_LABEL[user.statut_abonnement] || user.statut_abonnement}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-text-secondary text-sm">

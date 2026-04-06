@@ -16,7 +16,7 @@ const TYPE_CONFIG = {
 
 const SEGMENT_CONFIG = [
   { value: "tous",    label: "Tous les membres",    icon: Users },
-  { value: "premium", label: "Abonnés Premium",     icon: Tag },
+  { value: "premium", label: "Abonnés Pro",         icon: Tag },
   { value: "gratuit", label: "Membres Gratuit",     icon: Bell },
   { value: "expires", label: "Abonnements expirés", icon: AlertTriangle },
 ];
@@ -187,9 +187,9 @@ const SMS_MAX_BODY = 160 - SMS_PREFIX.length - SMS_SUFFIX.length; // 134 chars
 type SmsSegment = "tous" | "premium" | "vip";
 
 const SMS_SEGMENTS: { value: SmsSegment; label: string; sublabel: string; color: string }[] = [
-  { value: "tous",    label: "Tous les abonnés",   sublabel: "Premium + VIP",           color: "text-gold-primary" },
-  { value: "premium", label: "Pack Découverte/Pro", sublabel: "Abonnés Premium",         color: "text-blue-400" },
-  { value: "vip",     label: "Pack Elite",          sublabel: "Abonnés VIP uniquement",  color: "text-purple-400" },
+  { value: "tous",    label: "Tous les abonnés",    sublabel: "Starter + Pro + Elite",  color: "text-gold-primary" },
+  { value: "premium", label: "Pack Découverte & Pro", sublabel: "Abonnés Starter & Pro", color: "text-blue-400" },
+  { value: "vip",     label: "Pack Elite",           sublabel: "Abonnés Elite uniquement", color: "text-purple-400" },
 ];
 
 type CountsState = { tous: number | null; premium: number | null; vip: number | null };
@@ -384,7 +384,7 @@ export default function NotificationsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-serif text-2xl font-bold text-text-primary">Notifications & Alertes</h1>
-        <p className="text-text-secondary text-sm mt-1">Push navigateur gratuit · Alertes SMS VIP premium</p>
+        <p className="text-text-secondary text-sm mt-1">Push navigateur gratuit · Alertes SMS pour tous les abonnés</p>
       </div>
 
       {/* Onglets */}
@@ -410,7 +410,7 @@ export default function NotificationsPage() {
         >
           <MessageSquare className="w-4 h-4" />
           Alertes SMS
-          <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full border border-purple-500/30">VIP</span>
+          <span className="px-1.5 py-0.5 bg-gold-primary/20 text-gold-light text-xs rounded-full border border-gold-primary/30">Pro</span>
         </button>
       </div>
 

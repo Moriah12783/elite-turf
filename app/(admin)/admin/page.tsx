@@ -16,13 +16,15 @@ async function getAdminStats(supabase: Awaited<ReturnType<typeof createClient>>)
 
   const [
     { count: totalUsers },
-    { count: premiumUsers },
+    { count: proUsers },
+    { count: eliteUsers },
     { count: coursesAujourdhui },
     { count: pronosticsPublies },
     { data: transactions },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("actif", true),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).in("statut_abonnement", ["PREMIUM", "VIP"]),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("statut_abonnement", "PREMIUM"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("statut_abonnement", "VIP"),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("date_course", today),
     supabase.from("pronostics").select("*", { count: "exact", head: true }).eq("publie", true).gte("created_at", today),
     supabase.from("transactions").select("montant_fcfa").eq("statut", "SUCCES").gte("date_transaction", firstOfMonth),
@@ -32,7 +34,8 @@ async function getAdminStats(supabase: Awaited<ReturnType<typeof createClient>>)
 
   return {
     totalUsers: totalUsers || 0,
-    premiumUsers: premiumUsers || 0,
+    proUsers: proUsers || 0,
+    eliteUsers: eliteUsers || 0,
     coursesAujourdhui: coursesAujourdhui || 0,
     pronosticsPublies: pronosticsPublies || 0,
     revenusMois,
@@ -55,12 +58,21 @@ export default async function AdminDashboard() {
     },
     {
       icon: Star,
-      label: "Abonnés Premium",
-      value: stats.premiumUsers.toLocaleString("fr-CI"),
-      sublabel: "Premium + Elite",
+      label: "Abonnés Pro",
+      value: stats.proUsers.toLocaleString("fr-CI"),
+      sublabel: "Starter + Pro",
       color: "text-gold-primary",
       bg: "bg-gold-faint",
       border: "border-gold-primary/20",
+    },
+    {
+      icon: CreditCard,
+      label: "Abonnés Elite",
+      value: stats.eliteUsers.toLocaleString("fr-CI"),
+      sublabel: "Plan Elite uniquement",
+      color: "text-purple-400",
+      bg: "bg-purple-400/10",
+      border: "border-purple-400/20",
     },
     {
       icon: CreditCard,
@@ -76,9 +88,9 @@ export default async function AdminDashboard() {
       label: "Courses aujourd'hui",
       value: stats.coursesAujourdhui.toString(),
       sublabel: `${stats.pronosticsPublies} pronostic(s) publié(s)`,
-      color: "text-purple-400",
-      bg: "bg-purple-400/10",
-      border: "border-purple-400/20",
+      color: "text-blue-400",
+      bg: "bg-blue-400/10",
+      border: "border-blue-400/20",
     },
   ];
 
@@ -95,7 +107,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map((kpi, i) => (
           <div key={i} className={`card-base p-5 border ${kpi.border}`}>
             <div className={`w-10 h-10 rounded-xl ${kpi.bg} border ${kpi.border} flex items-center justify-center mb-3`}>
