@@ -305,28 +305,46 @@ export async function fetchPmuResultats(
 }
 
 /**
- * Transforme les réunions PMU en liste de courses normalisées
+ * Transforme les réunions PMU en liste de courses normalisées.
+ * Filtre automatiquement : France + Maroc uniquement, minimum 8 partants.
  */
+
+// Pays autorisés pour Elite Turf (marché Afrique francophone)
+const PAYS_AUTORISES: Record<string, string> = {
+  FRA: "France",
+  MAR: "Maroc",
+};
+const MIN_PARTANTS = 8;
+
 export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[] {
   const courses: NormalizedCourse[] = [];
 
   for (const reunion of reunions) {
+    // ── Filtre 1 : pays autorisé (France + Maroc uniquement) ──
+    const paysCode = reunion.hippodrome?.pays?.code || "";
+    const hipPays  = PAYS_AUTORISES[paysCode];
+    if (!hipPays) continue;
+
     const dateCourse = pmuDateToISO(reunion.dateReunion.date);
     const hipNom     = reunion.hippodrome?.libelleLong || reunion.hippodrome?.libelleCourt || "Inconnu";
-    const hipPays    = reunion.hippodrome?.pays?.code === "FRA" ? "France" : (reunion.hippodrome?.pays?.code || "France");
 
     for (const c of reunion.courses ?? []) {
+      const nbPartants = c.nombreDeclaresPartants || 0;
+
+      // ── Filtre 2 : minimum 8 partants (Tiercé viable) ──
+      if (nbPartants < MIN_PARTANTS) continue;
+
       courses.push({
-        hippodromeName:  hipNom,
-        hippodromePays:  hipPays,
+        hippodromeName:   hipNom,
+        hippodromePays:   hipPays,
         dateCourse,
-        heureDepart:     tsToTime(c.heureDepart),
-        numeroReunion:   reunion.numOrdre,
-        numeroCourse:    c.numOrdre,
-        libelle:         decodeHtmlEntities(c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`),
-        distanceMetres:  c.distance || 0,
-        categorie:       toCategorie(c.discipline),
-        nbPartants:      c.nombreDeclaresPartants || 0,
+        heureDepart:      tsToTime(c.heureDepart),
+        numeroReunion:    reunion.numOrdre,
+        numeroCourse:     c.numOrdre,
+        libelle:          decodeHtmlEntities(c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`),
+        distanceMetres:   c.distance || 0,
+        categorie:        toCategorie(c.discipline),
+        nbPartants,
         parisDisponibles: extractParisDisponibles(c),
       });
     }

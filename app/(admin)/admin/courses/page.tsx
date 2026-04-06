@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   Plus, MapPin, Clock, Users, CheckCircle2,
-  XCircle, Edit2, Calendar, ChevronLeft, ChevronRight, ListOrdered,
+  Edit2, Calendar, ChevronLeft, ChevronRight, ListOrdered, Filter,
 } from "lucide-react";
 
 export const metadata = { title: "Courses — Admin Elite Turf" };
@@ -35,20 +35,23 @@ function formatDateFr(dateStr: string): string {
 export default async function AdminCoursesPage({
   searchParams,
 }: {
-  searchParams: { date?: string };
+  searchParams: { date?: string; pays?: string; minPartants?: string };
 }) {
   const supabase = createServiceClient();
 
   const today = new Date().toISOString().split("T")[0];
   const rawDate = searchParams?.date || today;
-  // Valider le format YYYY-MM-DD
   const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : today;
 
   const prevDate = offsetDate(selectedDate, -1);
   const nextDate = offsetDate(selectedDate, +1);
   const isToday  = selectedDate === today;
 
-  const { data: courses } = await supabase
+  // Filtres actifs
+  const filterPays        = searchParams?.pays || "";          // "France" | "Maroc" | ""
+  const filterMinPartants = parseInt(searchParams?.minPartants || "0") || 0;
+
+  const { data: allCourses } = await supabase
     .from("courses")
     .select(`
       id, numero_reunion, numero_course, libelle,
@@ -62,10 +65,27 @@ export default async function AdminCoursesPage({
     .order("numero_reunion", { ascending: true })
     .order("numero_course",  { ascending: true });
 
+  // Appliquer les filtres en mémoire
+  const courses = (allCourses || []).filter((c: any) => {
+    if (filterPays && c.hippodrome?.pays !== filterPays) return false;
+    if (filterMinPartants && (c.nb_partants || 0) < filterMinPartants) return false;
+    return true;
+  });
+
   // Stats
-  const total         = courses?.length || 0;
-  const avecPronostic = courses?.filter((c: any) => c.pronostics?.some((p: any) => p.publie)).length || 0;
-  const terminees     = courses?.filter((c: any) => c.statut === "TERMINE").length || 0;
+  const total         = courses.length;
+  const avecPronostic = courses.filter((c: any) => c.pronostics?.some((p: any) => p.publie)).length;
+  const terminees     = courses.filter((c: any) => c.statut === "TERMINE").length;
+
+  // Helper pour construire les URLs de filtre
+  function filterUrl(newParams: Record<string, string>) {
+    const p = new URLSearchParams();
+    p.set("date", selectedDate);
+    if (filterPays)        p.set("pays", filterPays);
+    if (filterMinPartants) p.set("minPartants", String(filterMinPartants));
+    Object.entries(newParams).forEach(([k, v]) => v ? p.set(k, v) : p.delete(k));
+    return `/admin/courses?${p.toString()}`;
+  }
 
   return (
     <div className="space-y-6">
@@ -74,7 +94,14 @@ export default async function AdminCoursesPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl font-bold text-text-primary">Courses</h1>
-          <p className="text-text-secondary text-sm mt-1 capitalize">{formatDateFr(selectedDate)} · {total} course(s)</p>
+          <p className="text-text-secondary text-sm mt-1 capitalize">
+            {formatDateFr(selectedDate)} · {total} course(s)
+            {(filterPays || filterMinPartants > 0) && (
+              <span className="ml-2 text-xs text-gold-primary font-medium">
+                (filtré{filterPays ? ` · ${filterPays}` : ""}{filterMinPartants ? ` · ${filterMinPartants}+ partants` : ""})
+              </span>
+            )}
+          </p>
         </div>
         <Link
           href="/admin/courses/nouvelle"
@@ -88,7 +115,7 @@ export default async function AdminCoursesPage({
       {/* Navigation par date */}
       <div className="flex items-center justify-between card-base p-3">
         <Link
-          href={`/admin/courses?date=${prevDate}`}
+          href={filterUrl({ date: prevDate })}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -108,7 +135,7 @@ export default async function AdminCoursesPage({
         </div>
 
         <Link
-          href={`/admin/courses?date=${nextDate}`}
+          href={filterUrl({ date: nextDate })}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors text-sm font-medium"
         >
           {new Date(nextDate + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
@@ -135,6 +162,71 @@ export default async function AdminCoursesPage({
             {label}
           </Link>
         ))}
+      </div>
+
+      {/* Filtres */}
+      <div className="card-base p-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-text-muted text-xs font-semibold">
+          <Filter className="w-3.5 h-3.5" /> Filtres
+        </div>
+
+        {/* Pays */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-text-muted text-xs">Pays :</span>
+          {[
+            { label: "Tous", value: "" },
+            { label: "🇫🇷 France", value: "France" },
+            { label: "🇲🇦 Maroc", value: "Maroc" },
+          ].map(({ label, value }) => (
+            <Link
+              key={value}
+              href={filterUrl({ pays: value })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                filterPays === value
+                  ? "bg-gold-primary text-bg-primary border-gold-primary"
+                  : "bg-bg-elevated text-text-secondary border-border hover:border-gold-primary/50"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Séparateur */}
+        <div className="w-px h-4 bg-border" />
+
+        {/* Partants minimum */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-text-muted text-xs">Partants min :</span>
+          {[
+            { label: "Tous", value: 0 },
+            { label: "8+",   value: 8 },
+            { label: "10+",  value: 10 },
+            { label: "12+",  value: 12 },
+          ].map(({ label, value }) => (
+            <Link
+              key={value}
+              href={filterUrl({ minPartants: value ? String(value) : "" })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                filterMinPartants === value
+                  ? "bg-gold-primary text-bg-primary border-gold-primary"
+                  : "bg-bg-elevated text-text-secondary border-border hover:border-gold-primary/50"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Reset */}
+        {(filterPays || filterMinPartants > 0) && (
+          <Link
+            href={`/admin/courses?date=${selectedDate}`}
+            className="ml-auto text-xs text-status-loss hover:text-status-loss/80 transition-colors"
+          >
+            ✕ Réinitialiser
+          </Link>
+        )}
       </div>
 
       {/* Stats rapides */}
