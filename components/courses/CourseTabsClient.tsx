@@ -51,6 +51,7 @@ type Tab = "partants" | "cotes" | "arrivees" | "stats";
 interface Props {
   courseId: string;
   partants: Partant[];
+  nonPartants?: Partant[];
   arriveeOfficielle?: number[] | null;
   pronosticSelection?: number[] | null;
   statut: string;
@@ -121,9 +122,10 @@ function TabButton({
 // ── Tab : Partants ─────────────────────────────────────────────────────────
 
 function TabPartants({
-  partants, arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed,
+  partants, nonPartants = [], arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed,
 }: {
   partants: Partant[];
+  nonPartants?: Partant[];
   arriveeOfficielle?: number[] | null;
   pronosticSelection?: number[] | null;
   genyUrl: string;
@@ -298,6 +300,27 @@ function TabPartants({
           Geny.com <ExternalLink className="w-3 h-3" />
         </a>
       </div>
+
+      {/* Non-partants */}
+      {nonPartants.length > 0 && (
+        <div className="border-t border-border/30 px-4 py-3">
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <AlertCircle className="w-3 h-3 text-status-loss" />
+            Non-partants ({nonPartants.length})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {nonPartants.map((p) => (
+              <div key={p.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-status-loss/5 border border-status-loss/20 opacity-70">
+                <span className="w-5 h-5 rounded-full bg-status-loss/15 border border-status-loss/30 flex items-center justify-center text-status-loss font-bold text-[10px] flex-shrink-0">
+                  {p.numero}
+                </span>
+                <span className="text-text-muted text-xs line-through">{p.nom_cheval}</span>
+                <span className="text-status-loss text-[9px] font-bold ml-0.5">NP</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -792,6 +815,7 @@ function TabStats({ partants }: { partants: Partant[] }) {
 export default function CourseTabsClient({
   courseId,
   partants,
+  nonPartants = [],
   arriveeOfficielle,
   pronosticSelection,
   statut,
@@ -801,8 +825,9 @@ export default function CourseTabsClient({
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
 
+  const totalPartants = partants.length + nonPartants.length;
   const tabs: { id: Tab; label: string; icon: any; badge?: string }[] = [
-    { id: "partants",  label: "Partants",           icon: Users,     badge: partants.length > 0 ? String(partants.length) : undefined },
+    { id: "partants",  label: "Partants",           icon: Users,     badge: totalPartants > 0 ? String(totalPartants) : undefined },
     { id: "cotes",     label: "Côtes en direct",    icon: TrendingUp },
     { id: "arrivees",  label: "Arrivées & Rapports", icon: Trophy },
     { id: "stats",     label: "Statistiques",       icon: BarChart3 },
@@ -829,6 +854,7 @@ export default function CourseTabsClient({
       {activeTab === "partants" && (
         <TabPartants
           partants={partants}
+          nonPartants={nonPartants}
           arriveeOfficielle={arriveeOfficielle}
           pronosticSelection={pronosticSelection}
           genyUrl={genyUrl}

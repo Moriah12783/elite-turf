@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Partant {
@@ -64,7 +64,8 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
     return Array.from({ length: nbPartants }, (_, i) => emptyPartant(i + 1));
   });
 
-  const [saving, setSaving] = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
 
   // ── Mise à jour d'un champ ──────────────────────────────────────────
@@ -125,6 +126,26 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
     }
   }
 
+  // ── Enrichir depuis PMU ─────────────────────────────────────────────
+  async function enrich() {
+    setEnriching(true);
+    try {
+      const res  = await fetch(`/api/admin/courses/${courseId}/enrichir`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (data.ok === false) {
+        toast.error(data.message || "Données PMU pas encore disponibles");
+      } else {
+        toast.success(`${data.enriched ?? "?"} partant(s) enrichi(s) depuis PMU`);
+        router.refresh();
+      }
+    } catch (err: any) {
+      toast.error(`Erreur : ${err.message}`);
+    } finally {
+      setEnriching(false);
+    }
+  }
+
   // ── Compter les non-partants ────────────────────────────────────────
   const nonPartants = rows.filter(r => r.non_partant).length;
 
@@ -149,6 +170,16 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
           </button>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={enrich}
+            disabled={enriching}
+            title="Récupère jockey, cote, musique, poids depuis l'API PMU"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 disabled:opacity-60 text-sm rounded-lg transition-colors"
+          >
+            {enriching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            {enriching ? "Enrichissement…" : "Enrichir PMU"}
+          </button>
           <button
             type="button"
             onClick={addRow}

@@ -85,9 +85,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const c = course as any;
   const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
   const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
-  const partants: any[] = (c.partants || [])
-    .filter((p: any) => !p.non_partant)
-    .sort((a: any, b: any) => a.numero - b.numero);
+  const allPartants: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
+  const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
+  const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
 
   const genyUrl = buildGenyUrl(
     c.date_course,
@@ -242,7 +242,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                     </p>
                     <div className="flex items-center gap-3 flex-wrap">
                       {c.arrivee_officielle.map((n: number, idx: number) => {
-                        const horse = partants.find((p: any) => p.numero === n);
+                        const horse = allPartants.find((p: any) => p.numero === n);
                         return (
                           <div key={idx} className="flex flex-col items-center gap-1">
                             <span className="w-10 h-10 rounded-full border-2 border-status-win/40 bg-status-win/10 flex items-center justify-center text-status-win font-bold text-sm">
@@ -269,6 +269,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             <CourseTabsClient
               courseId={c.id}
               partants={partants}
+              nonPartants={nonPartants}
               arriveeOfficielle={c.arrivee_officielle}
               pronosticSelection={pronosticPublie?.selection}
               statut={c.statut}
@@ -305,7 +306,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                         <span className="text-text-muted text-xs block mb-2">Sélection :</span>
                         <div className="flex flex-col gap-1.5">
                           {pronosticPublie.selection?.map((n: number, idx: number) => {
-                            const horse = partants.find((p: any) => p.numero === n);
+                            const horse = allPartants.find((p: any) => p.numero === n);
                             return (
                               <div key={n} className="flex items-center gap-2">
                                 <span className="w-7 h-7 rounded-full bg-gold-faint border border-gold-primary/40 flex items-center justify-center text-gold-light font-bold text-xs flex-shrink-0">
