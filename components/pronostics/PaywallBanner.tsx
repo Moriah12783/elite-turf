@@ -15,7 +15,7 @@ export default function PaywallBanner({ niveau, compact = false }: PaywallBanner
         <div className="flex items-center gap-2">
           <Lock className="w-4 h-4 text-gold-primary flex-shrink-0" />
           <span className="text-text-secondary text-xs">
-            {isVip ? "Réservé Plan Elite" : "Réservé abonnés Premium"}
+            {isVip ? "Réservé Plan Elite" : "Réservé abonnés Pro"}
           </span>
         </div>
         <Link
@@ -44,11 +44,11 @@ export default function PaywallBanner({ niveau, compact = false }: PaywallBanner
       </div>
 
       <h3 className="font-serif text-lg font-bold text-text-primary mb-2">
-        {isVip ? "Contenu VIP Exclusif" : "Contenu Réservé Abonnés"}
+        {isVip ? "Contenu Elite Exclusif" : "Contenu Réservé Abonnés"}
       </h3>
       <p className="text-text-secondary text-sm mb-5 max-w-xs mx-auto">
         {isVip
-          ? "Ce pronostic VIP est réservé aux membres du Plan Elite. Accès complet + analyses vidéo."
+          ? "Ce pronostic Elite est réservé aux membres du Plan Elite. Accès complet + analyses vidéo."
           : "Abonnez-vous à partir de 65€ pour accéder à l'analyse complète et à la sélection."}
       </p>
 

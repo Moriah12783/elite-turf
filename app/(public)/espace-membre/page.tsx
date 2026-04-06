@@ -29,14 +29,14 @@ const STATUS_CONFIG = {
     Icon: Zap,
   },
   PREMIUM: {
-    label: "Premium",
+    label: "Pro",
     color: "text-gold-primary",
     bg: "bg-gold-faint",
     border: "border-gold-primary/40",
     Icon: Star,
   },
   VIP: {
-    label: "VIP Elite",
+    label: "Elite",
     color: "text-purple-400",
     bg: "bg-purple-500/10",
     border: "border-purple-500/30",
@@ -264,7 +264,7 @@ export default async function EspaceMembrePage() {
                 {statusKey === "EXPIRE" ? "Abonnement expiré" : "Aucun abonnement actif"}
               </p>
               <p className="text-text-secondary text-sm mb-4">
-                Accédez à tous les pronostics Premium et VIP dès aujourd&apos;hui.
+                Accédez à tous les pronostics Pro et Elite dès aujourd&apos;hui.
               </p>
               <Link href="/abonnements" className="btn-primary inline-flex items-center gap-2">
                 <Crown className="w-4 h-4" />
@@ -418,7 +418,7 @@ export default async function EspaceMembrePage() {
                 Icon: BarChart3,
                 label: statusKey === "GRATUIT" ? "Abonnement" : "Jours restants",
                 value: statusKey === "GRATUIT" ? "Gratuit" : joursRestants > 0 ? joursRestants.toString() : "—",
-                sub: statusKey === "GRATUIT" ? "Passer Premium →" : "avant expiration",
+                sub: statusKey === "GRATUIT" ? "Passer Pro →" : "avant expiration",
                 color: statusKey === "GRATUIT" ? "text-text-muted" : joursRestants <= 5 ? "text-status-partial" : "text-status-win",
               },
             ].map(({ Icon, label, value, sub, color }) => (

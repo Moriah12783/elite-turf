@@ -19,7 +19,7 @@ const BET_LABELS: Record<string, string> = {
 const MARKETING_ITEMS = [
   { label: "🏇 Elite Turf",  result: "Pronostics PMU experts — Abonnez-vous dès 65€", status: "pending" as const },
   { label: "💡 Conseil",     result: "Nos experts analysent chaque Quinté+ pour vous",     status: "pending" as const },
-  { label: "⭐ Premium",     result: "Accédez au Quarté+ et Quinté+ — Rejoignez l'élite",  status: "pending" as const },
+  { label: "⭐ Pro",         result: "Accédez au Quarté+ et Quinté+ — Rejoignez l'élite",  status: "pending" as const },
   { label: "📋 Arrivées",    result: "Consultez les arrivées du jour en temps réel",        status: "pending" as const },
   { label: "📅 Courses",     result: "Programme complet des courses du jour disponible",    status: "pending" as const },
 ];

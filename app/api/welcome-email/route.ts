@@ -221,11 +221,11 @@ function buildWelcomeEmail(prenom: string, email: string, pays: string, appUrl: 
                   </td>
                 </tr>
 
-                <!-- Bloc Premium -->
+                <!-- Bloc Pro -->
                 <tr>
                   <td style="background-color:#FDFAF3;border-left:3px solid #C9A84C;border-radius:0 8px 8px 0;padding:20px 24px;">
                     <p style="margin:0 0 4px;font-size:15px;font-weight:800;color:#1a1a2e;">
-                      Passez Premium pour le Quinté+
+                      Passez Pro pour le Quinté+
                     </p>
                     <p style="margin:0 0 14px;font-size:13px;color:#888899;line-height:1.5;">
                       Accédez aux analyses complètes Quarté+ et Quinté+ — dès <strong style="color:#1a1a2e;">152€/mois</strong>

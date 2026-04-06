@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
         }
 
         const plan = PLAN_CONFIG.find((p) => p.id === abo.plan_id);
-        const planNom = plan?.nom ?? "Premium";
+        const planNom = plan?.nom ?? "Pro";
         const prixEur = plan?.prix_eur ?? 9.90;
 
         const { subject, html } = templateRappelExpiration({

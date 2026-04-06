@@ -3,7 +3,7 @@ import {
   Lock, Star, ChevronRight, Eye, Trophy, Flame,
   MapPin, Clock, TrendingUp, Zap, Globe2,
 } from "lucide-react";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
 
 /** Retourne 1 si Nationale 1, 2 si Nat2, 3 si Nat3, 0 sinon */
@@ -37,6 +37,14 @@ function getTodayParis(): string {
   }).format(new Date()).split("/").reverse().join("-");
 }
 
+/** Vérifie l'accès selon le niveau et l'abonnement utilisateur */
+function canAccess(niveau: string, sub: string): boolean {
+  if (niveau === "GRATUIT") return true;
+  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
+  if (niveau === "VIP") return sub === "VIP";
+  return false;
+}
+
 /** True si la course est terminée (départ > 40 min passé) */
 function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boolean {
   if (!heureDepart) return false;
@@ -46,6 +54,24 @@ function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boo
 
 export default async function PronosticsSection() {
   const supabase  = createServiceClient();
+
+  // Lire l'abonnement utilisateur pour déverrouiller les pronostics Pro/Elite
+  let userSubscription = "GRATUIT";
+  try {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("statut_abonnement")
+        .eq("id", user.id)
+        .single();
+      if (profile) userSubscription = profile.statut_abonnement as string;
+    }
+  } catch {
+    // Non authentifié
+  }
+
   const today     = getTodayParis();
   const nowMins   = getNowParisMins();
   const weekAgo   = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
@@ -370,7 +396,7 @@ export default async function PronosticsSection() {
         {/* Liste des pronostics */}
         <div className="space-y-4">
           {displayList.map((p: any) => {
-            const isLocked = p.niveau_acces !== "GRATUIT";
+            const isLocked = !canAccess(p.niveau_acces, userSubscription);
             // Normaliser la relation course (Supabase peut retourner un tableau)
             const pCourse: any = Array.isArray(p.course) ? p.course[0] : p.course;
             const paris    = pCourse?.paris_disponibles || [];
@@ -387,7 +413,7 @@ export default async function PronosticsSection() {
                         ? "bg-status-win/10 text-status-win border-status-win/20"
                         : "bg-gold-faint text-gold-light border-gold-primary/30"
                     }`}>
-                      {!isLocked ? "GRATUIT" : "★ PREMIUM"}
+                      {!isLocked ? (p.niveau_acces === "GRATUIT" ? "GRATUIT" : p.niveau_acces === "VIP" ? "★ ELITE" : "★ PRO") : (p.niveau_acces === "VIP" ? "★ ELITE" : "★ PRO")}
                     </span>
                     <span className="text-xs px-3 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
                       {p.type_pari}
@@ -527,7 +553,7 @@ function CtaBlock() {
         className="inline-flex items-center gap-2 px-8 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-base rounded-xl transition-all shadow-gold"
       >
         <Star className="w-5 h-5" fill="currentColor" />
-        Accéder à tous les pronostics Premium
+        Accéder à tous les pronostics Pro
       </Link>
       <p className="mt-3 text-text-muted text-xs">
         Paiement par Orange Money · MTN MoMo · Wave · Accès immédiat

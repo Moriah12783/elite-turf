@@ -144,7 +144,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                   ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                   : "bg-gold-faint text-gold-light border-gold-primary/30"
               }`}>
-                {p.niveau_acces === "GRATUIT" ? "✓ GRATUIT" : p.niveau_acces === "VIP" ? "★ VIP" : "⭐ PREMIUM"}
+                {p.niveau_acces === "GRATUIT" ? "✓ GRATUIT" : p.niveau_acces === "VIP" ? "★ ELITE" : "⭐ PRO"}
               </span>
               <span className="text-xs px-3 py-1.5 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
                 {BET_TYPE_LABELS[p.type_pari as keyof typeof BET_TYPE_LABELS]}
