@@ -6,22 +6,45 @@ import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import FAQSection from "@/components/home/FAQSection";
+import GuideBlocSection from "@/components/home/GuideBlocSection";
+import HowItWorksSection from "@/components/home/HowItWorksSection";
 import Link from "next/link";
-import { ArrowRight, AlertTriangle } from "lucide-react";
+import { ArrowRight, AlertTriangle, Download } from "lucide-react";
 
 export default function HomePage() {
   return (
     <>
+      {/* 1 — Hero : clarté immédiate + 2 CTAs (pronostics + guide) */}
       <HeroSection />
+
+      {/* 2 — Guide gratuit : aimant anti-rebond principal */}
+      <GuideBlocSection />
+
+      {/* 3 — Pronostics du jour à la une */}
       <PronosticsSection />
-      <StatsSection />
-      <CoursesSection />
+
+      {/* 4 — Comment ça marche : parcours en 4 étapes */}
+      <HowItWorksSection />
+
+      {/* 5 — Pourquoi Elite Turf */}
       <WhyChooseUsSection />
+
+      {/* 6 — Stats / crédibilité */}
+      <StatsSection />
+
+      {/* 7 — Courses du jour */}
+      <CoursesSection />
+
+      {/* 8 — Abonnements */}
       <PricingSection />
+
+      {/* 9 — Témoignages / engagements */}
       <TestimonialsSection />
+
+      {/* 10 — FAQ */}
       <FAQSection />
 
-      {/* ── CTA Guide Gratuit ── */}
+      {/* 11 — CTA Guide Gratuit (rappel avant footer) */}
       <section className="py-10 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="rounded-2xl border border-gold-primary/40 bg-gradient-to-r from-gold-faint via-bg-elevated to-gold-faint p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
@@ -37,15 +60,16 @@ export default function HomePage() {
             </div>
             <Link
               href="/guide-initie"
-              className="flex-shrink-0 px-6 py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold whitespace-nowrap"
+              className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold whitespace-nowrap"
             >
+              <Download className="w-4 h-4" />
               Télécharger →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── DISCLAIMER jeu responsable ── */}
+      {/* 12 — Disclaimer jeu responsable */}
       <section className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="rounded-xl border border-border bg-bg-elevated/60 p-5 flex items-start gap-4">
@@ -65,33 +89,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* 13 — Final CTA — 3 boutons */}
       <section id="final-cta" className="py-20 pb-32 md:pb-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-racing-green/10 via-transparent to-gold-faint" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4">
-            Prêt à Rejoindre{" "}
-            <span className="text-gold-gradient bg-gold-gradient bg-clip-text">
-              les Gagnants ?
+            Accédez dès maintenant à{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
+            >
+              l&apos;univers Elite Turf
             </span>
           </h2>
-          <p className="text-text-secondary mb-8 text-lg">
-            Inscrivez-vous gratuitement et accédez aux pronostics du jour.
-            Passez Premium en quelques clics avec Orange Money.
+          <p className="text-text-secondary mb-10 text-base sm:text-lg max-w-xl mx-auto">
+            Pronostics, performances, guide gratuit et formules d&apos;accès réunis
+            dans une interface simple, crédible et efficace.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/inscription"
-              className="flex items-center gap-2 px-8 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-base rounded-xl transition-all shadow-gold w-full sm:w-auto justify-center"
+              href="/pronostics"
+              className="flex items-center gap-2 px-7 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold w-full sm:w-auto justify-center"
             >
-              Créer mon compte gratuit
-              <ArrowRight className="w-5 h-5" />
+              🏆 Voir les pronostics
+              <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/pronostics"
-              className="flex items-center gap-2 px-8 py-4 border border-border hover:border-gold-primary/40 text-text-primary font-semibold text-base rounded-xl transition-all w-full sm:w-auto justify-center"
+              href="/guide-initie"
+              className="flex items-center gap-2 px-7 py-4 bg-bg-elevated hover:bg-bg-hover border border-gold-primary/30 hover:border-gold-primary/60 text-gold-light font-semibold text-sm rounded-xl transition-all w-full sm:w-auto justify-center"
             >
-              Voir les pronostics
+              <Download className="w-4 h-4" />
+              Guide gratuit
+            </Link>
+            <Link
+              href="/abonnements"
+              className="flex items-center gap-2 px-7 py-4 border border-border hover:border-gold-primary/40 text-text-primary font-semibold text-sm rounded-xl transition-all w-full sm:w-auto justify-center"
+            >
+              Découvrir les abonnements
             </Link>
           </div>
         </div>

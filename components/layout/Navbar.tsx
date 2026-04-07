@@ -63,13 +63,17 @@ export default function Navbar() {
           <LogoEliteTurf size="lg" />
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-7">
             <NavLink href="/pronostics">Pronostics</NavLink>
-            <NavLink href="/courses">Courses du jour</NavLink>
-            <NavLink href="/performances">Nos résultats</NavLink>
+            <NavLink href="/performances">Résultats</NavLink>
+            <Link
+              href="/guide-initie"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gold-primary/10 border border-gold-primary/30 text-gold-light hover:bg-gold-primary/20 hover:border-gold-primary/50 transition-all whitespace-nowrap"
+            >
+              📥 Guide gratuit
+            </Link>
             <NavLink href="/abonnements">Abonnements</NavLink>
-            <NavLink href="/blog">Blog PMU</NavLink>
-            <NavLink href="/a-propos">À Propos</NavLink>
+            <NavLink href="/a-propos">À propos</NavLink>
           </div>
 
           {/* Desktop CTA */}
@@ -162,12 +166,11 @@ export default function Navbar() {
         <div className="md:hidden bg-bg-card border-t border-border animate-fade-in">
           <div className="px-4 py-4 space-y-1">
             {[
-              { href: "/pronostics",  label: "Pronostics"    },
-              { href: "/courses",     label: "Courses du jour"},
-              { href: "/performances",label: "Nos résultats" },
-              { href: "/abonnements", label: "Abonnements"   },
-              { href: "/blog",        label: "Blog PMU"      },
-              { href: "/a-propos",    label: "À Propos"      },
+              { href: "/pronostics",   label: "Pronostics"         },
+              { href: "/performances", label: "Résultats"          },
+              { href: "/guide-initie", label: "📥 Guide gratuit"   },
+              { href: "/abonnements",  label: "Abonnements"        },
+              { href: "/a-propos",     label: "À Propos"           },
             ].map(({ href, label }) => (
               <MobileNavLink key={href} href={href} onClick={() => setIsOpen(false)}>
                 {label}

@@ -146,36 +146,37 @@ export default function HeroSection() {
 
         {/* ── Titre ── */}
         <h1
-          className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] mb-6 drop-shadow-2xl"
+          className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 drop-shadow-2xl"
           style={{
             opacity: badgeVisible ? 1 : 0,
             transform: badgeVisible ? "translateY(0)" : "translateY(16px)",
             transition: "opacity 0.8s ease 0.15s, transform 0.8s ease 0.15s",
           }}
         >
-          <span className="text-white">Gagnez plus souvent</span>
+          <span className="text-white">Pronostics hippiques premium,</span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
           >
-            grâce aux experts Elite Turf
+            clairs et pensés pour gagner
           </span>
         </h1>
 
         {/* ── Sous-titre ── */}
         <p
-          className="text-white/75 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-lg"
+          className="text-white/75 text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed drop-shadow-lg"
           style={{
             opacity: badgeVisible ? 1 : 0,
             transform: badgeVisible ? "translateY(0)" : "translateY(16px)",
             transition: "opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s",
           }}
         >
-          Optimisez vos paris avec des pronostics de haut niveau.{" "}
+          Consultez les analyses du jour, les performances récentes et{" "}
           <span className="text-gold-light font-medium">
-            Nous transformons les données en victoires pour les parieurs exigeants.
-          </span>
+            téléchargez notre guide gratuit
+          </span>{" "}
+          pour mieux découvrir l&apos;univers Elite Turf.
         </p>
 
         {/* ── CTAs ── */}
@@ -196,11 +197,11 @@ export default function HeroSection() {
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
-            href="/performances"
-            onClick={() => Analytics.heroCtaClick("performances")}
+            href="#guide-gratuit"
+            onClick={() => Analytics.heroCtaClick("guide_gratuit")}
             className="flex items-center gap-2 px-8 py-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/25 hover:border-gold-primary/50 text-white font-semibold text-base rounded-xl transition-all w-full sm:w-auto justify-center"
           >
-            Nos résultats prouvés
+            📥 Télécharger le guide gratuit
           </Link>
         </div>
 

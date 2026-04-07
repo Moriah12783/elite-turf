@@ -4,32 +4,44 @@ import { ChevronDown } from "lucide-react";
 
 const FAQ_ITEMS = [
   {
+    q: "À quelle heure les pronostics sont-ils publiés ?",
+    a: "Le Quinté+ est publié chaque matin avant 8h heure de Paris. Le Quarté+ et le Tiercé avant 9h. Si vous êtes abonné, vous recevez une notification email dès la publication.",
+  },
+  {
+    q: "Que contient le guide gratuit ?",
+    a: "Le guide PDF 'Les 5 secrets pour détecter les outsiders gagnants' vous révèle les méthodes que nos experts utilisent chaque jour : lecture de fiche, exploitation des côtes, identification des outsiders à valeur. 100% gratuit, accessible en un clic.",
+  },
+  {
+    q: "Faut-il créer un compte pour télécharger le guide ?",
+    a: "Non. Le guide est accessible directement, sans inscription obligatoire. Cliquez sur 'Télécharger le guide gratuit' et c'est immédiat.",
+  },
+  {
+    q: "Où consulter les performances d'Elite Turf ?",
+    a: "Toutes nos performances sont disponibles sur la page /performances. Résultats quotidiens, taux de réussite, historique complet — vérifiables et transparents. Rien n'est caché.",
+  },
+  {
     q: "Les pronostics sont-ils vraiment fiables ?",
-    a: "Nos résultats sont publics et vérifiables sur Geny Courses. En 30 derniers jours : 74% de taux de réussite, 18 Quinté+ gagnants. Vous pouvez vérifier chaque pronostic en cliquant sur le lien Geny à côté de chaque résultat.",
+    a: "Nos résultats sont publics et vérifiables. Vous pouvez consulter l'intégralité de notre historique sur la page Performances. Nous publions les bons comme les moins bons résultats, parce que la transparence est notre engagement.",
   },
   {
-    q: "Puis-je accéder à un pronostic gratuit avant de m'abonner ?",
-    a: "Oui. Un pronostic Tiercé est publié gratuitement chaque semaine, accessible sans inscription. Téléchargez aussi notre guide PDF '5 secrets pour détecter les outsiders gagnants' — 100% gratuit.",
-  },
-  {
-    q: "Quand sont publiés les pronostics ?",
-    a: "Le Quinté+ est publié chaque matin avant 8h heure de Paris. Le Quarté+ avant 9h. Vous êtes notifié par email dès la publication si vous êtes abonné.",
+    q: "Que contient un abonnement Elite Turf ?",
+    a: "Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Découverte donne accès à 3 pronostics/semaine, le Pack Performance à l'intégralité.",
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
-    a: "Cliquez sur votre plan, choisissez Orange Money, MTN MoMo ou Wave. Vous recevez une notification push sur votre téléphone. Validez et votre accès est activé en moins de 2 minutes. La conversion FCFA est automatique.",
+    a: "Choisissez votre plan, sélectionnez Orange Money, MTN MoMo ou Wave. Vous recevez une notification sur votre téléphone. Validez et votre accès est actif en moins de 2 minutes. La conversion FCFA est automatique.",
   },
   {
-    q: "Les courses couvertes sont-elles jouables depuis mon pays ?",
-    a: "Oui. Toutes nos analyses portent sur les courses françaises (Vincennes, Longchamp, Chantilly) qui sont jouables via PMU-CI, LONASE, PMU Maroc et tous les opérateurs africains agréés.",
+    q: "Le site est-il accessible sur mobile ?",
+    a: "Oui, Elite Turf est conçu mobile-first. L'interface est fluide et rapide sur tous les appareils. Nous savons que la majorité de nos parieurs africains consulte depuis leur téléphone.",
   },
   {
     q: "Puis-je annuler à tout moment ?",
-    a: "Oui. L'abonnement est mensuel sans engagement. Vous gardez l'accès jusqu'à la fin de la période payée, puis il s'arrête automatiquement.",
+    a: "Oui. Tous nos abonnements sont mensuels, sans engagement de durée. Vous gardez l'accès jusqu'à la fin de la période payée, puis ça s'arrête automatiquement — sans frais, sans démarche.",
   },
   {
-    q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le Pack Découverte (65€). En 30 jours, vous découvrez la méthode Elite Turf avec 3 pronostics Tiercé/Quarté par semaine — idéal pour comprendre l'approche avant de s'engager davantage.",
+    q: "Comment contacter le support ?",
+    a: "Par email : contact@elite-turf.fr · Par WhatsApp : +33 6 44 68 67 20 (Lun–Sam, 8h–20h heure de Paris). Notre équipe répond en général en moins de 2h.",
   },
 ];
 

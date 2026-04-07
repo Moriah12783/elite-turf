@@ -40,16 +40,17 @@ export default function StickyMobileCTA() {
       <div className="bg-bg-primary/95 backdrop-blur-md border-t border-gold-primary/30 px-4 py-3 flex gap-3 shadow-2xl">
         <Link
           href="/pronostics"
-          onClick={() => Analytics.stickyCtaClick()}
+          onClick={() => Analytics.stickyCtaClick("pronostics")}
           className="flex-1 text-center py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold"
         >
-          🏆 Voir les pronostics du jour
+          🏆 Pronostics du jour
         </Link>
         <Link
-          href="/abonnements"
-          className="flex-shrink-0 py-3 px-4 border border-border hover:border-gold-primary/40 text-text-secondary font-semibold text-sm rounded-xl transition-all"
+          href="/guide-initie"
+          onClick={() => Analytics.stickyCtaClick("guide")}
+          className="flex-shrink-0 py-3 px-4 border border-gold-primary/30 hover:border-gold-primary/60 text-gold-light font-semibold text-sm rounded-xl transition-all"
         >
-          S'abonner
+          📥 Guide
         </Link>
       </div>
     </div>
