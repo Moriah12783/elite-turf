@@ -188,7 +188,7 @@ type SmsSegment = "tous" | "premium" | "vip";
 
 const SMS_SEGMENTS: { value: SmsSegment; label: string; sublabel: string; color: string }[] = [
   { value: "tous",    label: "Tous les abonnés",    sublabel: "Starter + Pro + Elite",  color: "text-gold-primary" },
-  { value: "premium", label: "Pack Découverte & Pro", sublabel: "Abonnés Starter & Pro", color: "text-blue-400" },
+  { value: "premium", label: "Pack Starter & Pro", sublabel: "Abonnés Starter & Pro", color: "text-blue-400" },
   { value: "vip",     label: "Pack Elite",           sublabel: "Abonnés Elite uniquement", color: "text-purple-400" },
 ];
 
@@ -362,7 +362,7 @@ function SMSTab() {
             { icon: "🌍", text: "Couverture : France, Belgique, Côte d'Ivoire, Sénégal, Maroc et +50 pays" },
             { icon: "⚡", text: "Livraison : moins de 2 minutes en général" },
             { icon: "📱", text: "Fonctionne sans internet — livraison directe sur le téléphone" },
-            { icon: "🏇", text: "Disponible pour tous les abonnés payants (Découverte 5/mois · Pro · Elite illimité)" },
+            { icon: "🏇", text: "Disponible pour tous les abonnés payants (Starter 5/mois · Pro 20/mois · Elite illimité)" },
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-2">
               <span className="flex-shrink-0 text-sm">{item.icon}</span>

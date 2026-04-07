@@ -14,7 +14,7 @@ function redirect(path: string) {
  * Valide un paiement EN_ATTENTE :
  *  1. Transaction → SUCCES
  *  2. Abonnement  → ACTIF + dates recalculées
- *  3. Profile     → statut_abonnement PREMIUM ou VIP + date_expiration
+ *  3. Profile     → statut_abonnement PRO, ELITE ou STARTER + date_expiration
  *  4. Email       → confirmation pack envoyée à l'abonné
  */
 export async function POST(req: NextRequest) {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       abonnement:abonnement_id (
         id, plan_id,
         plan:plan_id (
-          nom, duree_jours, acces_vip, acces_premium, nb_alertes
+          nom, duree_jours, acces_elite, acces_performance, nb_alertes
         )
       )
     `)
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   const abonnement    = tx.abonnement as any;
   const plan          = abonnement?.plan as any;
   const dureeJours: number = plan?.duree_jours ?? 30;
-  const acces_vip: boolean = plan?.acces_vip    ?? false;
+  const acces_elite: boolean = plan?.acces_elite ?? false;
   const nbAlertes: number  = plan?.nb_alertes   ?? 5;
   const planNom: "Starter" | "Pro" | "Elite" =
     (["Starter", "Pro", "Elite"].includes(plan?.nom) ? plan.nom : "Pro") as "Starter" | "Pro" | "Elite";
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 3. Mettre à jour le profil utilisateur ───────────────────────────────
-  const statutAbonnement = acces_vip ? "VIP" : "PREMIUM";
+  const statutAbonnement = acces_elite ? "ELITE" : plan?.nom === "Découverte" ? "STARTER" : "PRO";
 
   await admin
     .from("profiles")

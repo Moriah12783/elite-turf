@@ -163,7 +163,7 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
       <span style="display:inline-block;padding:5px 18px;background:#FFFBF0;
                    border:1px solid rgba(201,168,76,0.5);border-radius:20px;
                    color:#C9A84C;font-size:12px;font-weight:700;letter-spacing:0.5px;">
-        ⭐ STATUT VIP PERFORMANCE ACTIVÉ
+        ⭐ STATUT PRO PERFORMANCE ACTIVÉ
       </span>
     </div>
 
@@ -173,10 +173,10 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
     </h1>
     <p style="margin:0 0 6px 0;color:#C9A84C;font-size:13px;font-weight:600;
               text-align:center;letter-spacing:0.5px;">
-      PACK PERFORMANCE — Vous faites partie de notre cercle VIP
+      PACK PERFORMANCE — Vous faites partie de notre cercle Pro
     </p>
     <p style="margin:0 0 24px 0;color:#6B7280;font-size:13px;text-align:center;">
-      Accès VIP actif jusqu'au ${fmtDate(dateExp)}
+      Accès Pro actif jusqu'au ${fmtDate(dateExp)}
     </p>
 
     <p style="margin:0 0 20px 0;color:#1F2937;font-size:15px;line-height:1.7;">
@@ -190,14 +190,14 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
       <tr>
         <td style="background:#FFFBF0;border-bottom:1px solid #E5E7EB;padding:14px 16px;border-radius:10px 10px 0 0;">
           <span style="color:#1E3A5F;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">
-            Vos avantages VIP Performance
+            Vos avantages Pro Performance
           </span>
         </td>
       </tr>
       ${avantagesRows(avantages)}
     </table>
 
-    ${emailButton(`${APP_URL}/espace-membre`, "⭐ Accéder à mon Dashboard VIP")}
+    ${emailButton(`${APP_URL}/espace-membre`, "⭐ Accéder à mon Dashboard Pro")}
 
     ${emailDivider}
 
@@ -227,7 +227,7 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
     </p>
   `;
 
-  return emailBase(content, `Votre Pack Performance VIP Elite Turf est activé. ${nbAlertes} alertes SMS/Push disponibles.`);
+  return emailBase(content, `Votre Pack Performance Elite Turf est activé. ${nbAlertes} alertes SMS/Push disponibles.`);
 }
 
 // ── PACK ELITE ─────────────────────────────────────────────────────────────
@@ -257,7 +257,7 @@ function templateElite(prenom: string, dateExp: string): string {
       <span style="display:inline-block;padding:5px 18px;background:#F5F3FF;
                    border:1px solid #C4B5FD;border-radius:20px;
                    color:#7C3AED;font-size:12px;font-weight:700;letter-spacing:0.5px;">
-        🏆 PACK ELITE — ACCÈS PREMIUM TOTAL ACTIVÉ
+        🏆 PACK ELITE — ACCÈS ELITE TOTAL ACTIVÉ
       </span>
     </div>
 
@@ -325,12 +325,12 @@ export function templateConfirmationPack(data: ConfirmationPackData): { subject:
   switch (data.planNom) {
     case "Starter":
       return {
-        subject: "🏇 Bienvenue chez Elite Turf — Votre accès Découverte est activé !",
+        subject: "🏇 Bienvenue chez Elite Turf — Votre accès Starter est activé !",
         html: templateDecuverte(prenom, data.dateExpiration, data.nbAlertes),
       };
     case "Pro":
       return {
-        subject: "⭐ Félicitations — Votre Statut VIP Performance est activé !",
+        subject: "⭐ Félicitations — Votre accès Pro Elite Turf est activé !",
         html: templatePerformance(prenom, data.dateExpiration, data.nbAlertes),
       };
     case "Elite":

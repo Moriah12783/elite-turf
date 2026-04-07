@@ -1,9 +1,9 @@
 export type UserRole = "USER" | "ADMIN" | "MODERATEUR";
-export type SubscriptionStatus = "GRATUIT" | "PREMIUM" | "VIP" | "EXPIRE";
-export type PlanName = "Starter" | "Pro" | "Elite";
+export type SubscriptionStatus = "GRATUIT" | "STARTER" | "PRO" | "ELITE" | "EXPIRE";
+export type PlanName = "Free" | "Starter" | "Pro" | "Elite";
 export type PaymentMethod = "ORANGE_MONEY" | "MTN_MOMO" | "WAVE" | "STRIPE" | "PAYPAL";
 export type PaymentStatus = "EN_ATTENTE" | "SUCCES" | "ECHEC" | "REMBOURSE";
-export type PronosticLevel = "GRATUIT" | "PREMIUM" | "VIP";
+export type PronosticLevel = "GRATUIT" | "STARTER" | "PRO" | "ELITE";
 export type BetType = "SIMPLE" | "COUPLE" | "TRIO" | "TIERCE" | "QUARTE" | "QUINTE_PLUS";
 export type Confidence = "FAIBLE" | "MOYEN" | "ELEVE" | "TRES_ELEVE";
 export type PronosticResult = "GAGNANT" | "PERDANT" | "PARTIEL" | "EN_ATTENTE";
@@ -31,8 +31,8 @@ export interface Plan {
   prix_fcfa: number;
   prix_eur: number;
   duree_jours: number;
-  acces_premium: boolean;
-  acces_vip: boolean;
+  acces_performance: boolean;
+  acces_elite: boolean;
   nb_alertes: number;
   description: string;
   features: string[];
@@ -150,7 +150,7 @@ export interface StatsGlobales {
   taux_reussite_semaine: number;
   taux_reussite_mois: number;
   total_membres: number;
-  total_premium: number;
+  total_abonnes: number;
 }
 
 // UI helpers
@@ -175,14 +175,14 @@ export const PLAN_CONFIG: Plan[] = [
     id: "starter",
     nom: "Starter",
     prix_fcfa: 42637,  // 65€ × 655.957 XOF
-    prix_eur: 65,      // PACK DÉCOUVERTE
+    prix_eur: 65,      // PACK STARTER
     duree_jours: 7,
-    acces_premium: true,
-    acces_vip: false,
+    acces_performance: true,
+    acces_elite: false,
     nb_alertes: 5,
     description: "Découvrir la méthode Elite Turf",
     features: [
-      "Accès découverte pendant 7 jours",
+      "Accès pendant 7 jours",
       "Lecture simple et structurée",
       "3 pronostics Tiercé / Quarté par semaine",
       "Analyse courte incluse",
@@ -195,10 +195,10 @@ export const PLAN_CONFIG: Plan[] = [
     id: "pro",
     nom: "Pro",
     prix_fcfa: 99705,  // 152€ × 655.957 XOF
-    prix_eur: 152,     // PACK PERFORMANCE
+    prix_eur: 152,     // PACK PRO
     duree_jours: 30,
-    acces_premium: true,
-    acces_vip: false,
+    acces_performance: true,
+    acces_elite: false,
     nb_alertes: 20,
     description: "La sélection complète du jour",
     features: [
@@ -220,16 +220,16 @@ export const PLAN_CONFIG: Plan[] = [
     nom: "Elite",
     prix_fcfa: 136439, // 208€ × 655.957 XOF
     prix_eur: 208,     // PACK ELITE
-    duree_jours: 90,
-    acces_premium: true,
-    acces_vip: true,
+    duree_jours: 30,
+    acces_performance: true,
+    acces_elite: true,
     nb_alertes: -1,
     description: "La sélection dans la sélection",
     features: [
-      "1 pronostic quotidien premium minimum",
+      "1 pronostic quotidien Elite minimum",
       "Sélection resserrée en 6 chevaux",
       "Lecture plus filtrée et plus exigeante",
-      "Tout le Pack Performance inclus",
+      "Tout le Pack Pro inclus",
       "Alertes WhatsApp Dernière Minute",
       "Gestion de mise personnalisée",
       "Alertes illimitées",

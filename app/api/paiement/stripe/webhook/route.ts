@@ -18,9 +18,10 @@ import { templateConfirmationPaiement } from "@/lib/email/templates/confirmation
 export const dynamic = "force-dynamic";
 
 function getSubscriptionStatus(planNom: string): string {
-  if (planNom === "Elite") return "VIP";
-  if (planNom === "Pro")   return "PREMIUM";
-  return "PREMIUM"; // Starter → PREMIUM basique
+  if (planNom === "Elite") return "ELITE";
+  if (planNom === "Pro" || planNom === "Performance") return "PRO";
+  if (planNom === "Starter" || planNom === "Découverte") return "STARTER";
+  return "STARTER"; // fallback
 }
 
 export async function POST(req: NextRequest) {
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
           .eq("id", userId)
           .single();
 
-        const planNomAffiche = planNom === "Starter" ? "Découverte" : planNom === "Pro" ? "Performance" : "Elite";
+        const planNomAffiche: "Starter" | "Pro" | "Elite" = (planNom === "Starter" || planNom === "Découverte") ? "Starter" : (planNom === "Pro" || planNom === "Performance") ? "Pro" : "Elite";
         const { subject, html } = templateConfirmationPaiement({
           nomComplet:         profile?.nom_complet || email,
           email,
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
           montantEur:         session.amount_total ? session.amount_total / 100 : 0,
           dateDebut:          now.toISOString(),
           dateFin:            expiration.toISOString(),
-          statutAbonnement:   statut as "PREMIUM" | "VIP",
+          statutAbonnement:   statut as "STARTER" | "PRO" | "ELITE",
         });
 
         await sendEmail({ to: email, subject, html });

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   Check, Star, Zap, Crown, Shield, Clock,
-  MessageCircle, ChevronDown, ArrowRight, Users
+  MessageCircle, ChevronDown, ArrowRight, Gift, Users
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
@@ -12,9 +12,9 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
 export const metadata: Metadata = {
-  title: "Abonnements — Pronostics PMU dès 65€",
+  title: "Abonnements — Pronostics PMU | Free, Starter, Pro, Elite",
   description:
-    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. Plans à partir de 65€. Paiement Orange Money, MTN MoMo, Wave, CB. Accès immédiat après paiement.",
+    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. 1 Tiercé gratuit par jour sans inscription. Plans payants à partir de 65€. Orange Money, MTN MoMo, Wave, CB.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -51,6 +51,10 @@ const PLAN_STYLES = {
 
 const FAQ = [
   {
+    q: "Comment fonctionne le plan Free ?",
+    a: "Le plan Free vous donne accès à 1 pronostic Tiercé gratuit par jour, sans abonnement payant. Il vous suffit de créer un compte gratuit. Aucune carte bancaire requise.",
+  },
+  {
     q: "Comment fonctionne le paiement Mobile Money depuis l'Afrique ?",
     a: "Cliquez sur votre plan, choisissez Orange Money, MTN MoMo ou Wave. Vous recevez une notification push sur votre téléphone. Validez et votre accès est activé en moins de 2 minutes.",
   },
@@ -68,11 +72,11 @@ const FAQ = [
   },
   {
     q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le Pack Découverte (65€). En 7 jours, vous découvrez la méthode Elite Turf avec 3 pronostics Tiercé/Quarté par semaine, une lecture simple et structurée — idéal pour comprendre l'approche avant de s'engager.",
+    a: "Commencez par le plan Free : 1 Tiercé gratuit par jour pour tester notre approche. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour découvrir la méthode complète.",
   },
   {
     q: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
-    a: "Oui. Que vous jouiez via le PMU-CI (Côte d'Ivoire), la Lonase (Sénégal), le PMU Maroc ou tout autre opérateur africain, les courses de référence sont les mêmes courses françaises que nous analysons (Vincennes, Longchamp, Chantilly).",
+    a: "Oui. Que vous jouiez via le PMU-CI (Côte d'Ivoire), la Lonase (Sénégal), le PMU Maroc ou tout autre opérateur africain, les courses de référence sont les mêmes courses françaises que nous analysons.",
   },
 ];
 
@@ -80,15 +84,15 @@ export default async function AbonnementsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let currentPlan = null;
+  let currentPlan: string | null = null;
   if (user) {
     const serviceClient = createServiceClient();
     const { data: profile } = await serviceClient
       .from("profiles")
-      .select("statut_abonnement, nom_complet")
+      .select("statut_abonnement")
       .eq("id", user.id)
       .single();
-    currentPlan = profile?.statut_abonnement;
+    currentPlan = profile?.statut_abonnement || null;
   }
 
   return (
@@ -96,40 +100,104 @@ export default async function AbonnementsPage() {
 
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
-        titre="Choisissez votre pack"
-        sousTitre="Une lecture structurée, une sélection disciplinée — à partir de 65€. Orange Money, MTN MoMo, Wave ou CB. Accès immédiat."
+        titre="Choisissez votre accès"
+        sousTitre="1 Tiercé gratuit par jour sans inscription. Accès complet à partir de 65€. Orange Money, MTN MoMo, Wave ou CB."
       />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
 
-        {/* ── CTA Guide Gratuit ─────────────────────────────────────── */}
+        {/* ── CTA Guide Gratuit ── */}
         <div className="mt-8 p-4 rounded-xl bg-gold-faint border border-gold-primary/30 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <div className="text-2xl">📥</div>
           <div className="flex-1">
-            <p className="text-text-primary font-semibold text-sm">
-              Nouveau sur Elite Turf ?
-            </p>
+            <p className="text-text-primary font-semibold text-sm">Nouveau sur Elite Turf ?</p>
             <p className="text-text-secondary text-sm">
               Commencez par notre guide gratuit — <span className="text-gold-light font-medium">5 secrets pour détecter les outsiders gagnants</span>
             </p>
           </div>
-          <a
-            href="/guide-initie"
-            className="flex-shrink-0 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors shadow-gold-sm whitespace-nowrap"
-          >
+          <a href="/guide-initie" className="flex-shrink-0 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors shadow-gold-sm whitespace-nowrap">
             Télécharger gratuitement →
           </a>
         </div>
 
-        {/* ── PLANS ────────────────────────────────────────────────── */}
+        {/* ── 4 PLANS ── */}
         <div id="plans" className="-mt-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            {/* ── Plan FREE (statique) ── */}
+            <div className={`card-base border-2 border-status-win/30 relative flex flex-col p-6 transition-all ${currentPlan === "GRATUIT" ? "ring-2 ring-status-win/20" : ""}`}>
+              <div className="mb-6">
+                <div className="w-12 h-12 rounded-2xl border bg-status-win/10 border-status-win/20 flex items-center justify-center mb-4">
+                  <Gift className="w-6 h-6 text-status-win" />
+                </div>
+                <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">FREE</h2>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-status-win/80 mb-1">
+                  Accès gratuit permanent
+                </p>
+                <p className="text-text-secondary text-sm mb-4">Essayer avant de s&apos;engager</p>
+
+                {/* Niveau */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-text-muted">Niveau de filtrage</span>
+                    <span className="text-xs font-bold text-status-win">Découverte</span>
+                  </div>
+                  <div className="w-full bg-bg-elevated rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-status-win/60" style={{ width: "20%" }} />
+                  </div>
+                  <div className="flex mt-1 gap-0.5">
+                    {[1,2,3,4,5].map(s => (
+                      <span key={s} className={`text-xs ${s === 1 ? "text-status-win" : "text-text-muted"}`}>◆</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold font-serif text-status-win">0</span>
+                  <span className="text-text-muted text-sm">€</span>
+                </div>
+                <p className="text-text-muted text-xs mt-1">Sans engagement · Permanent</p>
+              </div>
+
+              <ul className="space-y-3 mb-8 flex-1">
+                {[
+                  "1 pronostic Tiercé gratuit par jour",
+                  "Accès aux résultats publics",
+                  "Lecture de la page Pronostics",
+                  "Sans carte bancaire",
+                  "Inscription en 30 secondes",
+                ].map((f, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
+                    <span className="text-text-secondary text-sm">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {currentPlan === "GRATUIT" ? (
+                <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-status-win/10 text-status-win border border-status-win/20">
+                  ✓ Votre plan actuel
+                </div>
+              ) : user ? (
+                <Link href="/pronostics" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-status-win/30 text-status-win hover:bg-status-win/10 transition-all">
+                  Voir les pronostics gratuits
+                </Link>
+              ) : (
+                <Link href="/inscription" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-status-win/30 text-status-win hover:bg-status-win/10 transition-all">
+                  <Users className="w-4 h-4" />
+                  Créer un compte gratuit
+                </Link>
+              )}
+            </div>
+
+            {/* ── Plans payants (Starter / Pro / Elite) ── */}
             {PLAN_CONFIG.map((plan) => {
-              const Icon   = PLAN_ICONS[plan.nom];
-              const styles = PLAN_STYLES[plan.nom];
+              const Icon   = PLAN_ICONS[plan.nom as keyof typeof PLAN_ICONS];
+              const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES];
               const isCurrentPlan =
-                (plan.nom === "Pro"   && currentPlan === "PREMIUM") ||
-                (plan.nom === "Elite" && currentPlan === "VIP");
+                (plan.nom === "Starter" && currentPlan === "STARTER") ||
+                (plan.nom === "Pro"     && currentPlan === "PRO")     ||
+                (plan.nom === "Elite"   && currentPlan === "ELITE");
 
               return (
                 <div
@@ -148,19 +216,23 @@ export default async function AbonnementsPage() {
                   {plan.nom === "Elite" && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                       <span className="px-4 py-1.5 bg-purple-600 text-white text-[11px] font-bold rounded-full whitespace-nowrap">
-                        👑 L&apos;OFFRE LA PLUS SÉLECTIVE
+                        👑 LA PLUS SÉLECTIVE
                       </span>
                     </div>
                   )}
 
-                  {/* Plan header */}
                   <div className="mb-6">
                     <div className={`w-12 h-12 rounded-2xl border ${styles.iconBg} flex items-center justify-center mb-4`}>
-                      <Icon className={`w-6 h-6 ${styles.iconText}`} />
+                      {Icon && <Icon className={`w-6 h-6 ${styles.iconText}`} />}
                     </div>
                     <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">
-                      {plan.nom === "Starter" ? "PACK DÉCOUVERTE" : plan.nom === "Pro" ? "PACK PERFORMANCE" : "PACK ELITE"}
+                      {plan.nom.toUpperCase()}
                     </h2>
+                    {plan.nom === "Starter" && (
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted/80 mb-1">
+                        Découvrir la méthode
+                      </p>
+                    )}
                     {plan.nom === "Pro" && (
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-primary/80 mb-1">
                         Le pack le plus équilibré
@@ -200,7 +272,7 @@ export default async function AbonnementsPage() {
 
                     <div className="flex items-baseline gap-2">
                       <span className={`text-4xl font-bold font-serif ${styles.price}`}>
-                        {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
                       </span>
                       <span className="text-text-muted text-sm">€</span>
                     </div>
@@ -209,7 +281,6 @@ export default async function AbonnementsPage() {
                     </p>
                   </div>
 
-                  {/* Features */}
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2.5">
@@ -219,7 +290,6 @@ export default async function AbonnementsPage() {
                     ))}
                   </ul>
 
-                  {/* CTA */}
                   {isCurrentPlan ? (
                     <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-status-win/10 text-status-win border border-status-win/20">
                       ✓ Plan actuel
@@ -237,7 +307,7 @@ export default async function AbonnementsPage() {
             })}
           </div>
 
-          {/* Garantie + réassurance */}
+          {/* Réassurance */}
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 bg-status-win/5 border border-status-win/20 rounded-full text-status-win">
               <Shield className="w-3.5 h-3.5" />
@@ -254,7 +324,7 @@ export default async function AbonnementsPage() {
           </div>
         </div>
 
-        {/* ── MOYENS DE PAIEMENT ───────────────────────────────────── */}
+        {/* ── MOYENS DE PAIEMENT ── */}
         <div className="text-center">
           <p className="text-text-muted text-xs uppercase tracking-widest font-semibold mb-5">
             Moyens de paiement acceptés
@@ -278,50 +348,53 @@ export default async function AbonnementsPage() {
           </div>
         </div>
 
-        {/* ── TABLEAU COMPARATIF ───────────────────────────────────── */}
+        {/* ── TABLEAU COMPARATIF ── */}
         <div className="card-base overflow-hidden">
           <div className="p-5 border-b border-border">
-            <h2 className="font-serif font-bold text-text-primary text-lg text-center">
-              Comparaison détaillée
-            </h2>
+            <h2 className="font-serif font-bold text-text-primary text-lg text-center">Comparaison détaillée</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-bg-elevated">
-                  <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Fonctionnalité</th>
-                  {PLAN_CONFIG.map((p) => (
-                    <th key={p.id} className={`px-4 py-3 text-center text-xs font-bold uppercase tracking-wider ${p.populaire ? "text-gold-light" : "text-text-muted"}`}>
-                      {p.nom === "Starter" ? "Découverte" : p.nom === "Pro" ? "Performance" : "Elite"}
+                  <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider w-1/3">Fonctionnalité</th>
+                  {[
+                    { label: "Free",    color: "text-status-win"  },
+                    { label: "Starter", color: "text-text-muted"  },
+                    { label: "Pro",     color: "text-gold-light"  },
+                    { label: "Elite",   color: "text-purple-400"  },
+                  ].map(({ label, color }) => (
+                    <th key={label} className={`px-4 py-3 text-center text-xs font-bold uppercase tracking-wider ${color}`}>
+                      {label}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
                 {[
-                  { label: "Durée",                        values: ["7 jours", "30 jours", "30 jours"] },
-                  { label: "Pronostics par jour",          values: ["3 / semaine", "1+ quotidien", "1+ premium"] },
-                  { label: "Pronostics Tiercé / Quarté",   values: ["✓", "✓", "✓"] },
-                  { label: "Pronostics Quinté+",           values: ["—", "✓", "✓"] },
-                  { label: "Type de sélection",            values: ["Lecture simple", "8 chevaux", "6 chevaux (filtrée)"] },
-                  { label: "Niveau de filtrage",           values: ["Standard", "Optimisé", "Expert"] },
-                  { label: "Niveau d'exigence",            values: ["Accessible", "Élevé", "Maximum"] },
-                  { label: "Analyse incluse",              values: ["Courte", "Claire & structurée", "Filtrée & exigeante"] },
-                  { label: "Alerte Dernière Minute",       values: ["—", "Email", "WhatsApp"] },
-                  { label: "Gestion de mise",              values: ["—", "Détaillée", "Personnalisée"] },
-                  { label: "Alertes SMS / Push",           values: ["5 / mois", "20 / mois", "Illimitées"] },
-                  { label: "Statistiques",                 values: ["—", "Complètes", "Export Excel / PDF"] },
-                  { label: "Support WhatsApp",             values: ["—", "48h", "Prioritaire"] },
-                  { label: "Économie vs mensuel",          values: ["—", "—", "✓"] },
-                  { label: "Résiliable à tout moment",     values: ["✓", "✓", "✓"] },
+                  { label: "Durée",                       values: ["Permanent",      "7 jours",        "30 jours",             "30 jours"]          },
+                  { label: "Tiercé gratuit / jour",       values: ["1 / jour",       "—",              "—",                    "—"]                 },
+                  { label: "Pronostics par jour",         values: ["—",              "3 / semaine",    "1+ quotidien",         "1+ premium"]        },
+                  { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
+                  { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },
+                  { label: "Type de sélection",           values: ["Tiercé simple",  "Lecture simple", "8 chevaux",            "6 chevaux (filtrée)"]},
+                  { label: "Niveau de filtrage",          values: ["Découverte",     "Standard",       "Optimisé",             "Expert"]            },
+                  { label: "Analyse incluse",             values: ["—",              "Courte",         "Claire & structurée",  "Filtrée & exigeante"]},
+                  { label: "Alerte Dernière Minute",      values: ["—",              "—",              "Email",                "WhatsApp"]          },
+                  { label: "Gestion de mise",             values: ["—",              "—",              "Détaillée",            "Personnalisée"]     },
+                  { label: "Alertes SMS / Push",          values: ["—",              "5 / mois",       "20 / mois",            "Illimitées"]        },
+                  { label: "Statistiques",                values: ["—",              "—",              "Complètes",            "Export Excel / PDF"]},
+                  { label: "Support WhatsApp",            values: ["—",              "—",              "48h",                  "Prioritaire"]       },
+                  { label: "Résiliable à tout moment",    values: ["—",              "✓",              "✓",                    "✓"]                 },
                 ].map((row, i) => (
                   <tr key={i} className="hover:bg-bg-hover transition-colors">
                     <td className="px-5 py-3 text-text-secondary text-sm">{row.label}</td>
                     {row.values.map((v, j) => (
                       <td key={j} className={`px-4 py-3 text-center text-sm font-medium ${
                         v === "—" ? "text-text-muted" :
-                        j === 1 ? "text-gold-light" :
-                        j === 2 ? "text-purple-400" :
+                        j === 0 ? "text-status-win" :
+                        j === 2 ? "text-gold-light" :
+                        j === 3 ? "text-purple-400" :
                         "text-text-secondary"
                       }`}>
                         {v}
@@ -334,11 +407,9 @@ export default async function AbonnementsPage() {
           </div>
         </div>
 
-        {/* ── FAQ ──────────────────────────────────────────────────── */}
+        {/* ── FAQ ── */}
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-serif font-bold text-text-primary text-2xl text-center mb-8">
-            Questions fréquentes
-          </h2>
+          <h2 className="font-serif font-bold text-text-primary text-2xl text-center mb-8">Questions fréquentes</h2>
           <div className="space-y-3">
             {FAQ.map((item, i) => (
               <details key={i} className="card-base group">
@@ -354,15 +425,11 @@ export default async function AbonnementsPage() {
           </div>
         </div>
 
-        {/* ── BESOIN D'AIDE ─────────────────────────────────────────── */}
+        {/* ── BESOIN D'AIDE ── */}
         <div className="text-center p-6 rounded-2xl bg-bg-card border border-border">
           <MessageCircle className="w-8 h-8 text-gold-primary mx-auto mb-3" />
-          <h3 className="font-serif font-semibold text-text-primary text-lg mb-2">
-            Besoin d&apos;aide pour choisir ?
-          </h3>
-          <p className="text-text-secondary text-sm mb-4">
-            Notre équipe répond sur WhatsApp en moins de 30 minutes
-          </p>
+          <h3 className="font-serif font-semibold text-text-primary text-lg mb-2">Besoin d&apos;aide pour choisir ?</h3>
+          <p className="text-text-secondary text-sm mb-4">Notre équipe répond sur WhatsApp en moins de 30 minutes</p>
           <a
             href="https://wa.me/+33644686720?text=Bonjour, j'aimerais des informations sur les abonnements Elite Turf"
             target="_blank"
