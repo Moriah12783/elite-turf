@@ -2,99 +2,99 @@
   "crons": [
     {
       "path": "/api/cron/expire-abonnements",
-      "schedule": "0 1 * * *"
+      "schedule": "7 1 * * *"
     },
     {
       "path": "/api/cron/rappel-expiration",
-      "schedule": "0 9 * * *"
+      "schedule": "13 9 * * *"
+    },
+    {
+      "path": "/api/admin/sync-resultats",
+      "schedule": "23 6 * * *"
     },
     {
       "path": "/api/cron/pmu-sync",
-      "schedule": "0 5 * * *"
+      "schedule": "17 5 * * *"
     },
     {
       "path": "/api/cron/pmu-sync",
-      "schedule": "0 7 * * *"
+      "schedule": "31 7 * * *"
     },
     {
       "path": "/api/cron/lonaci-sync",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/pmu-sync",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/lonaci-sync",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/cron/geny-arrivees",
-      "schedule": "0 19 * * *"
-    },
-    {
-      "path": "/api/admin/sync-resultats",
-      "schedule": "0 19 * * *"
-    },
-    {
-      "path": "/api/admin/sync-resultats",
-      "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/admin/sync-resultats",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/admin/sync-resultats",
-      "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/admin/sync-resultats",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/pmu-demain",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/cron/enrichir-partants",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/enrichir-partants",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/admin/rapport-journalier",
-      "schedule": "0 20 * * *"
+      "schedule": "41 7 * * *"
     },
     {
       "path": "/api/cron/pronostic-gratuit",
-      "schedule": "0 7 * * *"
+      "schedule": "19 7 * * *"
+    },
+    {
+      "path": "/api/cron/enrichir-partants",
+      "schedule": "27 9 * * *"
+    },
+    {
+      "path": "/api/cron/pmu-sync",
+      "schedule": "23 11 * * *"
+    },
+    {
+      "path": "/api/cron/lonaci-sync",
+      "schedule": "37 11 * * *"
+    },
+    {
+      "path": "/api/cron/enrichir-partants",
+      "schedule": "47 11 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 13 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 14 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 15 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 16 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 17 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 18 * * *"
+    },
+    {
+      "path": "/api/cron/geny-arrivees",
+      "schedule": "11 19 * * *"
+    },
+    {
+      "path": "/api/cron/pmu-demain",
+      "schedule": "43 17 * * *"
+    },
+    {
+      "path": "/api/admin/sync-resultats",
+      "schedule": "17 19 * * *"
+    },
+    {
+      "path": "/api/admin/sync-resultats",
+      "schedule": "17 20 * * *"
+    },
+    {
+      "path": "/api/admin/rapport-journalier",
+      "schedule": "37 20 * * *"
+    },
+    {
+      "path": "/api/admin/sync-resultats",
+      "schedule": "17 21 * * *"
+    },
+    {
+      "path": "/api/admin/sync-resultats",
+      "schedule": "17 22 * * *"
     }
   ],
   "headers": [
