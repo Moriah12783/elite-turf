@@ -4,12 +4,10 @@ import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 
-// VERCEL_URL est automatiquement injecté par Vercel (ex: elite-turf-xyz.vercel.app)
-// Priorité : variable explicite > URL Vercel auto > fallback prod
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://elite-turf.fr");
+// Domaine canonique — défini via NEXT_PUBLIC_APP_URL en production Vercel
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 // Next.js 14 : themeColor/appleWebApp/formatDetection dans viewport, pas metadata
 export const viewport: Viewport = {
@@ -147,6 +145,18 @@ export default function RootLayout({
         />
         <Analytics />
         <SpeedInsights />
+        {/* Microsoft Clarity — analyse comportementale */}
+        <Script
+          id="clarity-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "wbinwswb7t");`,
+          }}
+        />
       </body>
     </html>
   );
