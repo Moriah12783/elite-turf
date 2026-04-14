@@ -18,6 +18,8 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const supabase = createServiceClient();
   const { data } = await supabase
@@ -31,6 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${course?.libelle || "Pronostic"} — ${course?.hippodrome?.nom || ""} | Elite Turf`,
     description: data.analyse_courte,
+    alternates: { canonical: `${APP_URL}/pronostics/${params.id}` },
   };
 }
 
@@ -43,8 +46,8 @@ const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementTyp
 
 function canAccess(niveau: string, sub: SubscriptionStatus): boolean {
   if (niveau === "GRATUIT") return true;
-  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
-  if (niveau === "VIP") return sub === "VIP";
+  if (niveau === "PRO") return ["STARTER","PRO","ELITE"].includes(sub);
+  if (niveau === "ELITE") return sub === "ELITE";
   return false;
 }
 
@@ -129,8 +132,8 @@ export default async function PronosticDetailPage({ params }: PageProps) {
         <div className="card-base overflow-hidden mb-6">
           {/* Color accent top */}
           <div className={`h-1 w-full ${
-            p.niveau_acces === "VIP" ? "bg-purple-500" :
-            p.niveau_acces === "PREMIUM" ? "bg-gradient-to-r from-gold-primary to-gold-light" :
+            p.niveau_acces === "ELITE" ? "bg-purple-500" :
+            p.niveau_acces === "PRO" ? "bg-gradient-to-r from-gold-primary to-gold-light" :
             "bg-status-win"
           }`} />
 
@@ -140,11 +143,11 @@ export default async function PronosticDetailPage({ params }: PageProps) {
               <span className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-bold border ${
                 p.niveau_acces === "GRATUIT"
                   ? "bg-status-win/10 text-status-win border-status-win/20"
-                  : p.niveau_acces === "VIP"
+                  : p.niveau_acces === "ELITE"
                   ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                   : "bg-gold-faint text-gold-light border-gold-primary/30"
               }`}>
-                {p.niveau_acces === "GRATUIT" ? "✓ GRATUIT" : p.niveau_acces === "VIP" ? "★ ELITE" : "⭐ PRO"}
+                {p.niveau_acces === "GRATUIT" ? "✓ GRATUIT" : p.niveau_acces === "ELITE" ? "★ ELITE" : "⭐ PRO"}
               </span>
               <span className="text-xs px-3 py-1.5 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
                 {BET_TYPE_LABELS[p.type_pari as keyof typeof BET_TYPE_LABELS]}
@@ -371,7 +374,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
 
             {/* Paywall full banner si pas d'accès */}
             {!hasAccess && (
-              <PaywallBanner niveau={p.niveau_acces as "PREMIUM" | "VIP"} />
+              <PaywallBanner niveau={p.niveau_acces as "STARTER" | "PRO" | "ELITE"} />
             )}
           </div>
         </div>

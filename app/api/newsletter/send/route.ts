@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   if (segment === "actifs" || segment === "tous") {
     const { data: actifs } = await adminClient
       .from("profiles").select("email, nom_complet")
-      .eq("statut_abonnement", "PREMIUM");
+      .in("statut_abonnement", ["STARTER", "PRO"]);
     if (actifs) {
       for (const a of actifs) {
         if (a.email) {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   if (segment === "elite" || segment === "tous") {
     const { data: elites } = await adminClient
       .from("profiles").select("email, nom_complet")
-      .eq("statut_abonnement", "VIP");
+      .eq("statut_abonnement", "ELITE");
     if (elites) {
       for (const e of elites) {
         if (e.email) {

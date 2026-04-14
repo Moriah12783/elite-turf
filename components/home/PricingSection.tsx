@@ -3,15 +3,26 @@ import { Check, Zap, Star, Crown, Shield } from "lucide-react";
 import { PLAN_CONFIG } from "@/types";
 
 const PACK_NAMES: Record<string, string> = {
-  Starter: "PACK DÉCOUVERTE",
-  Pro:     "PACK PERFORMANCE",
+  Free:    "GRATUIT",
+  Starter: "PACK STARTER",
+  Pro:     "PACK PRO",
   Elite:   "PACK ELITE",
 };
 
 
-const PLAN_ICONS = { Starter: Zap, Pro: Star, Elite: Crown };
+const PLAN_ICONS = { Free: Shield, Starter: Zap, Pro: Star, Elite: Crown };
 
 const PLAN_STYLES = {
+  Free: {
+    border:  "border-border",
+    iconBg:  "bg-bg-elevated border-border",
+    iconTx:  "text-text-secondary",
+    price:   "text-text-primary",
+    bar:     "bg-status-win",
+    barW:    "50%",
+    btn:     "bg-bg-elevated hover:bg-bg-hover text-text-primary border border-border",
+    stars:   1,
+  },
   Starter: {
     border:  "border-border",
     iconBg:  "bg-bg-elevated border-border",
@@ -67,7 +78,64 @@ export default function PricingSection() {
         </div>
 
         {/* Plans */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          {/* ── FREE (statique) ── */}
+          <div className="card-base p-6 border-2 border-status-win/30 relative flex flex-col">
+            <div className="mb-5">
+              <div className="w-12 h-12 rounded-2xl border bg-status-win/10 border-status-win/20 flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-status-win" />
+              </div>
+              <h3 className="font-serif font-bold text-xl text-text-primary mb-1">FREE</h3>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-status-win/80 mb-1">Accès gratuit permanent</p>
+              <p className="text-text-secondary text-sm mb-3">Essayer avant de s&apos;engager</p>
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-text-muted">Niveau de filtrage</span>
+                  <span className="text-xs font-bold text-status-win">Découverte</span>
+                </div>
+                <div className="w-full bg-bg-elevated rounded-full h-1.5">
+                  <div className="h-1.5 rounded-full bg-status-win/60" style={{ width: "20%" }} />
+                </div>
+                <div className="flex mt-1 gap-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} className={`text-xs ${s === 1 ? "text-status-win" : "text-text-muted"}`}>◆</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold font-serif text-status-win">0</span>
+                <span className="text-text-muted text-sm font-medium">€</span>
+              </div>
+              <p className="text-text-muted text-xs mt-0.5">Sans engagement · Permanent</p>
+            </div>
+
+            <ul className="space-y-2.5 mb-7 flex-1">
+              {[
+                "1 pronostic Tiercé gratuit par jour",
+                "Accès aux résultats publics",
+                "Lecture de la page Pronostics",
+                "Sans carte bancaire",
+                "Inscription en 30 secondes",
+              ].map((f, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
+                  <span className="text-text-secondary text-sm">{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/inscription"
+              className="w-full py-3 rounded-xl font-bold text-sm text-center transition-all bg-status-win/10 hover:bg-status-win/20 text-status-win border border-status-win/30"
+            >
+              Commencer gratuitement →
+            </Link>
+          </div>
+
+          {/* ── STARTER / PRO / ELITE ── */}
           {PLAN_CONFIG.map((plan) => {
             const Icon   = PLAN_ICONS[plan.nom];
             const styles = PLAN_STYLES[plan.nom];
@@ -86,7 +154,6 @@ export default function PricingSection() {
                   </div>
                 )}
 
-                {/* Header */}
                 <div className="mb-5">
                   <div className={`w-12 h-12 rounded-2xl border ${styles.iconBg} flex items-center justify-center mb-4`}>
                     <Icon className={`w-6 h-6 ${styles.iconTx}`} />
@@ -97,7 +164,6 @@ export default function PricingSection() {
                   </h3>
                   <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
 
-                  {/* Niveau de filtrage */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-text-muted">Niveau de filtrage</span>
@@ -116,7 +182,6 @@ export default function PricingSection() {
                     </div>
                   </div>
 
-                  {/* Prix en EUR — affiché en grand */}
                   <div className="flex items-baseline gap-1">
                     <span className={`text-4xl font-bold font-serif ${styles.price}`}>
                       {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -124,14 +189,10 @@ export default function PricingSection() {
                     <span className="text-text-muted text-sm font-medium">€</span>
                   </div>
                   <p className="text-text-muted text-xs mt-0.5">
-                    {plan.duree_jours} jours ·{" "}
-                    <span className="text-text-muted">
-                      ≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA
-                    </span>
+                    {plan.duree_jours} jours · ≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA
                   </p>
                 </div>
 
-                {/* Features */}
                 <ul className="space-y-2.5 mb-7 flex-1">
                   {plan.features.map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5">
@@ -141,7 +202,6 @@ export default function PricingSection() {
                   ))}
                 </ul>
 
-                {/* CTA */}
                 <Link
                   href={`/abonnements#${plan.id}`}
                   className={`w-full py-3 rounded-xl font-bold text-sm text-center transition-all ${styles.btn}`}

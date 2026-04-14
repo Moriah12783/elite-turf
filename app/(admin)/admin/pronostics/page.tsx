@@ -7,9 +7,10 @@ import TogglePublieButton from "@/components/admin/TogglePublieButton";
 export const metadata = { title: "Pronostics — Admin" };
 
 const NIVEAU_BADGE: Record<string, string> = {
-  GRATUIT: "bg-status-win/10 text-status-win border-status-win/20",
-  PREMIUM: "bg-gold-faint text-gold-light border-gold-primary/30",
-  VIP: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  GRATUIT:  "bg-status-win/10 text-status-win border-status-win/20",
+  STARTER:  "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  PRO:      "bg-gold-faint text-gold-light border-gold-primary/30",
+  ELITE:    "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
 
 const RESULTAT_BADGE: Record<string, string> = {

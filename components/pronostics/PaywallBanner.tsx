@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Lock, Zap, Star, ArrowRight } from "lucide-react";
 
 interface PaywallBannerProps {
-  niveau: "PREMIUM" | "VIP";
+  niveau: "STARTER" | "PRO" | "ELITE";
   compact?: boolean;
 }
 
 export default function PaywallBanner({ niveau, compact = false }: PaywallBannerProps) {
-  const isVip = niveau === "VIP";
+  const isVip = niveau === "ELITE";
 
   if (compact) {
     return (

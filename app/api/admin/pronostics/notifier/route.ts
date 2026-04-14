@@ -9,8 +9,8 @@ import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronosti
  *
  * Envoie un email à tous les abonnés éligibles quand un pronostic est publié.
  * - GRATUIT  → tous les utilisateurs actifs
- * - PREMIUM  → PREMIUM + VIP
- * - VIP      → VIP uniquement
+ * - PRO      → STARTER + PRO + ELITE
+ * - ELITE    → ELITE uniquement
  */
 export async function POST(req: NextRequest) {
   try {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const hippodrome  = hippodromeRaw?.nom ?? "Hippodrome";
     const dateCourse  = courseRaw?.date_course ?? new Date().toISOString().split("T")[0];
     const nbPartants  = courseRaw?.nb_partants ?? prono.selection?.length ?? 0;
-    const niveauAcces = prono.niveau_acces as "GRATUIT" | "PREMIUM" | "VIP";
+    const niveauAcces = prono.niveau_acces as "GRATUIT" | "STARTER" | "PRO" | "ELITE";
     const typePari    = prono.type_pari ?? "TIERCE";
 
     const dateString = new Date(dateCourse).toLocaleDateString("fr-FR", {
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
       .eq("actif", true)
       .not("email", "is", null);
 
-    if (niveauAcces === "VIP") {
-      query = query.eq("statut_abonnement", "VIP");
-    } else if (niveauAcces === "PREMIUM") {
-      query = query.in("statut_abonnement", ["PREMIUM", "VIP"]);
+    if (niveauAcces === "ELITE") {
+      query = query.eq("statut_abonnement", "ELITE");
+    } else if (niveauAcces === "PRO") {
+      query = query.in("statut_abonnement", ["STARTER", "PRO", "ELITE"]);
     }
     // GRATUIT → tous les actifs (pas de filtre supplémentaire)
 

@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 import {
   Calendar, Clock, MapPin, Users,
   ChevronRight, Star, Zap, AlertCircle
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
   title: "Programme des Courses — Elite Turf",
   description:
     "Toutes les courses hippiques du jour : Longchamp, Vincennes, Abidjan et plus. Hippodromes, horaires, partants et pronostics experts.",
+  alternates: { canonical: `${APP_URL}/courses` },
 };
 
 export const dynamic = "force-dynamic";

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
-const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 const TARGETS: Record<string, { url: string; method: string; body?: object }> = {
   // PMU sync → tente d'abord l'API PMU, fallback automatique sur Geny

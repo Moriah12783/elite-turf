@@ -8,7 +8,7 @@ import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
@@ -140,7 +140,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     .eq("actif", true)
     .order("nom");
 
-  // ── 6. Compter PREMIUM/VIP pour le bandeau CTA ────────────────────
+  // ── 6. Compter PRO/ELITE pour le bandeau CTA ────────────────────
   const lockedCount = pronostics.filter(
     (p: any) => !canAccess(p.niveau_acces, userSubscription)
   ).length;
@@ -249,7 +249,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
         {/* CTA bas de page */}
         {userSubscription === "GRATUIT" && (pronosticsAujourdhui.length > 0 || pronostics.length > 0) && (
           <div className="mt-12">
-            <PaywallBanner niveau="PREMIUM" />
+            <PaywallBanner niveau="PRO" />
           </div>
         )}
       </div>
@@ -260,8 +260,8 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
 // ── Helper ────────────────────────────────────────────────────────────
 function canAccess(niveau: string, sub: SubscriptionStatus): boolean {
   if (niveau === "GRATUIT") return true;
-  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
-  if (niveau === "VIP") return sub === "VIP";
+  if (niveau === "PRO") return ["STARTER","PRO","ELITE"].includes(sub);
+  if (niveau === "ELITE") return sub === "ELITE";
   return false;
 }
 

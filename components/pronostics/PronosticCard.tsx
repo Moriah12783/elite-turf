@@ -39,8 +39,9 @@ interface PronosticCardProps {
 
 function canAccess(niveau: PronosticLevel, sub: SubscriptionStatus): boolean {
   if (niveau === "GRATUIT") return true;
-  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
-  if (niveau === "VIP") return sub === "VIP";
+  if (niveau === "STARTER") return sub === "STARTER" || sub === "PRO" || sub === "ELITE";
+  if (niveau === "PRO") return sub === "PRO" || sub === "ELITE";
+  if (niveau === "ELITE") return sub === "ELITE";
   return false;
 }
 
@@ -71,10 +72,10 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   return (
     <article className="card-base relative overflow-hidden group">
       {/* Premium shimmer */}
-      {p.niveau_acces === "PREMIUM" && (
+      {(p.niveau_acces === "STARTER" || p.niveau_acces === "PRO") && (
         <div className="absolute inset-0 shimmer-bg pointer-events-none rounded-xl" />
       )}
-      {p.niveau_acces === "VIP" && (
+      {p.niveau_acces === "ELITE" && (
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/3 via-transparent to-purple-500/3 pointer-events-none rounded-xl" />
       )}
 
@@ -86,11 +87,11 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
           <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border ${
             p.niveau_acces === "GRATUIT"
               ? "bg-status-win/10 text-status-win border-status-win/20"
-              : p.niveau_acces === "VIP"
+              : p.niveau_acces === "ELITE"
               ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
               : "bg-gold-faint text-gold-light border-gold-primary/30"
           }`}>
-            {p.niveau_acces === "GRATUIT" ? "✓ La Base Solide" : p.niveau_acces === "VIP" ? "★ L'Outsider Elite" : "⭐ Le Duo de Choc"}
+            {p.niveau_acces === "GRATUIT" ? "✓ La Base Solide" : p.niveau_acces === "ELITE" ? "★ L'Outsider Elite" : "⭐ Le Duo de Choc"}
           </span>
 
           {/* Type de pari */}
@@ -200,7 +201,7 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
         {/* ── Paywall banner (if no access) ── */}
         {!hasAccess && (
           <div className="mb-5">
-            <PaywallBanner niveau={p.niveau_acces as "PREMIUM" | "VIP"} compact />
+            <PaywallBanner niveau={p.niveau_acces as "STARTER" | "PRO" | "ELITE"} compact />
           </div>
         )}
 

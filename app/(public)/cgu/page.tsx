@@ -1,9 +1,13 @@
 import { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation — Elite Turf",
   description: "CGU EliteTurf — Conditions générales d'utilisation de la plateforme de pronostics PMU.",
+  alternates: { canonical: `${APP_URL}/cgu` },
+  robots: { index: false, follow: false },
 };
 
 export default function CguPage() {
@@ -63,13 +67,13 @@ export default function CguPage() {
           </section>
 
           <section className="card-base p-6">
-            <h2 className="font-serif font-bold text-text-primary text-lg mb-4">Accès Premium et VIP</h2>
+            <h2 className="font-serif font-bold text-text-primary text-lg mb-4">Accès Pro et Elite</h2>
             <p>
               L&apos;accès aux pronostics payants est <strong className="text-text-primary">strictement
               personnel et non transférable</strong>. Un compte ne peut être utilisé que par son titulaire.
             </p>
             <p className="mt-3">
-              Tout partage de compte, de pronostics Premium ou VIP sur des réseaux sociaux, groupes
+              Tout partage de compte, de pronostics Pro ou Elite sur des réseaux sociaux, groupes
               WhatsApp, Telegram ou tout autre tiers entraînera la{" "}
               <strong className="text-text-primary">suspension immédiate du compte sans remboursement</strong>.
             </p>

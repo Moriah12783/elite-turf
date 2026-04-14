@@ -7,12 +7,14 @@ import { PLAN_CONFIG } from "@/types";
 export const metadata: Metadata = {
   title: "Paiement réussi — Elite Turf",
   description: "Votre abonnement Elite Turf est maintenant actif.",
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-const PLAN_ICONS = { Starter: Zap, Pro: Star, Elite: Crown };
+const PLAN_ICONS = { Free: CheckCircle, Starter: Zap, Pro: Star, Elite: Crown };
 const PLAN_COLORS = {
+  Free: "text-status-win",
   Starter: "text-status-win",
   Pro: "text-gold-primary",
   Elite: "text-purple-400",
@@ -174,7 +176,7 @@ export default async function PaiementSuccesPage({
         <div className="p-4 rounded-xl bg-bg-card border border-border">
           <p className="text-text-secondary text-sm">
             🎯 <span className="text-text-primary font-semibold">Conseil :</span>{" "}
-            Rejoignez notre groupe WhatsApp VIP pour recevoir les pronostics du matin à 7h30.
+            Rejoignez notre groupe WhatsApp Elite pour recevoir les pronostics du matin à 7h30.
           </p>
           <a
             href="https://wa.me/+33644686720?text=Bonjour, je viens de souscrire à Elite Turf !"

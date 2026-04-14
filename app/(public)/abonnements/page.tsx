@@ -9,7 +9,7 @@ import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export const metadata: Metadata = {
   title: "Abonnements — Pronostics PMU | Free, Starter, Pro, Elite",

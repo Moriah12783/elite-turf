@@ -9,6 +9,7 @@ export async function middleware(request: NextRequest) {
     "/auth/callback",       // échange du code Supabase PKCE
     "/api/cron/",           // cron jobs Vercel (sécurisés par CRON_SECRET)
     "/api/paiement/webhook", // webhook CinetPay (doit rester public)
+    "/api/ingest/",          // endpoints d'ingestion MVP (auth propre MVP_API_SECRET)
   ];
   if (bypassRoutes.some((r) => pathname.startsWith(r))) {
     return NextResponse.next();

@@ -151,8 +151,9 @@ export default function NouveauPronosticClient({ courses }: Props) {
               className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-sm"
             >
               <option value="GRATUIT">🟢 Gratuit</option>
-              <option value="PREMIUM">⭐ Premium</option>
-              <option value="VIP">👑 VIP</option>
+              <option value="STARTER">🔰 Starter</option>
+              <option value="PRO">⭐ Pro</option>
+              <option value="ELITE">👑 Elite</option>
             </select>
           </div>
           <div>

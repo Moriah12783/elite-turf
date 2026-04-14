@@ -23,8 +23,8 @@ async function getAdminStats(supabase: Awaited<ReturnType<typeof createClient>>)
     { data: transactions },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("actif", true),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("statut_abonnement", "PREMIUM"),
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("statut_abonnement", "VIP"),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).in("statut_abonnement", ["STARTER", "PRO"]),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("statut_abonnement", "ELITE"),
     supabase.from("courses").select("*", { count: "exact", head: true }).eq("date_course", today),
     supabase.from("pronostics").select("*", { count: "exact", head: true }).eq("publie", true).gte("created_at", today),
     supabase.from("transactions").select("montant_fcfa").eq("statut", "SUCCES").gte("date_transaction", firstOfMonth),

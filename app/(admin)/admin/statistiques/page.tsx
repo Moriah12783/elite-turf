@@ -33,8 +33,8 @@ export default async function StatistiquesPage() {
 
   // ── Stats globales ────────────────────────────────────────────────
   const totalUsers    = allProfiles.filter(p => p.actif).length;
-  const premiumUsers  = allProfiles.filter(p => ["PREMIUM", "VIP"].includes(p.statut_abonnement)).length;
-  const vipUsers      = allProfiles.filter(p => p.statut_abonnement === "VIP").length;
+  const premiumUsers  = allProfiles.filter(p => ["STARTER", "PRO", "ELITE"].includes(p.statut_abonnement)).length;
+  const vipUsers      = allProfiles.filter(p => p.statut_abonnement === "ELITE").length;
   const freeUsers     = allProfiles.filter(p => p.statut_abonnement === "GRATUIT").length;
   const conversionRate = totalUsers > 0 ? Math.round((premiumUsers / totalUsers) * 100) : 0;
 
@@ -74,8 +74,8 @@ export default async function StatistiquesPage() {
 
   // ── Répartition abonnements ────────────────────────────────────────
   const repartition = [
-    { label: "PACK DÉCOUVERTE", icon: Zap,   color: "text-status-win",  bg: "bg-status-win",  count: allProfiles.filter(p => p.statut_abonnement === "PREMIUM" && !p.actif).length, pct: 0 },
-    { label: "PACK PERFORMANCE", icon: Star, color: "text-gold-primary", bg: "bg-gold-primary", count: premiumUsers - vipUsers, pct: 0 },
+    { label: "PACK DÉCOUVERTE", icon: Zap,   color: "text-status-win",  bg: "bg-status-win",  count: allProfiles.filter(p => p.statut_abonnement === "STARTER").length, pct: 0 },
+    { label: "PACK PERFORMANCE", icon: Star, color: "text-gold-primary", bg: "bg-gold-primary", count: allProfiles.filter(p => p.statut_abonnement === "PRO").length, pct: 0 },
     { label: "PACK ELITE",       icon: Crown, color: "text-purple-400", bg: "bg-purple-400",   count: vipUsers,                pct: 0 },
     { label: "Gratuit",          icon: Users, color: "text-text-muted", bg: "bg-text-muted",   count: freeUsers,               pct: 0 },
   ].map(r => ({

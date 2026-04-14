@@ -1,8 +1,6 @@
 import { MetadataRoute } from "next";
 
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://elite-turf.fr");
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -21,6 +19,5 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${APP_URL}/sitemap.xml`,
-    host: APP_URL,
   };
 }

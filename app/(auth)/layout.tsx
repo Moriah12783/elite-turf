@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
+
+// Les pages auth (connexion, inscription) ne doivent pas être indexées
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -36,3 +36,5 @@ Thumbs.db
 
 # Lighthouse reports
 lighthouse-report.html
+
+.vercel

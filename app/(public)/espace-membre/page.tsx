@@ -28,14 +28,21 @@ const STATUS_CONFIG = {
     border: "border-border",
     Icon: Zap,
   },
-  PREMIUM: {
+  STARTER: {
+    label: "Starter",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/30",
+    Icon: Zap,
+  },
+  PRO: {
     label: "Pro",
     color: "text-gold-primary",
     bg: "bg-gold-faint",
     border: "border-gold-primary/40",
     Icon: Star,
   },
-  VIP: {
+  ELITE: {
     label: "Elite",
     color: "text-purple-400",
     bg: "bg-purple-500/10",
@@ -88,7 +95,7 @@ export default async function EspaceMembrePage() {
       .from("abonnements")
       .select(`
         id, date_debut, date_fin, statut, auto_renouvellement,
-        plan:plan_id(id, nom, prix_fcfa, duree_jours, acces_premium, acces_vip)
+        plan:plan_id(id, nom, prix_fcfa, duree_jours, acces_performance, acces_elite)
       `)
       .eq("user_id", user.id)
       .eq("statut", "ACTIF")
@@ -157,8 +164,8 @@ export default async function EspaceMembrePage() {
   // Fix 2 — accès selon niveau abonnement
   const userCanAccess = (niveau: string) => {
     if (niveau === "GRATUIT") return true;
-    if (niveau === "PREMIUM") return statusKey === "PREMIUM" || statusKey === "VIP";
-    if (niveau === "VIP") return statusKey === "VIP";
+    if (niveau === "PRO") return statusKey === "STARTER" || statusKey === "PRO" || statusKey === "ELITE";
+    if (niveau === "ELITE") return statusKey === "ELITE";
     return true;
   };
 
@@ -481,11 +488,11 @@ export default async function EspaceMembrePage() {
                       className="card-base p-4 flex items-start gap-4 border-dashed hover:border-gold-primary/40 transition-colors group relative overflow-hidden"
                     >
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        p.niveau_acces === "VIP"
+                        p.niveau_acces === "ELITE"
                           ? "bg-purple-500/10 border border-purple-500/30"
                           : "bg-gold-faint border border-gold-primary/30"
                       }`}>
-                        {p.niveau_acces === "VIP"
+                        {p.niveau_acces === "ELITE"
                           ? <Crown className="w-4 h-4 text-purple-400" />
                           : <Star className="w-4 h-4 text-gold-primary" />}
                       </div>
@@ -501,7 +508,7 @@ export default async function EspaceMembrePage() {
                         </p>
                       </div>
                       <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                        p.niveau_acces === "VIP"
+                        p.niveau_acces === "ELITE"
                           ? "text-purple-400 bg-purple-500/10 border-purple-500/30"
                           : "text-gold-primary bg-gold-faint border-gold-primary/30"
                       }`}>
@@ -519,15 +526,15 @@ export default async function EspaceMembrePage() {
                   >
                     {/* Niveau */}
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      p.niveau_acces === "VIP"
+                      p.niveau_acces === "ELITE"
                         ? "bg-purple-500/10 border border-purple-500/30"
-                        : p.niveau_acces === "PREMIUM"
+                        : p.niveau_acces === "PRO"
                         ? "bg-gold-faint border border-gold-primary/30"
                         : "bg-bg-elevated border border-border"
                     }`}>
-                      {p.niveau_acces === "VIP" ? (
+                      {p.niveau_acces === "ELITE" ? (
                         <Crown className="w-4 h-4 text-purple-400" />
-                      ) : p.niveau_acces === "PREMIUM" ? (
+                      ) : p.niveau_acces === "PRO" ? (
                         <Star className="w-4 h-4 text-gold-primary" />
                       ) : (
                         <Zap className="w-4 h-4 text-text-muted" />

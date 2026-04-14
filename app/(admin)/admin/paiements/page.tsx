@@ -65,7 +65,7 @@ export default async function PaiementsPage({ searchParams }: Props) {
   ];
 
   // Feedback URL params
-  const successStatut = searchParams.success; // "VIP" | "PREMIUM"
+  const successStatut = searchParams.success; // "STARTER" | "PRO" | "ELITE"
   const errorCode     = searchParams.error;
   const expireDate    = searchParams.expire;
 
@@ -218,7 +218,7 @@ export default async function PaiementsPage({ searchParams }: Props) {
         <p className="text-text-muted text-xs leading-relaxed flex items-start gap-2">
           <TrendingUp className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gold-primary" />
           Cliquer sur <strong className="text-text-secondary">✓ Valider</strong> met à jour automatiquement :
-          la transaction (→ Validé), l&apos;abonnement (→ Actif) et le profil de l&apos;abonné (→ PREMIUM ou VIP)
+          la transaction (→ Validé), l&apos;abonnement (→ Actif) et le profil de l&apos;abonné (→ STARTER, PRO ou ELITE)
           selon le plan souscrit.
         </p>
       </div>

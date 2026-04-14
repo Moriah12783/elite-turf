@@ -105,8 +105,8 @@ export default async function Footer() {
               <h3 className="font-serif font-semibold text-text-primary mb-4">Abonnements</h3>
               <ul className="space-y-2">
                 {[
-                  { label: "Pack Découverte — 65€",    href: "/abonnements#starter" },
-                  { label: "Pack Performance — 152€", href: "/abonnements#pro"     },
+                  { label: "Pack Starter — 65€",    href: "/abonnements#starter" },
+                  { label: "Pack Pro — 152€",       href: "/abonnements#pro"     },
                   { label: "Pack Elite — 208€",       href: "/abonnements#elite"   },
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },

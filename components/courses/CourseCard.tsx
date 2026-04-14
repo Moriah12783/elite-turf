@@ -114,8 +114,9 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
   const hasPronosticAccess =
     !pronosticPublie ||
     pronosticPublie.niveau_acces === "GRATUIT" ||
-    (pronosticPublie.niveau_acces === "PREMIUM" && (userSubscription === "PREMIUM" || userSubscription === "VIP")) ||
-    (pronosticPublie.niveau_acces === "VIP" && userSubscription === "VIP");
+    (pronosticPublie.niveau_acces === "STARTER" && ["STARTER","PRO","ELITE"].includes(userSubscription)) ||
+    (pronosticPublie.niveau_acces === "PRO"     && ["PRO","ELITE"].includes(userSubscription)) ||
+    (pronosticPublie.niveau_acces === "ELITE"   && userSubscription === "ELITE");
 
   // URLs externes
   const dateStr    = c.date_course.replace(/-/g, "");   // YYYYMMDD

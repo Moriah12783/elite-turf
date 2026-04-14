@@ -3,10 +3,13 @@ import Link from "next/link";
 import { Brain, Eye, Users, ArrowRight, Sparkles } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+
 export const metadata: Metadata = {
   title: "À Propos — Elite Turf",
   description:
     "Fondé par Stéphane Y., Elite Turf offre aux parieurs francophones une approche rigoureuse et stratégique des courses hippiques, alliant IA et expertise humaine.",
+  alternates: { canonical: `${APP_URL}/a-propos` },
 };
 
 const VALEURS = [

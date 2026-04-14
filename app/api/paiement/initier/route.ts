@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         invoice_data: {
           Abonnement: `Plan ${plan.nom}`,
           Durée: `${plan.duree_jours} jours`,
-          "Accès VIP": plan.acces_vip ? "Oui" : "Non",
+          "Accès Elite": plan.acces_elite ? "Oui" : "Non",
         },
       }),
     });

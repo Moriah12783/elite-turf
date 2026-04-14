@@ -8,7 +8,7 @@ import PageHero from "@/components/layout/PageHero";
 import type { BetType, PronosticResult } from "@/types";
 import { BET_TYPE_LABELS } from "@/types";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export const metadata: Metadata = {
   title: "Archives — Historique Complet des Résultats | Elite Turf",
@@ -51,7 +51,7 @@ export default async function ArchivesPage({ searchParams }: PageProps) {
     if (profile) subscription = profile.statut_abonnement as string;
   }
 
-  const isPremium = subscription === "PREMIUM" || subscription === "VIP";
+  const isPremium = subscription === "STARTER" || subscription === "PRO" || subscription === "ELITE";
 
   // ── 2. Filtres ────────────────────────────────────────────────────
   const now        = new Date();

@@ -1,9 +1,13 @@
 import { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+
 export const metadata: Metadata = {
   title: "Mentions Légales — Elite Turf",
   description: "Mentions légales du site EliteTurf.fr",
+  alternates: { canonical: `${APP_URL}/mentions-legales` },
+  robots: { index: false, follow: false },
 };
 
 export default function MentionsLegalesPage() {

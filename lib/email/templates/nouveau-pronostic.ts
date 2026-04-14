@@ -5,7 +5,7 @@ interface NouveauPronosticData {
   hippodrome: string;
   dateString: string;
   typePari: string;
-  niveauAcces: "GRATUIT" | "PREMIUM" | "VIP";
+  niveauAcces: "GRATUIT" | "STARTER" | "PRO" | "ELITE";
   analysesCourte: string;
   nbPartants: number;
   pronosticId: string;
@@ -18,11 +18,11 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   const prenom = data.nomComplet.split(" ")[0] || data.nomComplet;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
-  const isVip = data.niveauAcces === "VIP";
-  const isPremium = data.niveauAcces === "PREMIUM";
+  const isElite = data.niveauAcces === "ELITE";
+  const isPro = data.niveauAcces === "PRO" || data.niveauAcces === "STARTER";
 
-  const niveauLabel = isVip ? "✦ VIP Exclusif" : isPremium ? "★ Premium" : "Gratuit";
-  const niveauColor = isVip ? "#7C3AED" : isPremium ? "#C9A84C" : "#16A34A";
+  const niveauLabel = isElite ? "✦ Elite Exclusif" : isPro ? "★ Pro" : "Gratuit";
+  const niveauColor = isElite ? "#7C3AED" : isPro ? "#C9A84C" : "#16A34A";
 
   const content = `
     <!-- En-tête course -->
@@ -96,7 +96,7 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
       </tr>
     </table>
 
-    ${(isPremium || isVip) ? `
+    ${(isPro || isElite) ? `
     <div style="background:#FFFBF0;border:1px solid rgba(201,168,76,0.35);
                 border-radius:8px;padding:14px 18px;margin-bottom:24px;text-align:center;">
       <p style="margin:0;color:#C9A84C;font-size:13px;font-weight:700;">

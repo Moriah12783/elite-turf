@@ -7,7 +7,7 @@ interface ConfirmationPaiementData {
   montantEur: number;
   dateDebut: string;
   dateFin: string;
-  statutAbonnement: "PREMIUM" | "VIP";
+  statutAbonnement: "STARTER" | "PRO" | "ELITE";
 }
 
 export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
@@ -22,16 +22,16 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
       day: "numeric", month: "long", year: "numeric",
     });
 
-  const isVip = data.statutAbonnement === "VIP";
-  const badgeLabel = isVip ? "✦ Plan Elite — Accès VIP" : "✦ Plan " + data.planNom + " — Accès Premium";
-  const badgeColor = isVip ? "#7C3AED" : "#C9A84C";
+  const isElite = data.statutAbonnement === "ELITE";
+  const badgeLabel = isElite ? "✦ Plan Elite — Accès Elite" : "✦ Plan " + data.planNom + " — Accès Pro";
+  const badgeColor = isElite ? "#7C3AED" : "#C9A84C";
 
-  const features = isVip
-    ? ["Pronostics VIP exclusifs débloqués",
+  const features = isElite
+    ? ["Pronostics Elite exclusifs débloqués",
        "Alertes illimitées activées",
        "Support WhatsApp prioritaire",
        "Analyses vidéo & export stats inclus"]
-    : ["Pronostics Premium débloqués",
+    : ["Pronostics Pro débloqués",
        "Analyses complètes d'expert incluses",
        "Accès Tiercé · Quarté+ · Quinté+",
        "Support WhatsApp sous 48h"];

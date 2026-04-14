@@ -36,7 +36,7 @@ const STEPS = [
     num: "04",
     Icon: Star,
     title: "Choisissez votre formule",
-    desc: "Pack Découverte, Performance ou Elite — choisissez l'accès qui correspond à vos ambitions.",
+    desc: "Pack Starter, Pro ou Elite — choisissez l'accès qui correspond à vos ambitions.",
     href: "/abonnements",
     cta: "Voir les offres",
     color: "text-gold-primary",

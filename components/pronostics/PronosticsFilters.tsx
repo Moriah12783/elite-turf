@@ -16,8 +16,9 @@ const TYPES = [
 const NIVEAUX = [
   { value: "", label: "Tous" },
   { value: "GRATUIT", label: "Gratuit" },
-  { value: "PREMIUM", label: "Premium" },
-  { value: "VIP", label: "VIP" },
+  { value: "STARTER", label: "Starter" },
+  { value: "PRO", label: "Pro" },
+  { value: "ELITE", label: "Élite" },
 ];
 
 const PERIODES = [
@@ -112,13 +113,13 @@ export default function PronosticsFilters({ hippodromes, totalCount }: Props) {
                 current.niveau === n.value
                   ? n.value === "GRATUIT"
                     ? "bg-status-win text-white border-status-win"
-                    : n.value === "VIP"
+                    : n.value === "ELITE"
                     ? "bg-purple-500 text-white border-purple-500"
                     : "bg-gold-primary text-bg-primary border-gold-primary"
                   : "bg-bg-elevated border-border text-text-secondary hover:border-gold-primary/40 hover:text-text-primary"
               )}
             >
-              {n.value === "GRATUIT" ? "✓ " : n.value === "VIP" ? "★ " : "⭐ "}
+              {n.value === "GRATUIT" ? "✓ " : n.value === "ELITE" ? "★ " : "⭐ "}
               {n.label}
             </button>
           ))}

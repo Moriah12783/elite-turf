@@ -4,6 +4,7 @@ import { XCircle, RefreshCw, MessageCircle, ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Paiement échoué — Elite Turf",
+  robots: { index: false, follow: false },
 };
 
 export default function PaiementEchecPage() {

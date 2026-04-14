@@ -153,13 +153,13 @@ export default function HeroSection() {
             transition: "opacity 0.8s ease 0.15s, transform 0.8s ease 0.15s",
           }}
         >
-          <span className="text-white">Pronostics hippiques premium,</span>
+          <span className="text-white">Analyses hippiques premium,</span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
           >
-            clairs et pensés pour gagner
+            méthode, clarté, transparence
           </span>
         </h1>
 
@@ -172,11 +172,11 @@ export default function HeroSection() {
             transition: "opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s",
           }}
         >
-          Consultez les analyses du jour, les performances récentes et{" "}
+          Chaque matin, nos spécialistes décryptent les courses PMU avec rigueur —{" "}
           <span className="text-gold-light font-medium">
-            téléchargez notre guide gratuit
+            sélections vérifiables, analyses détaillées
           </span>{" "}
-          pour mieux découvrir l&apos;univers Elite Turf.
+          et résultats publiés en toute transparence.
         </p>
 
         {/* ── CTAs ── */}

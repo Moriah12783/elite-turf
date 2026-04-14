@@ -14,17 +14,19 @@ export default async function AdminUtilisateursPage() {
     .limit(100);
 
   const STATUT_BADGE: Record<string, string> = {
-    GRATUIT: "bg-bg-elevated text-text-muted border-border",
-    PREMIUM: "bg-gold-faint text-gold-light border-gold-primary/30",
-    VIP: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-    EXPIRE: "bg-status-loss/10 text-status-loss border-status-loss/20",
+    GRATUIT:  "bg-bg-elevated text-text-muted border-border",
+    STARTER:  "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    PRO:      "bg-gold-faint text-gold-light border-gold-primary/30",
+    ELITE:    "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    EXPIRE:   "bg-status-loss/10 text-status-loss border-status-loss/20",
   };
 
   const STATUT_LABEL: Record<string, string> = {
     GRATUIT: "GRATUIT",
-    PREMIUM: "PREMIUM",
-    VIP: "ELITE",
-    EXPIRE: "EXPIRÉ",
+    STARTER: "STARTER",
+    PRO:     "PRO",
+    ELITE:   "ELITE",
+    EXPIRE:  "EXPIRÉ",
   };
 
   return (
@@ -40,8 +42,8 @@ export default async function AdminUtilisateursPage() {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: "Total", value: users?.length || 0, icon: Users, color: "text-blue-400" },
-          { label: "Starter + Pro", value: users?.filter(u => u.statut_abonnement === "PREMIUM").length || 0, icon: Star, color: "text-gold-primary" },
-          { label: "Elite", value: users?.filter(u => u.statut_abonnement === "VIP").length || 0, icon: Crown, color: "text-purple-400" },
+          { label: "Starter + Pro", value: users?.filter(u => ["STARTER","PRO"].includes(u.statut_abonnement)).length || 0, icon: Star, color: "text-gold-primary" },
+          { label: "Elite", value: users?.filter(u => u.statut_abonnement === "ELITE").length || 0, icon: Crown, color: "text-purple-400" },
           { label: "Gratuit", value: users?.filter(u => u.statut_abonnement === "GRATUIT").length || 0, icon: Users, color: "text-text-secondary" },
           { label: "Expirés", value: users?.filter(u => u.statut_abonnement === "EXPIRE").length || 0, icon: Users, color: "text-status-loss" },
         ].map((s, i) => (

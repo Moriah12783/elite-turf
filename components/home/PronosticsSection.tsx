@@ -40,8 +40,9 @@ function getTodayParis(): string {
 /** Vérifie l'accès selon le niveau et l'abonnement utilisateur */
 function canAccess(niveau: string, sub: string): boolean {
   if (niveau === "GRATUIT") return true;
-  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
-  if (niveau === "VIP") return sub === "VIP";
+  if (niveau === "STARTER") return ["STARTER","PRO","ELITE"].includes(sub);
+  if (niveau === "PRO")     return ["PRO","ELITE"].includes(sub);
+  if (niveau === "ELITE")   return sub === "ELITE";
   return false;
 }
 
@@ -413,7 +414,7 @@ export default async function PronosticsSection() {
                         ? "bg-status-win/10 text-status-win border-status-win/20"
                         : "bg-gold-faint text-gold-light border-gold-primary/30"
                     }`}>
-                      {!isLocked ? (p.niveau_acces === "GRATUIT" ? "GRATUIT" : p.niveau_acces === "VIP" ? "★ ELITE" : "★ PRO") : (p.niveau_acces === "VIP" ? "★ ELITE" : "★ PRO")}
+                      {!isLocked ? (p.niveau_acces === "GRATUIT" ? "GRATUIT" : p.niveau_acces === "ELITE" ? "★ ELITE" : "★ PRO") : (p.niveau_acces === "ELITE" ? "★ ELITE" : "★ PRO")}
                     </span>
                     <span className="text-xs px-3 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
                       {p.type_pari}
@@ -528,7 +529,7 @@ function BannerImage({ count }: { count: number }) {
         </h2>
         <p className="text-text-secondary text-sm sm:text-base max-w-lg">
           Analyses approfondies par nos spécialistes hippiques.{" "}
-          <span className="text-gold-light">73% de réussite ce mois.</span>
+          <span className="text-gold-light">Résultats publiés chaque jour.</span>
         </p>
         <div className="flex items-center gap-3 mt-4">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
@@ -549,11 +550,11 @@ function CtaBlock() {
   return (
     <div className="mt-10 text-center">
       <Link
-        href="/abonnements"
+        href="/pronostics"
         className="inline-flex items-center gap-2 px-8 py-4 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-base rounded-xl transition-all shadow-gold"
       >
         <Star className="w-5 h-5" fill="currentColor" />
-        Accéder à tous les pronostics Pro
+        Voir tous les pronostics du jour
       </Link>
       <p className="mt-3 text-text-muted text-xs">
         Paiement par Orange Money · MTN MoMo · Wave · Accès immédiat

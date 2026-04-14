@@ -66,7 +66,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
       Sans renouvellement, vous perdrez l'accès à :
     </p>
 
-    ${["Pronostics Premium & VIP exclusifs",
+    ${["Pronostics Pro & Elite exclusifs",
        "Analyses complètes d'expert",
        "Alertes avant le départ des courses",
        "Historique de performances complet"
@@ -100,7 +100,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
 
   const subjects: Record<number, string> = {
     3: `🔔 Votre abonnement Elite Turf expire dans 3 jours`,
-    2: `⏰ Plus que 2 jours — Renouvelez votre accès Premium`,
+    2: `⏰ Plus que 2 jours — Renouvelez votre accès Pro`,
     1: `⚠ Dernier jour ! Votre accès Elite Turf expire ce soir`,
   };
 

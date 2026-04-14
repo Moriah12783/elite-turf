@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import type { ElementType } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 import {
   TrendingUp, Award, Flame, CheckCircle2, XCircle,
   Minus, Clock3, Star, Zap, BarChart3, Trophy,
@@ -19,6 +21,7 @@ export const metadata: Metadata = {
   title: "Nos Résultats Prouvés — Elite Turf",
   description:
     "Transparence totale : consultez l'historique complet de nos pronostics, notre taux de réussite et nos statistiques par type de pari.",
+  alternates: { canonical: `${APP_URL}/performances` },
 };
 
 export const dynamic = "force-dynamic";

@@ -6,9 +6,9 @@ import { sendSMS, formatSMSMessage } from "@/lib/sms";
  * POST /api/sms/send
  * Envoie une alerte SMS aux abonnés ayant un numéro de téléphone.
  * Body JSON : { message: string, segment: "tous" | "premium" | "vip" }
- *   - "tous"    → PREMIUM + VIP (tous les abonnés payants)
- *   - "premium" → PREMIUM uniquement (Starter + Pro)
- *   - "vip"     → VIP uniquement (Elite)
+ *   - "tous"    → STARTER + PRO + ELITE (tous les abonnés payants)
+ *   - "premium" → pro → PRO uniquement
+ *   - "vip"     → ELITE uniquement
  */
 export async function POST(req: NextRequest) {
   // Auth admin
@@ -40,12 +40,12 @@ export async function POST(req: NextRequest) {
     .neq("phone", "");
 
   if (segment === "vip") {
-    query = query.eq("statut_abonnement", "VIP");
+    query = query.eq("statut_abonnement", "ELITE");
   } else if (segment === "premium") {
-    query = query.eq("statut_abonnement", "PREMIUM");
+    query = query.in("statut_abonnement", ["STARTER", "PRO"]);
   } else {
     // "tous" = tous les abonnés payants
-    query = query.in("statut_abonnement", ["PREMIUM", "VIP"]);
+    query = query.in("statut_abonnement", ["STARTER", "PRO", "ELITE"]);
   }
 
   const { data: destinataires, error } = await query;
@@ -112,11 +112,11 @@ export async function GET(req: NextRequest) {
   // Compter par segment en parallèle
   const [{ count: countTous }, { count: countPremium }, { count: countVip }] = await Promise.all([
     adminClient.from("profiles").select("id", { count: "exact", head: true })
-      .in("statut_abonnement", ["PREMIUM", "VIP"]).not("phone", "is", null).neq("phone", ""),
+      .in("statut_abonnement", ["STARTER", "PRO", "ELITE"]).not("phone", "is", null).neq("phone", ""),
     adminClient.from("profiles").select("id", { count: "exact", head: true })
-      .eq("statut_abonnement", "PREMIUM").not("phone", "is", null).neq("phone", ""),
+      .in("statut_abonnement", ["STARTER", "PRO"]).not("phone", "is", null).neq("phone", ""),
     adminClient.from("profiles").select("id", { count: "exact", head: true })
-      .eq("statut_abonnement", "VIP").not("phone", "is", null).neq("phone", ""),
+      .eq("statut_abonnement", "ELITE").not("phone", "is", null).neq("phone", ""),
   ]);
 
   return NextResponse.json({

@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     ).toISOString();
 
     // Déterminer le statut d'abonnement
-    const statutAbonnement = plan.acces_vip ? "VIP" : "PREMIUM";
+    const statutAbonnement = plan.acces_elite ? "ELITE" : plan.id === "starter" ? "STARTER" : "PRO";
 
     // 1. Désactiver les anciens abonnements actifs
     await supabase
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
           montantEur: plan.prix_eur,
           dateDebut,
           dateFin,
-          statutAbonnement: statutAbonnement as "PREMIUM" | "VIP",
+          statutAbonnement: statutAbonnement as "STARTER" | "PRO" | "ELITE",
         });
         await sendEmail({ to: userEmail, subject, html });
       }

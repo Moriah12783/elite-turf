@@ -8,7 +8,7 @@ import { logCronStart } from "@/lib/cron-logger";
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
-const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization") || "";

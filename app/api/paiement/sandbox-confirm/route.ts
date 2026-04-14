@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
     const dateFin = new Date(now.getTime() + plan.duree_jours * 24 * 60 * 60 * 1000).toISOString();
-    const statutAbonnement = plan.acces_vip ? "VIP" : "PREMIUM";
+    const statutAbonnement = plan.acces_elite ? "ELITE" : plan.id === "starter" ? "STARTER" : "PRO";
 
     // Désactiver anciens abonnements
     await supabase.from("abonnements").update({ statut: "EXPIRE" }).eq("user_id", userId).eq("statut", "ACTIF");
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           montantEur: plan.prix_eur,
           dateDebut: now.toISOString(),
           dateFin,
-          statutAbonnement: statutAbonnement as "PREMIUM" | "VIP",
+          statutAbonnement: statutAbonnement as "STARTER" | "PRO" | "ELITE",
         });
         await sendEmail({ to: userEmail, subject, html });
       }

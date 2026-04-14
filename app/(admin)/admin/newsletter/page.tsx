@@ -289,7 +289,7 @@ export default function NewsletterPage() {
               </div>
               <div className="p-2 bg-purple-400/5 border border-purple-400/20 rounded-lg">
                 <p className="text-purple-400 font-bold">Elite</p>
-                <p className="text-text-muted">Message VIP exclusif, fidélisation</p>
+                <p className="text-text-muted">Message Elite exclusif, fidélisation</p>
               </div>
             </div>
           </div>

@@ -24,12 +24,12 @@ export async function GET() {
   ] = await Promise.all([
     // Prospects = leads table (guide gratuit, pas encore abonné)
     adminClient.from("leads").select("id", { count: "exact", head: true }),
-    // Actifs = PREMIUM (Découverte + Performance)
+    // Actifs = STARTER + PRO (Découverte + Performance)
     adminClient.from("profiles").select("id", { count: "exact", head: true })
-      .eq("statut_abonnement", "PREMIUM"),
-    // Elite = VIP
+      .in("statut_abonnement", ["STARTER", "PRO"]),
+    // Elite = ELITE
     adminClient.from("profiles").select("id", { count: "exact", head: true })
-      .eq("statut_abonnement", "VIP"),
+      .eq("statut_abonnement", "ELITE"),
   ]);
 
   return NextResponse.json({

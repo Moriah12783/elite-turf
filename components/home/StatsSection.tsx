@@ -20,7 +20,7 @@ export default async function StatsSection() {
   const { data: rawResults } = await supabase
     .from("pronostics")
     .select(`
-      id, type_pari, resultat, gain_potentiel, date_publication,
+      id, type_pari, resultat, gains_theoriques, date_publication,
       course:courses(
         libelle, date_course,
         hippodrome:hippodromes(nom, pays),
@@ -53,8 +53,8 @@ export default async function StatsSection() {
     course: `${p.type_pari} ${p.course?.hippodrome?.nom || ""}`,
     type:   p.type_pari || "",
     result: p.resultat || "PERDANT",
-    gain:   p.gain_potentiel
-      ? (p.resultat === "GAGNANT" ? `+${p.gain_potentiel}%` : p.resultat === "PARTIEL" ? `+${Math.round(p.gain_potentiel * 0.3)}%` : "−")
+    gain:   p.gains_theoriques
+      ? (p.resultat === "GAGNANT" ? `+${p.gains_theoriques}%` : p.resultat === "PARTIEL" ? `+${Math.round(p.gains_theoriques * 0.3)}%` : "−")
       : (p.resultat === "GAGNANT" ? "+156%" : p.resultat === "PARTIEL" ? "+48%" : "−"),
   }));
 
