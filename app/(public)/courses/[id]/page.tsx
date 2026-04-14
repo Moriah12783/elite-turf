@@ -14,6 +14,8 @@ import CourseTabsClient from "@/components/courses/CourseTabsClient";
 
 export const dynamic = "force-dynamic";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+
 interface PageProps { params: { id: string } }
 
 const TERRAIN_LABELS: Record<string, string> = {
@@ -37,13 +39,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!c) return { title: "Course — Elite Turf" };
   return {
     title: `${c.libelle} — ${(c.hippodrome as any)?.nom || ""} | Elite Turf`,
+    alternates: { canonical: `${APP_URL}/courses/${params.id}` },
+    // Pages de course individuelles : peu de valeur SEO (UUID, contenu dynamique éphémère)
+    robots: { index: false, follow: false },
   };
 }
 
 function canAccess(niveau: string, sub: SubscriptionStatus) {
   if (niveau === "GRATUIT") return true;
-  if (niveau === "PREMIUM") return sub === "PREMIUM" || sub === "VIP";
-  if (niveau === "VIP")     return sub === "VIP";
+  if (niveau === "PRO") return sub === "STARTER" || sub === "PRO" || sub === "ELITE";
+  if (niveau === "ELITE")   return sub === "ELITE";
   return false;
 }
 
@@ -275,7 +280,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               statut={c.statut}
               genyUrl={genyUrl}
               isVedette={!!pronosticPublie}
-              isSubscribed={userSubscription === "PREMIUM" || userSubscription === "VIP"}
+              isSubscribed={["STARTER","PRO","ELITE"].includes(userSubscription)}
             />
 
           </div>
