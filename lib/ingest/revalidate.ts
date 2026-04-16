@@ -6,10 +6,18 @@
 
 import { revalidatePath } from "next/cache";
 
-export function revalidatePronosticIngestion(): void {
+/**
+ * Revalidation après ingestion d'un pronostic.
+ * @param pronosticId - UUID Supabase du pronostic (optionnel).
+ *   Si fourni, invalide aussi la page détail /pronostics/[id].
+ */
+export function revalidatePronosticIngestion(pronosticId?: string): void {
   try {
     revalidatePath("/pronostics");
     revalidatePath("/");
+    if (pronosticId) {
+      revalidatePath(`/pronostics/${pronosticId}`);
+    }
   } catch (err) {
     console.error("[Revalidate] pronostic:", err);
   }

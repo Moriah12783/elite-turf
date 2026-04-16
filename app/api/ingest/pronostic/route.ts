@@ -1,10 +1,16 @@
 /**
  * POST /api/ingest/pronostic
  *
- * Endpoint d'ingestion Phase 1A — reçoit un pronostic validé depuis le moteur MVP.
+ * Endpoint d'ingestion Phase 1B — reçoit un pronostic validé depuis le moteur MVP.
  * Spec de référence : docs/mvp_connexion_eliteturf.md §7A, §8, §10, §12, §15, §16
  *
- * Phase 1A : publie forcé à false — publication manuelle via admin uniquement.
+ * dryRun: true  → simulation pure, aucune écriture
+ * dryRun: false → upsert réel idempotent, publie=false, publication manuelle admin requise
+ *
+ * Schéma Phase 1B :
+ *   - course_id nullable (lien course ouvert en Phase 2)
+ *   - auteur_id nullable (pronostic sans auteur humain)
+ *   - external_id UNIQUE pour idempotence
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,9 +26,9 @@ import { revalidatePronosticIngestion } from "@/lib/ingest/revalidate";
 
 export const dynamic = "force-dynamic";
 
-// Phase 1A : mettre à true pour forcer dry_run sur TOUTES les requêtes
-// (indépendamment du flag dryRun dans le payload)
-const PHASE_1A_FORCE_DRY_RUN = false;
+// Mettre à true pour forcer le mode simulation sur TOUTES les requêtes
+// (utile pour revenir en mode test sans toucher le MVP)
+const FORCE_DRY_RUN = false;
 
 export async function POST(req: NextRequest) {
   const receivedAt = new Date().toISOString();
@@ -60,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const payload  = body as PronosticPayload;
-  const isDryRun = PHASE_1A_FORCE_DRY_RUN || payload.dryRun === true;
+  const isDryRun = FORCE_DRY_RUN || payload.dryRun === true;
   const summary  = buildPayloadSummary(payload);
 
   // 4. DRY RUN — simulation pure
@@ -81,7 +87,7 @@ export async function POST(req: NextRequest) {
           confiance: payload.confiance, publie: false, source: "MVP",
         },
         wouldRevalidate: ["/pronostics", "/"],
-        note: "Phase 1A — publication réelle non activée",
+        note: "Simulation — aucune écriture réelle. Passer dryRun: false pour l'ingestion réelle.",
       },
     }, { status: 200 });
   }
@@ -101,12 +107,13 @@ export async function POST(req: NextRequest) {
       external_id:      payload.externalId,
       race_external_id: payload.raceExternalId,
       niveau_acces:     payload.niveauAcces,
-      type_pari:        "QUINTE_PLUS",
+      type_pari:        "QUINTE_PLUS",      // Phase 1B : Quinté+ uniquement
       selection:        payload.selection,
       confiance:        payload.confiance,
       analyse_courte:   (payload.analysisText ?? `${payload.hippodrome} R${payload.reunion}C${payload.courseNumber}`).slice(0, 300),
       analyse_texte:    payload.analysisText ?? null,
-      publie:           false,   // Phase 1A : jamais auto-publié
+      publie:           false,              // Phase 1B : publie=false forcé — publication manuelle admin requise
+      date_publication: null,               // Défini par l'admin au moment de la publication
       resultat:         "EN_ATTENTE",
       source:           "MVP",
       updated_at:       new Date().toISOString(),
@@ -116,6 +123,7 @@ export async function POST(req: NextRequest) {
     let pronosticId: string | null = null;
 
     if (existing) {
+      // Idempotence : mise à jour de l'existant, pas de doublon
       const { error } = await supabase.from("pronostics").update(upsertData).eq("id", existing.id);
       if (error) throw new Error(`Supabase update: ${error.message}`);
       action      = "updated";
@@ -130,19 +138,28 @@ export async function POST(req: NextRequest) {
       pronosticId = inserted?.id ?? null;
     }
 
-    revalidatePronosticIngestion();
+    // Revalidation Next.js après upsert réel
+    revalidatePronosticIngestion(pronosticId ?? undefined);
 
     await logIngestEvent({
       objectType: "pronostic", externalId: payload.externalId,
       raceExternalId: payload.raceExternalId, requestId,
       status: existing ? "duplicate_absorbed" : "success",
-      message: `${action} — id: ${pronosticId}`,
-      dryRun: false, payloadSummary: summary,
+      message: `${action} — pronosticId: ${pronosticId} — externalId: ${payload.externalId}`,
+      dryRun: false,
+      payloadSummary: { ...summary, pronosticId, action, isDuplicate: !!existing },
     });
 
     return NextResponse.json({
-      ok: true, dryRun: false, step: "ingested", action, pronosticId, requestId, receivedAt,
-      note: "Phase 1A — publie=false forcé, publication manuelle requise côté admin",
+      ok: true,
+      dryRun: false,
+      step: "ingested",
+      action,           // "inserted" | "updated"
+      pronosticId,      // UUID Supabase du pronostic créé ou mis à jour
+      requestId,
+      receivedAt,
+      isDuplicate: !!existing,
+      note: "Phase 1B — publie=false, publication manuelle requise via interface admin",
     }, { status: 200 });
 
   } catch (err: unknown) {
@@ -159,7 +176,16 @@ export async function POST(req: NextRequest) {
 // GET santé — le MVP peut vérifier que l'endpoint est disponible
 export async function GET() {
   return NextResponse.json({
-    status: "ok", endpoint: "/api/ingest/pronostic",
-    phase: "1A", dryRunForced: PHASE_1A_FORCE_DRY_RUN, version: "1.0.0",
+    status: "ok",
+    endpoint: "/api/ingest/pronostic",
+    phase: "1B",
+    dryRunForced: FORCE_DRY_RUN,
+    version: "1.1.0",
+    capabilities: {
+      dryRun: true,
+      realWrite: true,
+      idempotence: "external_id",
+      publie: "always_false_manual_admin_required",
+    },
   });
 }
