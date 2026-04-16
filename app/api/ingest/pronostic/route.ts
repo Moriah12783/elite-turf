@@ -26,9 +26,10 @@ import { revalidatePronosticIngestion } from "@/lib/ingest/revalidate";
 
 export const dynamic = "force-dynamic";
 
-// Mettre à true pour forcer le mode simulation sur TOUTES les requêtes
-// (utile pour revenir en mode test sans toucher le MVP)
-const FORCE_DRY_RUN = false;
+// Coupe-circuit opérationnel — contrôlé par variable d'environnement.
+// Mettre MVP_REAL_WRITE_ENABLED=true dans Vercel pour autoriser l'écriture réelle.
+// Toute autre valeur (absent, false, vide) → simulation forcée.
+const REAL_WRITE_ENABLED = process.env.MVP_REAL_WRITE_ENABLED === "true";
 
 export async function POST(req: NextRequest) {
   const receivedAt = new Date().toISOString();
@@ -66,19 +67,32 @@ export async function POST(req: NextRequest) {
   }
 
   const payload  = body as PronosticPayload;
-  const isDryRun = FORCE_DRY_RUN || payload.dryRun === true;
+  const isDryRun = !REAL_WRITE_ENABLED || payload.dryRun === true;
   const summary  = buildPayloadSummary(payload);
 
   // 4. DRY RUN — simulation pure
+  //    Deux causes possibles :
+  //    A) payload.dryRun=true (choix explicite du MVP)
+  //    B) MVP_REAL_WRITE_ENABLED!=true (coupe-circuit site actif)
   if (isDryRun) {
+    const blockedByCircuitBreaker = !REAL_WRITE_ENABLED && payload.dryRun !== true;
+    const dryRunReason = blockedByCircuitBreaker
+      ? "Écriture réelle bloquée — MVP_REAL_WRITE_ENABLED non activé côté site"
+      : "Simulation demandée par le payload (dryRun: true)";
+
     await logIngestEvent({
       objectType: "pronostic", externalId: payload.externalId,
       raceExternalId: payload.raceExternalId, requestId,
-      status: "dry_run", message: "Simulation — aucune écriture", dryRun: true, payloadSummary: summary,
+      status: "dry_run",
+      message: dryRunReason,
+      dryRun: true,
+      payloadSummary: { ...summary, blockedByCircuitBreaker },
     });
     return NextResponse.json({
       ok: true, dryRun: true, step: "dry_run", requestId, receivedAt,
       mvpTimestamp: timestamp, authValidated: true, payloadValid: true,
+      blockedByCircuitBreaker,
+      reason: dryRunReason,
       simulation: {
         action: "upsert", table: "pronostics", idempotenceKey: payload.externalId,
         wouldWrite: {
@@ -87,7 +101,6 @@ export async function POST(req: NextRequest) {
           confiance: payload.confiance, publie: false, source: "MVP",
         },
         wouldRevalidate: ["/pronostics", "/"],
-        note: "Simulation — aucune écriture réelle. Passer dryRun: false pour l'ingestion réelle.",
       },
     }, { status: 200 });
   }
@@ -173,17 +186,17 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET santé — le MVP peut vérifier que l'endpoint est disponible
+// GET santé — le MVP peut vérifier l'état de l'endpoint avant d'envoyer
 export async function GET() {
   return NextResponse.json({
     status: "ok",
     endpoint: "/api/ingest/pronostic",
     phase: "1B",
-    dryRunForced: FORCE_DRY_RUN,
     version: "1.1.0",
+    realWriteEnabled: REAL_WRITE_ENABLED,   // true = écriture réelle active
     capabilities: {
       dryRun: true,
-      realWrite: true,
+      realWrite: REAL_WRITE_ENABLED,
       idempotence: "external_id",
       publie: "always_false_manual_admin_required",
     },
