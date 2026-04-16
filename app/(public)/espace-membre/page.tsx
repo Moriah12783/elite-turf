@@ -16,6 +16,8 @@ import TransactionsHistory from "@/components/membre/TransactionsHistory";
 export const metadata: Metadata = {
   title: "Mon Espace Membre — Elite Turf",
   description: "Gérez votre abonnement, consultez vos pronostics et suivez vos statistiques.",
+  // Page privée — ne pas indexer sur Google
+  robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
