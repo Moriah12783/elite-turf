@@ -232,6 +232,7 @@ export async function fetchPmuPartants(
   dateStr: string,
   R: number,
   C: number,
+  timeoutMs = 1500,   // timeout par URL — 4 URLs × 1.5s = 6s max, sous le seuil Vercel 10s
 ): Promise<PmuParticipant[]> {
   const urls = [
     `${PMU_PROXY}/rest/client/1/partants/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
@@ -241,14 +242,24 @@ export async function fetchPmuPartants(
   ];
 
   for (const url of urls) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store" });
+      const res = await fetch(url, {
+        headers: PMU_HEADERS,
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
       if (!res.ok) continue;
       const json = await res.json();
       const list: PmuParticipant[] =
         json?.participants ?? json?.partants ?? json?.programme?.participants ?? [];
       if (list.length > 0) return list;
-    } catch { /* silently continue */ }
+    } catch {
+      clearTimeout(timer);
+      /* URL indisponible ou timeout — on passe à la suivante */
+    }
   }
   return [];
 }
@@ -278,6 +289,7 @@ export async function fetchPmuResultats(
   dateStr: string,
   R: number,
   C: number,
+  timeoutMs = 3000,   // timeout par URL — utilisé dans les crons, peut attendre un peu plus
 ): Promise<PmuResultat | null> {
   const urls = [
     `${PMU_PROXY}/rest/client/1/resultats/${dateStr}/R${R}/C${C}?specialisation=INTERNET`,
@@ -287,8 +299,15 @@ export async function fetchPmuResultats(
   ];
 
   for (const url of urls) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store" });
+      const res = await fetch(url, {
+        headers: PMU_HEADERS,
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
       if (!res.ok) continue;
       const json = await res.json();
       // L'API PMU peut imbriquer les résultats sous "resultats" ou à la racine
@@ -299,7 +318,10 @@ export async function fetchPmuResultats(
       if (arrivee.length > 0 || rapports.length > 0) {
         return { arrivee, rapports };
       }
-    } catch { /* silently continue */ }
+    } catch {
+      clearTimeout(timer);
+      /* URL indisponible ou timeout — on passe à la suivante */
+    }
   }
   return null;
 }
