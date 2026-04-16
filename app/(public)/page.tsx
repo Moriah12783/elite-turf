@@ -30,9 +30,47 @@ export const metadata: Metadata = {
   },
 };
 
+// ── JSON-LD schemas pour le SEO ────────────────────────────────────
+const homeFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    { "@type": "Question", name: "À quelle heure les pronostics sont-ils publiés ?",
+      acceptedAnswer: { "@type": "Answer", text: "Le Quinté+ est publié chaque matin avant 8h heure de Paris. Le Quarté+ et le Tiercé avant 9h. Si vous êtes abonné, vous recevez une notification email dès la publication." } },
+    { "@type": "Question", name: "Faut-il créer un compte pour consulter les pronostics ?",
+      acceptedAnswer: { "@type": "Answer", text: "Non. Un pronostic gratuit (Tiercé) est accessible chaque jour sans inscription. Les pronostics Starter, Pro et Elite nécessitent un abonnement payant à partir de 65€." } },
+    { "@type": "Question", name: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
+      acceptedAnswer: { "@type": "Answer", text: "Choisissez votre plan, sélectionnez Orange Money, MTN MoMo ou Wave. Vous recevez une notification sur votre téléphone. Validez et votre accès est actif en moins de 2 minutes. La conversion FCFA est automatique." } },
+    { "@type": "Question", name: "Les pronostics Elite Turf sont-ils fiables ?",
+      acceptedAnswer: { "@type": "Answer", text: "Nos résultats sont publics et vérifiables. Vous pouvez consulter l'intégralité de notre historique sur la page Performances. Nous publions les bons comme les moins bons résultats — la transparence est notre engagement." } },
+    { "@type": "Question", name: "Puis-je annuler mon abonnement à tout moment ?",
+      acceptedAnswer: { "@type": "Answer", text: "Oui. Tous nos abonnements sont mensuels, sans engagement de durée. Vous gardez l'accès jusqu'à la fin de la période payée, puis ça s'arrête automatiquement — sans frais, sans démarche." } },
+    { "@type": "Question", name: "Que contient le guide gratuit Elite Turf ?",
+      acceptedAnswer: { "@type": "Answer", text: "Le guide PDF 'Les 5 secrets pour détecter les outsiders gagnants' révèle les méthodes utilisées par nos experts : lecture de fiche, exploitation des côtes, identification des outsiders à valeur. 100% gratuit, accessible sans inscription." } },
+    { "@type": "Question", name: "Le site est-il accessible depuis un téléphone mobile ?",
+      acceptedAnswer: { "@type": "Answer", text: "Oui, Elite Turf est conçu mobile-first. L'interface est fluide et rapide sur tous les appareils. La majorité de nos parieurs africains consulte depuis leur téléphone." } },
+  ],
+};
+
+const homeBreadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Accueil",     item: APP_URL },
+    { "@type": "ListItem", position: 2, name: "Pronostics",  item: `${APP_URL}/pronostics` },
+    { "@type": "ListItem", position: 3, name: "Abonnements", item: `${APP_URL}/abonnements` },
+    { "@type": "ListItem", position: 4, name: "Blog",        item: `${APP_URL}/blog` },
+    { "@type": "ListItem", position: 5, name: "Performances",item: `${APP_URL}/performances` },
+  ],
+};
+
 export default function HomePage() {
   return (
     <>
+      {/* JSON-LD — FAQ + BreadcrumbList pour Google */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeBreadcrumbJsonLd) }} />
+
       {/* 1 — Hero : clarté immédiate + 2 CTAs */}
       <HeroSection />
 

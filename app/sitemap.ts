@@ -19,10 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/archives`,               lastModified: now, changeFrequency: "weekly",  priority: 0.65 },
     { url: `${APP_URL}/a-propos`,               lastModified: now, changeFrequency: "yearly",  priority: 0.5  },
     { url: `${APP_URL}/contact`,                lastModified: now, changeFrequency: "yearly",  priority: 0.4  },
-    // Pages légales — conservées pour la complétude mais noindex côté page
-    { url: `${APP_URL}/mentions-legales`,       lastModified: now, changeFrequency: "yearly",  priority: 0.1  },
-    { url: `${APP_URL}/confidentialite`,        lastModified: now, changeFrequency: "yearly",  priority: 0.1  },
-    { url: `${APP_URL}/cgu`,                    lastModified: now, changeFrequency: "yearly",  priority: 0.1  },
+    // /mentions-legales, /confidentialite, /cgu supprimées du sitemap (noindex côté page → ne pas inclure dans sitemap)
     // /connexion et /inscription supprimés (pages auth → noindex)
   ];
 

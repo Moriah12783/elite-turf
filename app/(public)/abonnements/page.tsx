@@ -95,8 +95,18 @@ export default async function AbonnementsPage() {
     currentPlan = profile?.statut_abonnement || null;
   }
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil",      item: APP_URL },
+      { "@type": "ListItem", position: 2, name: "Abonnements",  item: `${APP_URL}/abonnements` },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"

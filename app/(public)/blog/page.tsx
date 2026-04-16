@@ -99,8 +99,18 @@ export default async function BlogPage({ searchParams }: PageProps) {
     pronosticsGratuits = (data as typeof pronosticsGratuits) || [];
   } catch { /* pas de données encore */ }
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: APP_URL },
+      { "@type": "ListItem", position: 2, name: "Blog PMU", item: `${APP_URL}/blog` },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <PageHero
         image="/images/heroes/hero-blog.jpg"
         titre="Blog PMU & Analyses hippiques"
