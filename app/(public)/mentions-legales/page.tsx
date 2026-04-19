@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
+import OperateursANJ from "@/components/home/OperateursANJ";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
@@ -85,6 +86,9 @@ export default function MentionsLegalesPage() {
 
         </div>
       </div>
+
+      {/* Section opérateurs agréés ANJ — requis certification Google Ads */}
+      <OperateursANJ />
     </div>
   );
 }

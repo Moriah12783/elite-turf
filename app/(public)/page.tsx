@@ -5,6 +5,7 @@ import CoursesSection from "@/components/home/CoursesSection";
 import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
+import OperateursANJ from "@/components/home/OperateursANJ";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
 import FAQSection from "@/components/home/FAQSection";
 import GuideBlocSection from "@/components/home/GuideBlocSection";
@@ -91,6 +92,9 @@ export default function HomePage() {
 
       {/* 7 — Offres / abonnements */}
       <PricingSection />
+
+      {/* 7b — Opérateurs agréés ANJ (requis certification Google Ads) */}
+      <OperateursANJ />
 
       {/* 8 — Témoignages */}
       <TestimonialsSection />
