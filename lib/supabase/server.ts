@@ -27,6 +27,7 @@ export async function createClient() {
 }
 
 // Client admin — bypasse les RLS, uniquement pour les Server Components admin
+// global.fetch avec cache: 'no-store' pour éviter le cache HTTP de Next.js
 export function createServiceClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,6 +36,10 @@ export function createServiceClient() {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+      },
+      global: {
+        fetch: (url: RequestInfo | URL, options: RequestInit = {}) =>
+          fetch(url, { ...options, cache: "no-store" }),
       },
     }
   );
