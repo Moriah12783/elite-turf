@@ -268,13 +268,13 @@ export async function GET(req: NextRequest) {
     // ── 3. Prioriser : Quinté+ d'abord, puis Quarté+, puis nb_partants DESC ─
     type RawCourse = typeof coursesRaw[0];
 
-    function coursePriority(c: RawCourse): number {
+    const coursePriority = (c: RawCourse): number => {
       const paris = (c.paris_disponibles as string[]) ?? [];
       if (paris.includes("QUINTE_PLUS")) return 0;
       if (paris.includes("QUARTE_PLUS")) return 1;
       if (paris.includes("TIERCE"))       return 2;
       return 3;
-    }
+    };
 
     const sorted = [...coursesRaw].sort((a, b) => {
       const pd = coursePriority(a) - coursePriority(b);
