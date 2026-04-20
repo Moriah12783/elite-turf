@@ -330,13 +330,21 @@ export async function GET(req: NextRequest) {
       const typePari    = prono.type_pari ?? getPriorityTypePari(course.paris_disponibles);
       const niveauAcces = getNiveauAcces(typePari);
 
+      // Normaliser la confiance pour correspondre à la contrainte Supabase
+      const rawConfiance = (prono.confiance ?? "MOYENNE").toUpperCase().trim();
+      const confiance = rawConfiance === "HAUTE" || rawConfiance === "HIGH" || rawConfiance === "ÉLEVÉE" || rawConfiance === "ELEVEE"
+        ? "HAUTE"
+        : rawConfiance === "FAIBLE" || rawConfiance === "LOW" || rawConfiance === "BASSE"
+        ? "FAIBLE"
+        : "MOYENNE";
+
       const { data: insertedRow, error: insertErr } = await supabase
         .from("pronostics")
         .insert({
           course_id:        prono.course_id,
           type_pari:        typePari,
           selection:        prono.selection,
-          confiance:        prono.confiance ?? "MOYENNE",
+          confiance:        confiance,
           analyse_courte:   prono.analyse_courte ?? "",
           niveau_acces:     niveauAcces,
           publie:           true,
