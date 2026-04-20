@@ -47,8 +47,8 @@ IMPORTANT : Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, sa
     }
   ]
 }
-Les valeurs de confiance possibles : HAUTE, MOYENNE, FAIBLE.
-Les valeurs de type_pari possibles : QUINTE_PLUS, QUARTE_PLUS, TIERCE, SIMPLE_GAGNANT.`;
+Les valeurs de confiance possibles : FAIBLE, MOYEN, ELEVE, TRES_ELEVE.
+Les valeurs de type_pari possibles : QUINTE_PLUS, QUARTE, TIERCE, SIMPLE.`;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -91,14 +91,32 @@ function formatHeure(raw: string | null): string {
 
 function getPriorityTypePari(paris: string[]): string {
   if (paris.includes("QUINTE_PLUS")) return "QUINTE_PLUS";
-  if (paris.includes("QUARTE_PLUS")) return "QUARTE_PLUS";
+  if (paris.includes("QUARTE_PLUS") || paris.includes("QUARTE")) return "QUARTE";
   if (paris.includes("TIERCE"))       return "TIERCE";
-  return paris[0] ?? "SIMPLE_GAGNANT";
+  return "SIMPLE";
 }
 
 function getNiveauAcces(typePari: string): string {
-  if (typePari === "QUINTE_PLUS" || typePari === "QUARTE_PLUS") return "PRO";
+  if (typePari === "QUINTE_PLUS" || typePari === "QUARTE") return "PRO";
   return "GRATUIT";
+}
+
+function normaliserConfiance(raw: string | null): string {
+  const v = (raw ?? "").toUpperCase().trim();
+  if (v === "TRES_ELEVE" || v === "VERY_HIGH" || v === "TRES_ELEVEE") return "TRES_ELEVE";
+  if (v === "ELEVE" || v === "HIGH" || v === "HAUTE" || v === "ELEVEE") return "ELEVE";
+  if (v === "FAIBLE" || v === "LOW" || v === "BASSE") return "FAIBLE";
+  return "MOYEN"; // MOYENNE, MEDIUM, MOYEN → défaut
+}
+
+function normaliserTypePari(raw: string | null): string {
+  const v = (raw ?? "").toUpperCase().trim();
+  if (v === "QUINTE_PLUS") return "QUINTE_PLUS";
+  if (v === "QUARTE_PLUS" || v === "QUARTE+") return "QUARTE";
+  if (v === "TIERCE")  return "TIERCE";
+  if (v === "COUPLE")  return "COUPLE";
+  if (v === "TRIO")    return "TRIO";
+  return "SIMPLE"; // SIMPLE_GAGNANT, GAGNANT, SIMPLE → défaut
 }
 
 function buildUserPrompt(courses: CourseWithPartants[]): string {
@@ -115,8 +133,8 @@ function buildUserPrompt(courses: CourseWithPartants[]): string {
   for (const course of courses) {
     const typePari    = getPriorityTypePari(course.paris_disponibles);
     const nbSelection = typePari === "QUINTE_PLUS" ? 5
-                      : typePari === "QUARTE_PLUS" ? 4
-                      : typePari === "TIERCE"       ? 3
+                      : typePari === "QUARTE"      ? 4
+                      : typePari === "TIERCE"      ? 3
                       : 1;
 
     prompt += `---\nCOURSE ID : ${course.id}\n`;
@@ -327,16 +345,9 @@ export async function GET(req: NextRequest) {
       const course = coursesWithPartants.find((c) => c.id === prono.course_id);
       if (!course) continue;
 
-      const typePari    = prono.type_pari ?? getPriorityTypePari(course.paris_disponibles);
+      const typePari    = normaliserTypePari(prono.type_pari ?? getPriorityTypePari(course.paris_disponibles));
       const niveauAcces = getNiveauAcces(typePari);
-
-      // Normaliser la confiance pour correspondre à la contrainte Supabase
-      const rawConfiance = (prono.confiance ?? "MOYENNE").toUpperCase().trim();
-      const confiance = rawConfiance === "HAUTE" || rawConfiance === "HIGH" || rawConfiance === "ÉLEVÉE" || rawConfiance === "ELEVEE"
-        ? "HAUTE"
-        : rawConfiance === "FAIBLE" || rawConfiance === "LOW" || rawConfiance === "BASSE"
-        ? "FAIBLE"
-        : "MOYENNE";
+      const confiance   = normaliserConfiance(prono.confiance);
 
       const { data: insertedRow, error: insertErr } = await supabase
         .from("pronostics")
