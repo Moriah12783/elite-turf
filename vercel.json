@@ -1,6 +1,18 @@
 {
   "crons": [
     {
+      "path": "/api/cron/ia-pronostics",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/ia-auto-publish",
+      "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/ia-rapport-soir",
+      "schedule": "0 19 * * *"
+    },
+    {
       "path": "/api/cron/expire-abonnements",
       "schedule": "7 1 * * *"
     },
