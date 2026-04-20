@@ -55,11 +55,11 @@ export interface PmuProgramme {
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-/** Formate un Date en YYYYMMDD */
+/** Formate un Date en YYYYMMDD (toujours en UTC pour éviter le décalage autour de minuit) */
 export function toDateStr(d: Date = new Date()): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, "0");
-  const da = String(d.getDate()).padStart(2, "0");
+  const y  = d.getUTCFullYear();
+  const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const da = String(d.getUTCDate()).padStart(2, "0");
   return `${y}${mo}${da}`;
 }
 

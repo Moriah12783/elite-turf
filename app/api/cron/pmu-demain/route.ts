@@ -28,9 +28,9 @@ export async function GET(req: NextRequest) {
   const logger = logCronStart("pmu-demain");
 
   try {
-    // Calcul du lendemain
-    const demain = new Date();
-    demain.setDate(demain.getDate() + 1);
+    // Calcul du lendemain en UTC — évite le décalage si le cron tourne juste après minuit
+    const now = new Date();
+    const demain = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
     const dateStr = toDateStr(demain);
 
     const res = await fetch(`${APP_URL}/api/pmu/sync`, {
