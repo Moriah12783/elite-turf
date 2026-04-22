@@ -254,11 +254,13 @@ export async function GET(req: NextRequest) {
 
   try {
     // ── 1. Vérifier qu'on n'a pas déjà généré des pronostics IA aujourd'hui ─
+    // Utilise date_course (via jointure) plutôt que created_at pour éviter
+    // les faux positifs liés au décalage horaire ou aux triggers manuels tardifs
     const { data: existingIA } = await supabase
       .from("pronostics")
-      .select("id")
+      .select("id, courses!inner(date_course)")
       .eq("source", "ia-cron")
-      .gte("created_at", `${today}T00:00:00+02:00`)
+      .eq("courses.date_course", today)
       .limit(1);
 
     if (existingIA && existingIA.length > 0) {
