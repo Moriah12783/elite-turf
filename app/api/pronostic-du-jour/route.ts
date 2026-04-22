@@ -153,25 +153,50 @@ export async function GET(req: NextRequest) {
       p.lien_geny ||
       `https://www.geny.com/reunions-courses-pmu/_d${dateGeny}`;
 
+    const heure         = formatHeure(course?.heure_depart) ?? "";
+    const hippoNom      = hippodrome?.nom ?? "";
+    const libelle       = course?.libelle ?? "";
+    const conf          = p.confiance;
+    const confianceLabel =
+      typeof conf === "number"
+        ? (["","FAIBLE","FAIBLE","MOYEN","BON","FORT ⭐"][Math.min(conf, 5)] ?? "MOYEN")
+        : (conf ?? "MOYEN");
+    const etoiles =
+      typeof conf === "number"
+        ? "★".repeat(conf) + "☆".repeat(Math.max(0, 5 - conf))
+        : "★★★☆☆";
+
+    const slack_text = [
+      `🏇 *Quinté+ du jour — ${hippoNom}*`,
+      `📍 *${libelle}*`,
+      `🕐 Départ : *${heure}*`,
+      `🎯 Sélection : *${selectionTexte}*`,
+      `${etoiles} Confiance : *${confianceLabel}*`,
+      p.analyse_courte ? `\n_« ${p.analyse_courte} »_` : "",
+      `\n🔗 ${lienGeny}`,
+    ].filter(Boolean).join("\n");
+
     return {
       id: p.id,
       date: targetDate,
-      course: course?.libelle ?? "",
-      hippodrome: hippodrome?.nom ?? "",
+      course: libelle,
+      hippodrome: hippoNom,
       pays: hippodrome?.pays ?? "France",
       type_pari: p.type_pari ?? "",
       reunion: course?.numero_reunion ?? null,
       numero_course: course?.numero_course ?? null,
-      heure_depart: formatHeure(course?.heure_depart),
+      heure_depart: heure,
       distance_metres: course?.distance_metres ?? null,
       nb_partants: course?.nb_partants ?? null,
       selection,
       selection_texte: selectionTexte,
-      confiance: p.confiance ?? null,
+      confiance: conf ?? null,
+      confiance_label: confianceLabel,
       analyse_courte: p.analyse_courte ?? null,
       niveau_acces: p.niveau_acces ?? "GRATUIT",
       resultat: p.resultat ?? "EN_ATTENTE",
       lien_geny: lienGeny,
+      slack_text,
     };
   });
 
