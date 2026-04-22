@@ -302,20 +302,20 @@ export default async function PronosticsSection() {
 
             <div className="sm:flex sm:items-start sm:gap-8">
               {/* Sélection principale */}
-              <div className="flex items-center gap-4 mb-5 sm:mb-0 sm:flex-shrink-0">
+              <div className="flex items-center gap-4 mb-5 sm:mb-0 sm:flex-shrink-0 sm:max-w-xs min-w-0">
                 {vedette.selection && vedette.selection.length > 0 && (
-                  <div className="w-16 h-16 rounded-2xl bg-gold-faint border-2 border-gold-primary/60 flex flex-col items-center justify-center shadow-gold">
+                  <div className="w-16 h-16 flex-shrink-0 rounded-2xl bg-gold-faint border-2 border-gold-primary/60 flex flex-col items-center justify-center shadow-gold">
                     <span className="text-xs text-gold-light/70 uppercase tracking-wider leading-none mb-0.5">N°</span>
                     <span className="text-3xl font-bold font-serif text-gold-primary leading-none">
                       {Array.isArray(vedette.selection) ? vedette.selection[0] : vedette.selection}
                     </span>
                   </div>
                 )}
-                <div>
-                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary leading-tight">
+                <div className="min-w-0">
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary leading-tight break-words">
                     {vCourse?.libelle || "Course du jour"}
                   </h3>
-                  <div className="flex items-center gap-0.5 mt-1">
+                  <div className="flex items-center gap-0.5 mt-1 flex-wrap">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
@@ -332,7 +332,7 @@ export default async function PronosticsSection() {
               </div>
 
               {/* Infos + analyse */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
                   <div className="flex items-center gap-1.5 text-text-secondary">
                     <MapPin className="w-3.5 h-3.5 text-gold-primary flex-shrink-0" />
@@ -345,7 +345,7 @@ export default async function PronosticsSection() {
                 </div>
 
                 {vedette.analyse_courte && (
-                  <p className="text-text-secondary text-sm leading-relaxed mb-4 italic border-l-2 border-gold-primary/40 pl-3">
+                  <p className="text-text-secondary text-sm leading-relaxed mb-4 italic border-l-2 border-gold-primary/40 pl-3 line-clamp-4">
                     &ldquo;{vedette.analyse_courte}&rdquo;
                   </p>
                 )}
@@ -436,7 +436,7 @@ export default async function PronosticsSection() {
                   </div>
 
                   {/* Course */}
-                  <p className="text-text-secondary text-sm mb-3 font-medium">
+                  <p className="text-text-secondary text-sm mb-3 font-medium break-words">
                     📍 R{pCourse?.numero_reunion}C{pCourse?.numero_course} — {pCourse?.libelle} — {pCourse?.hippodrome?.nom} —{" "}
                     <span className="text-gold-light">{(pCourse?.heure_depart || "").substring(0, 5)}</span>
                   </p>
@@ -467,7 +467,7 @@ export default async function PronosticsSection() {
                   {/* Analyse */}
                   {!isLocked ? (
                     p.analyse_courte && (
-                      <p className="text-text-secondary text-sm leading-relaxed mb-4">
+                      <p className="text-text-secondary text-sm leading-relaxed mb-4 line-clamp-3">
                         {p.analyse_courte}
                       </p>
                     )
