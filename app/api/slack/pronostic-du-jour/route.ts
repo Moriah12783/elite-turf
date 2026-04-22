@@ -4,7 +4,9 @@
  * Retourne le pronostic vedette du jour (Quinté+ en priorité) au format JSON.
  * Conçu pour être appelé par Make.com qui formate et envoie ensuite dans Slack.
  *
- * Auth : header  Authorization: Bearer <CRON_SECRET>
+ * Auth acceptée (l'une ou l'autre) :
+ *   - Header  Authorization: Bearer <CRON_SECRET>
+ *   - Header  clé API X: eliteturf-make-2026   (clé Make.com existante)
  * Réponse 200 : données + slack_text pré-formaté prêt à coller dans Make
  * Réponse 404 : aucun pronostic publié aujourd'hui
  */
@@ -14,8 +16,9 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const CRON_SECRET = process.env.CRON_SECRET ?? "";
-const APP_URL     = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.elite-turf.fr";
+const CRON_SECRET  = process.env.CRON_SECRET ?? "";
+const MAKE_API_KEY = process.env.MAKE_API_KEY ?? "eliteturf-make-2026";
+const APP_URL      = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.elite-turf.fr";
 
 /** Date du jour heure Paris (YYYY-MM-DD) */
 function getTodayParis(): string {
@@ -35,9 +38,12 @@ const CONFIANCE_LABEL: Record<number, string> = {
 };
 
 export async function GET(req: NextRequest) {
-  // ── Auth ──────────────────────────────────────────────────────────────
-  const auth = req.headers.get("authorization");
-  if (CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
+  // ── Auth : Bearer token OU clé Make.com ──────────────────────────────
+  const auth       = req.headers.get("authorization");
+  const makeApiKey = req.headers.get("clé api x") ?? req.headers.get("cle-api-x") ?? req.headers.get("x-api-key");
+  const validBearer = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
+  const validMakeKey = makeApiKey === MAKE_API_KEY;
+  if (CRON_SECRET && !validBearer && !validMakeKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
