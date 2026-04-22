@@ -128,10 +128,14 @@ export async function GET(req: NextRequest) {
   }
 
   // ── 4. Filtrer sur la date cible ──────────────────────────────────────────
-  const todayPronostics = (pronostics ?? []).filter((p) => {
+  const allToday = (pronostics ?? []).filter((p) => {
     const c = Array.isArray(p.course) ? p.course[0] : p.course;
     return (c as CourseRow)?.date_course === targetDate;
   });
+
+  // ?top=1 → ne retourner que le 1er pronostic (Quinté+ en priorité, pour Make)
+  const topParam = req.nextUrl.searchParams.get("top");
+  const todayPronostics = topParam === "1" ? allToday.slice(0, 1) : allToday;
 
   // ── 5. Formatter la réponse ───────────────────────────────────────────────
   const dateGeny = targetDate.replace(/-/g, ""); // "20260420"
