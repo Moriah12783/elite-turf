@@ -38,11 +38,14 @@ const CONFIANCE_LABEL: Record<number, string> = {
 };
 
 export async function GET(req: NextRequest) {
-  // ── Auth : Bearer token OU clé Make.com ──────────────────────────────
-  const auth       = req.headers.get("authorization");
-  const makeApiKey = req.headers.get("clé api x") ?? req.headers.get("cle-api-x") ?? req.headers.get("x-api-key");
+  // ── Auth : Bearer token OU valeur Make.com dans n'importe quel header ─
+  const auth        = req.headers.get("authorization");
   const validBearer = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
-  const validMakeKey = makeApiKey === MAKE_API_KEY;
+  // Make.com envoie le header avec un nom non-standard ("clé API X") qu'on
+  // ne peut pas renommer dans leur UI — on cherche donc la valeur dans tous
+  // les headers reçus.
+  const allHeaderValues = [...req.headers.values()];
+  const validMakeKey    = allHeaderValues.includes(MAKE_API_KEY);
   if (CRON_SECRET && !validBearer && !validMakeKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
