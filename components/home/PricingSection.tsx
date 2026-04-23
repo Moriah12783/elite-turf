@@ -136,9 +136,9 @@ export default function PricingSection() {
           </div>
 
           {/* ── STARTER / PRO / ELITE ── */}
-          {PLAN_CONFIG.map((plan) => {
-            const Icon   = PLAN_ICONS[plan.nom];
-            const styles = PLAN_STYLES[plan.nom];
+          {PLAN_CONFIG.filter((p) => p.nom !== "Test").map((plan) => {
+            const Icon   = PLAN_ICONS[plan.nom as keyof typeof PLAN_ICONS];
+            const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES];
             return (
               <div
                 key={plan.id}
