@@ -1,39 +1,53 @@
+const GENY_BASE = "https://www.geny.com";
+
 /**
- * Génère un lien Geny.com pour vérifier une course PMU
+ * Construit un lien Geny à partir d'une URL stockée en DB (geny_url).
  *
- * Format programme  : https://www.geny.com/partants-pmu/YYYYMMDD_reunionR_courseC
- * Format résultats  : https://www.geny.com/resultats-pmu/YYYYMMDD_reunionR_courseC
+ * La vraie URL Geny d'une course individuelle suit le format :
+ *   /partants-pmu/2026-04-23-parislongchamp-pmu-prix-du-pantheon_c1647206
+ * Ce format comporte un slug de hippodrome, un slug de course et un ID interne
+ * qu'on ne peut pas reconstruire à la volée → il faut utiliser l'URL stockée.
+ *
+ * @param genyUrl   Valeur de courses.geny_url (chemin absolu commençant par "/")
+ * @param type      "partants" (défaut) ou "resultats"
  */
-export function buildGenyUrl(
-  dateCourse: string,      // "YYYY-MM-DD"
-  numeroReunion: number,   // ex: 1
-  numeroCourse: number,    // ex: 5
+export function buildGenyUrlFromStored(
+  genyUrl: string,
   type: "partants" | "resultats" = "partants"
 ): string {
-  // Normaliser la date → YYYYMMDD
-  const d = dateCourse.replace(/-/g, "");   // "2026-03-15" → "20260315"
-  const r = String(numeroReunion).padStart(2, "0");  // 1 → "01"
-  const c = String(numeroCourse).padStart(2, "0");   // 5 → "05"
-  const slug = `${d}_r${r}c${c}`;
-
-  if (type === "resultats") {
-    return `https://www.geny.com/resultats-pmu/${slug}`;
-  }
-  return `https://www.geny.com/partants-pmu/${slug}`;
+  // Remplacer le préfixe partants-pmu ↔ resultats-pmu si nécessaire
+  const path = type === "resultats"
+    ? genyUrl.replace("/partants-pmu/", "/resultats-pmu/")
+    : genyUrl.replace("/resultats-pmu/", "/partants-pmu/");
+  return `${GENY_BASE}${path}`;
 }
 
 /**
- * Détermine si la course est passée (→ lien résultats) ou future (→ lien partants)
+ * Fallback : lien vers le programme du jour quand geny_url n'est pas encore stocké.
+ * Redirige vers la page du programme (pas une course individuelle).
+ */
+export function buildGenyUrl(
+  dateCourse: string,
+  _numeroReunion: number,
+  _numeroCourse: number,
+  _type: "partants" | "resultats" = "partants"
+): string {
+  // ⚠️  Les URLs individuelles Geny ne peuvent pas être reconstruites sans l'ID interne.
+  // On renvoie la page programme du jour comme fallback lisible par l'utilisateur.
+  const today = new Date().toISOString().split("T")[0];
+  if (dateCourse === today) return `${GENY_BASE}/reunions-courses-pmu/_daujourdhui`;
+  return `${GENY_BASE}/reunions-courses-pmu/${dateCourse}_d${dateCourse}`;
+}
+
+/**
+ * @deprecated  Utiliser buildGenyUrlFromStored() quand geny_url est disponible.
  */
 export function buildGenyUrlAuto(
   dateCourse: string,
   numeroReunion: number,
   numeroCourse: number
 ): string {
-  const courseDate = new Date(dateCourse);
-  const now = new Date();
-  const isPast = courseDate < now;
-  return buildGenyUrl(dateCourse, numeroReunion, numeroCourse, isPast ? "resultats" : "partants");
+  return buildGenyUrl(dateCourse, numeroReunion, numeroCourse);
 }
 
 // ── Types re-exportés pour éviter l'import circulaire ────────────────────────
@@ -81,21 +95,29 @@ function extractCells(rowHtml: string): string[] {
 }
 
 /**
+ * Détecte si une valeur ressemble à une musique PMU (ex: "2p1p(25)3a", "Da9a", "0a").
+ * Utilisé pour distinguer une colonne jockey d'une colonne musique dans le tableau Geny.
+ */
+function looksLikeMusique(val: string): boolean {
+  // La musique PMU contient des chiffres suivis de lettres (p=plat, a=attelé, m=monté, s=steeplechase)
+  // et parfois des parenthèses avec des gains ex: (25), (12)
+  return /^\s*(?:\d*[a-zA-D()\s]+){2,}/.test(val) && /\d/.test(val) && /[a-zA-D]/.test(val);
+}
+
+/**
  * Parse la page HTML des partants Geny pour extraire les chevaux.
  *
- * Colonnes attendues (ordre Geny partants-pmu) :
- *  [0] N°          numéro partant   ex: "1"
- *  [1] Cheval       nom             ex: "Ephesus"
- *  [2] C            place corde     ex: "4"
- *  [3] SA           sexe+âge        ex: "H4"  (H=Hongre, F=Femelle, M=Mâle, G=Gelding)
- *  [4] Poids        kg              ex: "61,5"
- *  [5] Déch.        décharge        ex: "-"
- *  [6] Jockey                       ex: "C. Demuro"
- *  [7] Entraîneur                   ex: "P. & J. Brandt"
- *  [8] Musique                      ex: "2p(25)1p2p"
- *  [9] Valeur                       ex: "42,5"
- * [10] Cotes réf.                   ex: "8,1"
- * [11] Dernières cotes              ex: "7,7"
+ * Geny utilise deux structures de tableau selon le type de course :
+ *
+ * GALOP (Plat / Obstacle) — colonnes TD :
+ *  [0] N°    [1] Cheval  [2] C  [3] SA  [4] Poids  [5] Déch
+ *  [6] Jockey  [7] Entraîneur  [8] Musique  [9] Valeur  [10] CotesRéf  [11] DernièresCotes
+ *
+ * TROT (Attelé / Monté) — colonnes TD :
+ *  [0] N°    [1] Cheval  [2] SA  [3] Poids  [4] RédKm  [5] Déch
+ *  [6] Musique  [7] Gains  [8] Driver  [9] Entraîneur  [10-11] Cotes
+ *
+ * On détecte automatiquement le type en vérifiant si cells[6] ressemble à une musique PMU.
  */
 function parseGenyPartants(html: string): GenyParticipant[] {
   const participants: GenyParticipant[] = [];
@@ -116,25 +138,44 @@ function parseGenyPartants(html: string): GenyParticipant[] {
     // Ignore les lignes entêtes récurrentes (ex: "Cheval")
     if (/^cheval$/i.test(nom)) continue;
 
-    // Place corde (colonne 2)
-    const placeCorde = parseInt(cells[2], 10) || undefined;
+    // Détection auto galop vs trot :
+    // Si cells[6] ressemble à une musique PMU → structure TROT
+    const isTrot = looksLikeMusique(cells[6] ?? "");
 
-    // SA : sexe + âge  ex: "H4", "F5", "M5", "G4"
-    const sa   = cells[3] || "";
-    const sexe = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
-    const age  = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
+    let jockeyNom: string;
+    let entraineurNom: string;
+    let musique: string | undefined;
+    let placeCorde: number | undefined;
+    let sexe: string | undefined;
+    let age: number | undefined;
+    let poids: number | undefined;
 
-    // Poids (virgule → point)
-    const poids = parseFloat((cells[4] || "").replace(",", ".")) || undefined;
+    if (isTrot) {
+      // ── Structure TROT ──────────────────────────────────────────────
+      // [2]=SA  [3]=Poids  [6]=Musique  [7]=Gains  [8]=Driver  [9]=Entraîneur
+      const sa = cells[2] || "";
+      sexe      = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
+      age       = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
+      poids     = parseFloat((cells[3] || "").replace(",", ".")) || undefined;
+      musique   = cells[6] || undefined;
+      // cells[7] = Gains (numérique, ex: "87,985") — ignoré
+      jockeyNom    = cells[8] || "";   // Driver
+      entraineurNom = cells[9] || "";  // Entraîneur
+    } else {
+      // ── Structure GALOP ─────────────────────────────────────────────
+      // [2]=C  [3]=SA  [4]=Poids  [5]=Déch  [6]=Jockey  [7]=Entraîneur  [8]=Musique
+      placeCorde   = parseInt(cells[2], 10) || undefined;
+      const sa     = cells[3] || "";
+      sexe         = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
+      age          = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
+      poids        = parseFloat((cells[4] || "").replace(",", ".")) || undefined;
+      jockeyNom    = cells[6] || "";
+      entraineurNom = cells[7] || "";
+      musique      = cells[8] || undefined;
+    }
 
-    // Jockey (enlever éventuels préfixes "Mlle ", "M. " etc.)
-    const jockeyNom = cells[6] || "";
-
-    // Entraîneur
-    const entraineurNom = cells[7] || "";
-
-    // Musique
-    const musique = cells[8] || undefined;
+    // Musique : nettoyer "-" ou valeurs vides
+    if (musique === "-" || musique === "") musique = undefined;
 
     // Cotes : préférer "Dernières cotes" [11], sinon "Cotes réf." [10]
     const coteRaw =
@@ -181,17 +222,23 @@ const GENY_HEADERS = {
  * Retourne un tableau compatible avec PmuParticipant[] (même structure).
  *
  * @param dateCourse   "YYYY-MM-DD"
- * @param R            numéro réunion
- * @param C            numéro course
+ * @param R            numéro réunion (ignoré si genyUrl fourni)
+ * @param C            numéro course  (ignoré si genyUrl fourni)
  * @param timeoutMs    timeout fetch (défaut 6 s)
+ * @param genyUrl      URL complète Geny depuis courses.geny_url (ex: "/partants-pmu/2026-04-23-..._c1647206")
+ *                     Quand fourni, dateCourse/R/C sont ignorés pour la construction de l'URL.
  */
 export async function fetchGenyPartants(
   dateCourse: string,
   R: number,
   C: number,
   timeoutMs = 6000,
+  genyUrl?: string | null,
 ): Promise<GenyParticipant[]> {
-  const url = buildGenyUrl(dateCourse, R, C, "partants");
+  // Utiliser l'URL stockée en DB si disponible, sinon fallback (programme day)
+  const url = genyUrl
+    ? `${GENY_BASE}${genyUrl.startsWith("/") ? genyUrl : "/" + genyUrl}`
+    : buildGenyUrl(dateCourse, R, C, "partants");
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

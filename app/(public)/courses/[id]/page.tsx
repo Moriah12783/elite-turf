@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
-import { buildGenyUrl, fetchGenyPartants } from "@/lib/geny";
+import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/geny";
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
@@ -73,6 +73,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
       categorie, terrain, nb_partants, statut, arrivee_officielle,
+      geny_url,
       hippodrome:hippodromes(nom, pays, ville),
       partants(
         id, numero, nom_cheval, jockey, entraineur,
@@ -104,10 +105,17 @@ export default async function CourseDetailPage({ params }: PageProps) {
     c.numero_course
   ) {
     try {
-      console.log(`[CourseDetail] Fallback Geny pour R${c.numero_reunion}C${c.numero_course}`);
+      console.log(`[CourseDetail] Fallback Geny pour R${c.numero_reunion}C${c.numero_course} url=${c.geny_url ?? "non-stockée"}`);
 
-      // Geny en source principale (PMU retourne 420 depuis Vercel)
-      const genyPartants = await fetchGenyPartants(c.date_course, c.numero_reunion, c.numero_course);
+      // Geny en source principale — on passe l'URL réelle stockée en DB (obligatoire
+      // car l'URL Geny contient un slug + ID interne qu'on ne peut pas reconstruire).
+      const genyPartants = await fetchGenyPartants(
+        c.date_course,
+        c.numero_reunion,
+        c.numero_course,
+        6000,
+        c.geny_url ?? null,
+      );
 
       if (genyPartants.length > 0) {
         const toInsert = genyPartants
@@ -176,12 +184,12 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
   const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
 
-  const genyUrl = buildGenyUrl(
-    c.date_course,
-    c.numero_reunion,
-    c.numero_course,
-    c.statut === "TERMINE" ? "resultats" : "partants",
-  );
+  // Construire le lien Geny : utiliser l'URL réelle stockée si disponible,
+  // sinon fallback sur la page programme du jour.
+  const genyType = c.statut === "TERMINE" ? "resultats" : "partants";
+  const genyUrl = c.geny_url
+    ? buildGenyUrlFromStored(c.geny_url, genyType)
+    : buildGenyUrl(c.date_course, c.numero_reunion, c.numero_course, genyType);
 
   const dateStr   = c.date_course.replace(/-/g, "");
   const isFrance  = !c.hippodrome?.pays || c.hippodrome.pays === "France";

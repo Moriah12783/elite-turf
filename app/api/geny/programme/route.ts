@@ -40,6 +40,7 @@ interface GenyCourse {
   nbPartants:    number;
   parisDisponibles: string[];
   dateCourse:    string;         // "YYYY-MM-DD"
+  genyUrl:       string | null;  // "/partants-pmu/2026-04-23-parislongchamp-pmu-..._c1647206"
 }
 
 // ── Scraping Geny ─────────────────────────────────────────────────────────
@@ -179,6 +180,7 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
       const courseNum   = parseInt(nomMatches[j][1]);
       const libelle     = decodeHtmlEntities(nomMatches[j][2].trim());
       const btnClass    = linkMatches[j][1];
+      const genyHref    = linkMatches[j][2];  // ex: "/partants-pmu/2026-04-23-parislongchamp-pmu-..._c1647206"
       const arriveeText = (arriveeMatches[j]?.[1] ?? "")
         .replace(/<[^>]+>/g, "")
         .trim();
@@ -193,6 +195,7 @@ async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
         nbPartants:       parsePartants(arriveeText),
         parisDisponibles: classToParisDisponibles(btnClass),
         dateCourse:       dateISO,
+        genyUrl:          genyHref || null,
       });
     }
   }
@@ -239,6 +242,7 @@ async function syncCoursesToDB(courses: GenyCourse[]) {
         libelle:           c.libelle,
         paris_disponibles: c.parisDisponibles,
         ...(c.heureDepart ? { heure_depart: c.heureDepart } : {}),
+        ...(c.genyUrl     ? { geny_url: c.genyUrl }         : {}),
       }).eq("id", existing.id);
       updated++;
     } else {
@@ -254,6 +258,7 @@ async function syncCoursesToDB(courses: GenyCourse[]) {
         nb_partants:       c.nbPartants,
         statut:            "PROGRAMME",
         paris_disponibles: c.parisDisponibles,
+        geny_url:          c.genyUrl || null,
       });
       inserted++;
     }
