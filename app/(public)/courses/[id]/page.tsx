@@ -9,6 +9,7 @@ import {
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
 import { buildGenyUrl } from "@/lib/geny";
+import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 
@@ -88,6 +89,53 @@ export default async function CourseDetailPage({ params }: PageProps) {
   if (!course) notFound();
 
   const c = course as any;
+
+  // ── Fallback PMU : si aucun partant en DB, on les récupère à la volée ──────
+  // Couvre le cas où le cron n'a pas encore tourné ou a échoué.
+  // On essaie uniquement pour les courses d'aujourd'hui non terminées.
+  const todayISO = new Date().toISOString().split("T")[0];
+  if (
+    (!c.partants || c.partants.length === 0) &&
+    c.date_course === todayISO &&
+    c.statut !== "TERMINE" &&
+    c.numero_reunion &&
+    c.numero_course
+  ) {
+    try {
+      const dateStr = c.date_course.replace(/-/g, "");
+      const participants = await fetchPmuPartants(dateStr, c.numero_reunion, c.numero_course);
+      if (participants.length > 0) {
+        const toInsert = participants
+          .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
+          .map((p) => ({
+            course_id:   c.id,
+            numero:      p.numPmu,
+            nom_cheval:  p.nom,
+            jockey:      p.jockey?.nom ?? null,
+            entraineur:  p.entraineur?.nom ?? null,
+            cote:        p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
+            musique:     p.musique ?? null,
+            poids_kg:    p.handicapPoids ?? p.poids ?? null,
+            place_corde: p.placeCorde ?? null,
+            age:         p.age ?? null,
+            sexe:        p.sexe ?? null,
+            non_partant: false,
+            scraped_at:  new Date().toISOString(),
+          }));
+        // Sauvegarde en background (sans bloquer le rendu si ça échoue)
+        const supabaseSvc = createServiceClient();
+        await supabaseSvc.from("partants").delete().eq("course_id", c.id);
+        const { error: insErr } = await supabaseSvc.from("partants").insert(toInsert);
+        if (!insErr) {
+          // Injecter les données fraîches directement dans l'objet course
+          c.partants = toInsert.map((p, i) => ({ ...p, id: `tmp-${i}` }));
+        }
+      }
+    } catch {
+      // Échec silencieux — on affiche juste "non disponible"
+    }
+  }
+
   const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
   const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
   const allPartants: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
