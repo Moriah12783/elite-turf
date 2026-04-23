@@ -406,8 +406,15 @@ export default async function PerformancesPage() {
                     const dateStr = p.date_publication
                       ? new Date(p.date_publication).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" })
                       : "—";
-                    const selStr     = Array.isArray(p.selection)     ? p.selection.join(" - ")      : "—";
-                    const arriveeStr = Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle.join(" - ") : "—";
+                    const MAX_HORSES  = 6;
+                    const selRaw      = Array.isArray(p.selection) ? p.selection : [];
+                    const selStr      = selRaw.length > 0
+                      ? selRaw.slice(0, MAX_HORSES).join(" - ") + (selRaw.length > MAX_HORSES ? " …" : "")
+                      : "—";
+                    const arriveeRaw  = Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle : [];
+                    const arriveeStr  = arriveeRaw.length > 0
+                      ? arriveeRaw.slice(0, MAX_HORSES).join(" - ") + (arriveeRaw.length > MAX_HORSES ? " …" : "")
+                      : "—";
                     return (
                       <tr key={p.id} className="hover:bg-bg-hover transition-colors">
                         <td className="px-4 py-3 whitespace-nowrap text-text-muted text-xs">{dateStr}</td>
