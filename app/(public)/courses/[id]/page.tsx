@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
-import { buildGenyUrl } from "@/lib/geny";
+import { buildGenyUrl, fetchGenyPartants } from "@/lib/geny";
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
@@ -103,7 +103,29 @@ export default async function CourseDetailPage({ params }: PageProps) {
   ) {
     try {
       const dateStr = c.date_course.replace(/-/g, "");
-      const participants = await fetchPmuPartants(dateStr, c.numero_reunion, c.numero_course);
+
+      // ── Étape 1 : essayer l'API PMU (via proxy Cloudflare) ──────────────
+      let participants = await fetchPmuPartants(dateStr, c.numero_reunion, c.numero_course);
+
+      // ── Étape 2 : fallback Geny si PMU renvoie 0 partants (ex: HTTP 420) ─
+      if (participants.length === 0) {
+        console.log(`[CourseDetail] PMU vide — fallback Geny pour R${c.numero_reunion}C${c.numero_course}`);
+        const genyPartants = await fetchGenyPartants(c.date_course, c.numero_reunion, c.numero_course);
+        // Convertir GenyParticipant → format PmuParticipant compatible
+        participants = genyPartants.map((g) => ({
+          numPmu:        g.numPmu,
+          nom:           g.nom,
+          coteProbable:  g.coteProbable,
+          jockey:        g.jockey,
+          entraineur:    g.entraineur,
+          musique:       g.musique,
+          poids:         g.poids,
+          age:           g.age,
+          sexe:          g.sexe,
+          placeCorde:    g.placeCorde,
+        }));
+      }
+
       if (participants.length > 0) {
         const toInsert = participants
           .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
@@ -113,16 +135,16 @@ export default async function CourseDetailPage({ params }: PageProps) {
             nom_cheval:  p.nom,
             jockey:      p.jockey?.nom ?? null,
             entraineur:  p.entraineur?.nom ?? null,
-            cote:        p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
+            cote:        (p as any).coteDefinitive ?? p.coteProbable ?? (p as any).dernierRapportDirect?.rapport ?? null,
             musique:     p.musique ?? null,
-            poids_kg:    p.handicapPoids ?? p.poids ?? null,
+            poids_kg:    (p as any).handicapPoids ?? p.poids ?? null,
             place_corde: p.placeCorde ?? null,
             age:         p.age ?? null,
             sexe:        p.sexe ?? null,
             non_partant: false,
             scraped_at:  new Date().toISOString(),
           }));
-        // Sauvegarde en background (sans bloquer le rendu si ça échoue)
+        // Persister en DB pour les prochaines visites (supprime les éventuels vieux partants)
         const supabaseSvc = createServiceClient();
         await supabaseSvc.from("partants").delete().eq("course_id", c.id);
         const { error: insErr } = await supabaseSvc.from("partants").insert(toInsert);
