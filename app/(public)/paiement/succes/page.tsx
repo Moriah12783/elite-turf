@@ -12,12 +12,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const PLAN_ICONS = { Free: CheckCircle, Starter: Zap, Pro: Star, Elite: Crown };
+const PLAN_ICONS = { Free: CheckCircle, Starter: Zap, Pro: Star, Elite: Crown, Test: CheckCircle };
 const PLAN_COLORS = {
   Free: "text-status-win",
   Starter: "text-status-win",
   Pro: "text-gold-primary",
   Elite: "text-purple-400",
+  Test: "text-status-win",
 };
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
