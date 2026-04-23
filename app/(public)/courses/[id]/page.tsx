@@ -90,8 +90,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const c = course as any;
 
-  // ── Fallback PMU : si aucun partant en DB, on les récupère à la volée ──────
-  // Couvre le cas où le cron n'a pas encore tourné ou a échoué.
+  // ── Fallback Geny : si aucun partant en DB, on scrape Geny à la volée ───────
+  // Le cron enrichir-partants gère PMU (09:27 + 11:47 UTC).
+  // Si les partants ne sont pas en DB c'est que PMU a échoué (HTTP 420) →
+  // on va directement sur Geny qui est publiquement accessible sans rate-limit.
   // On essaie uniquement pour les courses d'aujourd'hui non terminées.
   const todayISO = new Date().toISOString().split("T")[0];
   if (
@@ -102,59 +104,69 @@ export default async function CourseDetailPage({ params }: PageProps) {
     c.numero_course
   ) {
     try {
-      const dateStr = c.date_course.replace(/-/g, "");
+      console.log(`[CourseDetail] Fallback Geny pour R${c.numero_reunion}C${c.numero_course}`);
 
-      // ── Étape 1 : essayer l'API PMU (via proxy Cloudflare) ──────────────
-      let participants = await fetchPmuPartants(dateStr, c.numero_reunion, c.numero_course);
+      // Geny en source principale (PMU retourne 420 depuis Vercel)
+      const genyPartants = await fetchGenyPartants(c.date_course, c.numero_reunion, c.numero_course);
 
-      // ── Étape 2 : fallback Geny si PMU renvoie 0 partants (ex: HTTP 420) ─
-      if (participants.length === 0) {
-        console.log(`[CourseDetail] PMU vide — fallback Geny pour R${c.numero_reunion}C${c.numero_course}`);
-        const genyPartants = await fetchGenyPartants(c.date_course, c.numero_reunion, c.numero_course);
-        // Convertir GenyParticipant → format PmuParticipant compatible
-        participants = genyPartants.map((g) => ({
-          numPmu:        g.numPmu,
-          nom:           g.nom,
-          coteProbable:  g.coteProbable,
-          jockey:        g.jockey,
-          entraineur:    g.entraineur,
-          musique:       g.musique,
-          poids:         g.poids,
-          age:           g.age,
-          sexe:          g.sexe,
-          placeCorde:    g.placeCorde,
-        }));
-      }
-
-      if (participants.length > 0) {
-        const toInsert = participants
-          .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
-          .map((p) => ({
+      if (genyPartants.length > 0) {
+        const toInsert = genyPartants
+          .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
+          .map((g) => ({
             course_id:   c.id,
-            numero:      p.numPmu,
-            nom_cheval:  p.nom,
-            jockey:      p.jockey?.nom ?? null,
-            entraineur:  p.entraineur?.nom ?? null,
-            cote:        (p as any).coteDefinitive ?? p.coteProbable ?? (p as any).dernierRapportDirect?.rapport ?? null,
-            musique:     p.musique ?? null,
-            poids_kg:    (p as any).handicapPoids ?? p.poids ?? null,
-            place_corde: p.placeCorde ?? null,
-            age:         p.age ?? null,
-            sexe:        p.sexe ?? null,
+            numero:      g.numPmu,
+            nom_cheval:  g.nom,
+            jockey:      g.jockey?.nom ?? null,
+            entraineur:  g.entraineur?.nom ?? null,
+            cote:        g.coteProbable ?? null,
+            musique:     g.musique ?? null,
+            poids_kg:    g.poids ?? null,
+            place_corde: g.placeCorde ?? null,
+            age:         g.age ?? null,
+            sexe:        g.sexe ?? null,
             non_partant: false,
             scraped_at:  new Date().toISOString(),
           }));
-        // Persister en DB pour les prochaines visites (supprime les éventuels vieux partants)
+        // Persister en DB pour les prochaines visites
         const supabaseSvc = createServiceClient();
         await supabaseSvc.from("partants").delete().eq("course_id", c.id);
         const { error: insErr } = await supabaseSvc.from("partants").insert(toInsert);
         if (!insErr) {
-          // Injecter les données fraîches directement dans l'objet course
-          c.partants = toInsert.map((p, i) => ({ ...p, id: `tmp-${i}` }));
+          c.partants = toInsert.map((g, i) => ({ ...g, id: `tmp-${i}` }));
+        }
+      } else {
+        // Geny vide → tentative PMU rapide (1 seul endpoint, timeout court)
+        console.log(`[CourseDetail] Geny vide — tentative PMU rapide`);
+        const dateStr = c.date_course.replace(/-/g, "");
+        const pmuPartants = await fetchPmuPartants(dateStr, c.numero_reunion, c.numero_course);
+        if (pmuPartants.length > 0) {
+          const toInsert = pmuPartants
+            .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
+            .map((p) => ({
+              course_id:   c.id,
+              numero:      p.numPmu,
+              nom_cheval:  p.nom,
+              jockey:      p.jockey?.nom ?? null,
+              entraineur:  p.entraineur?.nom ?? null,
+              cote:        (p as any).coteDefinitive ?? p.coteProbable ?? (p as any).dernierRapportDirect?.rapport ?? null,
+              musique:     p.musique ?? null,
+              poids_kg:    (p as any).handicapPoids ?? p.poids ?? null,
+              place_corde: p.placeCorde ?? null,
+              age:         p.age ?? null,
+              sexe:        p.sexe ?? null,
+              non_partant: false,
+              scraped_at:  new Date().toISOString(),
+            }));
+          const supabaseSvc = createServiceClient();
+          await supabaseSvc.from("partants").delete().eq("course_id", c.id);
+          const { error: insErr } = await supabaseSvc.from("partants").insert(toInsert);
+          if (!insErr) {
+            c.partants = toInsert.map((p, i) => ({ ...p, id: `tmp-${i}` }));
+          }
         }
       }
-    } catch {
-      // Échec silencieux — on affiche juste "non disponible"
+    } catch (err) {
+      console.error(`[CourseDetail] Erreur fallback partants:`, err instanceof Error ? err.message : err);
     }
   }
 
