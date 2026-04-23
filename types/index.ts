@@ -1,6 +1,6 @@
 export type UserRole = "USER" | "ADMIN" | "MODERATEUR";
 export type SubscriptionStatus = "GRATUIT" | "STARTER" | "PRO" | "ELITE" | "EXPIRE";
-export type PlanName = "Free" | "Starter" | "Pro" | "Elite";
+export type PlanName = "Free" | "Starter" | "Pro" | "Elite" | "Test";
 export type PaymentMethod = "ORANGE_MONEY" | "MTN_MOMO" | "WAVE" | "STRIPE" | "PAYPAL";
 export type PaymentStatus = "EN_ATTENTE" | "SUCCES" | "ECHEC" | "REMBOURSE";
 export type PronosticLevel = "GRATUIT" | "STARTER" | "PRO" | "ELITE";
@@ -171,6 +171,23 @@ export const BET_TYPE_LABELS: Record<BetType, string> = {
 };
 
 export const PLAN_CONFIG: Plan[] = [
+  // ── Plan de test à 1 € — à supprimer après validation du tunnel de paiement ──
+  {
+    id: "test",
+    nom: "Test",
+    prix_fcfa: 655,    // 1€ × 655.957 XOF
+    prix_eur: 1,
+    duree_jours: 1,
+    acces_performance: false,
+    acces_elite: false,
+    nb_alertes: 0,
+    description: "Plan test 1 € — tunnel de paiement uniquement",
+    features: [
+      "Accès 1 jour (test technique uniquement)",
+      "Permet de valider le circuit Stripe en live",
+    ],
+    actif: true,
+  },
   {
     id: "starter",
     nom: "Starter",

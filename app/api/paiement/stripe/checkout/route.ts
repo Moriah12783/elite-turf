@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
             currency:     "eur",
             unit_amount:  Math.round(plan.prix_eur * 100), // en centimes
             product_data: {
-              name:        `Elite Turf — Pack ${plan.nom === "Starter" ? "Découverte" : plan.nom === "Pro" ? "Performance" : "Elite"}`,
+              name:        `Elite Turf — Pack ${plan.nom === "Starter" ? "Découverte" : plan.nom === "Pro" ? "Performance" : plan.nom === "Test" ? "Test (1 €)" : "Elite"}`,
               description: `${plan.description} · Accès ${plan.duree_jours} jours`,
               images:      [`${APP_URL}/images/logo.png`],
             },

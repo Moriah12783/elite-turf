@@ -200,8 +200,8 @@ export default async function AbonnementsPage() {
               )}
             </div>
 
-            {/* ── Plans payants (Starter / Pro / Elite) ── */}
-            {PLAN_CONFIG.map((plan) => {
+            {/* ── Plans payants (Starter / Pro / Elite) — le plan "Test" est masqué ici ── */}
+            {PLAN_CONFIG.filter((p) => p.nom !== "Test").map((plan) => {
               const Icon   = PLAN_ICONS[plan.nom as keyof typeof PLAN_ICONS];
               const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES];
               const isCurrentPlan =
