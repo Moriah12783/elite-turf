@@ -403,7 +403,9 @@ export default async function PerformancesPage() {
                     const res    = courseDatePast ? RESULTAT_DEPASSE : (RESULTAT_CONFIG[p.resultat as PronosticResult] || RESULTAT_CONFIG.EN_ATTENTE);
                     const ResIcon = res.icon;
                     const course  = p.course as any;
-                    const dateStr = p.date_publication
+                    const dateStr = course?.date_course
+                      ? new Date(course.date_course + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" })
+                      : p.date_publication
                       ? new Date(p.date_publication).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" })
                       : "—";
                     const MAX_HORSES  = 6;
