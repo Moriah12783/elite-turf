@@ -48,9 +48,13 @@ export default async function StatsSection() {
   // Résultats à afficher (réels ou fallback statique)
   const recentResults: Array<{
     date: string; course: string; type: string; result: string; gain: string;
-  }> = (rawResults || []).map((p: any) => ({
-    date:   formatDate(p.date_publication || p.course?.date_course || ""),
-    course: `${p.type_pari} ${p.course?.hippodrome?.nom || ""}`,
+  }> = (rawResults || []).sort((a: any, b: any) => {
+    const da = a.course?.date_course || a.date_publication?.split("T")[0] || "";
+    const db = b.course?.date_course || b.date_publication?.split("T")[0] || "";
+    return db.localeCompare(da);
+  }).map((p: any) => ({
+    date:   formatDate(p.course?.date_course || p.date_publication || ""),
+    course: p.course?.libelle || `${p.type_pari} ${p.course?.hippodrome?.nom || ""}`,
     type:   p.type_pari || "",
     result: p.resultat || "PERDANT",
     gain:   p.gains_theoriques
