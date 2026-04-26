@@ -62,7 +62,14 @@ export default async function PerformancesPage() {
     .eq("publie", true)
     .order("date_publication", { ascending: false });
 
-  const pronostics = allPronostics || [];
+  const pronostics = (allPronostics || []).sort((a: any, b: any) => {
+    const dateA = a.course?.date_course || a.date_publication?.split("T")[0] || "";
+    const dateB = b.course?.date_course || b.date_publication?.split("T")[0] || "";
+    if (dateB !== dateA) return dateB.localeCompare(dateA);
+    const heureA = a.course?.heure_depart || a.date_publication || "";
+    const heureB = b.course?.heure_depart || b.date_publication || "";
+    return heureB.localeCompare(heureA);
+  });
 
   // ── Stats globales ───────────────────────────────────────────────
   const termines   = pronostics.filter(p => p.resultat !== "EN_ATTENTE");
