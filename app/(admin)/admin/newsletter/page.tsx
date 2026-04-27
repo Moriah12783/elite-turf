@@ -63,6 +63,7 @@ export default function NewsletterPage() {
   const [lancementStatus,  setLancementStatus]  = useState<"idle" | "loading" | "success" | "error">("idle");
   const [lancementMsg,     setLancementMsg]     = useState("");
   const [lancementTotal,   setLancementTotal]   = useState<number | null>(null);
+  const [lancementEchecs,  setLancementEchecs]  = useState<{ email: string; raison: string }[]>([]);
 
   useEffect(() => {
     fetch("/api/newsletter/counts")
@@ -84,13 +85,15 @@ export default function NewsletterPage() {
 
     setLancementStatus("loading");
     setLancementMsg("");
+    setLancementEchecs([]);
 
     try {
       const res = await fetch("/api/admin/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ numeroEdition: 1 }) });
       const data = await res.json();
       if (!res.ok) { setLancementStatus("error"); setLancementMsg(data.error || "Erreur"); return; }
       setLancementStatus("success");
-      setLancementMsg(`✓ Envoyée à ${data.envoyes} prospect(s) !${data.echecs > 0 ? ` (${data.echecs} échec(s))` : ""}`);
+      setLancementMsg(`✓ Envoyée à ${data.envoyes} contact(s)${data.echecs > 0 ? ` — ${data.echecs} échec(s)` : ""}`);
+      if (data.details_echecs?.length) setLancementEchecs(data.details_echecs);
     } catch {
       setLancementStatus("error");
       setLancementMsg("Erreur réseau — réessayez");
@@ -172,8 +175,22 @@ export default function NewsletterPage() {
               Hero cheval, code promo, prix réduits, CTA abonnement.
             </p>
             {lancementStatus === "success" && (
-              <div className="mt-2 flex items-center gap-1.5 text-status-win text-xs font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" />{lancementMsg}
+              <div className="mt-2 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-status-win text-xs font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />{lancementMsg}
+                </div>
+                {lancementEchecs.length > 0 && (
+                  <div className="p-2.5 bg-status-loss/5 border border-status-loss/20 rounded-xl space-y-1">
+                    <p className="text-status-loss text-xs font-semibold mb-1">Emails en échec :</p>
+                    {lancementEchecs.map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <XCircle className="w-3 h-3 text-status-loss flex-shrink-0 mt-0.5" />
+                        <span className="font-mono text-text-secondary">{e.email}</span>
+                        <span className="text-text-muted">— {e.raison}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             {lancementStatus === "error" && (
