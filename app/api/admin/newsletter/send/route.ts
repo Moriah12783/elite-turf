@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmailDetailed } from "@/lib/email";
 import { templateNewsletterLancement } from "@/lib/email/templates/newsletter-lancement";
 import { PROMO } from "@/lib/promo";
 
@@ -87,11 +87,11 @@ export async function POST(req: NextRequest) {
             dateExpiration: PROMO.dateExpiration,
             codePromo:      PROMO.code,
           });
-          const ok = await sendEmail({ to: dest.email, subject, html });
+          const { ok, error } = await sendEmailDetailed({ to: dest.email, subject, html });
           if (ok) {
             envoyes.push(dest.email);
           } else {
-            echecs.push({ email: dest.email, raison: "Refusé par Resend (voir logs serveur)" });
+            echecs.push({ email: dest.email, raison: error || "Refusé par Resend" });
           }
         } catch (err: any) {
           echecs.push({ email: dest.email, raison: err?.message || "Erreur inconnue" });
