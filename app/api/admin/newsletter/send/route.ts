@@ -18,29 +18,55 @@ async function isAdmin(): Promise<boolean> {
   return profile?.role === "ADMIN";
 }
 
+type Destinataire = { email: string; prenom: string };
+
+async function collectDestinataires(): Promise<Destinataire[]> {
+  const supabase = createServiceClient();
+  const map = new Map<string, Destinataire>();
+
+  // Prospects (leads table)
+  const { data: leads } = await supabase
+    .from("leads").select("email, prenom");
+  for (const l of leads ?? []) {
+    if (l.email) map.set(l.email.toLowerCase(), { email: l.email, prenom: l.prenom || "Turfiste" });
+  }
+
+  // Membres Actifs (STARTER + PRO)
+  const { data: actifs } = await supabase
+    .from("profiles").select("email, nom_complet")
+    .in("statut_abonnement", ["STARTER", "PRO"]);
+  for (const a of actifs ?? []) {
+    if (a.email && !map.has(a.email.toLowerCase())) {
+      map.set(a.email.toLowerCase(), { email: a.email, prenom: a.nom_complet?.split(" ")[0] || "Membre" });
+    }
+  }
+
+  // Elite
+  const { data: elites } = await supabase
+    .from("profiles").select("email, nom_complet")
+    .eq("statut_abonnement", "ELITE");
+  for (const e of elites ?? []) {
+    if (e.email && !map.has(e.email.toLowerCase())) {
+      map.set(e.email.toLowerCase(), { email: e.email, prenom: e.nom_complet?.split(" ")[0] || "Membre Élite" });
+    }
+  }
+
+  return Array.from(map.values());
+}
+
 /**
- * GET  → dry-run : liste les prospects sans envoyer
- * POST → envoi réel à tous les prospects GRATUIT
+ * GET  → dry-run : liste les destinataires sans envoyer
+ * POST → envoi réel à tous les contacts (leads + actifs + elite)
  */
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
 
-  const supabase = createServiceClient();
-  const { data: prospects, error } = await supabase
-    .from("profiles")
-    .select("id, email, nom_complet, statut_abonnement")
-    .eq("statut_abonnement", "GRATUIT")
-    .eq("actif", true)
-    .not("email", "is", null)
-    .order("date_inscription", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
+  const destinataires = await collectDestinataires();
   return NextResponse.json({
     mode:   "dry-run",
-    total:  prospects?.length ?? 0,
+    total:  destinataires.length,
     promo:  { reduction: `${PROMO.reductionPct}%`, code: PROMO.code, expire: PROMO.dateExpiration },
-    apercu: prospects?.slice(0, 5).map(p => ({ email: p.email, prenom: p.nom_complet?.split(" ")[0] || "Turfiste" })),
+    apercu: destinataires.slice(0, 5).map(d => ({ email: d.email, prenom: d.prenom })),
   });
 }
 
@@ -50,36 +76,26 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const numeroEdition = body?.numeroEdition ?? 1;
 
-  const supabase = createServiceClient();
-  const { data: prospects, error } = await supabase
-    .from("profiles")
-    .select("id, email, nom_complet, statut_abonnement")
-    .eq("statut_abonnement", "GRATUIT")
-    .eq("actif", true)
-    .not("email", "is", null)
-    .order("date_inscription", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!prospects?.length) return NextResponse.json({ message: "Aucun prospect trouvé", envoyes: 0 });
+  const destinataires = await collectDestinataires();
+  if (!destinataires.length) return NextResponse.json({ message: "Aucun destinataire trouvé", envoyes: 0 });
 
   const resultats = { envoyes: 0, echecs: 0 };
 
   const BATCH = 10;
-  for (let i = 0; i < prospects.length; i += BATCH) {
-    const batch = prospects.slice(i, i + BATCH);
+  for (let i = 0; i < destinataires.length; i += BATCH) {
+    const batch = destinataires.slice(i, i + BATCH);
 
     await Promise.all(
-      batch.map(async (prospect) => {
-        const prenom = prospect.nom_complet?.split(" ")[0] || "Turfiste";
+      batch.map(async (dest) => {
         try {
           const { subject, html } = templateNewsletterLancement({
-            prenom,
+            prenom:         dest.prenom,
             numeroEdition,
             reductionPct:   PROMO.reductionPct,
             dateExpiration: PROMO.dateExpiration,
             codePromo:      PROMO.code,
           });
-          const ok = await sendEmail({ to: prospect.email, subject, html });
+          const ok = await sendEmail({ to: dest.email, subject, html });
           if (ok) resultats.envoyes++; else resultats.echecs++;
         } catch {
           resultats.echecs++;
@@ -87,12 +103,12 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    if (i + BATCH < prospects.length) await delay(1000);
+    if (i + BATCH < destinataires.length) await delay(1000);
   }
 
   return NextResponse.json({
     mode:  "envoi-reel",
-    total: prospects.length,
+    total: destinataires.length,
     ...resultats,
   });
 }
