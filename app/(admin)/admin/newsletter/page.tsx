@@ -168,7 +168,7 @@ export default function NewsletterPage() {
               </span>
             </div>
             <p className="text-text-secondary text-xs leading-relaxed">
-              Email de conversion avec offre exclusive — envoyé aux <span className="font-bold text-gold-primary">{lancementTotal ?? "—"} prospect(s)</span> au statut GRATUIT.
+              Email de conversion avec offre exclusive — envoyé aux <span className="font-bold text-gold-primary">{lancementTotal ?? "—"} contact(s)</span> (prospects + membres, sans doublons).
               Hero cheval, code promo, prix réduits, CTA abonnement.
             </p>
             {lancementStatus === "success" && (
