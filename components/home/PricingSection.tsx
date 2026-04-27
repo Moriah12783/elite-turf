@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Check, Zap, Star, Crown, Shield } from "lucide-react";
+import { Check, Zap, Star, Crown, Shield, Flame } from "lucide-react";
 import { PLAN_CONFIG } from "@/types";
+import { PROMO } from "@/lib/promo";
 
 const PACK_NAMES: Record<string, string> = {
   Free:    "GRATUIT",
@@ -61,7 +62,7 @@ export default function PricingSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Crown className="w-5 h-5 text-gold-primary" />
             <span className="text-gold-light text-sm font-medium uppercase tracking-wider">
@@ -76,6 +77,37 @@ export default function PricingSection() {
             Accès immédiat après paiement.
           </p>
         </div>
+
+        {/* ── BANDEAU PROMO ── */}
+        {PROMO.actif && (
+          <div className="mb-10 relative overflow-hidden rounded-2xl border border-gold-primary/40 bg-gradient-to-r from-bg-card via-gold-faint to-bg-card">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+            <div className="px-5 py-4 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gold-primary/15 border border-gold-primary/30 flex items-center justify-center">
+                <Flame className="w-5 h-5 text-gold-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-gold-primary text-sm">
+                  🎉 Offre de lancement — {PROMO.reductionPct}% de réduction jusqu&apos;au {PROMO.dateExpiration}
+                </p>
+                <p className="text-text-muted text-xs mt-0.5">
+                  Code&nbsp;
+                  <span className="font-mono font-bold text-gold-primary">{PROMO.code}</span>
+                  &nbsp;·&nbsp;
+                  Starter <span className="line-through">{PROMO.prix.Starter}€</span> → <span className="text-status-win font-bold">{PROMO.prixReduits.Starter.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                  &nbsp;·&nbsp;
+                  Pro <span className="line-through">{PROMO.prix.Pro}€</span> → <span className="text-status-win font-bold">{PROMO.prixReduits.Pro.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                  &nbsp;·&nbsp;
+                  Elite <span className="line-through">{PROMO.prix.Elite}€</span> → <span className="text-status-win font-bold">{PROMO.prixReduits.Elite.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                </p>
+              </div>
+              <Link href="/abonnements" className="flex-shrink-0 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-xs rounded-xl transition-colors shadow-gold whitespace-nowrap">
+                J&apos;en profite →
+              </Link>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+          </div>
+        )}
 
         {/* Plans */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -182,12 +214,34 @@ export default function PricingSection() {
                     </div>
                   </div>
 
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-4xl font-bold font-serif ${styles.price}`}>
-                      {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-text-muted text-sm font-medium">€</span>
-                  </div>
+                  {PROMO.actif && plan.nom in PROMO.prixReduits ? (
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-lg font-medium text-text-muted line-through">
+                          {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-status-win/10 text-status-win border border-status-win/20 rounded-full">
+                          −{PROMO.reductionPct}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <span className={`text-4xl font-bold font-serif ${styles.price}`}>
+                          {PROMO.prixReduits[plan.nom as keyof typeof PROMO.prixReduits].toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-text-muted text-sm font-medium">€</span>
+                      </div>
+                      <p className="text-status-win text-[11px] font-semibold mt-0.5">
+                        Économie {PROMO.economies[plan.nom as keyof typeof PROMO.economies].toFixed(2).replace(".", ",")}€
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-4xl font-bold font-serif ${styles.price}`}>
+                        {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-text-muted text-sm font-medium">€</span>
+                    </div>
+                  )}
                   <p className="text-text-muted text-xs mt-0.5">
                     {plan.duree_jours} jours · ≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA
                   </p>

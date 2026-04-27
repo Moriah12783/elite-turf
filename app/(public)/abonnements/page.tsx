@@ -2,12 +2,13 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   Check, Star, Zap, Crown, Shield, Clock,
-  MessageCircle, ChevronDown, ArrowRight, Gift, Users
+  MessageCircle, ChevronDown, ArrowRight, Gift, Users, Flame
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
+import { PROMO } from "@/lib/promo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
@@ -116,8 +117,47 @@ export default async function AbonnementsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
 
+        {/* ── BANDEAU PROMO LANCEMENT ── */}
+        {PROMO.actif && (
+          <div className="mt-8 relative overflow-hidden rounded-2xl border border-gold-primary/40 bg-gradient-to-r from-bg-card via-gold-faint to-bg-card">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+            <div className="px-6 py-5 flex flex-col sm:flex-row items-center gap-5">
+              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gold-primary/10 border border-gold-primary/30 flex items-center justify-center">
+                <Flame className="w-7 h-7 text-gold-primary" />
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-gold-primary font-bold text-sm uppercase tracking-wider mb-0.5">
+                  🎉 Offre de lancement — {PROMO.reductionPct}% de réduction
+                </p>
+                <p className="text-text-primary font-semibold text-base">
+                  Rejoignez Elite Turf au meilleur prix avant le <span className="text-gold-light">{PROMO.dateExpiration}</span>
+                </p>
+                <p className="text-text-muted text-sm mt-0.5">
+                  Code&nbsp;
+                  <span className="font-mono font-bold text-gold-primary bg-gold-primary/10 px-2 py-0.5 rounded border border-gold-primary/30">
+                    {PROMO.code}
+                  </span>
+                  &nbsp;·&nbsp;Starter&nbsp;
+                  <span className="line-through text-text-muted">{PROMO.prix.Starter}€</span>
+                  &nbsp;<span className="font-bold text-status-win">{PROMO.prixReduits.Starter.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                  &nbsp;·&nbsp;Pro&nbsp;
+                  <span className="line-through text-text-muted">{PROMO.prix.Pro}€</span>
+                  &nbsp;<span className="font-bold text-status-win">{PROMO.prixReduits.Pro.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                  &nbsp;·&nbsp;Elite&nbsp;
+                  <span className="line-through text-text-muted">{PROMO.prix.Elite}€</span>
+                  &nbsp;<span className="font-bold text-status-win">{PROMO.prixReduits.Elite.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€</span>
+                </p>
+              </div>
+              <a href="#plans" className="flex-shrink-0 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors shadow-gold whitespace-nowrap">
+                J&apos;en profite →
+              </a>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+          </div>
+        )}
+
         {/* ── CTA Guide Gratuit ── */}
-        <div className="mt-8 p-4 rounded-xl bg-gold-faint border border-gold-primary/30 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+        <div className="mt-4 p-4 rounded-xl bg-gold-faint border border-gold-primary/30 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <div className="text-2xl">📥</div>
           <div className="flex-1">
             <p className="text-text-primary font-semibold text-sm">Nouveau sur Elite Turf ?</p>
@@ -280,12 +320,34 @@ export default async function AbonnementsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-baseline gap-2">
-                      <span className={`text-4xl font-bold font-serif ${styles.price}`}>
-                        {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-text-muted text-sm">€</span>
-                    </div>
+                    {PROMO.actif && plan.nom in PROMO.prixReduits ? (
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-medium text-text-muted line-through">
+                            {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€
+                          </span>
+                          <span className="text-xs font-bold px-1.5 py-0.5 bg-status-win/10 text-status-win border border-status-win/20 rounded-full">
+                            −{PROMO.reductionPct}%
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className={`text-4xl font-bold font-serif ${styles.price}`}>
+                            {PROMO.prixReduits[plan.nom as keyof typeof PROMO.prixReduits].toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-text-muted text-sm">€</span>
+                        </div>
+                        <p className="text-status-win text-xs mt-0.5 font-semibold">
+                          Économie {PROMO.economies[plan.nom as keyof typeof PROMO.economies].toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€ · jusqu&apos;au {PROMO.dateExpiration}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-4xl font-bold font-serif ${styles.price}`}>
+                          {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-text-muted text-sm">€</span>
+                      </div>
+                    )}
                     <p className="text-text-muted text-xs mt-1">
                       {plan.duree_jours} jours · Orange Money, MTN, Wave acceptés
                     </p>
