@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Mail, Send, Users, Star, Crown, Loader2,
-  CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, Newspaper,
+  CheckCircle2, XCircle, Eye, ChevronDown, ChevronUp, Newspaper, Flame, Rocket,
 } from "lucide-react";
 
 // ── Contenu par défaut de la première édition ───────────────────────────────
@@ -60,12 +60,42 @@ export default function NewsletterPage() {
   const [statusMsg,     setStatusMsg]     = useState("");
   const [preview,       setPreview]       = useState(false);
 
+  const [lancementStatus,  setLancementStatus]  = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [lancementMsg,     setLancementMsg]     = useState("");
+  const [lancementTotal,   setLancementTotal]   = useState<number | null>(null);
+
   useEffect(() => {
     fetch("/api/newsletter/counts")
       .then(r => r.json())
       .then(d => setCounts({ prospects: d.prospects ?? 0, actifs: d.actifs ?? 0, elite: d.elite ?? 0, tous: d.tous ?? 0 }))
       .catch(() => {});
+
+    fetch("/api/admin/newsletter/send")
+      .then(r => r.json())
+      .then(d => setLancementTotal(d.total ?? 0))
+      .catch(() => {});
   }, []);
+
+  async function handleLancement() {
+    const confirmed = window.confirm(
+      `Vous allez envoyer la newsletter de lancement (offre ELITE30 −30%) à ${lancementTotal ?? "?"} prospect(s) GRATUIT.\n\nConfirmer l'envoi ?`
+    );
+    if (!confirmed) return;
+
+    setLancementStatus("loading");
+    setLancementMsg("");
+
+    try {
+      const res = await fetch("/api/admin/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ numeroEdition: 1 }) });
+      const data = await res.json();
+      if (!res.ok) { setLancementStatus("error"); setLancementMsg(data.error || "Erreur"); return; }
+      setLancementStatus("success");
+      setLancementMsg(`✓ Envoyée à ${data.envoyes} prospect(s) !${data.echecs > 0 ? ` (${data.echecs} échec(s))` : ""}`);
+    } catch {
+      setLancementStatus("error");
+      setLancementMsg("Erreur réseau — réessayez");
+    }
+  }
 
   const currentCount = counts[segment];
 
@@ -119,6 +149,53 @@ export default function NewsletterPage() {
             className="w-16 px-2 py-1.5 bg-bg-elevated border border-border text-text-primary text-sm rounded-lg text-center focus:border-gold-primary/50 focus:outline-none"
           />
         </div>
+      </div>
+
+      {/* ── Campagne de Lancement ── */}
+      <div className="relative overflow-hidden rounded-2xl border-2 border-gold-primary/40 bg-gradient-to-r from-bg-card via-gold-faint to-bg-card">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+        <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+
+          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gold-primary/15 border border-gold-primary/30 flex items-center justify-center">
+            <Rocket className="w-6 h-6 text-gold-primary" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="font-bold text-text-primary text-sm">Newsletter de Lancement</h2>
+              <span className="px-2 py-0.5 bg-gold-primary/20 text-gold-primary text-[10px] font-bold rounded-full border border-gold-primary/30 flex items-center gap-1">
+                <Flame className="w-3 h-3" /> ELITE30 −30%
+              </span>
+            </div>
+            <p className="text-text-secondary text-xs leading-relaxed">
+              Email de conversion avec offre exclusive — envoyé aux <span className="font-bold text-gold-primary">{lancementTotal ?? "—"} prospect(s)</span> au statut GRATUIT.
+              Hero cheval, code promo, prix réduits, CTA abonnement.
+            </p>
+            {lancementStatus === "success" && (
+              <div className="mt-2 flex items-center gap-1.5 text-status-win text-xs font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5" />{lancementMsg}
+              </div>
+            )}
+            {lancementStatus === "error" && (
+              <div className="mt-2 flex items-center gap-1.5 text-status-loss text-xs font-medium">
+                <XCircle className="w-3.5 h-3.5" />{lancementMsg}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleLancement}
+            disabled={lancementStatus === "loading" || lancementStatus === "success" || (lancementTotal ?? 0) === 0}
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {lancementStatus === "loading"
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi...</>
+              : lancementStatus === "success"
+              ? <><CheckCircle2 className="w-4 h-4" /> Envoyée</>
+              : <><Send className="w-4 h-4" /> Publier</>}
+          </button>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
