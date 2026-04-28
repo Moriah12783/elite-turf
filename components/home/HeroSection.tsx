@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, TrendingUp, BarChart2, Award, Trophy } from "lucide-react";
 import { Analytics } from "@/lib/analytics";
 
@@ -103,15 +104,22 @@ export default function HeroSection() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
       {/* ── Image plein écran — parallax ── */}
-      <div
-        className="absolute inset-0 z-0 will-change-transform"
-        style={{
-          backgroundImage: "url('/images/heroes/hero-courses.jpg')",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: `center calc(30% + ${parallaxY}px)`,
-        }}
-      />
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <Image
+          src="/images/heroes/hero-courses.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          style={{
+            objectPosition: "center 30%",
+            transform: `translateY(${parallaxY * 0.5}px) scale(1.15)`,
+            transformOrigin: "center top",
+          }}
+          aria-hidden="true"
+        />
+      </div>
 
       <div className="absolute inset-0 z-[1] bg-black/55" />
       <div className="absolute inset-0 z-[2] bg-gradient-to-b from-black/20 via-transparent to-bg-primary" />

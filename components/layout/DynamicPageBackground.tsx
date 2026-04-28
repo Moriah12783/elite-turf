@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 /**
@@ -26,12 +27,20 @@ const DEFAULT_BG = "/images/heroes/hero-courses.jpg";
 
 export default function DynamicPageBackground() {
   const pathname = usePathname();
+  const [bgLoaded, setBgLoaded] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setBgLoaded(true), 1500);
+    return () => clearTimeout(id);
+  }, []);
 
   const matched = PAGE_BACKGROUNDS.find(({ path }) =>
     pathname === path || pathname.startsWith(path + "/")
   );
 
   const bgImage = matched?.image ?? DEFAULT_BG;
+
+  if (!bgLoaded) return null;
 
   return (
     <>
