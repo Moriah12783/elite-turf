@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Pages transactionnelles et de test — jamais à indexer
+Disallow: /paiement/sandbox
+Disallow: /paiement/test-stripe
+Disallow: /paiement/succes
+Disallow: /paiement/echec
+
+# Pages admin
+Disallow: /admin/
+
+# Pages auth (pas de valeur SEO)
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /mot-de-passe-oublie
+
+Sitemap: https://www.elite-turf.fr/sitemap.xml
