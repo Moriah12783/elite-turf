@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         email: userEmail,
-        amount: plan.prix_fcfa,   // XOF : pas de subdivision (1 XOF = 1 unité)
+        amount: plan.prix_fcfa * 100, // Paystack divise toujours par 100 (ex: 42637 → 4263700 → affiche 42 637 XOF)
         currency: "XOF",
         reference,
         callback_url: `${APP_URL}/paiement/succes?tx=${reference}&plan=${planId}`,
