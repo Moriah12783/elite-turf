@@ -188,6 +188,23 @@ export const PLAN_CONFIG: Plan[] = [
     ],
     actif: true,
   },
+  // ── Plan de test Paystack à 1 XOF — à supprimer après validation ──
+  {
+    id: "test-paystack",
+    nom: "Test",
+    prix_fcfa: 1,
+    prix_eur: 0.01,
+    duree_jours: 1,
+    acces_performance: false,
+    acces_elite: false,
+    nb_alertes: 0,
+    description: "Plan test 1 XOF — tunnel Paystack uniquement",
+    features: [
+      "Accès 1 jour (test technique uniquement)",
+      "Permet de valider le circuit Paystack en live",
+    ],
+    actif: true,
+  },
   {
     id: "starter",
     nom: "Starter",

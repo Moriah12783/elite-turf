@@ -4,6 +4,7 @@ Allow: /
 # Pages transactionnelles et de test — jamais à indexer
 Disallow: /paiement/sandbox
 Disallow: /paiement/test-stripe
+Disallow: /paiement/test-paystack
 Disallow: /paiement/succes
 Disallow: /paiement/echec
 
