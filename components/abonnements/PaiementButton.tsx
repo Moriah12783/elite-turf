@@ -12,7 +12,7 @@ interface Props {
   variant?: "primary" | "secondary" | "elite";
 }
 
-type PaymentMethod = "mobilemoney" | "card" | "paystack" | null;
+type PaymentMethod = "paystack" | "stripe" | null;
 
 const VARIANT_MAIN = {
   primary:   "w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-gold-primary hover:bg-gold-dark text-bg-primary transition-all shadow-gold-sm",
@@ -26,7 +26,6 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
   const [error, setError]     = useState<string | null>(null);
   const router                = useRouter();
 
-  // Non connecté → connexion
   if (!userId || !userEmail) {
     return (
       <button
@@ -45,16 +44,15 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
     setLoading(method);
     setOpen(false);
 
-    const endpoint =
-      method === "card"      ? "/api/paiement/stripe/checkout" :
-      method === "paystack"  ? "/api/paystack/initier"         :
-                               "/api/paiement/initier";
+    const endpoint = method === "stripe"
+      ? "/api/paiement/stripe/checkout"
+      : "/api/paystack/initier";
 
     try {
-      const res  = await fetch(endpoint, {
-        method:  "POST",
+      const res = await fetch(endpoint, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ planId: plan.id, userId, userEmail }),
+        body: JSON.stringify({ planId: plan.id, userId, userEmail }),
       });
 
       const data = await res.json();
@@ -76,7 +74,6 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
 
   return (
     <div className="space-y-2">
-      {/* Bouton principal — ouvre le sélecteur */}
       <button
         onClick={() => !isLoading && setOpen((v) => !v)}
         disabled={isLoading}
@@ -95,67 +92,48 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
         )}
       </button>
 
-      {/* Sélecteur de méthode de paiement */}
       {open && !isLoading && (
         <div className="rounded-xl border border-border bg-bg-card overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold px-3 pt-2.5 pb-1">
             Choisir votre moyen de paiement
           </p>
 
-          {/* Carte bancaire — Paystack (prioritaire Afrique) */}
+          {/* Paystack — Mobile Money + Carte (principal) */}
           <button
             onClick={() => handlePay("paystack")}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
           >
             <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-4 h-4 text-green-400" />
+              <Smartphone className="w-4 h-4 text-green-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
-              <p className="text-text-muted text-xs">Paiement sécurisé par Paystack</p>
-            </div>
-            <span className="text-text-muted text-xs font-mono">
-              {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-            </span>
-          </button>
-
-          {/* Carte bancaire — Stripe (alternatif) */}
-          <button
-            onClick={() => handlePay("card")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <CreditCard className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard (Stripe)</p>
-              <p className="text-text-muted text-xs">Alternative Europe / USA</p>
-            </div>
-            <span className="text-text-muted text-xs font-mono">
-              {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-            </span>
-          </button>
-
-          <div className="mx-3 border-t border-border/50" />
-
-          {/* Mobile Money (CinetPay) */}
-          <button
-            onClick={() => handlePay("mobilemoney")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gold-faint border border-gold-primary/20 flex items-center justify-center flex-shrink-0">
-              <Smartphone className="w-4 h-4 text-gold-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave</p>
-              <p className="text-text-muted text-xs">Mobile Money — Afrique</p>
+              <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave · Carte</p>
+              <p className="text-text-muted text-xs">Tous moyens — sécurisé par Paystack</p>
             </div>
             <span className="text-text-muted text-xs font-mono">
               {plan.prix_fcfa.toLocaleString("fr-FR")} F
             </span>
           </button>
 
-          {/* Annuler */}
+          <div className="mx-3 border-t border-border/50" />
+
+          {/* Stripe — Carte Europe / USA (alternatif) */}
+          <button
+            onClick={() => handlePay("stripe")}
+            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
+          >
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+              <p className="text-text-muted text-xs">Europe · USA — sécurisé par Stripe</p>
+            </div>
+            <span className="text-text-muted text-xs font-mono">
+              {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+            </span>
+          </button>
+
           <button
             onClick={() => setOpen(false)}
             className="w-full text-center text-text-muted text-xs py-2 hover:text-text-secondary transition-colors border-t border-border/50"

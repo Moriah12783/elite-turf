@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
       await supabase.from("transactions").insert({
         user_id: userId,
         montant_fcfa: plan.prix_fcfa,
-        devise: "EUR",
-        methode: "STRIPE", // réutilise l'enum existant pour carte
+        devise: "XOF",
+        methode: "ORANGE_MONEY", // sera mis à jour par le webhook selon le moyen choisi
         statut: "EN_ATTENTE",
         reference_operateur: reference,
         date_transaction: new Date().toISOString(),
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ paymentUrl: sandboxUrl, reference, sandbox: true });
     }
 
-    // Appel Paystack — montant en centimes d'euros (100 = 1€)
+    // Appel Paystack — XOF, montant en unités de base (pas de centimes pour XOF)
     const paystackRes = await fetch(PAYSTACK_API, {
       method: "POST",
       headers: {
@@ -65,10 +65,11 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         email: userEmail,
-        amount: Math.round(plan.prix_eur * 100), // en centimes
-        currency: "EUR",
+        amount: plan.prix_fcfa,   // XOF : pas de subdivision (1 XOF = 1 unité)
+        currency: "XOF",
         reference,
         callback_url: `${APP_URL}/paiement/succes?tx=${reference}&plan=${planId}`,
+        channels: ["card", "mobile_money", "bank_transfer"], // tous les canaux disponibles
         metadata: {
           plan_id: planId,
           plan_nom: plan.nom,
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
           nom_complet: profile?.nom_complet || "",
           cancel_action: `${APP_URL}/abonnements`,
         },
+        label: `Abonnement ${plan.nom} — Elite Turf`,
       }),
     });
 
