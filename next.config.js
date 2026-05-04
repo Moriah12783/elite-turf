@@ -11,7 +11,7 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
-        has: [{ type: "host", value: "elite-turf.fr" }],
+        has: [{ type: "host", value: "^elite-turf\\.fr$" }],
         destination: "https://www.elite-turf.fr/:path*",
         permanent: true, // 308 → Google transfère le PageRank
       },
