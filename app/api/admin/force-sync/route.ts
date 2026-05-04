@@ -26,7 +26,7 @@ const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.f
 type DirectTarget = {
   kind:     "direct";
   cronName: string;
-  run:      () => Promise<Record<string, unknown>>;
+  run:      () => Promise<unknown>;
 };
 
 type FetchTarget = {
@@ -43,12 +43,12 @@ const TARGETS: Record<string, Target> = {
   "pmu-today": {
     kind:     "direct",
     cronName: "pmu-sync",
-    run:      () => runGenyProgrammeSync("today") as Promise<Record<string, unknown>>,
+    run:      () => runGenyProgrammeSync("today"),
   },
   "pmu-demain": {
     kind:     "direct",
     cronName: "pmu-demain",
-    run:      () => runGenyProgrammeSync("demain") as Promise<Record<string, unknown>>,
+    run:      () => runGenyProgrammeSync("demain"),
   },
   "lonaci": {
     kind:     "fetch",
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   const t0 = Date.now();
 
   try {
-    let data: Record<string, unknown>;
+    let data: unknown;
 
     if (endpoint.kind === "direct") {
       // Appel direct à la fonction → pas de self-fetch loop
@@ -104,7 +104,8 @@ export async function POST(req: NextRequest) {
       data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        const errorMsg = (data?.error as string) ?? `HTTP ${res.status} — ${endpoint.url}`;
+        const dataObj  = (data ?? {}) as Record<string, unknown>;
+        const errorMsg = (dataObj.error as string) ?? `HTTP ${res.status} — ${endpoint.url}`;
         const duration_ms = Date.now() - t0;
         await logger.finish("failure", { error: errorMsg, target, manual: true });
         return NextResponse.json({
@@ -119,7 +120,8 @@ export async function POST(req: NextRequest) {
     }
 
     const duration_ms = Date.now() - t0;
-    await logger.finish("success", { ...data, target, manual: true });
+    const detailsObj  = (typeof data === "object" && data !== null) ? data as Record<string, unknown> : {};
+    await logger.finish("success", { ...detailsObj, target, manual: true });
     return NextResponse.json({
       ok: true,
       target,
