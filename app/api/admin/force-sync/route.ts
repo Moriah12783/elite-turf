@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logCronStart } from "@/lib/cron-logger";
 import { runGenyProgrammeSync } from "@/lib/sync/geny-programme";
+import { runLonaciSync }        from "@/lib/sync/lonaci";
+import { runGenyArriveesSync }  from "@/lib/sync/geny-arrivees";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,9 @@ const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.f
 
 /**
  * Cibles supportées :
- * - pmu-today, pmu-demain : appel DIRECT à runGenyProgrammeSync
- *   (pas de fetch HTTP — Cloudflare interdit le self-fetch sur custom domain)
- * - lonaci, arrivees, resultats : fetch HTTP vers les endpoints respectifs
- *   (à migrer en direct call si ces endpoints aussi posent souci)
+ * - pmu-today, pmu-demain, lonaci, arrivees : appel DIRECT (lib partagée)
+ *   pour éviter Cloudflare Worker self-fetch loop (HTTP 522 en 16ms).
+ * - resultats : fetch HTTP vers /api/admin/sync-resultats (à migrer si plante)
  */
 type DirectTarget = {
   kind:     "direct";
@@ -51,16 +52,14 @@ const TARGETS: Record<string, Target> = {
     run:      () => runGenyProgrammeSync("demain"),
   },
   "lonaci": {
-    kind:     "fetch",
+    kind:     "direct",
     cronName: "lonaci-sync",
-    url:      `${APP_URL}/api/lonaci/sync`,
-    method:   "POST",
+    run:      () => runLonaciSync(),
   },
   "arrivees": {
-    kind:     "fetch",
+    kind:     "direct",
     cronName: "geny-arrivees",
-    url:      `${APP_URL}/api/geny/arrivees`,
-    method:   "POST",
+    run:      () => runGenyArriveesSync(),
   },
   "resultats": {
     kind:     "fetch",
