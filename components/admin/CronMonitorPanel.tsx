@@ -89,9 +89,27 @@ export default function CronMonitorPanel() {
           ? `✅ Terminé en ${data.duration_ms}ms — ${data.result?.inserted ?? data.result?.traites ?? data.result?.courses ?? "OK"}`
           : `❌ ${data.error ?? data.result?.error ?? `HTTP ${res.status}`}`,
       });
-      // Rafraîchir le statut après force-sync
-      await fetchStatus();
-    } catch (err) {
+
+      // Update optimistique immédiat — évite la race condition Supabase
+      // (le badge affichait l'ancien statut si fetchStatus tournait avant
+      // que l'insert dans cron_logs soit propagé)
+      setCrons((prev) =>
+        prev.map((c) =>
+          c.cronName === cronName
+            ? {
+                ...c,
+                lastStatus:   res.ok ? "success" : "failure",
+                lastRun:      new Date().toISOString(),
+                lastDuration: typeof data.duration_ms === "number" ? data.duration_ms : c.lastDuration,
+                lastDetails:  (data.result ?? null) as Record<string, unknown> | null,
+              }
+            : c
+        )
+      );
+
+      // Re-fetch en backup après un petit délai pour laisser Supabase propager
+      setTimeout(() => { fetchStatus(); }, 1500);
+    } catch {
       setFeedback({ cronName, ok: false, msg: `❌ Erreur réseau` });
     } finally {
       setForcing(null);
