@@ -9,26 +9,65 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { logCronStart } from "@/lib/cron-logger";
+import { runGenyProgrammeSync } from "@/lib/sync/geny-programme";
 
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
 const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
-interface Target {
+/**
+ * Cibles supportées :
+ * - pmu-today, pmu-demain : appel DIRECT à runGenyProgrammeSync
+ *   (pas de fetch HTTP — Cloudflare interdit le self-fetch sur custom domain)
+ * - lonaci, arrivees, resultats : fetch HTTP vers les endpoints respectifs
+ *   (à migrer en direct call si ces endpoints aussi posent souci)
+ */
+type DirectTarget = {
+  kind:     "direct";
+  cronName: string;
+  run:      () => Promise<Record<string, unknown>>;
+};
+
+type FetchTarget = {
+  kind:     "fetch";
+  cronName: string;
   url:      string;
   method:   string;
   body?:    object;
-  cronName: string;  // Nom utilisé dans cron_logs — doit matcher KNOWN_CRONS de cron-status
-}
+};
+
+type Target = DirectTarget | FetchTarget;
 
 const TARGETS: Record<string, Target> = {
-  // PMU sync → tente d'abord l'API PMU, fallback automatique sur Geny
-  "pmu-today":  { url: `${APP_URL}/api/geny/programme`,      method: "POST", body: { date: "today" },  cronName: "pmu-sync" },
-  "pmu-demain": { url: `${APP_URL}/api/geny/programme`,      method: "POST", body: { date: "demain" }, cronName: "pmu-demain" },
-  "lonaci":     { url: `${APP_URL}/api/lonaci/sync`,         method: "POST",                          cronName: "lonaci-sync" },
-  "arrivees":   { url: `${APP_URL}/api/geny/arrivees`,       method: "POST",                          cronName: "geny-arrivees" },
-  "resultats":  { url: `${APP_URL}/api/admin/sync-resultats`, method: "POST",                          cronName: "sync-resultats" },
+  "pmu-today": {
+    kind:     "direct",
+    cronName: "pmu-sync",
+    run:      () => runGenyProgrammeSync("today") as Promise<Record<string, unknown>>,
+  },
+  "pmu-demain": {
+    kind:     "direct",
+    cronName: "pmu-demain",
+    run:      () => runGenyProgrammeSync("demain") as Promise<Record<string, unknown>>,
+  },
+  "lonaci": {
+    kind:     "fetch",
+    cronName: "lonaci-sync",
+    url:      `${APP_URL}/api/lonaci/sync`,
+    method:   "POST",
+  },
+  "arrivees": {
+    kind:     "fetch",
+    cronName: "geny-arrivees",
+    url:      `${APP_URL}/api/geny/arrivees`,
+    method:   "POST",
+  },
+  "resultats": {
+    kind:     "fetch",
+    cronName: "sync-resultats",
+    url:      `${APP_URL}/api/admin/sync-resultats`,
+    method:   "POST",
+  },
 };
 
 export async function POST(req: NextRequest) {
@@ -42,36 +81,44 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Log dans cron_logs pour que le dashboard se mette à jour immédiatement
   const logger = logCronStart(endpoint.cronName);
   const t0 = Date.now();
 
   try {
-    const res = await fetch(endpoint.url, {
-      method:  endpoint.method,
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${CRON_SECRET}`,
-      },
-      body: endpoint.body !== undefined ? JSON.stringify(endpoint.body) : undefined,
-    });
+    let data: Record<string, unknown>;
 
-    const data = await res.json().catch(() => ({}));
-    const duration_ms = Date.now() - t0;
+    if (endpoint.kind === "direct") {
+      // Appel direct à la fonction → pas de self-fetch loop
+      data = await endpoint.run();
+    } else {
+      // Appel HTTP — peut planter en 522 si self-fetch sur custom domain
+      const res = await fetch(endpoint.url, {
+        method:  endpoint.method,
+        headers: {
+          "Content-Type":  "application/json",
+          "Authorization": `Bearer ${CRON_SECRET}`,
+        },
+        body: endpoint.body !== undefined ? JSON.stringify(endpoint.body) : undefined,
+      });
 
-    if (!res.ok) {
-      const errorMsg = data?.error ?? `HTTP ${res.status} — ${endpoint.url}`;
-      await logger.finish("failure", { error: errorMsg, target, manual: true });
-      return NextResponse.json({
-        ok: false,
-        target,
-        duration_ms,
-        result: data,
-        error: errorMsg,
-        timestamp: new Date().toISOString(),
-      }, { status: 500 });
+      data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorMsg = (data?.error as string) ?? `HTTP ${res.status} — ${endpoint.url}`;
+        const duration_ms = Date.now() - t0;
+        await logger.finish("failure", { error: errorMsg, target, manual: true });
+        return NextResponse.json({
+          ok: false,
+          target,
+          duration_ms,
+          result: data,
+          error: errorMsg,
+          timestamp: new Date().toISOString(),
+        }, { status: 500 });
+      }
     }
 
+    const duration_ms = Date.now() - t0;
     await logger.finish("success", { ...data, target, manual: true });
     return NextResponse.json({
       ok: true,

@@ -1,0 +1,363 @@
+/**
+ * lib/sync/geny-programme.ts
+ *
+ * Logique de scraping Geny.com + sync Supabase, extraite de
+ * /api/geny/programme/route.ts pour être appelable directement
+ * (sans fetch HTTP) depuis d'autres endpoints Cloudflare Worker.
+ *
+ * Pourquoi : Cloudflare Workers interdisent aux Workers de fetch
+ * leur propre custom domain (loop de routing → HTTP 522 instantané).
+ * Donc force-sync et autres ne peuvent pas appeler /api/geny/programme
+ * via fetch ; ils doivent appeler runGenyProgrammeSync() directement.
+ */
+
+import { createServiceClient } from "@/lib/supabase/server";
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface GenyCourse {
+  reunionNum:       number;
+  hippodromeNom:    string;
+  hippodromePays:   string;
+  courseNum:        number;
+  libelle:          string;
+  heureDepart:      string | null;
+  nbPartants:       number;
+  parisDisponibles: string[];
+  dateCourse:       string;
+  genyUrl:          string | null;
+}
+
+export interface GenyProgrammeResult {
+  ok:            true;
+  date:          string;
+  courses:       number;
+  filtered_out:  number;
+  reunions:      number;
+  inserted:      number;
+  updated:       number;
+  hippodromes:   number;
+  message?:      string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#0*39;/g, "'")
+    .replace(/&#0*34;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+function genyUrl(dateISO: string): string {
+  const today = new Date().toISOString().split("T")[0];
+  if (dateISO === today) return "https://www.geny.com/reunions-courses-pmu/_daujourdhui";
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dateISO === tomorrow.toISOString().split("T")[0]) {
+    return "https://www.geny.com/reunions-courses-pmu/_ddemain";
+  }
+  return `https://www.geny.com/reunions-courses-pmu/${dateISO}_d${dateISO}`;
+}
+
+function extractPaysFromHippodrome(nom: string): string {
+  if (nom.includes("Suisse"))         return "Suisse";
+  if (nom.includes("Grande-Bretagne") || nom.includes("Royaume-Uni")) return "Grande-Bretagne";
+  if (nom.includes("Allemagne"))      return "Allemagne";
+  if (nom.includes("Italie"))         return "Italie";
+  if (nom.includes("Etats-Unis") || nom.includes("États-Unis") || nom.includes("Etats Unis")) return "États-Unis";
+  if (nom.includes("Belgique"))       return "Belgique";
+  if (nom.includes("Argentine"))      return "Argentine";
+  if (nom.includes("Uruguay"))        return "Uruguay";
+  if (nom.includes("Maroc"))          return "Maroc";
+  if (nom.includes("Espagne"))        return "Espagne";
+  if (nom.includes("Suède") || nom.includes("Suede")) return "Suède";
+  if (nom.includes("Autriche"))       return "Autriche";
+  return "France";
+}
+
+function cleanHippodromeName(nom: string): string {
+  return nom
+    .replace(/\s*\(R\d+\)/g, "")
+    .replace(/\s*\([^)]+\)\s*$/, "")
+    .replace(/\[.*?\]/g, "")
+    .trim();
+}
+
+function parseHeure(raw: string): string | null {
+  const m = raw.match(/(\d{1,2})h(\d{2})/);
+  if (!m) return null;
+  return `${m[1].padStart(2, "0")}:${m[2]}:00`;
+}
+
+function parsePartants(raw: string): number {
+  const m = raw.match(/(\d+)\s*[Pp]artant/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function classToParisDisponibles(btnClass: string): string[] {
+  if (btnClass.includes("Quinte"))  return ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE", "COUPLE_GAGNANT", "COUPLE_PLACE", "TRIO"];
+  if (btnClass.includes("Multi"))   return ["MULTI", "COUPLE_GAGNANT", "SIMPLE_GAGNANT"];
+  return ["SIMPLE_GAGNANT", "SIMPLE_PLACE"];
+}
+
+// ── Scraping Geny ──────────────────────────────────────────────────────────
+
+export async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
+  const url = genyUrl(dateISO);
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":      UA,
+      "Accept":          "text/html,application/xhtml+xml",
+      "Accept-Language": "fr-FR,fr;q=0.9",
+      "Referer":         "https://www.geny.com/",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error(`Geny HTTP ${res.status} pour ${url}`);
+  const html = await res.text();
+  const courses: GenyCourse[] = [];
+
+  const reunionBlocks = html.split(/<a\s+name="reunion(\d+)"/i);
+
+  for (let i = 1; i < reunionBlocks.length; i += 2) {
+    const reunionNum = parseInt(reunionBlocks[i]);
+    const block = reunionBlocks[i + 1] || "";
+
+    const cartoucheMatch = block.match(
+      /class="[^"]*cartoucheReunion[^"]*"[^>]*>[\s\S]*?<div[^>]*>([\s\S]*?)<\/div>/
+    );
+    let hipNomRaw = `Réunion ${reunionNum}`;
+    if (cartoucheMatch) {
+      const text = cartoucheMatch[1]
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const m = text.match(
+        /(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s*:\s*(.+?)\s*\(R\d+\)/i
+      );
+      hipNomRaw = m
+        ? m[1].trim()
+        : text.split(/Jouer|D[ée]but/)[0].replace(/^.*:\s*/, "").trim();
+    }
+    const hipNom  = cleanHippodromeName(hipNomRaw);
+    const hipPays = extractPaysFromHippodrome(hipNomRaw);
+
+    const nomRe = /class="[^"]*nomCourse[^"]*"[^>]*>\s*(\d+)\s*-\s*([^<\r\n]+)/g;
+    const nomMatches = Array.from(block.matchAll(nomRe));
+
+    const linkRe = /<a[^>]+class="([^"]*btn(?:Quinte|Multi|Course)[^"]*)"[^>]*href="(\/partants-pmu\/[^"]+)"/g;
+    const linkMatches = Array.from(block.matchAll(linkRe));
+
+    const arriveeRe = /class="btnArrivee[^"]*"[^>]*>([\s\S]*?)<\/div>/g;
+    const arriveeMatches = Array.from(block.matchAll(arriveeRe));
+
+    const count = Math.min(nomMatches.length, linkMatches.length);
+    for (let j = 0; j < count; j++) {
+      const courseNum   = parseInt(nomMatches[j][1]);
+      const libelle     = decodeHtmlEntities(nomMatches[j][2].trim());
+      const btnClass    = linkMatches[j][1];
+      const genyHref    = linkMatches[j][2];
+      const arriveeText = (arriveeMatches[j]?.[1] ?? "")
+        .replace(/<[^>]+>/g, "")
+        .trim();
+
+      courses.push({
+        reunionNum,
+        hippodromeNom:    hipNom,
+        hippodromePays:   hipPays,
+        courseNum,
+        libelle,
+        heureDepart:      parseHeure(arriveeText),
+        nbPartants:       parsePartants(arriveeText),
+        parisDisponibles: classToParisDisponibles(btnClass),
+        dateCourse:       dateISO,
+        genyUrl:          genyHref || null,
+      });
+    }
+  }
+
+  return courses;
+}
+
+// ── Sync Supabase (bulk) ──────────────────────────────────────────────────
+
+export async function syncCoursesToDB(
+  courses: GenyCourse[],
+): Promise<{ inserted: number; updated: number; hippodromes: number }> {
+  const supabase = createServiceClient();
+  const hipNoms  = Array.from(new Set(courses.map((c) => c.hippodromeNom)));
+  const hipMap: Record<string, string> = {};
+
+  // 1. Hippodromes — 1 SELECT bulk + 1 INSERT bulk
+  const { data: existingHips } = await supabase
+    .from("hippodromes")
+    .select("id, nom")
+    .in("nom", hipNoms);
+
+  for (const hip of existingHips ?? []) {
+    hipMap[hip.nom] = hip.id;
+  }
+
+  const missingHips = hipNoms
+    .filter((nom) => !hipMap[nom])
+    .map((nom) => ({
+      nom,
+      pays:           courses.find((c) => c.hippodromeNom === nom)?.hippodromePays || "France",
+      ville:          nom,
+      fuseau_horaire: "Europe/Paris",
+      actif:          true,
+    }));
+
+  if (missingHips.length > 0) {
+    const { data: insertedHips } = await supabase
+      .from("hippodromes")
+      .insert(missingHips)
+      .select("id, nom");
+    for (const hip of insertedHips ?? []) {
+      hipMap[hip.nom] = hip.id;
+    }
+  }
+
+  // 2. Courses — 1 SELECT bulk + 1 INSERT bulk + 1 UPSERT bulk
+  const dates  = Array.from(new Set(courses.map((c) => c.dateCourse)));
+  const hipIds = Object.values(hipMap);
+
+  type ExistingCourse = {
+    id: string;
+    hippodrome_id:  string;
+    date_course:    string;
+    numero_reunion: number;
+    numero_course:  number;
+  };
+
+  let existingCourses: ExistingCourse[] = [];
+  if (hipIds.length > 0 && dates.length > 0) {
+    const { data } = await supabase
+      .from("courses")
+      .select("id, hippodrome_id, date_course, numero_reunion, numero_course")
+      .in("hippodrome_id", hipIds)
+      .in("date_course", dates);
+    existingCourses = (data as ExistingCourse[]) ?? [];
+  }
+
+  const courseKey = (hipId: string, date: string, reunion: number, course: number) =>
+    `${hipId}|${date}|${reunion}|${course}`;
+
+  const existingCourseMap = new Map<string, string>();
+  for (const c of existingCourses) {
+    existingCourseMap.set(
+      courseKey(c.hippodrome_id, c.date_course, c.numero_reunion, c.numero_course),
+      c.id
+    );
+  }
+
+  const toInsert: Record<string, unknown>[] = [];
+  const toUpsert: Record<string, unknown>[] = [];
+
+  for (const c of courses) {
+    const hippodromeId = hipMap[c.hippodromeNom];
+    if (!hippodromeId) continue;
+
+    const existingId = existingCourseMap.get(
+      courseKey(hippodromeId, c.dateCourse, c.reunionNum, c.courseNum)
+    );
+
+    if (existingId) {
+      toUpsert.push({
+        id:                existingId,
+        nb_partants:       c.nbPartants,
+        libelle:           c.libelle,
+        paris_disponibles: c.parisDisponibles,
+        ...(c.heureDepart ? { heure_depart: c.heureDepart } : {}),
+        ...(c.genyUrl     ? { geny_url: c.genyUrl }         : {}),
+      });
+    } else {
+      toInsert.push({
+        hippodrome_id:     hippodromeId,
+        date_course:       c.dateCourse,
+        heure_depart:      c.heureDepart || "12:00:00",
+        numero_reunion:    c.reunionNum,
+        numero_course:     c.courseNum,
+        libelle:           c.libelle,
+        distance_metres:   0,
+        categorie:         "PLAT",
+        nb_partants:       c.nbPartants,
+        statut:            "PROGRAMME",
+        paris_disponibles: c.parisDisponibles,
+        geny_url:          c.genyUrl || null,
+      });
+    }
+  }
+
+  if (toInsert.length > 0) {
+    await supabase.from("courses").insert(toInsert);
+  }
+  if (toUpsert.length > 0) {
+    await supabase.from("courses").upsert(toUpsert);
+  }
+
+  return {
+    inserted:    toInsert.length,
+    updated:     toUpsert.length,
+    hippodromes: Object.keys(hipMap).length,
+  };
+}
+
+// ── Orchestrateur (utilisable par route handler ET force-sync) ─────────────
+
+/**
+ * Lance le scraping Geny + sync Supabase pour une date donnée.
+ * Utilisable directement (sans HTTP) depuis un autre endpoint du Worker.
+ *
+ * @param rawDate "today", "aujourd'hui", "demain", ou "YYYY-MM-DD"
+ */
+export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<GenyProgrammeResult> {
+  const dateISO = rawDate === "today" || rawDate === "aujourd'hui"
+    ? new Date().toISOString().split("T")[0]
+    : rawDate === "demain"
+      ? (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })()
+      : rawDate;
+
+  const allCourses = await scrapeGenyProgramme(dateISO);
+
+  // Filtre : courses françaises et marocaines (jouables via LONACI/PMU-CI)
+  const courses = allCourses.filter(
+    (c) => c.hippodromePays === "France" || c.hippodromePays === "Maroc"
+  );
+
+  if (!courses.length) {
+    return {
+      ok:            true,
+      date:          dateISO,
+      message:       `Aucune course France/Maroc trouvée pour ${dateISO}`,
+      courses:       0,
+      filtered_out:  allCourses.length,
+      reunions:      0,
+      inserted:      0,
+      updated:       0,
+      hippodromes:   0,
+    };
+  }
+
+  const result = await syncCoursesToDB(courses);
+  console.log(`[Geny Programme] ${dateISO} → ${result.inserted} insérées, ${result.updated} mises à jour`);
+
+  return {
+    ok:            true,
+    date:          dateISO,
+    courses:       courses.length,
+    filtered_out:  allCourses.length - courses.length,
+    reunions:      Array.from(new Set(courses.map((c) => c.reunionNum))).length,
+    ...result,
+  };
+}
