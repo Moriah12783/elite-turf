@@ -6,3 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# Domaines personnalisés — Cloudflare gère DNS + SSL automatiquement
+routes = [
+  { pattern = "elite-turf.fr", custom_domain = true },
+  { pattern = "www.elite-turf.fr", custom_domain = true }
+]
