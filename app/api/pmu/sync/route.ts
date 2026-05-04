@@ -46,85 +46,122 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── 2. Hippodromes ────────────────────────────────────────────────
+    // ── 2. Hippodromes ── 1 SELECT bulk + 1 INSERT bulk (vs. 2N) ──────
     const hipNoms = Array.from(new Set(courses.map(c => c.hippodromeName)));
+    const paysNeeded = Array.from(new Set(courses.map(c => c.hippodromePays || "France")));
     const hipMap: Record<string, string> = {};
 
+    // a) Récupère TOUS les hippodromes des pays concernés en 1 appel
+    const { data: allHip } = await supabase
+      .from("hippodromes")
+      .select("id, nom, pays")
+      .in("pays", paysNeeded);
+
+    // Match par nom normalisé (case + accents)
     for (const nom of hipNoms) {
       const pays = courses.find(c => c.hippodromeName === nom)?.hippodromePays || "France";
+      const found = allHip?.find(h => h.pays === pays && normalizeHipName(h.nom) === normalizeHipName(nom));
+      if (found) hipMap[nom] = found.id;
+    }
 
-      // Chercher par nom normalisé pour éviter les doublons accent/casse
-      const { data: allHip } = await supabase
+    // b) Insère les manquants en bulk
+    const missingHips = hipNoms
+      .filter((nom) => !hipMap[nom])
+      .map((nom) => ({
+        nom,
+        pays:           courses.find(c => c.hippodromeName === nom)?.hippodromePays || "France",
+        ville:          nom,
+        fuseau_horaire: "Europe/Paris",
+        actif:          true,
+      }));
+
+    if (missingHips.length > 0) {
+      const { data: insertedHips } = await supabase
         .from("hippodromes")
-        .select("id, nom")
-        .eq("pays", pays);
-
-      const existing = allHip?.find(h => normalizeHipName(h.nom) === normalizeHipName(nom)) || null;
-
-      if (existing) {
-        hipMap[nom] = existing.id;
-      } else {
-        const { data: inserted } = await supabase
-          .from("hippodromes")
-          .insert({
-            nom,
-            pays,
-            ville:          nom,
-            fuseau_horaire: "Europe/Paris",
-            actif:          true,
-          })
-          .select("id")
-          .single();
-        if (inserted) hipMap[nom] = inserted.id;
+        .insert(missingHips)
+        .select("id, nom");
+      for (const hip of insertedHips ?? []) {
+        hipMap[hip.nom] = hip.id;
       }
     }
 
-    // ── 3. Courses ────────────────────────────────────────────────────
-    let inserted = 0;
-    let updated  = 0;
+    // ── 3. Courses ── 1 SELECT bulk + 1 INSERT bulk + 1 UPSERT bulk ──
+    const dates  = Array.from(new Set(courses.map(c => c.dateCourse)));
+    const hipIds = Object.values(hipMap);
+
+    type ExistingCourse = {
+      id: string;
+      hippodrome_id:  string;
+      date_course:    string;
+      numero_reunion: number;
+      numero_course:  number;
+    };
+
+    let existingCourses: ExistingCourse[] = [];
+    if (hipIds.length > 0 && dates.length > 0) {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, hippodrome_id, date_course, numero_reunion, numero_course")
+        .in("hippodrome_id", hipIds)
+        .in("date_course", dates);
+      existingCourses = (data as ExistingCourse[]) ?? [];
+    }
+
+    const courseKey = (hipId: string, date: string, reunion: number, course: number) =>
+      `${hipId}|${date}|${reunion}|${course}`;
+
+    const existingCourseMap = new Map<string, string>();
+    for (const c of existingCourses) {
+      existingCourseMap.set(
+        courseKey(c.hippodrome_id, c.date_course, c.numero_reunion, c.numero_course),
+        c.id
+      );
+    }
+
+    const toInsert: Record<string, unknown>[] = [];
+    const toUpsert: Record<string, unknown>[] = [];
 
     for (const c of courses) {
       const hippodromeId = hipMap[c.hippodromeName];
       if (!hippodromeId) continue;
 
-      // Vérifier si la course existe déjà
-      const { data: existing } = await supabase
-        .from("courses")
-        .select("id")
-        .eq("hippodrome_id", hippodromeId)
-        .eq("date_course", c.dateCourse)
-        .eq("numero_reunion", c.numeroReunion)
-        .eq("numero_course", c.numeroCourse)
-        .single();
+      const existingId = existingCourseMap.get(
+        courseKey(hippodromeId, c.dateCourse, c.numeroReunion, c.numeroCourse)
+      );
 
-      if (existing) {
-        // Mettre à jour nb_partants, libelle et paris_disponibles
-        await supabase
-          .from("courses")
-          .update({
-            nb_partants:       c.nbPartants,
-            libelle:           c.libelle,
-            paris_disponibles: c.parisDisponibles,
-          })
-          .eq("id", existing.id);
-        updated++;
-      } else {
-        await supabase.from("courses").insert({
-          hippodrome_id:    hippodromeId,
-          date_course:      c.dateCourse,
-          heure_depart:     c.heureDepart,
-          numero_reunion:   c.numeroReunion,
-          numero_course:    c.numeroCourse,
-          libelle:          c.libelle,
-          distance_metres:  c.distanceMetres,
-          categorie:        c.categorie,
-          nb_partants:      c.nbPartants,
-          statut:           "PROGRAMME",
+      if (existingId) {
+        toUpsert.push({
+          id:                existingId,
+          nb_partants:       c.nbPartants,
+          libelle:           c.libelle,
           paris_disponibles: c.parisDisponibles,
         });
-        inserted++;
+      } else {
+        toInsert.push({
+          hippodrome_id:     hippodromeId,
+          date_course:       c.dateCourse,
+          heure_depart:      c.heureDepart,
+          numero_reunion:    c.numeroReunion,
+          numero_course:     c.numeroCourse,
+          libelle:           c.libelle,
+          distance_metres:   c.distanceMetres,
+          categorie:         c.categorie,
+          nb_partants:       c.nbPartants,
+          statut:            "PROGRAMME",
+          paris_disponibles: c.parisDisponibles,
+        });
       }
     }
+
+    if (toInsert.length > 0) {
+      await supabase.from("courses").insert(toInsert);
+    }
+    if (toUpsert.length > 0) {
+      await supabase.from("courses").upsert(toUpsert);
+    }
+
+    const inserted = toInsert.length;
+    const updated  = toUpsert.length;
 
     // ── 4. Log ────────────────────────────────────────────────────────
     console.log(`[PMU Sync] ${dateStr} → ${inserted} insérées, ${updated} mises à jour`);
