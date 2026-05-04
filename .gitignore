@@ -38,3 +38,6 @@ Thumbs.db
 lighthouse-report.html
 
 .vercel
+
+# Claude Code worktrees (évite faux submodules)
+.claude/worktrees/
