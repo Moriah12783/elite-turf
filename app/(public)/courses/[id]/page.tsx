@@ -132,7 +132,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             place_corde: g.placeCorde ?? null,
             age:         g.age ?? null,
             sexe:        g.sexe ?? null,
-            non_partant: false,
+            non_partant: g.nonPartant ?? false,
             scraped_at:  new Date().toISOString(),
           }));
         // Persister en DB pour les prochaines visites
