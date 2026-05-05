@@ -20,7 +20,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { fetchGenyPartants, type GenyParticipant } from "@/lib/geny";
+import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -182,11 +182,11 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
           nom_cheval:  g.nom,
           jockey:      g.jockey?.nom ?? null,
           entraineur:  g.entraineur?.nom ?? null,
-          cote:        g.coteProbable ?? null,
+          cote:        safeCote(g.coteProbable),
           musique:     g.musique ?? null,
-          poids_kg:    g.poids ?? null,
-          place_corde: g.placeCorde ?? null,
-          age:         g.age ?? null,
+          poids_kg:    safePoids(g.poids),
+          place_corde: safeSmallInt(g.placeCorde, 1, 30),
+          age:         safeSmallInt(g.age, 1, 30),
           sexe:        g.sexe ?? null,
           non_partant: g.nonPartant ?? false,
           scraped_at:  new Date().toISOString(),

@@ -66,6 +66,39 @@ export interface GenyParticipant {
   nonPartant?:   boolean;
 }
 
+// ── Sanitizers : alignés sur les contraintes DB ──────────────────────────────
+// partants.cote     = numeric(6,2) → max 9999.99
+// partants.poids_kg = numeric(4,1) → max 999.9
+// partants.numero, place_corde, age = integer → max 2147483647 (jamais atteint)
+//
+// Les overflow venaient d'erreurs de parsing Geny qui chopent une cellule
+// "Gains" (ex: 87985) à la place d'une cote/poids. On clampe à null pour
+// éviter Postgres "numeric field overflow" sur insert bulk.
+
+/** Renvoie une cote DB-safe (numeric(6,2)). Hors plage → null. */
+export function safeCote(n: number | undefined | null): number | null {
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  if (n <= 0 || n > 9999.99) return null;
+  return Number(n.toFixed(2));
+}
+
+/** Renvoie un poids DB-safe (numeric(4,1) — max 999.9 kg). Hors plage → null. */
+export function safePoids(n: number | undefined | null): number | null {
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  // Min 30 kg (poulain léger), max 999.9 (DB cap). Au-delà : valeur Geny erronée
+  // (probable parsing d'une colonne Gains à la place du Poids).
+  if (n < 30 || n > 999.9) return null;
+  return Number(n.toFixed(1));
+}
+
+/** Renvoie un entier DB-safe (integer). null si invalide ou hors plage. */
+export function safeSmallInt(n: number | undefined | null, min = 1, max = 99): number | null {
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  if (!Number.isInteger(n)) return null;
+  if (n < min || n > max) return null;
+  return n;
+}
+
 // ── Helpers HTML ─────────────────────────────────────────────────────────────
 
 /** Supprime les balises HTML et décode les entités de base */
