@@ -1,14 +1,23 @@
-// GET /api/cron/geny-arrivees
-// Cron Vercel : toutes les 15 min de 13h00 à 19h00 UTC
-// vercel.json schedule : "*/15 13-19 * * *"
+/**
+ * GET /api/cron/geny-arrivees
+ *
+ * Cron Vercel : déclenché toutes les heures de 13h00 à 19h00 UTC pour
+ * scraper progressivement les arrivées du jour au fur et à mesure que
+ * les courses se terminent.
+ *
+ * Refactor 2026-05-05 : appel direct à `runGenyArriveesSync` au lieu d'un
+ * self-fetch HTTP vers /api/geny/arrivees. Le self-fetch causait des
+ * timeouts HTTP 522 sur Cloudflare Workers (auto-loop).
+ */
 
 import { NextRequest, NextResponse } from "next/server";
 import { logCronStart } from "@/lib/cron-logger";
+import { runGenyArriveesSync } from "@/lib/sync/geny-arrivees";
 
-export const dynamic = "force-dynamic";
+export const dynamic     = "force-dynamic";
+export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
-const APP_URL     = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization") || "";
@@ -16,35 +25,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Vérifier l'heure UTC : seulement entre 13h et 19h
+  // Skipper en dehors de la fenêtre 13h-19h UTC (heures où les courses tombent)
   const hour = new Date().getUTCHours();
   if (hour < 13 || hour > 19) {
-    return NextResponse.json({ ok: true, skipped: true, reason: `Hors plage horaire (${hour}h UTC)` });
+    return NextResponse.json({
+      ok:      true,
+      skipped: true,
+      reason:  `Hors plage horaire (${hour}h UTC, fenêtre cible 13-19h)`,
+    });
   }
 
-  const logger = logCronStart("geny-arrivees");
+  const cronLog = logCronStart("geny-arrivees");
 
   try {
-    const res = await fetch(`${APP_URL}/api/geny/arrivees`, {
-      method: "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${CRON_SECRET}`,
-      },
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      await logger.finish("failure", { error: data?.error ?? `HTTP ${res.status}` });
-      return NextResponse.json({ error: data?.error }, { status: 500 });
-    }
-
-    await logger.finish("success", data);
-    return NextResponse.json({ ok: true, ...data });
-
+    const result = await runGenyArriveesSync();
+    const status = result.scraped === 0 && result.not_found > 5
+      ? "skip"   // probablement courses pas encore terminées, pas un bug
+      : "success";
+    await cronLog.finish(status, { ...result });
+    return NextResponse.json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Erreur inconnue";
-    await logger.finish("failure", { error: msg });
+    await cronLog.finish("failure", { error: msg });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+}
+
+export async function POST(req: NextRequest) {
+  return GET(req);
 }
