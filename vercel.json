@@ -25,14 +25,6 @@
       "schedule": "23 6 * * *"
     },
     {
-      "path": "/api/cron/pmu-sync",
-      "schedule": "17 5 * * *"
-    },
-    {
-      "path": "/api/cron/pmu-sync",
-      "schedule": "31 7 * * *"
-    },
-    {
       "path": "/api/cron/lonaci-sync",
       "schedule": "41 7 * * *"
     },
@@ -45,16 +37,20 @@
       "schedule": "27 9 * * *"
     },
     {
-      "path": "/api/cron/pmu-sync",
-      "schedule": "23 11 * * *"
-    },
-    {
       "path": "/api/cron/lonaci-sync",
       "schedule": "37 11 * * *"
     },
     {
       "path": "/api/cron/enrichir-partants",
       "schedule": "47 11 * * *"
+    },
+    {
+      "path": "/api/cron/enrichir-partants",
+      "schedule": "13 13 * * *"
+    },
+    {
+      "path": "/api/cron/enrichir-partants",
+      "schedule": "13 15 * * *"
     },
     {
       "path": "/api/cron/paystack-recovery",
