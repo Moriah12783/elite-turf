@@ -57,6 +57,10 @@
       "schedule": "47 11 * * *"
     },
     {
+      "path": "/api/cron/paystack-recovery",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/geny-arrivees",
       "schedule": "11 13 * * *"
     },
