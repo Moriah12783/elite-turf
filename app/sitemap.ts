@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
+import { slugify } from "@/lib/seo/slugs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -28,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/courses`,                lastModified: now, changeFrequency: "daily",   priority: 0.9  },
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${APP_URL}/hippodromes`,            lastModified: now, changeFrequency: "weekly",  priority: 0.7  },
     { url: `${APP_URL}/guide-initie`,           lastModified: now, changeFrequency: "monthly", priority: 0.8  },
     { url: `${APP_URL}/blog`,                   lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/archives`,               lastModified: now, changeFrequency: "weekly",  priority: 0.65 },
@@ -85,6 +87,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let pronosticUrls: MetadataRoute.Sitemap = [];
   // ── Courses des 30 derniers + 7 prochains jours ──────────────────────────
   let courseUrls: MetadataRoute.Sitemap = [];
+  // ── Hippodromes (dérivés du nom via slugify) ──────────────────────────────
+  let hippoUrls: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = createServiceClient();
@@ -107,6 +111,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: p.date_publication
           ? new Date(p.date_publication)
           : (p.updated_at ? new Date(p.updated_at) : now),
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      }));
+    }
+
+    // Hippodromes actifs
+    const { data: hippos } = await supabase
+      .from("hippodromes")
+      .select("nom")
+      .eq("actif", true);
+    if (hippos) {
+      hippoUrls = hippos.map((h: any) => ({
+        url: `${APP_URL}/hippodromes/${slugify(h.nom)}`,
+        lastModified: now,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       }));
@@ -135,5 +153,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
 
-  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...pronosticUrls, ...courseUrls];
+  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...hippoUrls, ...pronosticUrls, ...courseUrls];
 }
