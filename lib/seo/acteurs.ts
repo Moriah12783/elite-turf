@@ -80,6 +80,9 @@ export async function getCoursesForEntite(
   const col = COL_MAP[type];
   const supabase = createServiceClient();
 
+  // Note : Supabase JS ne supporte pas proprement order sur foreign table
+  // imbriquée avec .order("course(date_course)"). On récupère sans tri (cap 500
+  // pour conserver la diversité), puis tri en mémoire ci-dessous.
   const { data } = await supabase
     .from("partants")
     .select(`
@@ -90,10 +93,9 @@ export async function getCoursesForEntite(
       )
     `)
     .eq(col, nom)
-    .order("course(date_course)", { ascending: false })
-    .limit(limit);
+    .limit(500);
 
-  return (data ?? []).map((row: any) => {
+  const lines = (data ?? []).map((row: any) => {
     const c = row.course;
     const hippo = Array.isArray(c?.hippodrome) ? c.hippodrome[0] : c?.hippodrome;
     let arrivee: number | null = null;
@@ -117,6 +119,9 @@ export async function getCoursesForEntite(
       statut:           c.statut,
     } as CourseLine;
   });
+  // Tri en mémoire par date_course desc, puis tronquage à `limit`
+  lines.sort((a, b) => b.date_course.localeCompare(a.date_course));
+  return lines.slice(0, limit);
 }
 
 /** Top entités par activité (pour pages index). */
