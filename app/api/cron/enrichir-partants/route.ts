@@ -120,12 +120,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "Aucune course à enrichir", date: today });
     }
 
-    // 2. Filtrer celles déjà enrichies (avec partants ET musique)
+    // 2. Filtrer celles déjà scrapées récemment (dans les 4 dernières heures)
+    // - Évite de re-scraper en boucle les courses où Geny ne donne pas de musique
+    //   (chevaux Inédit, Premio italien, courses provinciales).
+    // - Permet quand même un refresh des cotes au cours de la journée (4h
+    //   d'écart entre les ticks cron — 9h27, 11h47, 13h13, 15h13 UTC).
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
     const { data: enrichies } = await supabase
       .from("partants")
       .select("course_id")
       .in("course_id", courses.map((c: CourseRow) => c.id))
-      .not("musique", "is", null);
+      .gte("scraped_at", fourHoursAgo);
     const enrichieIds = new Set((enrichies ?? []).map((p) => p.course_id));
 
     const remainingAll = (courses as CourseRow[]).filter((c) => !enrichieIds.has(c.id));

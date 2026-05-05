@@ -148,12 +148,16 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true, message: "Aucune course dans la fenêtre", days, fromDate });
   }
 
-  // Filtrer celles déjà enrichies (avec musique = enrichissement complet Geny)
+  // Filtrer celles déjà scrapées dans les dernières 24h (backfill = one-shot
+  // quotidien, pas besoin de re-scraper plusieurs fois par jour les mêmes
+  // courses). Utiliser scraped_at au lieu de "musique not null" pour ne pas
+  // tourner en boucle sur les courses où Geny ne donne pas de musique.
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data: existing } = await adminClient
     .from("partants")
     .select("course_id")
     .in("course_id", courses.map((c: CourseRow) => c.id))
-    .not("musique", "is", null);
+    .gte("scraped_at", dayAgo);
   const enrichedIds = new Set((existing ?? []).map((p) => p.course_id));
 
   const remainingAll = (courses as CourseRow[]).filter((c) => !enrichedIds.has(c.id));
