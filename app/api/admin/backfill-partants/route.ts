@@ -82,7 +82,7 @@ async function processInPool<T, R>(
   return results;
 }
 
-export async function POST(req: NextRequest) {
+async function runBackfill(req: NextRequest): Promise<NextResponse> {
   // Auth ADMIN
   const supabaseClient = await createClient();
   const { data: { user } } = await supabaseClient.auth.getUser();
@@ -98,14 +98,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Params
+  // Params (POST body OU GET query params, pour permettre l'usage navigateur direct)
   let days = 14;
   let onlyDate: string | null = null;
-  try {
-    const body = await req.json();
-    if (typeof body?.days === "number") days = Math.min(30, Math.max(1, body.days));
-    if (typeof body?.date === "string") onlyDate = body.date;
-  } catch {}
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (typeof body?.days === "number") days = Math.min(30, Math.max(1, body.days));
+      if (typeof body?.date === "string") onlyDate = body.date;
+    } catch {}
+  } else {
+    const url = new URL(req.url);
+    const daysParam = url.searchParams.get("days");
+    if (daysParam) days = Math.min(30, Math.max(1, parseInt(daysParam, 10) || 14));
+    onlyDate = url.searchParams.get("date");
+  }
 
   const today = new Date();
   const fromDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000)
@@ -226,3 +233,8 @@ export async function POST(req: NextRequest) {
     } : {}),
   });
 }
+
+// Accepte GET et POST. GET pratique pour usage navigateur direct :
+//   https://www.elite-turf.fr/api/admin/backfill-partants?days=14
+export async function GET(req: NextRequest)  { return runBackfill(req); }
+export async function POST(req: NextRequest) { return runBackfill(req); }
