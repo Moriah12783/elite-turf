@@ -30,6 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${APP_URL}/hippodromes`,            lastModified: now, changeFrequency: "weekly",  priority: 0.7  },
+    { url: `${APP_URL}/chevaux`,                lastModified: now, changeFrequency: "daily",   priority: 0.7  },
+    { url: `${APP_URL}/jockeys`,                lastModified: now, changeFrequency: "daily",   priority: 0.7  },
+    { url: `${APP_URL}/entraineurs`,            lastModified: now, changeFrequency: "daily",   priority: 0.7  },
     { url: `${APP_URL}/guide-initie`,           lastModified: now, changeFrequency: "monthly", priority: 0.8  },
     { url: `${APP_URL}/blog`,                   lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/archives`,               lastModified: now, changeFrequency: "weekly",  priority: 0.65 },
@@ -89,6 +92,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let courseUrls: MetadataRoute.Sitemap = [];
   // ── Hippodromes (dérivés du nom via slugify) ──────────────────────────────
   let hippoUrls: MetadataRoute.Sitemap = [];
+  // ── Acteurs (chevaux/jockeys/entraineurs avec slug) ──────────────────────
+  let acteurUrls: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = createServiceClient();
@@ -130,6 +135,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
     }
 
+    // Acteurs : chevaux/jockeys/entraineurs (top 1000 chacun par activité récente)
+    // Volume cumulé ≈ 3000 URLs SEO. Cap pour ne pas exploser sitemap.xml.
+    for (const t of ["chevaux", "jockeys", "entraineurs"] as const) {
+      const { data } = await supabase
+        .from(t)
+        .select("slug, derniere_course_at")
+        .order("derniere_course_at", { ascending: false, nullsFirst: false })
+        .limit(1000);
+      if (data) {
+        for (const e of data as any[]) {
+          acteurUrls.push({
+            url: `${APP_URL}/${t}/${e.slug}`,
+            lastModified: e.derniere_course_at ? new Date(e.derniere_course_at) : now,
+            changeFrequency: "weekly" as const,
+            priority: 0.55,
+          });
+        }
+      }
+    }
+
     // Courses dans la fenêtre [-30j, +7j]
     const { data: courses } = await supabase
       .from("courses")
@@ -153,5 +178,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
 
-  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...hippoUrls, ...pronosticUrls, ...courseUrls];
+  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...hippoUrls, ...acteurUrls, ...pronosticUrls, ...courseUrls];
 }
