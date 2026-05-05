@@ -20,7 +20,10 @@ export const metadata: Metadata = {
   alternates: { canonical: `${APP_URL}/courses` },
 };
 
-export const dynamic = "force-dynamic";
+// ISR : page programme régénérée toutes les 60s. Cache edge Cloudflare.
+// Trade-off acceptable : un user qui consulte 2x à <60s d'intervalle peut
+// voir l'heure-1 calculée non rafraîchie ; négligeable vs gain TTFB ÷ 15.
+export const revalidate = 60;
 
 interface PageProps {
   searchParams: {

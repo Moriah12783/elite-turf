@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+// ISR : la page est régénérée au max toutes les 60s côté Cloudflare/Next.
+// Permet le cache edge → TTFB < 100ms pour 99% du trafic, fraîcheur acceptable
+// pour la home (stats agrégées + 5 prochaines courses).
+export const revalidate = 60;
 import HeroSection from "@/components/home/HeroSection";
 import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 import CoursesSection from "@/components/home/CoursesSection";

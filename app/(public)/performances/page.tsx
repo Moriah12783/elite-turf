@@ -24,7 +24,8 @@ export const metadata: Metadata = {
   alternates: { canonical: `${APP_URL}/performances` },
 };
 
-export const dynamic = "force-dynamic";
+// ISR : page de stats agrégées, pas de contenu user-specific. Cache 10 min.
+export const revalidate = 600;
 
 // ── helpers ───────────────────────────────────────────────────────────
 const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
