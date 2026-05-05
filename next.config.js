@@ -1,3 +1,4 @@
+// build-trigger: 2026-05-05T15:37:39.684Z
 // build-trigger: 2026-05-05T13:42:33.816Z
 /** @type {import("next").NextConfig} */
 const nextConfig = {
