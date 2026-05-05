@@ -107,6 +107,10 @@
     {
       "path": "/api/admin/sync-resultats",
       "schedule": "17 22 * * *"
+    },
+    {
+      "path": "/api/cron/health-alerter",
+      "schedule": "*/30 * * * *"
     }
   ],
   "headers": [

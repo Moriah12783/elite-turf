@@ -18,7 +18,7 @@ export const maxDuration = 30;
 
 const CRON_SECRET         = process.env.CRON_SECRET || "";
 const SLACK_WEBHOOK_ALERTES = process.env.SLACK_WEBHOOK_ALERTES || "";
-const APP_URL             = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL             = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

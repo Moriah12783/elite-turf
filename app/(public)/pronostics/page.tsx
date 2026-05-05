@@ -8,7 +8,7 @@ import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",

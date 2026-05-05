@@ -18,7 +18,7 @@ interface PageProps {
 
 export const dynamic = "force-dynamic";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const supabase = createServiceClient();

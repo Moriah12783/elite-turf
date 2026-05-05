@@ -7,7 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 
 // Domaine canonique — défini via NEXT_PUBLIC_APP_URL en production Vercel
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 // Next.js 14 : themeColor/appleWebApp/formatDetection dans viewport, pas metadata
 export const viewport: Viewport = {

@@ -5,7 +5,7 @@ import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
   title: "Blog PMU — Analyses, Guides & Stratégies pour les parieurs francophones | Elite Turf",

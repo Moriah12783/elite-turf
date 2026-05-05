@@ -18,7 +18,7 @@ import HowItWorksSection from "@/components/home/HowItWorksSection";
 import Link from "next/link";
 import { ArrowRight, AlertTriangle, Download } from "lucide-react";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
   title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",

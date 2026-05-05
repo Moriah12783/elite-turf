@@ -21,7 +21,7 @@ const PLAN_COLORS = {
   Test: "text-status-win",
 };
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000");
 
 export default async function PaiementSuccesPage({
   searchParams,

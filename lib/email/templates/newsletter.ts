@@ -3,7 +3,7 @@
  * Design : Fond gris perle #F3F4F6 · Carte blanche · Accents Or/Bleu Nuit
  */
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
 export interface NewsletterData {
   prenom: string;
