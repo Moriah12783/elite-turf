@@ -8,6 +8,9 @@ node_modules/
 out/
 build/
 
+# OpenNext (Cloudflare adapter build output)
+.open-next/
+
 # Env files (ne jamais committer les vraies clés)
 .env.local
 .env.development.local

@@ -63,6 +63,7 @@ export interface GenyParticipant {
   age?:          number;
   sexe?:         string;
   placeCorde?:   number;
+  nonPartant?:   boolean;
 }
 
 // ── Helpers HTML ─────────────────────────────────────────────────────────────
@@ -118,14 +119,32 @@ function looksLikeMusique(val: string): boolean {
  *  [6] Musique  [7] Gains  [8] Driver  [9] Entraîneur  [10-11] Cotes
  *
  * On détecte automatiquement le type en vérifiant si cells[6] ressemble à une musique PMU.
+ *
+ * NB : depuis 2026, Geny imbrique une sous-table <table class="table-oei">
+ * dans la cellule "Cheval" pour afficher les icônes œillères/attache-langue.
+ * Cette sous-table casse le regex <tr>...</tr> non-greedy. On la retire AVANT
+ * de parser, et on isole le <tbody> du tableau "tableau_partants" pour éviter
+ * de capturer les <tr> d'autres tableaux de la page (stats jockeys, etc.).
  */
 function parseGenyPartants(html: string): GenyParticipant[] {
   const participants: GenyParticipant[] = [];
 
+  // 1) Localiser le <tbody> du tableau principal des partants
+  const tbodyMatch = html.match(
+    /id="tableau_partants"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i,
+  );
+  if (!tbodyMatch) {
+    console.warn("[Geny parser] tableau_partants/tbody introuvable");
+    return [];
+  }
+  // 2) Retirer les sous-tables imbriquées (icônes œillères, attache-langue)
+  //    qui pourrissent le matching <tr> non-greedy.
+  const tbody = tbodyMatch[1].replace(/<table[^>]*>[\s\S]*?<\/table>/gi, "");
+
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch: RegExpExecArray | null;
 
-  while ((rowMatch = rowRe.exec(html)) !== null) {
+  while ((rowMatch = rowRe.exec(tbody)) !== null) {
     const cells = extractCells(rowMatch[1]);
 
     // On veut au moins 8 colonnes et la première doit être un numéro de partant (1-30)
@@ -183,6 +202,12 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       (cells[10] && cells[10] !== "-" ? cells[10] : null) ?? "";
     const coteProbable = parseFloat(coteRaw.replace(",", ".")) || undefined;
 
+    // Détection non-partant : Geny met "Non-partant" dans la colonne jockey
+    // ou dans le nom du cheval pour les chevaux qui ne courront pas.
+    const nonPartant =
+      /non[\s-]?partant/i.test(jockeyNom) ||
+      /non[\s-]?partant/i.test(nom);
+
     participants.push({
       numPmu:      num,
       nom,
@@ -190,10 +215,11 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       sexe,
       age,
       poids,
-      jockey:      jockeyNom      ? { nom: jockeyNom }      : undefined,
+      jockey:      jockeyNom && !nonPartant ? { nom: jockeyNom } : undefined,
       entraineur:  entraineurNom  ? { nom: entraineurNom }  : undefined,
       musique,
       coteProbable,
+      nonPartant,
     });
   }
 

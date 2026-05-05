@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuPartants } from "@/lib/pmu-api";
+import { fetchGenyPartants } from "@/lib/geny";
 
 export const dynamic  = "force-dynamic";
 export const maxDuration = 60;
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   // 1. Récupérer les courses du jour non encore enrichies (pas de partants en DB)
   const { data: courses } = await supabase
     .from("courses")
-    .select("id, numero_reunion, numero_course, libelle, statut")
+    .select("id, numero_reunion, numero_course, libelle, statut, geny_url")
     .eq("date_course", today)
     .neq("statut", "ANNULE");
 
@@ -60,46 +61,84 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const results: Array<{ courseId: string; libelle: string; status: string; nb?: number }> = [];
+  const results: Array<{ courseId: string; libelle: string; status: string; nb?: number; source?: string }> = [];
 
   // 4. Enrichir chaque course
   for (const course of aEnrichir) {
     try {
+      // ── Source 1 : PMU API ────────────────────────────────────────────
+      let toInsert: any[] = [];
+      let source: "pmu" | "geny" = "pmu";
+
       const participants = await fetchPmuPartants(
         dateStr,
         course.numero_reunion,
         course.numero_course,
       );
 
-      if (!participants || participants.length === 0) {
+      if (participants && participants.length > 0) {
+        toInsert = participants
+          .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
+          .map((p) => ({
+            course_id:   course.id,
+            numero:      p.numPmu,
+            nom_cheval:  p.nom,
+            jockey:      p.jockey?.nom ?? null,
+            entraineur:  p.entraineur?.nom ?? null,
+            cote:        p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
+            musique:     p.musique ?? null,
+            poids_kg:    p.handicapPoids ?? p.poids ?? null,
+            place_corde: p.placeCorde ?? null,
+            age:         p.age ?? null,
+            sexe:        p.sexe ?? null,
+            non_partant: false,
+            scraped_at:  new Date().toISOString(),
+          }));
+      } else {
+        // ── Source 2 : Fallback Geny scraping ──────────────────────────
+        // PMU rate-limite régulièrement (HTTP 420). Geny est public et
+        // contient les mêmes données (cote, musique, jockey, entraîneur).
+        source = "geny";
+        const genyPartants = await fetchGenyPartants(
+          today,
+          course.numero_reunion,
+          course.numero_course,
+          6000,
+          (course as any).geny_url ?? null,
+        );
+
+        if (genyPartants.length > 0) {
+          toInsert = genyPartants
+            .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
+            .map((g) => ({
+              course_id:   course.id,
+              numero:      g.numPmu,
+              nom_cheval:  g.nom,
+              jockey:      g.jockey?.nom ?? null,
+              entraineur:  g.entraineur?.nom ?? null,
+              cote:        g.coteProbable ?? null,
+              musique:     g.musique ?? null,
+              poids_kg:    g.poids ?? null,
+              place_corde: g.placeCorde ?? null,
+              age:         g.age ?? null,
+              sexe:        g.sexe ?? null,
+              non_partant: g.nonPartant ?? false,
+              scraped_at:  new Date().toISOString(),
+            }));
+        }
+      }
+
+      if (toInsert.length === 0) {
         results.push({ courseId: course.id, libelle: course.libelle, status: "no_data" });
         continue;
       }
-
-      const toInsert = participants
-        .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
-        .map((p) => ({
-          course_id:   course.id,
-          numero:      p.numPmu,
-          nom_cheval:  p.nom,
-          jockey:      p.jockey?.nom ?? null,
-          entraineur:  p.entraineur?.nom ?? null,
-          cote:        p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
-          musique:     p.musique ?? null,
-          poids_kg:    p.handicapPoids ?? p.poids ?? null,
-          place_corde: p.placeCorde ?? null,
-          age:         p.age ?? null,
-          sexe:        p.sexe ?? null,
-          non_partant: false,
-          scraped_at:  new Date().toISOString(),
-        }));
 
       // Supprimer anciens partants sans musique + réinsérer
       await supabase.from("partants").delete().eq("course_id", course.id);
       const { error } = await supabase.from("partants").insert(toInsert);
 
       if (error) {
-        results.push({ courseId: course.id, libelle: course.libelle, status: `error: ${error.message}` });
+        results.push({ courseId: course.id, libelle: course.libelle, status: `error: ${error.message}`, source });
       } else {
         // Mettre à jour nb_partants
         await supabase
@@ -107,10 +146,10 @@ export async function GET(req: NextRequest) {
           .update({ nb_partants: toInsert.length })
           .eq("id", course.id);
 
-        results.push({ courseId: course.id, libelle: course.libelle, status: "ok", nb: toInsert.length });
+        results.push({ courseId: course.id, libelle: course.libelle, status: "ok", nb: toInsert.length, source });
       }
 
-      // Petite pause pour ne pas saturer l'API PMU
+      // Petite pause pour ne pas saturer les sources
       await new Promise((r) => setTimeout(r, 200));
 
     } catch (err: any) {
@@ -119,16 +158,20 @@ export async function GET(req: NextRequest) {
   }
 
   const enrichis  = results.filter(r => r.status === "ok").length;
+  const viaPmu    = results.filter(r => r.status === "ok" && r.source === "pmu").length;
+  const viaGeny   = results.filter(r => r.status === "ok" && r.source === "geny").length;
   const noData    = results.filter(r => r.status === "no_data").length;
   const erreurs   = results.filter(r => r.status.startsWith("error") || r.status.startsWith("exception")).length;
 
-  console.log(`[enrichir-partants] ${today} → ${enrichis} enrichies, ${noData} sans données, ${erreurs} erreurs`);
+  console.log(`[enrichir-partants] ${today} → ${enrichis} enrichies (PMU=${viaPmu}, Geny=${viaGeny}), ${noData} sans données, ${erreurs} erreurs`);
 
   return NextResponse.json({
     ok:       true,
     date:     today,
     total:    courses.length,
     enrichis,
+    viaPmu,
+    viaGeny,
     noData,
     erreurs,
     details:  results,
