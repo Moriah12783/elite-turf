@@ -1,0 +1,56 @@
+# gitleaks config — Elite Turf
+# Voir https://github.com/gitleaks/gitleaks#configuration
+#
+# Ce fichier hérite de la config par défaut (regex pour AWS, GitHub, Stripe,
+# Slack, JWT, etc.) puis ajoute des règles spécifiques au projet et des
+# allowlists pour les faux positifs.
+
+# Hérite des règles par défaut
+[extend]
+useDefault = true
+
+# ── Règles custom ────────────────────────────────────────────────────────────
+
+[[rules]]
+id          = "supabase-jwt"
+description = "Supabase JWT (anon ou service_role)"
+regex       = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9._-]{50,}'''
+tags        = ["supabase", "jwt"]
+
+[[rules]]
+id          = "supabase-secret-key"
+description = "Supabase secret key (nouveau format)"
+regex       = '''sb_secret_[A-Za-z0-9_-]{20,}'''
+tags        = ["supabase", "secret"]
+
+[[rules]]
+id          = "paystack-secret-key"
+description = "Paystack secret key"
+regex       = '''sk_(live|test)_[A-Za-z0-9]{20,}'''
+tags        = ["paystack"]
+
+[[rules]]
+id          = "cinetpay-api-key"
+description = "CinetPay API key (UUID format)"
+regex       = '''CINETPAY_API_KEY\s*=\s*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}'''
+tags        = ["cinetpay"]
+
+# ── Allowlist : ces patterns sont des placeholders documentés ────────────────
+
+[allowlist]
+description = "Allowlist pour les placeholders de .env.local.example et docs"
+paths = [
+  '''(.*?)(node_modules)\/.*''',
+  '''(.*?)(\.next)\/.*''',
+  '''(.*?)(\.open-next)\/.*''',
+  '''package-lock\.json''',
+]
+regexes = [
+  '''<your[a-z-]*>''',
+  '''your_[a-z_]+_(key|secret|token|id)''',
+  '''<random-hex-32-chars>''',
+  '''<sk_live_or_sk_test_\.\.\.>''',
+  '''<pk_live_or_pk_test_\.\.\.>''',
+  '''<re_\.\.\.>''',
+  '''<whsec_\.\.\.>''',
+]

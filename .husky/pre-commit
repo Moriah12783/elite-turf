@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+# Pre-commit : scan secrets avec gitleaks (si installé localement)
+#
+# Bloque le commit si gitleaks détecte un secret en clair (clé API, token,
+# JWT service_role, etc.). Voir .gitleaks.toml pour la config.
+#
+# Installation gitleaks :
+#   - macOS  : brew install gitleaks
+#   - Linux  : voir https://github.com/gitleaks/gitleaks#installing
+#   - Win    : scoop install gitleaks  OU  choco install gitleaks
+#
+# Si gitleaks n'est pas trouvé, on AVERTIT mais on ne bloque pas (pour ne pas
+# casser les workflows de devs qui ne l'ont pas encore installé). Le scan
+# définitif tournera aussi en CI (workflow GitHub Actions à venir).
+
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --no-banner --redact -v
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo ""
+    echo "❌  gitleaks a détecté un secret dans tes changements stagés."
+    echo "    Retire la valeur secrète et utilise un placeholder, OU ajoute"
+    echo "    une exception dans .gitleaks.toml si c'est un faux positif."
+    echo ""
+    echo "    Si tu as VRAIMENT commit un secret en clair par erreur :"
+    echo "      1. Rotater la clé immédiatement (Supabase/Stripe/Paystack/...)"
+    echo "      2. Purger l'historique avec BFG ou git filter-repo si nécessaire"
+    exit 1
+  fi
+else
+  echo "⚠️  gitleaks n'est pas installé localement — scan secrets pre-commit ignoré."
+  echo "    Installe-le pour activer la protection : https://github.com/gitleaks/gitleaks#installing"
+fi
