@@ -34,15 +34,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = createServiceClient();
   const { data: c } = await supabase
     .from("courses")
-    .select("libelle, hippodrome:hippodromes(nom)")
+    .select("libelle, date_course, hippodrome:hippodromes(nom, pays)")
     .eq("id", params.id)
     .single();
   if (!c) return { title: "Course — Elite Turf" };
+  const hippoName = (c.hippodrome as any)?.nom || "";
+  const dateFr = c.date_course
+    ? new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
+        day: "numeric", month: "long", year: "numeric",
+      })
+    : "";
+  // Indexable depuis 2026-05-05 — récupérer le trafic long-tail
+  // (pronostic Quinté+, fiche course, partants, cotes du jour) que les
+  // concurrents Geny/Zone-Turf/Paris-Turf trustent depuis des années.
   return {
-    title: `${c.libelle} — ${(c.hippodrome as any)?.nom || ""} | Elite Turf`,
+    title: `${c.libelle} — ${hippoName} ${dateFr} | Pronostic & Partants`,
+    description: `Programme, partants, cotes et pronostic de la course ${c.libelle} à ${hippoName} le ${dateFr}. Analyse hippique premium par Elite Turf.`,
     alternates: { canonical: `${APP_URL}/courses/${params.id}` },
-    // Pages de course individuelles : peu de valeur SEO (UUID, contenu dynamique éphémère)
-    robots: { index: false, follow: false },
   };
 }
 
@@ -201,8 +209,55 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // Déterminer si on doit afficher le countdown (avant le départ)
   const isUpcoming = c.statut === "PROGRAMME" || c.statut === "EN_COURS";
 
+  // ── JSON-LD SportsEvent + BreadcrumbList ─────────────────────────────────
+  // Aide Google à afficher la course dans les SERPs sport, knowledge panel
+  // d'événements et carousels Discover. Référence : schema.org/SportsEvent.
+  const startDateIso = c.date_course && c.heure_depart
+    ? `${c.date_course}T${c.heure_depart}+02:00` // heure Paris (UTC+2 été)
+    : c.date_course;
+  const dateFrLong = new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+  const sportsEventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: `${c.libelle} — ${c.hippodrome?.nom || ""}`,
+    description: `Course ${c.categorie} de ${c.distance_metres ?? ""} m, ${c.nb_partants ?? ""} partants, le ${dateFrLong} à ${c.hippodrome?.nom || ""}.`,
+    startDate: startDateIso,
+    eventStatus: c.statut === "ANNULE"
+      ? "https://schema.org/EventCancelled"
+      : c.statut === "TERMINE"
+        ? "https://schema.org/EventCompleted"
+        : "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    sport: "Horse racing",
+    location: {
+      "@type": "Place",
+      name: c.hippodrome?.nom || "",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: c.hippodrome?.ville || c.hippodrome?.nom || "",
+        addressCountry: c.hippodrome?.pays || "France",
+      },
+    },
+    url: `${APP_URL}/courses/${c.id}`,
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil",   item: APP_URL },
+      { "@type": "ListItem", position: 2, name: "Courses",   item: `${APP_URL}/courses` },
+      { "@type": "ListItem", position: 3, name: c.libelle,    item: `${APP_URL}/courses/${c.id}` },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
+      {/* JSON-LD — SportsEvent + Breadcrumb pour Google */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sportsEventJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+
       {/* Hero */}
       <div className="relative overflow-hidden h-36 sm:h-48">
         <img
