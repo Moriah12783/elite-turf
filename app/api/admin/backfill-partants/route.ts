@@ -82,20 +82,29 @@ async function processInPool<T, R>(
   return results;
 }
 
+const CRON_SECRET = process.env.CRON_SECRET || "";
+
 async function runBackfill(req: NextRequest): Promise<NextResponse> {
-  // Auth ADMIN
-  const supabaseClient = await createClient();
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  // Auth : accept EITHER (a) Bearer CRON_SECRET (utilitaire scripts), OR
+  // (b) ADMIN session cookie (usage navigateur).
+  const auth = req.headers.get("authorization") || "";
+  const hasCronAuth = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
 
   const adminClient = createServiceClient();
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (!profile || profile.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!hasCronAuth) {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (!profile || profile.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // Params (POST body OU GET query params, pour permettre l'usage navigateur direct)
