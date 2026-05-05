@@ -43,6 +43,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
+  // ── Pages temporelles SEO (programme/quinte-plus/arrivees par date) ──────
+  // Fenêtre [-30j, +7j] pour matcher la stratégie courses ci-dessous.
+  // Volume : 38 dates × 3 pages = 114 URLs (négligeable, fort levier SEO).
+  const temporalUrls: MetadataRoute.Sitemap = [];
+  const todayStr = now.toISOString().split("T")[0];
+  for (let i = -30; i <= 7; i++) {
+    const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000)
+      .toISOString().split("T")[0];
+    const isFutureDate = d > todayStr;
+    const isTodayDate  = d === todayStr;
+
+    // /programme/[date] — toujours indexable (programme passé/présent/futur)
+    temporalUrls.push({
+      url: `${APP_URL}/programme/${d}`,
+      lastModified: now,
+      changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "monthly",
+      priority: isTodayDate ? 0.9 : isFutureDate ? 0.7 : 0.6,
+    });
+
+    // /quinte-plus/[date] — fort levier SEO ("quinté+ du jour" #1 turf FR)
+    temporalUrls.push({
+      url: `${APP_URL}/quinte-plus/${d}`,
+      lastModified: now,
+      changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "weekly",
+      priority: isTodayDate ? 0.95 : isFutureDate ? 0.8 : 0.7,
+    });
+
+    // /arrivees/[date] — pas indexable dans le futur (pas de résultats)
+    if (!isFutureDate) {
+      temporalUrls.push({
+        url: `${APP_URL}/arrivees/${d}`,
+        lastModified: now,
+        changeFrequency: isTodayDate ? "hourly" : "monthly",
+        priority: isTodayDate ? 0.85 : 0.6,
+      });
+    }
+  }
+
   // ── Pronostics publiés (tous niveaux) ────────────────────────────────────
   let pronosticUrls: MetadataRoute.Sitemap = [];
   // ── Courses des 30 derniers + 7 prochains jours ──────────────────────────
@@ -97,5 +135,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
 
-  return [...staticPages, ...blogArticleUrls, ...pronosticUrls, ...courseUrls];
+  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...pronosticUrls, ...courseUrls];
 }
