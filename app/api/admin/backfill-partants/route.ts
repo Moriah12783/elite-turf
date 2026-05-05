@@ -3,30 +3,32 @@
  *
  * Backfill admin one-shot : scrape Geny pour toutes les courses des N
  * derniers jours qui n'ont pas de partants en DB. Comble le trou data
- * accumulé pendant que pmu-sync échouait à 100% (HTTP 420 chronique).
+ * accumulé pendant que pmu-sync échouait à 100%.
  *
- * Auth : ADMIN session (cookie) + CRON_SECRET pour éviter les abus.
- * Le cron alerte à 50% partants → on appelle ça pour passer de 11% à 90%+.
+ * Architecture bulk (cf enrichir-partants) :
+ *  - 40 fetches Geny en parallèle (lecture seule)
+ *  - 1 bulk DELETE
+ *  - 1 bulk INSERT
+ *  Total ≤ 42 subrequests ≤ 50 (Cloudflare Workers Free limit).
  *
  * Body optionnel :
- *   { days?: number }   nombre de jours à backfiller (défaut 14, max 30)
- *   { date?: string }   ne traiter qu'une date YYYY-MM-DD
+ *   { days?: 14 }   nb jours (max 30, défaut 14)
+ *   { date?: "YYYY-MM-DD" }   ne traiter qu'une date précise
  *
- * Limite : 200 courses par appel (timeout Cloudflare Workers ~60s).
- *          Pour backfill > 200 courses, ré-appeler plusieurs fois.
+ * Retourne `has_more: true` si plus de 40 courses à backfiller — ré-appeler.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { fetchGenyPartants } from "@/lib/geny";
+import { fetchGenyPartants, type GenyParticipant } from "@/lib/geny";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 60;
 
-const CONCURRENCY = 6;
-const FETCH_TIMEOUT_MS = 6000;
-const MAX_COURSES_PER_RUN = 200;
+const CONCURRENCY        = 5;
+const FETCH_TIMEOUT_MS   = 6000;
+const MAX_COURSES_PER_RUN = 40;
 
 interface CourseRow {
   id:             string;
@@ -35,6 +37,31 @@ interface CourseRow {
   libelle:        string;
   geny_url:       string | null;
   date_course:    string;
+}
+
+type ScrapeOutcome =
+  | { courseId: string; status: "ok"; partants: GenyParticipant[] }
+  | { courseId: string; status: "no_data" | "error"; detail?: string };
+
+async function scrapeOne(course: CourseRow): Promise<ScrapeOutcome> {
+  if (!course.geny_url) {
+    return { courseId: course.id, status: "no_data", detail: "geny_url absente" };
+  }
+  try {
+    const partants = await fetchGenyPartants(
+      course.date_course, course.numero_reunion, course.numero_course,
+      FETCH_TIMEOUT_MS, course.geny_url,
+    );
+    if (partants.length === 0) {
+      return { courseId: course.id, status: "no_data", detail: "Geny scrape vide" };
+    }
+    return { courseId: course.id, status: "ok", partants };
+  } catch (err) {
+    return {
+      courseId: course.id, status: "error",
+      detail:   err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function processInPool<T, R>(
@@ -55,73 +82,8 @@ async function processInPool<T, R>(
   return results;
 }
 
-async function backfillOne(
-  course: CourseRow,
-  supabase: ReturnType<typeof createServiceClient>,
-): Promise<{ courseId: string; status: "ok" | "no_data" | "error"; nb?: number; detail?: string }> {
-  if (!course.geny_url) {
-    return { courseId: course.id, status: "no_data", detail: "geny_url absente" };
-  }
-
-  let genyPartants;
-  try {
-    genyPartants = await fetchGenyPartants(
-      course.date_course,
-      course.numero_reunion,
-      course.numero_course,
-      FETCH_TIMEOUT_MS,
-      course.geny_url,
-    );
-  } catch (err) {
-    return {
-      courseId: course.id,
-      status:   "error",
-      detail:   err instanceof Error ? err.message : String(err),
-    };
-  }
-
-  if (genyPartants.length === 0) {
-    return { courseId: course.id, status: "no_data", detail: "Geny scrape vide" };
-  }
-
-  const toInsert = genyPartants
-    .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
-    .map((g) => ({
-      course_id:   course.id,
-      numero:      g.numPmu,
-      nom_cheval:  g.nom,
-      jockey:      g.jockey?.nom ?? null,
-      entraineur:  g.entraineur?.nom ?? null,
-      cote:        g.coteProbable ?? null,
-      musique:     g.musique ?? null,
-      poids_kg:    g.poids ?? null,
-      place_corde: g.placeCorde ?? null,
-      age:         g.age ?? null,
-      sexe:        g.sexe ?? null,
-      non_partant: g.nonPartant ?? false,
-      scraped_at:  new Date().toISOString(),
-    }));
-
-  if (toInsert.length === 0) {
-    return { courseId: course.id, status: "no_data" };
-  }
-
-  await supabase.from("partants").delete().eq("course_id", course.id);
-  const { error: insErr } = await supabase.from("partants").insert(toInsert);
-  if (insErr) {
-    return { courseId: course.id, status: "error", detail: `insert: ${insErr.message}` };
-  }
-
-  await supabase
-    .from("courses")
-    .update({ nb_partants: toInsert.length })
-    .eq("id", course.id);
-
-  return { courseId: course.id, status: "ok", nb: toInsert.length };
-}
-
 export async function POST(req: NextRequest) {
-  // ── Auth : ADMIN session ────────────────────────────────────────────────
+  // Auth ADMIN
   const supabaseClient = await createClient();
   const { data: { user } } = await supabaseClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
@@ -136,29 +98,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // ── Params ─────────────────────────────────────────────────────────────
+  // Params
   let days = 14;
   let onlyDate: string | null = null;
   try {
     const body = await req.json();
     if (typeof body?.days === "number") days = Math.min(30, Math.max(1, body.days));
     if (typeof body?.date === "string") onlyDate = body.date;
-  } catch {
-    // pas de body : utiliser les défauts
-  }
+  } catch {}
 
-  // ── Sélectionner les courses à backfiller ──────────────────────────────
   const today = new Date();
   const fromDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000)
     .toISOString().split("T")[0];
 
+  // Sélection
   let coursesQuery = adminClient
     .from("courses")
     .select("id, numero_reunion, numero_course, libelle, geny_url, date_course")
     .neq("statut", "ANNULE")
     .not("geny_url", "is", null)
     .order("date_course", { ascending: false })
-    .limit(MAX_COURSES_PER_RUN * 3); // marge pour filtrer les déjà enrichies
+    .limit(500); // cap pour ne pas exploser le filter
 
   if (onlyDate) {
     coursesQuery = coursesQuery.eq("date_course", onlyDate);
@@ -172,16 +132,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, message: "Aucune course dans la fenêtre", days, fromDate });
   }
 
-  // Filtrer celles déjà enrichies (avec partants en DB)
+  // Filtrer celles déjà enrichies (avec musique = enrichissement complet Geny)
   const { data: existing } = await adminClient
     .from("partants")
     .select("course_id")
-    .in("course_id", courses.map((c: CourseRow) => c.id));
+    .in("course_id", courses.map((c: CourseRow) => c.id))
+    .not("musique", "is", null);
   const enrichedIds = new Set((existing ?? []).map((p) => p.course_id));
 
-  const toBackfill = (courses as CourseRow[])
-    .filter((c) => !enrichedIds.has(c.id))
-    .slice(0, MAX_COURSES_PER_RUN);
+  const remainingAll = (courses as CourseRow[]).filter((c) => !enrichedIds.has(c.id));
+  const toBackfill   = remainingAll.slice(0, MAX_COURSES_PER_RUN);
+  const has_more     = remainingAll.length > MAX_COURSES_PER_RUN;
 
   if (toBackfill.length === 0) {
     return NextResponse.json({
@@ -192,18 +153,59 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── Process en parallèle ───────────────────────────────────────────────
-  const results = await processInPool(toBackfill, CONCURRENCY, (c) => backfillOne(c, adminClient));
+  // Étape 1 : fetch Geny en parallèle (lecture seule)
+  const outcomes = await processInPool(toBackfill, CONCURRENCY, scrapeOne);
+  const okOutcomes = outcomes.filter((o): o is Extract<ScrapeOutcome, { status: "ok" }> => o.status === "ok");
 
-  const ok      = results.filter((r) => r.status === "ok").length;
-  const noData  = results.filter((r) => r.status === "no_data").length;
-  const errors  = results.filter((r) => r.status === "error").length;
-  const totalPartants = results.reduce((s, r) => s + (r.nb ?? 0), 0);
+  // Étape 2 : bulk delete + bulk insert
+  let inserted = 0;
+  if (okOutcomes.length > 0) {
+    const okIds = okOutcomes.map((o) => o.courseId);
+    const { error: delErr } = await adminClient.from("partants").delete().in("course_id", okIds);
+    if (delErr) {
+      logger.error("backfill-partants", "Bulk delete failed", { error: delErr.message });
+    }
+
+    const allRows = okOutcomes.flatMap((o) =>
+      o.partants
+        .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
+        .map((g) => ({
+          course_id:   o.courseId,
+          numero:      g.numPmu,
+          nom_cheval:  g.nom,
+          jockey:      g.jockey?.nom ?? null,
+          entraineur:  g.entraineur?.nom ?? null,
+          cote:        g.coteProbable ?? null,
+          musique:     g.musique ?? null,
+          poids_kg:    g.poids ?? null,
+          place_corde: g.placeCorde ?? null,
+          age:         g.age ?? null,
+          sexe:        g.sexe ?? null,
+          non_partant: g.nonPartant ?? false,
+          scraped_at:  new Date().toISOString(),
+        })),
+    );
+
+    if (allRows.length > 0) {
+      const { error: insErr, count } = await adminClient
+        .from("partants")
+        .insert(allRows, { count: "exact" });
+      if (insErr) {
+        logger.error("backfill-partants", "Bulk insert failed", { error: insErr.message, rows: allRows.length });
+        return NextResponse.json({ error: insErr.message }, { status: 500 });
+      }
+      inserted = count ?? allRows.length;
+    }
+  }
+
+  const ok      = okOutcomes.length;
+  const noData  = outcomes.filter((o) => o.status === "no_data").length;
+  const errors  = outcomes.filter((o) => o.status === "error").length;
 
   if (errors > 0) {
     logger.warn("backfill-partants", `${errors} erreurs sur ${toBackfill.length} courses`, {
       days,
-      sample_errors: results.filter((r) => r.status === "error").slice(0, 3),
+      sample_errors: outcomes.filter((o) => o.status === "error").slice(0, 3),
     });
   }
 
@@ -212,14 +214,15 @@ export async function POST(req: NextRequest) {
     days,
     fromDate,
     total_in_window:   courses.length,
+    remaining:         remainingAll.length,
     processed:         toBackfill.length,
     enriched:          ok,
     no_data:           noData,
     errors,
-    total_partants:    totalPartants,
-    has_more:          (courses.length - enrichedIds.size) > MAX_COURSES_PER_RUN,
-    note:              (courses.length - enrichedIds.size) > MAX_COURSES_PER_RUN
-      ? "Plus de 200 courses à backfiller — relancer cet endpoint pour traiter le reste"
-      : undefined,
+    partants_inserted: inserted,
+    has_more,
+    ...(has_more ? {
+      note: `${remainingAll.length - toBackfill.length} courses restantes — relancer cet endpoint pour traiter le reste`,
+    } : {}),
   });
 }
