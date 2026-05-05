@@ -14,7 +14,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID   = process.env.TELEGRAM_CHAT_ID   || "";
-const APP_URL            = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+const APP_URL            = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
 // ── Telegram alert ──────────────────────────────────────────────────────────
 

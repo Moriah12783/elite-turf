@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { templateConfirmationPack } from "@/lib/email/templates/confirmation-pack";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 function redirect(path: string) {
   return NextResponse.redirect(`${APP_URL}${path}`, { status: 302 });

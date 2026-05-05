@@ -15,7 +15,7 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
   html: string;
 } {
   const prenom = data.nomComplet.split(" ")[0] || data.nomComplet;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString("fr-FR", {

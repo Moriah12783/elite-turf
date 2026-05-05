@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 
 const PAYSTACK_API = "https://api.paystack.co/transaction/initialize";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 const isConfigured =
   process.env.PAYSTACK_SECRET_KEY &&

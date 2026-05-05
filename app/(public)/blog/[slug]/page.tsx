@@ -7,7 +7,7 @@ import NewsletterSignup from "@/components/blog/NewsletterSignup";
 import StickyBanner from "@/components/blog/StickyBanner";
 import ExitIntentPopup from "@/components/blog/ExitIntentPopup";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export async function generateStaticParams() {
   return BLOG_ARTICLES.map((a) => ({ slug: a.slug }));

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const ONESIGNAL_APP_ID  = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
-const APP_URL           = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL           = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 // POST — envoyer une notification
 export async function POST(req: NextRequest) {

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { MessageCircle, Mail, MapPin, AlertTriangle } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
   title: "Contact — Elite Turf",

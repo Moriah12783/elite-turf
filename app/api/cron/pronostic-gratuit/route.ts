@@ -18,7 +18,7 @@ import { scoreCourse, buildSelection, generateAnalyse } from "@/lib/pronostic-gr
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
-const APP_URL     = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL     = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 function getTodayParis(): string {
   return new Intl.DateTimeFormat("fr-FR", {

@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 // Cache 1h pour ne pas marteler Supabase à chaque crawl Google
 export const revalidate = 3600;

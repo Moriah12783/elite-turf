@@ -15,7 +15,7 @@ import CourseTabsClient from "@/components/courses/CourseTabsClient";
 
 export const dynamic = "force-dynamic";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 interface PageProps { params: { id: string } }
 

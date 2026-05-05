@@ -38,9 +38,9 @@ export function emailBase(content: string, previewText = ""): string {
               <table cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="background:#FFFFFF;border:1px solid #E5E7EB;border-bottom:3px solid #C9A84C;border-radius:12px 12px 0 0;padding:18px 36px;text-align:center;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}" style="text-decoration:none;display:block;">
+                    <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}" style="text-decoration:none;display:block;">
                       <img
-                        src="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}/images/logo.png"
+                        src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
                         alt="Elite Turf"
                         width="200"
                         height="200"
@@ -93,7 +93,7 @@ export function emailBase(content: string, previewText = ""): string {
               </table>
 
               <img
-                src="${process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr"}/images/logo.png"
+                src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
                 alt="Elite Turf"
                 width="100"
                 height="100"
@@ -110,9 +110,9 @@ export function emailBase(content: string, previewText = ""): string {
                 Pronostics PMU pour les parieurs francophones — Analyses depuis Paris.
               </p>
               <p style="margin:0;font-size:10px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr"}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Politique de confidentialité</a>
+                <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr")}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Politique de confidentialité</a>
                 &nbsp;·&nbsp;
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr"}/abonnements" style="color:#D1D5DB;text-decoration:none;">Gérer mon abonnement</a>
+                <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr")}/abonnements" style="color:#D1D5DB;text-decoration:none;">Gérer mon abonnement</a>
               </p>
             </td>
           </tr>

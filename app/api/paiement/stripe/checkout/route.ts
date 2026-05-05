@@ -13,7 +13,7 @@ import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 const isStripeConfigured =
   process.env.STRIPE_SECRET_KEY &&
