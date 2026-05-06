@@ -15,8 +15,10 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 1800; // 30 min
+// Pas de force-dynamic : on veut que Cloudflare CDN cache la réponse
+// pendant 30min via le header Cache-Control retourné dans NextResponse.
+// Évite que le worker soit invoqué à chaque pageview (limite CPU 10ms Free).
+export const revalidate = 1800; // 30 min ISR fallback si force-dynamic absent
 
 export async function GET() {
   try {
@@ -50,15 +52,16 @@ export async function GET() {
         .from("courses")
         .select("*", { count: "exact", head: true }),
 
-      // ROI cumulé sur 30 derniers jours : gains théoriques d'un parieur
-      // qui aurait suivi tous nos pronostics publiés (mise unitaire 1€)
+      // ROI cumulé sur 14 derniers jours (réduit de 30j → 14j pour respecter
+      // la limite CPU 10ms Cloudflare Workers Free). Limit 100 rows max.
+      // Si on veut plus de fenêtre plus tard, créer une RPC SQL agrégée.
       supabase
         .from("pronostics")
-        .select("resultat, gains_theoriques, rapport_gagnant, date_publication")
+        .select("resultat, gains_theoriques, rapport_gagnant")
         .eq("publie", true)
         .neq("resultat", "EN_ATTENTE")
-        .gte("date_publication", new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString())
-        .limit(500),
+        .gte("date_publication", new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString())
+        .limit(100),
     ]);
 
     const termines        = allPronostics?.length ?? 0;
@@ -66,38 +69,37 @@ export async function GET() {
     const tauxGlobal      = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
     const meilleurRapport = topRapport?.[0]?.rapport_gagnant ?? null;
 
-    // ROI cumulé 30j : somme(gains_theoriques) - somme(mises 1€).
-    // Si gains_theoriques absent, fallback sur rapport_gagnant pour les GAGNANT.
-    const list30j   = roiData ?? [];
-    const nb30j     = list30j.length;
-    const totalGains = list30j.reduce((acc: number, p: any) => {
-      if (p.resultat === "GAGNANT") {
-        const gain = p.gains_theoriques ?? p.rapport_gagnant ?? 0;
-        return acc + (typeof gain === "number" ? gain : 0);
-      }
-      if (p.resultat === "PARTIEL") {
-        // Estimation 30 % du rapport gagnant pour partiels
-        const gain = (p.gains_theoriques ?? p.rapport_gagnant ?? 0) * 0.3;
-        return acc + (typeof gain === "number" ? gain : 0);
-      }
-      return acc;
-    }, 0);
-    // ROI = (gains - mises) / mises * 100, avec mise de 1€/pronostic
-    const totalMises = nb30j;
-    const roiCumule30j = totalMises > 0
-      ? Math.round(((totalGains - totalMises) / totalMises) * 100)
-      : null;
+    // ROI cumulé 14j : version compacte CPU-friendly (loop simple, pas de
+    // type checks lourds). Si list vide → null (pas d'affichage hero).
+    const list = roiData ?? [];
+    const nb = list.length;
+    let gains = 0;
+    for (const p of list) {
+      const r = (p.gains_theoriques ?? p.rapport_gagnant ?? 0) as number;
+      if (p.resultat === "GAGNANT") gains += r;
+      else if (p.resultat === "PARTIEL") gains += r * 0.3;
+    }
+    const roiCumule = nb > 0 ? Math.round(((gains - nb) / nb) * 100) : null;
 
-    return NextResponse.json({
-      tauxGlobal,                          // ex: 76
-      totalPronostics: termines,           // ex: 25
-      meilleurRapport,                     // ex: 93.20
-      coursesAnalysees: totalCourses ?? 0, // ex: 112
-      // Nouveaux champs : ROI 30j pour hero "ROI cumulé live"
-      roiCumule30j,                        // ex: +156 (pourcentage) ou null si <5 pronostics
-      gainsCumule30j: Math.round(totalGains * 100) / 100, // ex: 280.50
-      pronosticsCumule30j: nb30j,          // ex: 18
-    });
+    return NextResponse.json(
+      {
+        tauxGlobal,
+        totalPronostics: termines,
+        meilleurRapport,
+        coursesAnalysees: totalCourses ?? 0,
+        roiCumule30j: roiCumule,
+        gainsCumule30j: Math.round(gains),
+        pronosticsCumule30j: nb,
+      },
+      {
+        headers: {
+          // Cache CDN agressif : 30min côté Cloudflare, 1h SWR.
+          // Évite que /api/stats soit appelé à chaque pageview (le hero le
+          // fetch côté client → CDN renvoie sans toucher au worker).
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
+        },
+      },
+    );
   } catch {
     return NextResponse.json({
       tauxGlobal: 0,
