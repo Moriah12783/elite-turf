@@ -50,15 +50,35 @@ interface ScrapeOutcome {
   hasRapports: boolean;
   hasComment:  boolean;
   reason?:     string;
+  url?:        string;
+  status?:     number;
+  htmlLen?:    number;
+  htmlSample?: string;
+  errorName?:  string;
 }
 
-async function fetchAndParse(course: CourseRow): Promise<{
+interface FetchResult {
+  ok:          boolean;
+  url:         string;
+  status?:     number;
+  htmlLen?:    number;
+  htmlSample?: string;
+  errorName?:  string;
+  errorMsg?:   string;
   arrivee:     number[] | null;
   rapports:    RapportsPMU | null;
   commentaire: string | null;
-} | null> {
-  if (!course.geny_url) return null;
+}
+
+async function fetchAndParse(course: CourseRow): Promise<FetchResult> {
+  const base: FetchResult = {
+    ok: false, url: "",
+    arrivee: course.arrivee_officielle ?? null,
+    rapports: null, commentaire: null,
+  };
+  if (!course.geny_url) return { ...base, errorMsg: "no geny_url" };
   const url = buildGenyUrlFromStored(course.geny_url, "resultats");
+  base.url = url;
 
   try {
     const ctrl  = new AbortController();
@@ -72,29 +92,44 @@ async function fetchAndParse(course: CourseRow): Promise<{
       },
       cache:  "no-store",
       signal: ctrl.signal,
+      redirect: "follow",
     });
     clearTimeout(timer);
 
-    if (!res.ok) return null;
+    base.status = res.status;
+    if (!res.ok) {
+      return { ...base, errorMsg: `HTTP ${res.status}` };
+    }
     const html = await res.text();
+    base.htmlLen = html.length;
+    // Extrait les ~200 premiers chars utiles (sans whitespace/tags) pour debug.
+    base.htmlSample = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
 
     let rapports: RapportsPMU | null = null;
     let commentaire: string | null = null;
     try {
       const r = parseRapportsPMU(html);
       if (r && Object.keys(r).length > 0) rapports = r;
-    } catch { /* defensive */ }
+    } catch (e) {
+      base.errorMsg = `parser error: ${e instanceof Error ? e.message : String(e)}`;
+    }
     try {
       commentaire = parseCommentaire(html);
     } catch { /* defensive */ }
 
+    return { ...base, ok: true, rapports, commentaire };
+  } catch (e) {
     return {
-      arrivee:     course.arrivee_officielle ?? null,
-      rapports,
-      commentaire,
+      ...base,
+      errorName: e instanceof Error ? e.name : "Unknown",
+      errorMsg:  e instanceof Error ? e.message : String(e),
     };
-  } catch {
-    return null;
   }
 }
 
@@ -214,14 +249,36 @@ export async function POST(req: NextRequest) {
     CONCURRENCY,
     async (course) => {
       const data = await fetchAndParse(course);
-      if (!data) {
-        return { courseId: course.id, ok: false, hasRapports: false, hasComment: false, reason: "fetch failed" };
-      }
       const hasRapports = !!data.rapports;
       const hasComment  = !!data.commentaire;
 
+      // Cas erreur fetch (HTTP non-OK ou exception réseau) → on remonte tout
+      if (!data.ok) {
+        return {
+          courseId: course.id,
+          ok:        false,
+          hasRapports, hasComment,
+          reason:    data.errorMsg ?? "fetch failed",
+          url:       data.url,
+          status:    data.status,
+          htmlLen:   data.htmlLen,
+          htmlSample: data.htmlSample,
+          errorName: data.errorName,
+        };
+      }
+
+      // Fetch OK mais parse vide
       if (!hasRapports && !hasComment) {
-        return { courseId: course.id, ok: false, hasRapports, hasComment, reason: "empty parse" };
+        return {
+          courseId: course.id,
+          ok:        false,
+          hasRapports, hasComment,
+          reason:    "empty parse",
+          url:       data.url,
+          status:    data.status,
+          htmlLen:   data.htmlLen,
+          htmlSample: data.htmlSample,
+        };
       }
 
       if (!dry) {
