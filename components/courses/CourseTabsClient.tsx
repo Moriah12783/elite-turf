@@ -122,7 +122,7 @@ function TabButton({
 // ── Tab : Partants ─────────────────────────────────────────────────────────
 
 function TabPartants({
-  partants, nonPartants = [], arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed,
+  partants, nonPartants = [], arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed, statut,
 }: {
   partants: Partant[];
   nonPartants?: Partant[];
@@ -131,7 +131,16 @@ function TabPartants({
   genyUrl: string;
   isVedette?: boolean;
   isSubscribed?: boolean;
+  statut?: string;
 }) {
+  // Map numéro → position d'arrivée (1, 2, 3, …) pour affichage post-course
+  const arriveeMap: Record<number, number> = {};
+  if (statut === "TERMINE" && arriveeOfficielle) {
+    arriveeOfficielle.forEach((num, idx) => {
+      arriveeMap[num] = idx + 1;
+    });
+  }
+  const showPosition = statut === "TERMINE" && Object.keys(arriveeMap).length > 0;
   // Cours vedette non abonné → aperçu partiel + verrou
   if (isVedette && !isSubscribed) {
     const preview = partants.slice(0, 4);
@@ -211,12 +220,26 @@ function TabPartants({
     );
   }
 
+  // Tri : si post-course, on affiche d'abord les chevaux dans l'ordre d'arrivée,
+  // puis les autres par numéro. Si pré-course : tri par numéro classique.
+  const partantsSorted = showPosition
+    ? [...partants].sort((a, b) => {
+        const pa = arriveeMap[a.numero] ?? 999;
+        const pb = arriveeMap[b.numero] ?? 999;
+        if (pa !== pb) return pa - pb;
+        return a.numero - b.numero;
+      })
+    : partants;
+
   return (
     <>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/50 bg-bg-elevated/50">
+              {showPosition && (
+                <th className="text-left px-3 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Pos.</th>
+              )}
               <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">N°</th>
               <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider">Cheval</th>
               <th className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider hidden md:table-cell">Jockey / Entraîneur</th>
@@ -225,9 +248,10 @@ function TabPartants({
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30">
-            {partants.map((p) => {
+            {partantsSorted.map((p) => {
               const inArrivee = arriveeOfficielle?.slice(0, 3).includes(p.numero);
               const selected  = pronosticSelection?.includes(p.numero);
+              const position  = arriveeMap[p.numero] ?? null;
               return (
                 <tr
                   key={p.id}
@@ -237,6 +261,22 @@ function TabPartants({
                     "hover:bg-bg-hover"
                   }`}
                 >
+                  {showPosition && (
+                    <td className="px-3 py-3">
+                      {position ? (
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                          position === 1 ? "bg-yellow-500/20 border border-yellow-500/50 text-yellow-400" :
+                          position === 2 ? "bg-gray-400/20 border border-gray-400/40 text-gray-300" :
+                          position === 3 ? "bg-orange-500/15 border border-orange-500/40 text-orange-400" :
+                          "bg-bg-elevated border border-border text-text-muted"
+                        }`}>
+                          {position}
+                        </span>
+                      ) : (
+                        <span className="text-text-muted text-xs">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
                       inArrivee ? "bg-status-win/20 border border-status-win/50 text-status-win" :
@@ -563,7 +603,12 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
   arriveeOfficielle?: number[] | null;
   partants: Partant[];
 }) {
-  const [data, setData]       = useState<{ arrivee: ArriveeItem[]; rapports: Rapport[] } | null>(null);
+  const [data, setData]       = useState<{
+    arrivee:     ArriveeItem[];
+    rapports:    Rapport[];
+    commentaire: string | null;
+    source:      string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
@@ -575,7 +620,12 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
       const res  = await fetch(`/api/courses/${courseId}/resultats`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erreur inconnue");
-      setData({ arrivee: json.arrivee ?? [], rapports: json.rapports ?? [] });
+      setData({
+        arrivee:     json.arrivee     ?? [],
+        rapports:    json.rapports    ?? [],
+        commentaire: json.commentaire ?? null,
+        source:      json.source      ?? null,
+      });
       setLoadedOnce(true);
     } catch (e: any) {
       setError(e.message);
@@ -626,8 +676,17 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
     );
   }
 
-  const arrivee = data?.arrivee ?? [];
-  const rapports = data?.rapports ?? [];
+  const arrivee     = data?.arrivee ?? [];
+  const rapports    = data?.rapports ?? [];
+  const commentaire = data?.commentaire ?? null;
+  const source      = data?.source ?? null;
+
+  // Label "source" lisible : geny-scrape (officiel) > pmu > supabase
+  const sourceLabel = source === "geny-scrape"
+    ? "Geny.com (officiel)"
+    : source === "pmu"
+      ? "API PMU"
+      : "Base Elite Turf";
 
   return (
     <div className="divide-y divide-border/30">
@@ -654,6 +713,19 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
         </div>
       )}
 
+      {/* Commentaire de course (récit Geny) */}
+      {commentaire && (
+        <div className="p-4">
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
+            <Star className="w-3.5 h-3.5 text-gold-primary" />
+            Commentaire de course
+          </p>
+          <p className="text-text-secondary text-sm leading-relaxed italic">
+            {commentaire}
+          </p>
+        </div>
+      )}
+
       {/* Rapports / Dividendes */}
       {rapports.length > 0 ? (
         <div className="p-4">
@@ -672,7 +744,7 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
                     <div key={j} className="flex items-center justify-between px-3 py-2">
                       <span className="font-mono text-text-secondary text-sm">{d.combinaison}</span>
                       <span className="font-bold text-gold-light text-sm">
-                        {d.rapport !== null ? `${d.rapport.toFixed(1)} €` : "—"}
+                        {d.rapport !== null ? `${d.rapport.toFixed(2)} €` : "—"}
                       </span>
                     </div>
                   ))}
@@ -680,12 +752,20 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
               </div>
             ))}
           </div>
-          <p className="text-text-muted text-[10px] mt-3">Rapports pour 1 € misé · Source PMU</p>
+          <p className="text-text-muted text-[10px] mt-3">
+            Rapports pour 1 € misé · Source : {sourceLabel}
+          </p>
         </div>
       ) : statut === "TERMINE" ? (
         <div className="p-4 text-center">
-          <p className="text-text-muted text-xs">Rapports non disponibles via API PMU</p>
-          <p className="text-text-muted text-xs mt-1">Consultez PMU.fr ou Geny.com pour les dividendes</p>
+          <p className="text-text-muted text-xs">Rapports en cours de récupération…</p>
+          <p className="text-text-muted text-xs mt-1">Repassez dans quelques minutes ou consultez PMU.fr / Geny.com</p>
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Actualiser
+          </button>
         </div>
       ) : null}
     </div>
@@ -860,6 +940,7 @@ export default function CourseTabsClient({
           genyUrl={genyUrl}
           isVedette={isVedette}
           isSubscribed={isSubscribed}
+          statut={statut}
         />
       )}
       {activeTab === "cotes" && (
