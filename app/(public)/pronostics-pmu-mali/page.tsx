@@ -8,7 +8,7 @@ const country = COUNTRY_BY_SLUG["mali"];
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: `Pronostics PMU Mali ${country.drapeau} — Quinté+, Quarté+ | Elite Turf`,
+  title: `Pronostics PMU Mali ${country.drapeau} — Quinté+, Quarté+`,
   description: "Pronostics PMU France pour les turfistes maliens. Paiement Orange Money, Moov Money. Tarifs en FCFA.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-mali` },

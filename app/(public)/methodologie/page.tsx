@@ -21,7 +21,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const revalidate = 86400; // 24h — page statique éditoriale
 
 export const metadata: Metadata = {
-  title: "Notre méthodologie — Comment nous analysons les courses PMU | Elite Turf",
+  title: "Notre méthodologie — Comment nous analysons les courses PMU",
   description:
     "Découvrez la méthodologie Elite Turf : analyse data-driven combinée à 5 ans d'expertise hippique. IA, données PMU officielles, validation experte humaine. Transparence totale.",
   alternates: { canonical: `${APP_URL}/methodologie` },

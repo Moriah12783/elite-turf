@@ -8,7 +8,7 @@ const country = COUNTRY_BY_SLUG["maroc"];
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: `Pronostics PMU Maroc ${country.drapeau} — MDJS, SOREC, Quinté+ | Elite Turf`,
+  title: `Pronostics PMU Maroc ${country.drapeau} — MDJS, SOREC, Quinté+`,
   description: "Pronostics PMU France et courses marocaines (SOREC) pour les parieurs du Royaume. Paiement carte bancaire, Cash Plus, Wafacash. Tarifs en Dirhams.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-maroc` },

@@ -8,7 +8,7 @@ const country = COUNTRY_BY_SLUG["cote-d-ivoire"];
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: `Pronostics PMU Côte d'Ivoire ${country.drapeau} — Quinté+, Tiercé, Quarté+ | Elite Turf`,
+  title: `Pronostics PMU Côte d'Ivoire ${country.drapeau} — Quinté+, Tiercé, Quarté+`,
   description: "Pronostics PMU France et courses LONACI analysés depuis Paris pour les parieurs de Côte d'Ivoire. Paiement Orange Money, Wave, MTN. Tarifs en FCFA.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-cote-d-ivoire` },
