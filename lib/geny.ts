@@ -8,6 +8,12 @@ const GENY_BASE = "https://www.geny.com";
  * Ce format comporte un slug de hippodrome, un slug de course et un ID interne
  * qu'on ne peut pas reconstruire à la volée → il faut utiliser l'URL stockée.
  *
+ * Pour les RÉSULTATS, Geny n'utilise pas la même structure d'URL :
+ * la page arrivée + rapports vit sur :
+ *   /arrivee-et-rapports-pmu?id_course=<ID>
+ * où <ID> est extrait du suffixe `_c<ID>` de l'URL partants.
+ * (L'ancien chemin /resultats-pmu/<slug> est 404 — vérifié 2026-05-06.)
+ *
  * @param genyUrl   Valeur de courses.geny_url (chemin absolu commençant par "/")
  * @param type      "partants" (défaut) ou "resultats"
  */
@@ -15,11 +21,26 @@ export function buildGenyUrlFromStored(
   genyUrl: string,
   type: "partants" | "resultats" = "partants"
 ): string {
-  // Remplacer le préfixe partants-pmu ↔ resultats-pmu si nécessaire
-  const path = type === "resultats"
-    ? genyUrl.replace("/partants-pmu/", "/resultats-pmu/")
-    : genyUrl.replace("/resultats-pmu/", "/partants-pmu/");
-  return `${GENY_BASE}${path}`;
+  if (type === "resultats") {
+    const id = extractCourseIdFromGenyUrl(genyUrl);
+    if (id) {
+      return `${GENY_BASE}/arrivee-et-rapports-pmu?id_course=${id}`;
+    }
+    // Pas d'ID extractable : on retourne quand même un lien lisible (page partants).
+    return `${GENY_BASE}${genyUrl.replace("/resultats-pmu/", "/partants-pmu/")}`;
+  }
+  // type === "partants"
+  return `${GENY_BASE}${genyUrl.replace("/resultats-pmu/", "/partants-pmu/")}`;
+}
+
+/**
+ * Extrait l'ID interne Geny depuis le suffixe `_c<ID>` de l'URL stockée.
+ * Ex : "/partants-pmu/2026-04-25-auteuil-pmu-prix_c1647693" → "1647693"
+ * Renvoie null si pattern non reconnu.
+ */
+export function extractCourseIdFromGenyUrl(genyUrl: string): string | null {
+  const m = genyUrl.match(/_c(\d+)(?:[/?#]|$)/);
+  return m ? m[1] : null;
 }
 
 /**
