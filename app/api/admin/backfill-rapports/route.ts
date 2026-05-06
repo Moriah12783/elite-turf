@@ -27,6 +27,7 @@ import {
   parseCommentaire,
   type RapportsPMU,
 } from "@/lib/sync/geny-rapports-parser";
+import { parseArrivee } from "@/lib/sync/geny-arrivees";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 300;
@@ -49,6 +50,7 @@ interface ScrapeOutcome {
   ok:          boolean;
   hasRapports: boolean;
   hasComment:  boolean;
+  arriveeBackfilled?: boolean;
   reason?:     string;
   url?:        string;
   status?:     number;
@@ -123,7 +125,17 @@ async function fetchAndParse(course: CourseRow): Promise<FetchResult> {
       commentaire = parseCommentaire(html);
     } catch { /* defensive */ }
 
-    return { ...base, ok: true, rapports, commentaire };
+    // Si l'arrivée n'est pas en DB mais la page Geny la contient, on la
+    // récupère pour pouvoir l'écrire en plus des rapports.
+    let arrivee: number[] | null = course.arrivee_officielle ?? null;
+    if (!arrivee || arrivee.length === 0) {
+      try {
+        const parsed = parseArrivee(html);
+        if (parsed && parsed.length >= 3) arrivee = parsed;
+      } catch { /* defensive */ }
+    }
+
+    return { ...base, ok: true, rapports, commentaire, arrivee };
   } catch (e) {
     return {
       ...base,
@@ -226,12 +238,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: coursesErr.message }, { status: 500 });
   }
 
-  // Filtrer celles dont rapports_pmu est déjà rempli (skip)
+  // Filtrer celles déjà parfaitement enrichies (rapports + arrivée valide).
+  // On ré-enrôle sinon (ex : rapports OK mais arrivee_officielle null en DB
+  // → cas des 12 courses fantômes scrapées sans arrivée avant le fix URL).
   const candidates: CourseRow[] = (courses ?? []).filter((c: any) => {
     const arrRow = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
-    const alreadyHasRapports = arrRow?.rapports_pmu
+    const hasRapports = arrRow?.rapports_pmu
       && Object.keys(arrRow.rapports_pmu).length > 0;
-    return !alreadyHasRapports;
+    const hasArrivee = Array.isArray(c.arrivee_officielle)
+      && c.arrivee_officielle.length > 0;
+    return !(hasRapports && hasArrivee);
   }).map((c: any) => ({
     id:             c.id,
     date_course:    c.date_course,
@@ -281,18 +297,34 @@ export async function POST(req: NextRequest) {
         };
       }
 
+      // Source d'arrivée la plus complète : ce qu'on a re-parsé > ce qui est en DB
+      const arriveeFinal = data.arrivee ?? course.arrivee_officielle ?? [];
+
       if (!dry) {
         try {
           await supabase.from("arrivees").upsert(
             {
               course_id:     course.id,
-              ordre_arrivee: course.arrivee_officielle ?? [],
+              ordre_arrivee: arriveeFinal,
               rapports_pmu: data.rapports ?? null,
               commentaire:  data.commentaire ?? null,
               horodatage:    new Date().toISOString(),
             },
             { onConflict: "course_id" },
           );
+
+          // Bonus : si l'arrivée était null en DB et qu'on l'a récupérée
+          // depuis la page Geny, on remet aussi à jour courses.arrivee_officielle
+          // pour que le front (qui lit ce champ aussi) reste cohérent.
+          if (
+            (!course.arrivee_officielle || course.arrivee_officielle.length === 0)
+            && arriveeFinal.length > 0
+          ) {
+            await supabase
+              .from("courses")
+              .update({ arrivee_officielle: arriveeFinal, statut: "TERMINE" })
+              .eq("id", course.id);
+          }
         } catch (e) {
           return {
             courseId: course.id,
@@ -304,16 +336,26 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return { courseId: course.id, ok: true, hasRapports, hasComment };
+      return {
+        courseId: course.id,
+        ok: true,
+        hasRapports,
+        hasComment,
+        // info utile : a-t-on rattrapé une arrivée qui manquait en DB ?
+        arriveeBackfilled:
+          (!course.arrivee_officielle || course.arrivee_officielle.length === 0)
+          && arriveeFinal.length > 0,
+      };
     },
   );
 
   const summary = {
-    total:        candidates.length,
-    enriched:     outcomes.filter((o) => o.ok).length,
-    withRapports: outcomes.filter((o) => o.ok && o.hasRapports).length,
-    withComment:  outcomes.filter((o) => o.ok && o.hasComment).length,
-    failed:       outcomes.filter((o) => !o.ok).length,
+    total:                candidates.length,
+    enriched:             outcomes.filter((o) => o.ok).length,
+    withRapports:         outcomes.filter((o) => o.ok && o.hasRapports).length,
+    withComment:          outcomes.filter((o) => o.ok && o.hasComment).length,
+    arriveeBackfilled:    outcomes.filter((o) => o.ok && o.arriveeBackfilled).length,
+    failed:               outcomes.filter((o) => !o.ok).length,
   };
 
   return NextResponse.json({
