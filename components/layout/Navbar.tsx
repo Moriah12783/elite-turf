@@ -63,16 +63,17 @@ export default function Navbar() {
           <LogoEliteTurf size="lg" />
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-7">
+          <div className="hidden md:flex items-center gap-6 lg:gap-7">
+            <NavLink href="/courses">Programme</NavLink>
             <NavLink href="/pronostics">Pronostics</NavLink>
-            <NavLink href="/performances">Résultats</NavLink>
+            <NavLink href="/arrivees">Arrivées</NavLink>
+            <NavLink href="/abonnements">Abonnements</NavLink>
             <Link
               href="/guide-initie"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gold-primary/10 border border-gold-primary/30 text-gold-light hover:bg-gold-primary/20 hover:border-gold-primary/50 transition-all whitespace-nowrap"
             >
-              📥 Guide gratuit
+              📥 Guide
             </Link>
-            <NavLink href="/abonnements">Abonnements</NavLink>
             <NavLink href="/a-propos">À propos</NavLink>
           </div>
 
@@ -166,10 +167,11 @@ export default function Navbar() {
         <div className="md:hidden bg-bg-card border-t border-border animate-fade-in">
           <div className="px-4 py-4 space-y-1">
             {[
+              { href: "/courses",      label: "Programme"          },
               { href: "/pronostics",   label: "Pronostics"         },
-              { href: "/performances", label: "Résultats"          },
-              { href: "/guide-initie", label: "📥 Guide gratuit"   },
+              { href: "/arrivees",     label: "Arrivées & Rapports" },
               { href: "/abonnements",  label: "Abonnements"        },
+              { href: "/guide-initie", label: "📥 Guide gratuit"   },
               { href: "/a-propos",     label: "À Propos"           },
             ].map(({ href, label }) => (
               <MobileNavLink key={href} href={href} onClick={() => setIsOpen(false)}>
