@@ -8,7 +8,7 @@ const country = COUNTRY_BY_SLUG["cameroun"];
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: `Pronostics PMU Cameroun ${country.drapeau} — Quinté+, PMUC | Elite Turf`,
+  title: `Pronostics PMU Cameroun ${country.drapeau} — Quinté+, PMUC`,
   description: "Pronostics PMU France pour les turfistes camerounais. Paiement Orange Money, MTN MoMo, Express Union. Tarifs en FCFA.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-cameroun` },

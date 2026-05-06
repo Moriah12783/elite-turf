@@ -136,10 +136,11 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
           <Image
             src={imageUrl}
             alt={c.hippodrome?.nom || "Hippodrome"}
-            fill
+            width={288}
+            height={224}
             sizes="(max-width: 640px) 100vw, 144px"
             loading="lazy"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent to-bg-card/50 sm:block hidden" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-card/60 sm:hidden" />

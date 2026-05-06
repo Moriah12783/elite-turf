@@ -164,10 +164,11 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 <Image
                   src={vedette.image}
                   alt={vedette.titre}
-                  fill
+                  width={640}
+                  height={416}
                   sizes="(max-width: 640px) 100vw, 320px"
                   priority
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
 
@@ -247,10 +248,11 @@ export default async function BlogPage({ searchParams }: PageProps) {
                     <Image
                       src={article.image}
                       alt={article.titre}
-                      fill
+                      width={352}
+                      height={288}
                       sizes="(max-width: 640px) 100vw, 176px"
                       loading="lazy"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {article.popular && (
                       <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-win/90 text-white">
