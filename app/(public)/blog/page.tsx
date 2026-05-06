@@ -5,6 +5,7 @@ import { Clock, Tag, ArrowRight, Star, BookOpen, Zap, TrendingUp, Trophy, Chevro
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
+import { currentWeekISO, currentMonth as currentMonthFn } from "@/lib/blog-auto/dates";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -71,6 +72,10 @@ interface PageProps {
 export default async function BlogPage({ searchParams }: PageProps) {
   const filtre = searchParams.filtre || "all";
   const filtreConfig = FILTRES.find((f) => f.value === filtre) ?? FILTRES[0];
+
+  // Helpers semaine/mois actuels pour la sidebar "Bilans récurrents"
+  const currentWeek     = currentWeekISO();
+  const currentMonthStr = currentMonthFn();
 
   // Article vedette : le plus récent (toujours affiché)
   const articlesSorted = [...BLOG_ARTICLES].sort(
@@ -338,6 +343,39 @@ export default async function BlogPage({ searchParams }: PageProps) {
                   </span>
                 ))}
               </div>
+            </div>
+
+            {/* Bilans & guides récurrents (articles auto-générés) */}
+            <div className="card-base p-5">
+              <h3 className="font-serif font-bold text-text-primary text-base mb-3 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-gold-primary" />
+                Bilans récurrents
+              </h3>
+              <p className="text-text-muted text-xs mb-3 leading-relaxed">
+                Statistiques actualisées en temps réel à partir de notre base PMU.
+              </p>
+              <nav className="space-y-2">
+                <Link href={`/blog/top-semaine/${currentWeek}`} className="flex items-center gap-2 text-sm text-text-secondary hover:text-gold-light transition-colors py-1 group">
+                  <ChevronRight className="w-3.5 h-3.5 text-gold-primary/60 group-hover:text-gold-primary transition-colors" />
+                  Top performers cette semaine
+                </Link>
+                <Link href={`/blog/bilan-mensuel/${currentMonthStr}`} className="flex items-center gap-2 text-sm text-text-secondary hover:text-gold-light transition-colors py-1 group">
+                  <ChevronRight className="w-3.5 h-3.5 text-gold-primary/60 group-hover:text-gold-primary transition-colors" />
+                  Bilan PMU du mois
+                </Link>
+                <Link href="/blog/decouvrir-hippodrome/longchamp" className="flex items-center gap-2 text-sm text-text-secondary hover:text-gold-light transition-colors py-1 group">
+                  <ChevronRight className="w-3.5 h-3.5 text-gold-primary/60 group-hover:text-gold-primary transition-colors" />
+                  Guide Longchamp
+                </Link>
+                <Link href="/blog/decouvrir-hippodrome/vincennes" className="flex items-center gap-2 text-sm text-text-secondary hover:text-gold-light transition-colors py-1 group">
+                  <ChevronRight className="w-3.5 h-3.5 text-gold-primary/60 group-hover:text-gold-primary transition-colors" />
+                  Guide Vincennes
+                </Link>
+                <Link href="/hippodromes" className="flex items-center gap-2 text-sm text-gold-primary hover:text-gold-light transition-colors py-1 group">
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  Tous les hippodromes
+                </Link>
+              </nav>
             </div>
 
             {/* Maillage interne sidebar */}
