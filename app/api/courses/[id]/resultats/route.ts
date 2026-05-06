@@ -1,14 +1,22 @@
 /**
  * GET /api/courses/[id]/resultats
- * Retourne l'arrivée officielle + les rapports (dividendes) PMU.
+ * Retourne l'arrivée officielle + les rapports PMU complets + commentaire.
  * Utilisé par CourseTabsClient onglet "Arrivées & Rapports".
  *
- * Priorité : données Supabase (plus fiables si déjà sync) → API PMU
+ * Sources, par ordre de priorité :
+ *  1. Table `arrivees` (rapports_pmu JSONB scrapé depuis Geny + commentaire)
+ *     → Source principale post-2026-05-07. Couvre TOUS les types de paris.
+ *  2. API PMU (legacy, peu fiable)
+ *  3. Champ courses.arrivee_officielle (fallback minimal sans rapports)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { fetchPmuResultats, fetchPmuPartants } from "@/lib/pmu-api";
+import { fetchPmuResultats } from "@/lib/pmu-api";
+import {
+  jsonbRapportsToRapportsList,
+  type Rapport,
+} from "@/lib/rapports-pmu-format";
 
 interface RouteParams { params: { id: string } }
 
@@ -34,13 +42,14 @@ const PARI_LABELS: Record<string, string> = {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const supabase = createServiceClient();
 
-  // 1. Récupérer la course + ses partants depuis Supabase
+  // 1. Récupérer la course + ses partants + arrivees enrichie (rapports JSONB)
   const { data: course, error } = await supabase
     .from("courses")
     .select(`
       id, date_course, numero_reunion, numero_course,
       statut, arrivee_officielle,
-      partants(numero, nom_cheval, jockey, cote)
+      partants(numero, nom_cheval, jockey, cote),
+      arrivees(ordre_arrivee, rapports_pmu, commentaire, horodatage)
     `)
     .eq("id", params.id)
     .single();
@@ -55,41 +64,62 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     partantsMap[p.numero] = p.nom_cheval;
   }
 
-  // 2. Si la course est terminée et qu'on a déjà l'arrivée en base
-  //    on essaie quand même PMU pour avoir les rapports
-  let arrivee: number[] = course.arrivee_officielle ?? [];
-  let rapports: any[]   = [];
-  let source = "supabase";
+  // L'arrivée enrichie est stockée dans la table `arrivees` (1 row par course
+  // si déjà scrapée). Le champ `arrivees` peut être un array ou objet selon
+  // la cardinalité Supabase — on normalise.
+  const arriveeRow = Array.isArray((course as any).arrivees)
+    ? ((course as any).arrivees[0] ?? null)
+    : ((course as any).arrivees ?? null);
 
-  try {
-    const pmuResultat = await fetchPmuResultats(
-      dateStr,
-      course.numero_reunion,
-      course.numero_course,
-    );
+  // 2. Source principale : table `arrivees` (Geny scrape) si présente
+  let arrivee: number[] = arriveeRow?.ordre_arrivee
+    ?? course.arrivee_officielle
+    ?? [];
+  let rapports: Rapport[] = jsonbRapportsToRapportsList(
+    arriveeRow?.rapports_pmu ?? null,
+    arrivee,
+  );
+  const commentaire: string | null = arriveeRow?.commentaire ?? null;
+  let source: "geny-scrape" | "pmu" | "supabase" =
+    arriveeRow?.rapports_pmu ? "geny-scrape"
+    : arrivee.length > 0      ? "supabase"
+    : "supabase";
 
-    if (pmuResultat) {
-      source = "pmu";
-      if (pmuResultat.arrivee.length > 0) arrivee = pmuResultat.arrivee;
+  // 3. Si on n'a aucun rapport (pas de scrape encore), on tente PMU API
+  if (rapports.length === 0) {
+    try {
+      const pmuResultat = await fetchPmuResultats(
+        dateStr,
+        course.numero_reunion,
+        course.numero_course,
+      );
 
-      // Nettoyer + enrichir les rapports
-      rapports = (pmuResultat.rapports ?? [])
-        .filter((r: any) => r.dividendes?.length > 0)
-        .map((r: any) => ({
-          typePari: r.typePari,
-          label:    PARI_LABELS[r.typePari] ?? r.typePari,
-          dividendes: (r.dividendes ?? []).map((d: any) => ({
-            combinaison: d.combinaison,
-            // PMU retourne les rapports en centimes × 10 → /10 = €
-            rapport: typeof d.rapport === "number" ? Math.round(d.rapport / 10) / 10 : null,
-          })),
-        }));
+      if (pmuResultat) {
+        if (pmuResultat.arrivee.length > 0 && arrivee.length === 0) {
+          arrivee = pmuResultat.arrivee;
+        }
+        const pmuRapports = (pmuResultat.rapports ?? [])
+          .filter((r: any) => r.dividendes?.length > 0)
+          .map((r: any) => ({
+            typePari: r.typePari,
+            label:    PARI_LABELS[r.typePari] ?? r.typePari,
+            dividendes: (r.dividendes ?? []).map((d: any) => ({
+              combinaison: d.combinaison,
+              // PMU retourne les rapports en centimes × 10 → /10 = €
+              rapport: typeof d.rapport === "number" ? Math.round(d.rapport / 10) / 10 : null,
+            })),
+          }));
+        if (pmuRapports.length > 0) {
+          rapports = pmuRapports;
+          source   = "pmu";
+        }
+      }
+    } catch {
+      // API PMU indisponible, on continue avec ce qu'on a
     }
-  } catch {
-    // API PMU indisponible, on continue avec les données Supabase
   }
 
-  // 3. Enrichir l'arrivée avec les noms de chevaux
+  // 4. Enrichir l'arrivée avec les noms de chevaux
   const arriveeEnrichie = arrivee.slice(0, 5).map((num: number, idx: number) => ({
     position: idx + 1,
     numero:   num,
@@ -97,10 +127,11 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }));
 
   return NextResponse.json({
-    arrivee: arriveeEnrichie,
+    arrivee:     arriveeEnrichie,
     rapports,
+    commentaire,
     source,
-    statut:    course.statut,
-    updatedAt: new Date().toISOString(),
+    statut:      course.statut,
+    updatedAt:   arriveeRow?.horodatage ?? new Date().toISOString(),
   });
 }
