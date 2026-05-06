@@ -52,18 +52,21 @@ export interface CourseLine {
   statut:           string;
 }
 
-/** Récupère 1 entité par slug. */
+/** Récupère 1 entité par slug. age/sexe sont uniquement sur `chevaux`. */
 export async function getEntiteBySlug(
   type: EntiteType,
   slug: string,
 ): Promise<Entite | null> {
   const supabase = createServiceClient();
+  const cols = type === "chevaux"
+    ? "id, nom, slug, nb_courses, nb_victoires, nb_places, derniere_course_at, age, sexe"
+    : "id, nom, slug, nb_courses, nb_victoires, nb_places, derniere_course_at";
   const { data } = await supabase
     .from(type)
-    .select("id, nom, slug, nb_courses, nb_victoires, nb_places, derniere_course_at, age, sexe")
+    .select(cols)
     .eq("slug", slug)
     .single();
-  return (data as Entite) ?? null;
+  return (data as unknown as Entite) ?? null;
 }
 
 /**
