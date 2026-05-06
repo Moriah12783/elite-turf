@@ -17,6 +17,11 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { buildGenyUrlFromStored } from "@/lib/geny";
+import {
+  parseRapportsPMU,
+  parseCommentaire,
+  type RapportsPMU,
+} from "@/lib/sync/geny-rapports-parser";
 
 export interface GenyArriveesResult {
   ok:        true;
@@ -76,7 +81,13 @@ interface CourseRow {
   geny_url:       string | null;
 }
 
-async function fetchArriveeForCourse(course: CourseRow): Promise<number[] | null> {
+interface FetchedArrivee {
+  arrivee:     number[];
+  rapports:    RapportsPMU | null;
+  commentaire: string | null;
+}
+
+async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee | null> {
   if (!course.geny_url) return null;
 
   // Transforme /partants-pmu/... en /resultats-pmu/...
@@ -99,7 +110,27 @@ async function fetchArriveeForCourse(course: CourseRow): Promise<number[] | null
 
     if (!res.ok) return null;
     const html = await res.text();
-    return parseArrivee(html);
+
+    const arrivee = parseArrivee(html);
+    if (!arrivee) return null;
+
+    // Bonus : rapports PMU complets + commentaire d'arrivée (best-effort)
+    let rapports: RapportsPMU | null = null;
+    let commentaire: string | null = null;
+    try {
+      const r = parseRapportsPMU(html);
+      // Considère "non vide" si au moins une clé existe
+      if (r && Object.keys(r).length > 0) rapports = r;
+    } catch {
+      // Parser défensif : on ne casse pas la sync si parsing rapports échoue
+    }
+    try {
+      commentaire = parseCommentaire(html);
+    } catch {
+      // idem
+    }
+
+    return { arrivee, rapports, commentaire };
   } catch {
     return null;
   }
@@ -155,11 +186,13 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
 
   // Scraper en parallèle (4 workers)
   const scraped = await processInPool(withGeny, CONCURRENCY, async (course) => {
-    const arrivee = await fetchArriveeForCourse(course);
-    return arrivee ? { courseId: course.id, arrivee } : null;
+    const data = await fetchArriveeForCourse(course);
+    return data ? { courseId: course.id, ...data } : null;
   });
 
-  const valid = scraped.filter((s): s is { courseId: string; arrivee: number[] } => s !== null);
+  const valid = scraped.filter(
+    (s): s is { courseId: string } & FetchedArrivee => s !== null,
+  );
 
   // Upsert dans courses (arrivee_officielle + statut TERMINE)
   if (valid.length > 0) {
@@ -171,9 +204,12 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     await supabase.from("courses").upsert(courseUpdates);
 
     // Upsert dans table arrivees (best-effort, table optionnelle)
-    const arriveesRows = valid.map(({ courseId, arrivee }) => ({
+    // Inclut désormais rapports_pmu (JSONB) + commentaire (TEXT)
+    const arriveesRows = valid.map(({ courseId, arrivee, rapports, commentaire }) => ({
       course_id:     courseId,
       ordre_arrivee: arrivee,
+      rapports_pmu: rapports ?? null,
+      commentaire:  commentaire ?? null,
       horodatage:    new Date().toISOString(),
     }));
     try {
@@ -181,6 +217,11 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     } catch {
       // Table arrivees absente — silencieux
     }
+
+    const withRapports = valid.filter((v) => v.rapports !== null).length;
+    console.log(
+      `[geny-arrivees] upserted ${valid.length} arrivées (rapports PMU: ${withRapports})`,
+    );
   }
 
   return {
