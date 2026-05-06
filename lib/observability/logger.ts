@@ -1,14 +1,15 @@
 /**
- * Observability MVP — logger structuré avec alerting Slack.
+ * Observability — logger structuré + alerting Slack + capture Sentry.
  *
- * Conçu pour Cloudflare Workers + Next.js. Pas de dépendance externe lourde
- * (vs Sentry SDK). Couvre 80% des besoins critiques :
- *  - Errors/warnings tracés avec contexte (scope, request_id, user, etc.)
- *  - Critical errors → POST Slack webhook (SLACK_WEBHOOK_ALERTES)
- *  - Logs lisibles via `wrangler tail` ou Cloudflare Observability dashboard
+ * Pipeline triple :
+ *  1. console.log structuré → Cloudflare Workers Observability dashboard
+ *  2. Sentry.captureException (rich tracking : stack traces déminifiées,
+ *     breadcrumbs, perf, sessions). Active uniquement si SENTRY_DSN est défini.
+ *  3. Slack webhook → alertes humaines temps réel pour error + critical
+ *     (SLACK_WEBHOOK_ALERTES en prod uniquement)
  *
- * À migrer vers @sentry/cloudflare le jour où on veut rich error tracking
- * (stack traces déminifiées, breadcrumbs, performance, etc.).
+ * Sentry s'enregistre via instrumentation.ts (Next 14 hook). Si la DSN n'est
+ * pas configurée, captureException no-op silencieusement → aucun coût.
  *
  * Usage :
  *   import { logger } from "@/lib/observability/logger";
@@ -16,9 +17,9 @@
  *   catch (err) {
  *     logger.error("paystack-webhook", err, { reference, userId });
  *   }
- *
- *   logger.critical("cron-health", "Data freshness degraded", { ... });
  */
+
+import * as Sentry from "@sentry/nextjs";
 
 type LogLevel = "info" | "warn" | "error" | "critical";
 
@@ -135,6 +136,38 @@ function logToConsole(
   fn(`[${level}][${scope}]`, JSON.stringify(line));
 }
 
+/** Best-effort capture Sentry. No-op si DSN absente. Ne throw jamais. */
+function captureToSentry(
+  level: LogLevel,
+  scope: string,
+  message: string,
+  ctx: LogContext,
+  err?: unknown,
+): void {
+  try {
+    Sentry.withScope((s) => {
+      s.setTag("scope", scope);
+      // Map LogLevel → Sentry SeverityLevel (différent enum)
+      const sentryLevel = level === "critical" ? "fatal"
+                        : level === "warn"     ? "warning"
+                        : level; // "info" | "error" passent tels quels
+      s.setLevel(sentryLevel);
+      // Filtre les valeurs trop volumineuses pour éviter le 200KB cap Sentry
+      const safeCtx: LogContext = {};
+      for (const [k, v] of Object.entries(ctx)) {
+        const str = typeof v === "object" ? JSON.stringify(v) : String(v ?? "");
+        safeCtx[k] = str.length > 1000 ? str.slice(0, 1000) + "…[truncated]" : v;
+      }
+      s.setContext("logger_ctx", safeCtx as Record<string, unknown>);
+      if (err) Sentry.captureException(err);
+      else      Sentry.captureMessage(`[${scope}] ${message}`);
+    });
+  } catch {
+    // Silent : Sentry pas dispo (dev local, DSN non set, ou runtime CF avec
+    // problème d'init) → on ne casse pas le logger principal.
+  }
+}
+
 export const logger = {
   info(scope: string, message: string, ctx: LogContext = {}): void {
     logToConsole("info", scope, message, ctx);
@@ -142,17 +175,22 @@ export const logger = {
   warn(scope: string, message: string, ctx: LogContext = {}): void {
     logToConsole("warn", scope, message, ctx);
     // warn n'envoie pas à Slack par défaut (trop bruyant) — pass ctx.alert=true pour forcer
-    if (ctx.alert === true) void sendToSlack("warn", scope, message, ctx);
+    if (ctx.alert === true) {
+      void sendToSlack("warn", scope, message, ctx);
+      captureToSentry("warn", scope, message, ctx);
+    }
   },
-  /** Erreur applicative — loggée + Slack en prod */
+  /** Erreur applicative — console + Sentry + Slack (prod) */
   error(scope: string, err: unknown, ctx: LogContext = {}): void {
     const message = err instanceof Error ? err.message : String(err);
     logToConsole("error", scope, message, ctx, err);
+    captureToSentry("error", scope, message, ctx, err);
     void sendToSlack("error", scope, message, ctx);
   },
-  /** Erreur critique — toujours Slack + tag spécial pour alerte */
+  /** Erreur critique — toujours Sentry + Slack + tag spécial alerte */
   critical(scope: string, message: string, ctx: LogContext = {}): void {
     logToConsole("critical", scope, message, ctx);
+    captureToSentry("critical", scope, message, ctx);
     void sendToSlack("critical", scope, message, ctx);
   },
 };
