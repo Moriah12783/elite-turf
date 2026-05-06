@@ -40,7 +40,7 @@ function extractNums(str: string): number[] {
   return str.split(/[\s\-,\.\/|]+/).map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= 99);
 }
 
-function parseArrivee(html: string): number[] | null {
+export function parseArrivee(html: string): number[] | null {
   // Pattern principal : section arrivée explicite
   const patterns: RegExp[] = [
     // "Arrivée officielle : 4-9-12-7-1"
