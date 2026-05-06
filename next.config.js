@@ -4,6 +4,18 @@
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   images: {
+    // OpenNext + Cloudflare Workers : l'endpoint /_next/image retourne 500
+    // par défaut (issue connue, le runtime Cloudflare ne supporte pas les
+    // dépendances Node natives utilisées par Next pour l'optimisation Sharp).
+    //
+    // Solution : désactiver l'optimization Next et laisser Cloudflare CDN
+    // servir les images directement. CF fait déjà du cache agressif global,
+    // et nos images locales (/images/heroes/*) sont raisonnablement compressées.
+    //
+    // Quand on aura besoin d'image optimization avancée, on activera un
+    // image loader custom utilisant Cloudflare Image Resizing :
+    // https://developers.cloudflare.com/images/transform-images/
+    unoptimized: true,
     domains: ["images.unsplash.com", "cpzjjnmszbyizeqhgrat.supabase.co"],
   },
 
