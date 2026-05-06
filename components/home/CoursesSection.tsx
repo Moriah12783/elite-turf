@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Clock, MapPin, Users, ChevronRight, Calendar, Globe2 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
@@ -165,11 +166,14 @@ export default async function CoursesSection() {
                 className="card-base overflow-hidden group cursor-pointer flex flex-col"
               >
                 {/* Image hippodrome */}
-                <div className="relative overflow-hidden">
-                  <img
+                <div className="relative overflow-hidden h-32 rounded-t-xl">
+                  <Image
                     src={hippoImage(hipNom, idx)}
                     alt={hipNom}
-                    className="w-full h-32 object-cover rounded-t-xl transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    loading="lazy"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-bg-card via-bg-card/20 to-transparent rounded-t-xl" />
 

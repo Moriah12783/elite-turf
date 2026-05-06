@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import {
   MapPin, Clock, Users, TrendingUp, ArrowLeft,
@@ -260,10 +261,13 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
       {/* Hero */}
       <div className="relative overflow-hidden h-36 sm:h-48">
-        <img
+        <Image
           src="/images/heroes/hero-courses.jpg"
           alt="Course hippique"
-          className="w-full h-full object-cover object-center"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-bg-primary/75" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-primary" />

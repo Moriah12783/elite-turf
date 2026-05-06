@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
   Crown, Star, Zap, Calendar, Clock, TrendingUp,
@@ -191,10 +192,12 @@ export default async function EspaceMembrePage() {
             {/* Avatar */}
             <div className="w-16 h-16 rounded-2xl bg-bg-card border-2 border-border flex items-center justify-center flex-shrink-0">
               {profile?.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
                   alt={prenom}
-                  className="w-full h-full object-cover rounded-2xl"
+                  fill
+                  sizes="80px"
+                  className="object-cover rounded-2xl"
                 />
               ) : (
                 <User className="w-8 h-8 text-text-muted" />

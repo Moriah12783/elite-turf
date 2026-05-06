@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Clock, Tag, ArrowRight, Star, BookOpen, Zap, TrendingUp, Trophy, ChevronRight } from "lucide-react";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -155,10 +156,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
               {/* Image grande */}
               <div className="sm:w-72 lg:w-80 h-52 sm:h-auto flex-shrink-0 overflow-hidden relative">
-                <img
+                <Image
                   src={vedette.image}
                   alt={vedette.titre}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 320px"
+                  priority
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
 
@@ -235,10 +239,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 >
                   {/* Image */}
                   <div className="sm:w-44 h-36 sm:h-auto flex-shrink-0 overflow-hidden relative">
-                    <img
+                    <Image
                       src={article.image}
                       alt={article.titre}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 640px) 100vw, 176px"
+                      loading="lazy"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {article.popular && (
                       <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-status-win/90 text-white">
@@ -297,9 +304,12 @@ export default async function BlogPage({ searchParams }: PageProps) {
                     href={`/blog/${a.slug}`}
                     className="flex items-start gap-3 hover:opacity-80 transition-opacity group"
                   >
-                    <img
+                    <Image
                       src={a.image}
                       alt={a.titre}
+                      width={56}
+                      height={40}
+                      loading="lazy"
                       className="w-14 h-10 object-cover rounded-lg flex-shrink-0"
                     />
                     <div className="min-w-0">

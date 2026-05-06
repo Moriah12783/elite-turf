@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
@@ -12,11 +13,14 @@ export default async function Footer() {
     <footer className="mt-20">
 
       {/* ── SECTION AMBIANCE ── */}
-      <div className="relative overflow-hidden">
-        <img
+      <div className="relative overflow-hidden h-52 sm:h-64">
+        <Image
           src="/images/heroes/hero-courses.jpg"
           alt="Hippodrome PMU France — Elite Turf"
-          className="w-full h-52 sm:h-64 object-cover object-center"
+          fill
+          sizes="100vw"
+          loading="lazy"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-bg-primary/60" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg-primary/40 to-bg-card" />

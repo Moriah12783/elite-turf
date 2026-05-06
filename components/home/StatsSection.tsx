@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { TrendingUp, Award, Flame, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -76,10 +77,13 @@ export default async function StatsSection() {
 
       {/* Fond hippodrome */}
       <div className="absolute inset-0 z-0">
-        <img
+        <Image
           src="/images/heroes/hero-performances.jpg"
           alt="Hippodrome"
-          className="w-full h-full object-cover object-center"
+          fill
+          sizes="100vw"
+          loading="lazy"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-bg-primary/88" />
         <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/60 via-transparent to-bg-primary/60" />

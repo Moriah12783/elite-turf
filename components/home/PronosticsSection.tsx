@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Lock, Star, ChevronRight, Eye, Trophy, Flame,
   MapPin, Clock, TrendingUp, Zap, Globe2,
@@ -276,10 +277,13 @@ export default async function PronosticsSection() {
         {/* ── CARTE VEDETTE DU JOUR ── */}
         <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
           <div className="absolute inset-0 z-0">
-            <img
+            <Image
               src="/images/heroes/hero-a-propos.jpg"
               alt="Cheval vedette"
-              className="w-full h-full object-cover opacity-20"
+              fill
+              sizes="100vw"
+              loading="lazy"
+              className="object-cover opacity-20"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-bg-card/95 via-bg-card/80 to-bg-card/95" />
           </div>
@@ -511,11 +515,14 @@ export default async function PronosticsSection() {
 
 function BannerImage({ count }: { count: number }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden mb-12">
-      <img
+    <div className="relative rounded-2xl overflow-hidden mb-12 h-48">
+      <Image
         src="/images/heroes/hero-legal.jpg"
         alt="Chevaux au galop"
-        className="w-full h-48 object-cover rounded-xl"
+        fill
+        sizes="100vw"
+        loading="lazy"
+        className="object-cover rounded-xl"
       />
       <div className="absolute inset-0 bg-bg-primary/65" />
       <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/80 via-transparent to-bg-primary/80" />
