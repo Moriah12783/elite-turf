@@ -35,4 +35,26 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// ── Sentry wrapper ──────────────────────────────────────────────────────────
+// Active uniquement si SENTRY_AUTH_TOKEN est défini (CI/build). Sinon export
+// direct de nextConfig pour ne pas casser les builds dev/preview sans Sentry.
+const { withSentryConfig } = require("@sentry/nextjs");
+
+const sentryEnabled = !!process.env.SENTRY_AUTH_TOKEN
+  && !!process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+module.exports = sentryEnabled
+  ? withSentryConfig(nextConfig, {
+      // Org/projet : à remplir dans Cloudflare env vars (build-time)
+      org:     process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      // Silence les logs verbeux du wrapper en build CI
+      silent:  true,
+      // Source maps : upload uniquement en prod, supprimés du bundle final
+      widenClientFileUpload:    true,
+      hideSourceMaps:           true,
+      disableLogger:            true,
+      // Pas de release auto (on gère via release dans configs Sentry)
+      automaticVercelMonitors:  false,
+    })
+  : nextConfig;
