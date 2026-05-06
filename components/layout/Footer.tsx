@@ -102,6 +102,23 @@ export default async function Footer() {
                   </li>
                 ))}
               </ul>
+              {/* ── Pages géo Afrique francophone ── */}
+              <h3 className="font-serif font-semibold text-text-primary mt-6 mb-3 text-sm">PMU par pays</h3>
+              <ul className="space-y-2">
+                {[
+                  { label: "🇨🇮 Côte d'Ivoire", href: "/pronostics-pmu-cote-d-ivoire" },
+                  { label: "🇸🇳 Sénégal",       href: "/pronostics-pmu-senegal" },
+                  { label: "🇨🇲 Cameroun",      href: "/pronostics-pmu-cameroun" },
+                  { label: "🇲🇦 Maroc",         href: "/pronostics-pmu-maroc" },
+                  { label: "🇲🇱 Mali",          href: "/pronostics-pmu-mali" },
+                ].map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-text-muted hover:text-gold-light text-xs transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Abonnements */}

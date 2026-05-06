@@ -33,6 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${APP_URL}/methodologie`,           lastModified: now, changeFrequency: "yearly",  priority: 0.7  },
+    // ── Pages géo Afrique francophone (différenciation océan bleu) ──
+    { url: `${APP_URL}/pronostics-pmu-cote-d-ivoire`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${APP_URL}/pronostics-pmu-senegal`,       lastModified: now, changeFrequency: "weekly", priority: 0.8  },
+    { url: `${APP_URL}/pronostics-pmu-cameroun`,      lastModified: now, changeFrequency: "weekly", priority: 0.75 },
+    { url: `${APP_URL}/pronostics-pmu-maroc`,         lastModified: now, changeFrequency: "weekly", priority: 0.75 },
+    { url: `${APP_URL}/pronostics-pmu-mali`,          lastModified: now, changeFrequency: "weekly", priority: 0.7  },
     { url: `${APP_URL}/hippodromes`,            lastModified: now, changeFrequency: "weekly",  priority: 0.7  },
     { url: `${APP_URL}/chevaux`,                lastModified: now, changeFrequency: "daily",   priority: 0.7  },
     { url: `${APP_URL}/jockeys`,                lastModified: now, changeFrequency: "daily",   priority: 0.7  },
