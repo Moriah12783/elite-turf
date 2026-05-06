@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { ElementType } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 import {
@@ -491,10 +492,13 @@ export default async function PerformancesPage() {
 
         {/* ── CTA FINAL ───────────────────────────────────────────── */}
         <div className="relative rounded-2xl overflow-hidden border border-gold-primary/30">
-          <img
+          <Image
             src="/images/heroes/hero-a-propos.jpg"
             alt="Rejoignez Elite Turf"
-            className="absolute inset-0 w-full h-full object-cover opacity-15"
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            loading="lazy"
+            className="object-cover opacity-15"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-bg-card/95 via-bg-card/85 to-bg-card/95" />
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />

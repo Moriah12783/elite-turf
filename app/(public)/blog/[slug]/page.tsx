@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Clock, ArrowLeft, Star, ArrowRight, Tag, Zap } from "lucide-react";
 import { BLOG_ARTICLES, getArticle } from "@/lib/blog-data";
@@ -113,10 +114,13 @@ export default async function BlogArticlePage({
 
       {/* Hero image */}
       <div className="relative h-64 sm:h-80 overflow-hidden mb-0">
-        <img
+        <Image
           src={article.image}
           alt={article.titre}
-          className="w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg-primary via-bg-primary/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-b from-bg-primary/30 to-transparent" />
@@ -201,9 +205,12 @@ export default async function BlogArticlePage({
                       href={`/blog/${a.slug}`}
                       className="flex items-start gap-3 hover:opacity-80 transition-opacity group"
                     >
-                      <img
+                      <Image
                         src={a.image}
                         alt={a.titre}
+                        width={64}
+                        height={48}
+                        loading="lazy"
                         className="w-16 h-12 object-cover rounded-lg flex-shrink-0"
                       />
                       <div className="min-w-0">
@@ -269,9 +276,12 @@ export default async function BlogArticlePage({
                     href={`/blog/${a.slug}`}
                     className="flex items-start gap-3 hover:opacity-80 transition-opacity group"
                   >
-                    <img
+                    <Image
                       src={a.image}
                       alt={a.titre}
+                      width={56}
+                      height={40}
+                      loading="lazy"
                       className="w-14 h-10 object-cover rounded-lg flex-shrink-0"
                     />
                     <div className="min-w-0">

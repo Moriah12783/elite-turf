@@ -1,6 +1,7 @@
 import type { ElementType } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Metadata } from "next";
 import {
   Star, Lock, Eye, MapPin, Clock, Users, ArrowLeft,
@@ -108,10 +109,13 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     <div className="min-h-screen bg-bg-primary">
       {/* ── HERO BANNER ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden h-40 sm:h-52">
-        <img
+        <Image
           src="/images/heroes/hero-pronostics.jpg"
           alt="Course hippique"
-          className="w-full h-full object-cover object-center"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-bg-primary/75" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-primary" />

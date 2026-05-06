@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Star, Quote, TrendingUp, Award, MessageCircle } from "lucide-react";
 
 const testimonials = [
@@ -110,10 +111,13 @@ export default function TestimonialsSection() {
     <section className="relative py-16 sm:py-20 overflow-hidden">
 
       <div className="absolute inset-0 z-0">
-        <img
+        <Image
           src="/images/heroes/hero-abonnements.jpg"
           alt="Hippodrome PMU France"
-          className="w-full h-full object-cover object-center"
+          fill
+          sizes="100vw"
+          loading="lazy"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-bg-primary/92" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
