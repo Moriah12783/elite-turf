@@ -54,7 +54,16 @@ module.exports = sentryEnabled
       widenClientFileUpload:    true,
       hideSourceMaps:           true,
       disableLogger:            true,
-      // Pas de release auto (on gère via release dans configs Sentry)
+      // Pas de release auto Vercel
       automaticVercelMonitors:  false,
+      // Sourcemaps best-effort : si Sentry API a un hoquet transitoire (504,
+      // quota épuisé, réseau CI flaky), on ne casse PAS le build pour autant.
+      // Le sourcemaps upload sera tenté au prochain build. Précédent incident :
+      // 2026-05-06 build #14 cassé par "gateway timeout (http status: 504)" sur
+      // sentry-cli releases new.
+      errorHandler: (err) => {
+        // eslint-disable-next-line no-console
+        console.warn("⚠️ Sentry build plugin error (non-fatal):", err.message || err);
+      },
     })
   : nextConfig;

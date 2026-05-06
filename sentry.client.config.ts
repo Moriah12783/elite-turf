@@ -33,6 +33,14 @@ if (dsn) {
       "Failed to fetch",
       // OneSignal SDK qui plante parfois
       "OneSignalDeferred is not defined",
+      // Warning interne OneSignal SDK service worker (sw.ts:21) — pas notre code
+      "Event handler of 'message' event must be added on the initial evaluation",
+      // ChunkLoadError : Next.js retombe gracieusement sur browser navigation,
+      // donc pas un vrai bug user-impacting (juste cache CDN stale temporaire)
+      "ChunkLoadError",
+      "Loading chunk",
+      // Vercel Analytics 404 (script orphelin enlevé dans cette PR)
+      "Failed to load script",
     ],
     // Environnement : permet de filtrer prod vs preview Cloudflare dans l'UI Sentry
     environment: process.env.NODE_ENV,
