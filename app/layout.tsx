@@ -2,11 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 
-// Domaine canonique — défini via NEXT_PUBLIC_APP_URL en production Vercel
+// Domaine canonique. Site hébergé sur Cloudflare Workers (pas Vercel).
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 // Next.js 14 : themeColor/appleWebApp/formatDetection dans viewport, pas metadata
@@ -168,8 +166,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             },
           }}
         />
-        <Analytics />
-        <SpeedInsights />
         {/* Microsoft Clarity — analyse comportementale */}
         <Script
           id="clarity-script"
