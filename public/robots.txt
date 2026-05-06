@@ -17,3 +17,4 @@ Disallow: /inscription
 Disallow: /mot-de-passe-oublie
 
 Sitemap: https://www.elite-turf.fr/sitemap.xml
+Sitemap: https://www.elite-turf.fr/sitemap-news.xml
