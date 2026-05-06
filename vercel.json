@@ -115,6 +115,18 @@
     {
       "path": "/api/cron/seo-etl",
       "schedule": "45 3 * * *"
+    },
+    {
+      "path": "/api/cron/welcome-emails",
+      "schedule": "23 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-push",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/daily-push",
+      "schedule": "0 17 * * *"
     }
   ],
   "headers": [
