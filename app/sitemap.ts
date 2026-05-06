@@ -2,6 +2,9 @@ import { MetadataRoute } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { slugify } from "@/lib/seo/slugs";
+import {
+  generateRecentWeekParams, generateRecentMonthParams,
+} from "@/lib/blog-auto/dates";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -47,6 +50,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
     priority: 0.75,
   }));
+
+  // ── Articles blog auto-générés (template-based) ─────────────────────────
+  // Volume cumul : ~13 semaines + 13 mois + N hippodromes (tous) ≈ 60+ URLs
+  const autoBlogUrls: MetadataRoute.Sitemap = [
+    // Top hebdomadaire : dernières 13 semaines (3 mois)
+    ...generateRecentWeekParams().map((w) => ({
+      url: `${APP_URL}/blog/top-semaine/${w.semaine}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+    // Bilan mensuel : 13 derniers mois
+    ...generateRecentMonthParams().map((m) => ({
+      url: `${APP_URL}/blog/bilan-mensuel/${m.mois}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+    })),
+  ];
 
   // ── Pages temporelles SEO (programme/quinte-plus/arrivees par date) ──────
   // Fenêtre [-30j, +7j] pour matcher la stratégie courses ci-dessous.
@@ -121,18 +143,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
     }
 
-    // Hippodromes actifs
+    // Hippodromes actifs : 2 URLs par hippo
+    //   /hippodromes/[slug]                  → index data brut
+    //   /blog/decouvrir-hippodrome/[slug]    → guide narratif (article)
     const { data: hippos } = await supabase
       .from("hippodromes")
       .select("nom")
       .eq("actif", true);
     if (hippos) {
-      hippoUrls = hippos.map((h: any) => ({
-        url: `${APP_URL}/hippodromes/${slugify(h.nom)}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      }));
+      for (const h of hippos as any[]) {
+        const slug = slugify(h.nom);
+        hippoUrls.push({
+          url: `${APP_URL}/hippodromes/${slug}`,
+          lastModified: now,
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+        });
+        // Guide blog-auto correspondant
+        autoBlogUrls.push({
+          url: `${APP_URL}/blog/decouvrir-hippodrome/${slug}`,
+          lastModified: now,
+          changeFrequency: "monthly" as const,
+          priority: 0.65,
+        });
+      }
     }
 
     // Acteurs : chevaux/jockeys/entraineurs (top 1000 chacun par activité récente)
@@ -178,5 +212,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
 
-  return [...staticPages, ...blogArticleUrls, ...temporalUrls, ...hippoUrls, ...acteurUrls, ...pronosticUrls, ...courseUrls];
+  return [
+    ...staticPages,
+    ...blogArticleUrls,
+    ...autoBlogUrls,        // ~60 articles blog auto-générés (top-semaine + bilan-mensuel + decouvrir-hippodrome)
+    ...temporalUrls,
+    ...hippoUrls,
+    ...acteurUrls,
+    ...pronosticUrls,
+    ...courseUrls,
+  ];
 }
