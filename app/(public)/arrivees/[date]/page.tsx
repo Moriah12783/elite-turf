@@ -23,6 +23,13 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
+import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
+
+// Format un rapport en EUR français : 4500 → "4 500,00 €"
+function formatEuro(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  return `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -85,16 +92,21 @@ export default async function ArriveesPage({ params }: PageProps) {
       categorie, nb_partants, statut, arrivee_officielle,
       paris_disponibles,
       hippodrome:hippodromes(id, nom, pays, ville),
-      partants(numero, nom_cheval, cote)
+      partants(numero, nom_cheval, cote),
+      arrivees(rapports_pmu)
     `)
     .eq("date_course", params.date)
     .neq("statut", "ANNULE")
     .order("heure_depart", { ascending: true });
 
-  const allCourses = (rawCourses ?? []).map((c: any) => ({
-    ...c,
-    hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
-  }));
+  const allCourses = (rawCourses ?? []).map((c: any) => {
+    const arrRow = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
+    return {
+      ...c,
+      hippodrome:   Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
+      rapports_pmu: (arrRow?.rapports_pmu ?? null) as RapportsPMU | null,
+    };
+  });
 
   // Courses avec arrivée officielle
   const finies = allCourses.filter(
@@ -252,6 +264,32 @@ export default async function ArriveesPage({ params }: PageProps) {
                 );
               })}
             </div>
+
+            {/* Rapports Quinté+ — affichage compact des dividendes principaux */}
+            {quinte.rapports_pmu?.quinte_plus && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: "Ordre",    value: quinte.rapports_pmu.quinte_plus.ordre,    accent: true },
+                  { label: "Désordre", value: quinte.rapports_pmu.quinte_plus.desordre, accent: false },
+                  { label: "Bonus 4",  value: quinte.rapports_pmu.quinte_plus.bonus4,   accent: false },
+                  { label: "Bonus 3",  value: quinte.rapports_pmu.quinte_plus.bonus3,   accent: false },
+                ].filter((r) => r.value != null).map((r) => (
+                  <div
+                    key={r.label}
+                    className={`px-3 py-2 rounded-lg text-center ${
+                      r.accent
+                        ? "bg-gold-primary/10 border border-gold-primary/40"
+                        : "bg-bg-elevated border border-border"
+                    }`}
+                  >
+                    <div className="text-text-muted text-[10px] uppercase tracking-wider">{r.label}</div>
+                    <div className={`font-bold text-sm ${r.accent ? "text-gold-primary" : "text-text-primary"}`}>
+                      {formatEuro(r.value)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Link>
         )}
 
@@ -293,43 +331,71 @@ export default async function ArriveesPage({ params }: PageProps) {
                 </header>
                 <hr className="gold-divider mb-3" />
                 <div className="space-y-2">
-                  {g.courses.map((c: any) => (
-                    <Link
-                      key={c.id}
-                      href={`/courses/${c.id}`}
-                      className="block p-3 rounded-xl bg-bg-elevated border border-border hover:border-gold-primary/40 transition-all"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-gold-primary font-mono text-xs font-bold">
-                          R{c.numero_reunion}C{c.numero_course}
-                        </span>
-                        <span className="text-text-muted text-xs">{c.heure_depart?.substring(0, 5)}</span>
-                        <span className="flex-1 text-text-primary text-sm font-medium truncate">
-                          {c.libelle}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {c.arrivee_officielle.slice(0, 5).map((num: number, idx: number) => (
-                          <span
-                            key={idx}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${
-                              idx === 0
-                                ? "bg-status-win/15 text-status-win border border-status-win/30"
-                                : "bg-bg-card text-text-secondary border border-border"
-                            }`}
-                          >
-                            <span className="text-text-muted">{idx + 1}.</span>
-                            <span className="font-bold">{num}</span>
+                  {g.courses.map((c: any) => {
+                    // Synthèse rapports : on prend les 3 chiffres les plus parlants
+                    // selon ce qui est dispo (Quinté > Quarté > Tiercé > Couplé G > Trio > Simple G).
+                    const rp = c.rapports_pmu as RapportsPMU | null;
+                    const headlines: { label: string; value: number; accent?: boolean }[] = [];
+                    if (rp?.quinte_plus?.ordre  != null) headlines.push({ label: "Quinté+ Ordre",    value: rp.quinte_plus.ordre,  accent: true });
+                    if (rp?.quarte_plus?.ordre  != null) headlines.push({ label: "Quarté+ Ordre",    value: rp.quarte_plus.ordre });
+                    if (rp?.tierce?.ordre        != null) headlines.push({ label: "Tiercé Ordre",     value: rp.tierce.ordre });
+                    if (rp?.couple_gagnant       != null) headlines.push({ label: "Couplé Gagnant",   value: rp.couple_gagnant });
+                    if (rp?.trio                 != null) headlines.push({ label: "Trio",             value: rp.trio });
+                    if (rp?.simple_gagnant       != null) headlines.push({ label: "Simple Gagnant",   value: rp.simple_gagnant });
+                    const top3 = headlines.slice(0, 3);
+
+                    return (
+                      <Link
+                        key={c.id}
+                        href={`/courses/${c.id}`}
+                        className="block p-3 rounded-xl bg-bg-elevated border border-border hover:border-gold-primary/40 transition-all"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-gold-primary font-mono text-xs font-bold">
+                            R{c.numero_reunion}C{c.numero_course}
                           </span>
-                        ))}
-                        {c.arrivee_officielle.length > 5 && (
-                          <span className="text-text-muted text-xs px-2 py-0.5">
-                            + {c.arrivee_officielle.length - 5}
+                          <span className="text-text-muted text-xs">{c.heure_depart?.substring(0, 5)}</span>
+                          <span className="flex-1 text-text-primary text-sm font-medium truncate">
+                            {c.libelle}
                           </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {c.arrivee_officielle.slice(0, 5).map((num: number, idx: number) => (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${
+                                idx === 0
+                                  ? "bg-status-win/15 text-status-win border border-status-win/30"
+                                  : "bg-bg-card text-text-secondary border border-border"
+                              }`}
+                            >
+                              <span className="text-text-muted">{idx + 1}.</span>
+                              <span className="font-bold">{num}</span>
+                            </span>
+                          ))}
+                          {c.arrivee_officielle.length > 5 && (
+                            <span className="text-text-muted text-xs px-2 py-0.5">
+                              + {c.arrivee_officielle.length - 5}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Rapports synthèse */}
+                        {top3.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-border/30 flex flex-wrap gap-x-3 gap-y-1">
+                            {top3.map((h) => (
+                              <div key={h.label} className="flex items-center gap-1.5 text-xs">
+                                <span className="text-text-muted">{h.label}</span>
+                                <span className={`font-bold ${h.accent ? "text-gold-primary" : "text-text-secondary"}`}>
+                                  {formatEuro(h.value)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             ))}
