@@ -114,6 +114,7 @@ export default async function Footer() {
                   { label: "Pack Elite — 208€",       href: "/abonnements#elite"   },
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },
+                  { label: "Notre méthodologie",          href: "/methodologie"        },
                   { label: "À Propos",                    href: "/a-propos"            },
                   { label: "Contact",                     href: "/contact"             },
                 ].map((link) => (

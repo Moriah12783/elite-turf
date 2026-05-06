@@ -11,6 +11,9 @@ interface LiveStats {
   totalPronostics:  number;   // ex: 25
   meilleurRapport:  number | null; // ex: 93.20
   coursesAnalysees: number;   // ex: 112
+  roiCumule30j?:    number | null; // ex: 156 (= +156%) ou null si <5 pronostics
+  gainsCumule30j?:  number;
+  pronosticsCumule30j?: number;
 }
 
 export default function HeroSection() {
@@ -129,27 +132,49 @@ export default function HeroSection() {
       {/* ── CONTENU ── */}
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-32 sm:py-40 text-center">
 
-        {/* ── Badge animé ── */}
+        {/* ── Badges (Pronostics + ROI cumulé live si dispo) ── */}
         <div
-          className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-black/55 backdrop-blur-md border border-gold-primary/50 rounded-full mb-8 shadow-gold-sm transition-all duration-700"
+          className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-8 transition-all duration-700"
           style={{
             opacity: badgeVisible ? 1 : 0,
             transform: badgeVisible ? "translateY(0) scale(1)" : "translateY(-10px) scale(0.95)",
           }}
         >
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-win opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-status-win" />
-          </span>
-          <span className="text-gold-light text-xs sm:text-sm font-semibold tracking-wide">
-            🐎 Pronostics du jour disponibles
-          </span>
-          <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-            <span
-              className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-gold-primary/20 to-transparent"
-              style={{ animation: "badgeShimmer 3s ease-in-out infinite 1s" }}
-            />
-          </span>
+          {/* Badge "Pronostics dispo" */}
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-black/55 backdrop-blur-md border border-gold-primary/50 rounded-full shadow-gold-sm relative">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-win opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-status-win" />
+            </span>
+            <span className="text-gold-light text-xs sm:text-sm font-semibold tracking-wide">
+              🐎 Pronostics du jour disponibles
+            </span>
+            <span className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+              <span
+                className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-gold-primary/20 to-transparent"
+                style={{ animation: "badgeShimmer 3s ease-in-out infinite 1s" }}
+              />
+            </span>
+          </div>
+
+          {/* Badge "ROI cumulé 30j" — affiché uniquement si dataset suffisant */}
+          {liveStats?.roiCumule30j !== null && liveStats?.roiCumule30j !== undefined && (liveStats.pronosticsCumule30j ?? 0) >= 5 && (
+            <div className={`inline-flex items-center gap-2 px-4 py-2.5 backdrop-blur-md border rounded-full shadow-lg ${
+              liveStats.roiCumule30j > 0
+                ? "bg-status-win/15 border-status-win/50"
+                : "bg-black/55 border-gold-primary/40"
+            }`}>
+              <TrendingUp className={`w-3.5 h-3.5 ${liveStats.roiCumule30j > 0 ? "text-status-win" : "text-gold-light"}`} />
+              <span className={`text-xs sm:text-sm font-bold tracking-wide ${
+                liveStats.roiCumule30j > 0 ? "text-status-win" : "text-gold-light"
+              }`}>
+                ROI 30j&nbsp;: {liveStats.roiCumule30j > 0 ? "+" : ""}{liveStats.roiCumule30j} %
+              </span>
+              <span className="text-white/40 text-[10px] hidden sm:inline">
+                · {liveStats.pronosticsCumule30j} pronostics
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ── Titre ── */}

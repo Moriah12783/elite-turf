@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
+import WhatsAppFloatingButton from "@/components/layout/WhatsAppFloatingButton";
 import Script from "next/script";
 
 // Domaine canonique. Site hébergé sur Cloudflare Workers (pas Vercel).
@@ -150,6 +151,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         />
         <OneSignalInit />
         {children}
+        <WhatsAppFloatingButton />
         <Toaster
           position="top-right"
           toastOptions={{
