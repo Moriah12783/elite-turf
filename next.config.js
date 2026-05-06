@@ -1,5 +1,6 @@
 // build-trigger: 2026-05-05T15:37:39.684Z
 // build-trigger: 2026-05-05T13:42:33.816Z
+// build-trigger: 2026-05-06T13:45:00.000Z (Sentry token rotation)
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   images: {
