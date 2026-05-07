@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, CreditCard, Smartphone, ChevronDown } from "lucide-react";
+import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, Clock } from "lucide-react";
 import type { Plan } from "@/types";
+import { PAYSTACK_AVAILABLE } from "@/lib/promo";
 
 interface Props {
   plan: Plan;
@@ -98,26 +99,7 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
             Choisir votre moyen de paiement
           </p>
 
-          {/* Paystack — Mobile Money + Carte */}
-          <button
-            onClick={() => handlePay("paystack")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-              <Smartphone className="w-4 h-4 text-green-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave · Carte</p>
-              <p className="text-text-muted text-xs">Mobile Money africain — sécurisé par Paystack</p>
-            </div>
-            <span className="text-text-muted text-xs font-mono">
-              {plan.prix_fcfa.toLocaleString("fr-FR")} F
-            </span>
-          </button>
-
-          <div className="mx-3 border-t border-border/50" />
-
-          {/* Stripe — Visa / Mastercard internationale (toutes cartes) */}
+          {/* Stripe — Visa / Mastercard internationale (toutes cartes) — MIS EN PREMIER pendant que Paystack est en review */}
           <button
             onClick={() => handlePay("stripe")}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
@@ -126,7 +108,12 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
               <CreditCard className="w-4 h-4 text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+                <span className="text-[9px] uppercase tracking-wider font-bold text-status-win bg-status-win/15 px-1.5 py-0.5 rounded">
+                  Recommandé
+                </span>
+              </div>
               <p className="text-text-muted text-xs">
                 Toutes cartes acceptées (Afrique, Europe, autres) — sécurisé par Stripe
               </p>
@@ -136,10 +123,51 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
             </span>
           </button>
 
+          <div className="mx-3 border-t border-border/50" />
+
+          {/* Paystack — Mobile Money + Carte ; désactivé si compte en review */}
+          {PAYSTACK_AVAILABLE ? (
+            <button
+              onClick={() => handlePay("paystack")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-4 h-4 text-green-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave · Carte</p>
+                <p className="text-text-muted text-xs">Mobile Money africain — sécurisé par Paystack</p>
+              </div>
+              <span className="text-text-muted text-xs font-mono">
+                {plan.prix_fcfa.toLocaleString("fr-FR")} F
+              </span>
+            </button>
+          ) : (
+            <div
+              className="w-full flex items-center gap-3 px-3 py-2.5 opacity-60 cursor-not-allowed"
+              aria-disabled="true"
+            >
+              <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-4 h-4 text-text-muted" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-text-secondary text-sm font-semibold">Orange Money · MTN · Wave</p>
+                  <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded">
+                    <Clock className="w-2.5 h-2.5" />
+                    Bientôt disponible
+                  </span>
+                </div>
+                <p className="text-text-muted text-xs">
+                  Maintenance en cours — utilisez Visa / Mastercard ci-dessus pour finaliser maintenant.
+                </p>
+              </div>
+            </div>
+          )}
+
           <p className="text-[10px] text-text-muted px-3 py-2 leading-relaxed border-t border-border/50">
-            💡 Si Orange Money / MTN / Wave refuse, essayez Visa / Mastercard ci-dessus —
-            cette option accepte les cartes ivoiriennes, sénégalaises, marocaines, et toutes
-            les cartes émises dans le monde.
+            💳 Visa / Mastercard accepte toutes les cartes émises en Côte d'Ivoire, Sénégal,
+            Cameroun, Mali, Maroc, Europe et ailleurs. Paiement sécurisé via Stripe.
           </p>
 
           <button
