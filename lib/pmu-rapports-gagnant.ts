@@ -38,10 +38,14 @@ export function computeRapportGagnant(
 
   const tp = typePari.toUpperCase();
 
-  // Helper : tente plusieurs clés et retourne la première trouvée
+  // Helper : tente plusieurs clés et retourne la première trouvée.
+  // On filtre la valeur 1.0 qui est un artefact "stake 1€" du parser Geny
+  // (cf. lib/sync/geny-rapports-parser.ts isStakeArtifact). Garder ce
+  // 2e étage de défense : même si du JSONB pré-fix subsiste en DB, on
+  // tombe sur la prochaine clé valide (ex: ordre quand desordre = 1).
   const pick = (...vals: (number | undefined | null)[]): number | null => {
     for (const v of vals) {
-      if (typeof v === "number" && Number.isFinite(v) && v > 0) return v;
+      if (typeof v === "number" && Number.isFinite(v) && v > 1) return v;
     }
     return null;
   };
