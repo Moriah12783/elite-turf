@@ -26,23 +26,33 @@ export const maxDuration = 60;
 
 const MAX_AGE_DAYS = 30;
 
+const CRON_SECRET = process.env.CRON_SECRET || "";
+
 export async function POST(req: NextRequest) {
-  // ── Auth ADMIN ─────────────────────────────────────────────────────────
-  const supabaseClient = await createClient();
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-  }
-
   const adminClient = createServiceClient();
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
 
-  if (!profile || profile.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // ── Auth : Bearer CRON_SECRET (scripts) OU session ADMIN (cookie) ─────
+  // Aligné sur backfill-partants / backfill-rapports : permet d'invoquer
+  // l'endpoint depuis PowerShell/curl quand tu débugger en urgence sans
+  // avoir à passer par une session navigateur authentifiée.
+  const auth = req.headers.get("authorization") ?? "";
+  const hasCronAuth = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
+
+  if (!hasCronAuth) {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // ── Body : reference unique optionnelle ────────────────────────────────
