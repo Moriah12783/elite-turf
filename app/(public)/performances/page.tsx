@@ -16,7 +16,7 @@ import type { BetType, PronosticResult } from "@/types";
 import MonthlyChart from "@/components/performances/MonthlyChart";
 import AnimatedCounter from "@/components/performances/AnimatedCounter";
 import PageHero from "@/components/layout/PageHero";
-import { buildGenyUrlAuto } from "@/lib/geny";
+import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
 
 export const metadata: Metadata = {
   title: "Nos Résultats Prouvés — Elite Turf",
@@ -58,6 +58,7 @@ export default async function PerformancesPage() {
       course:courses(
         libelle, date_course, heure_depart,
         numero_reunion, numero_course,
+        geny_url, arrivee_officielle,
         hippodrome:hippodromes(nom, pays)
       )
     `)
@@ -180,7 +181,7 @@ export default async function PerformancesPage() {
           {quartes30j > 0 && <span className="text-gold-light font-bold text-sm">✓ {quartes30j} Quarté+ gagné{quartes30j > 1 ? "s" : ""}</span>}
           {tierces30j > 0 && <span className="text-text-secondary font-bold text-sm">✓ {tierces30j} Tiercé{tierces30j > 1 ? "s" : ""} gagné{tierces30j > 1 ? "s" : ""}</span>}
           {gains30j > 0 && <span className="text-gold-primary font-bold text-sm">💰 +{gains30j.toFixed(0)}€ de rapports cumulés</span>}
-          <a href="https://www.geny.com/resultats-pmu" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.geny.com/reunions-courses-pmu" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1 text-gold-primary text-xs underline-offset-2 hover:underline">
             <ExternalLink className="w-3 h-3" />Vérifier sur Geny Courses
           </a>
@@ -422,8 +423,14 @@ export default async function PerformancesPage() {
                     const selStr      = selRaw.length > 0
                       ? selRaw.slice(0, MAX_HORSES).join(" - ") + (selRaw.length > MAX_HORSES ? " …" : "")
                       : "—";
-                    const arriveeRaw  = Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle : [];
-                    const arriveeStr  = arriveeRaw.length > 0
+                    // Arrivée à afficher : pronostics.arrivee_reelle d'abord
+                    // (snapshot historique), sinon courses.arrivee_officielle
+                    // (fallback si la sync n'a pas encore propagé). Les deux
+                    // doivent être identiques après backfill, mais on est défensif.
+                    const arriveeRaw = Array.isArray(p.arrivee_reelle) && p.arrivee_reelle.length > 0
+                      ? p.arrivee_reelle
+                      : Array.isArray(course?.arrivee_officielle) ? course.arrivee_officielle : [];
+                    const arriveeStr = arriveeRaw.length > 0
                       ? arriveeRaw.slice(0, MAX_HORSES).join(" - ") + (arriveeRaw.length > MAX_HORSES ? " …" : "")
                       : "—";
                     return (
@@ -440,7 +447,7 @@ export default async function PerformancesPage() {
                           <span className="text-gold-light font-mono text-xs font-bold tracking-wide">{selStr}</span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`font-mono text-xs ${p.arrivee_reelle ? "text-text-secondary" : "text-text-muted"}`}>
+                          <span className={`font-mono text-xs ${arriveeRaw.length > 0 ? "text-text-secondary" : "text-text-muted"}`}>
                             {arriveeStr}
                           </span>
                         </td>
@@ -458,9 +465,16 @@ export default async function PerformancesPage() {
                         <td className="px-4 py-3">
                           {(() => {
                             const c = p.course as any;
-                            const genyUrl = c?.date_course && c?.numero_reunion && c?.numero_course
-                              ? buildGenyUrlAuto(c.date_course, c.numero_reunion, c.numero_course)
-                              : p.lien_geny || null;
+                            // Priorité : URL Geny stockée (geny_url) → page résultat
+                            // exacte (/arrivee-et-rapports-pmu?id_course=N).
+                            // Fallback : lien_geny historique du pronostic, sinon
+                            // page programme du jour (buildGenyUrlAuto).
+                            const genyUrl = c?.geny_url
+                              ? buildGenyUrlFromStored(c.geny_url, "resultats")
+                              : p.lien_geny
+                                || (c?.date_course && c?.numero_reunion && c?.numero_course
+                                  ? buildGenyUrlAuto(c.date_course, c.numero_reunion, c.numero_course)
+                                  : null);
                             return genyUrl ? (
                               <a href={genyUrl} target="_blank" rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-xs text-gold-primary hover:text-gold-light transition-colors underline-offset-2 hover:underline whitespace-nowrap">
