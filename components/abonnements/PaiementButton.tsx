@@ -98,7 +98,7 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
             Choisir votre moyen de paiement
           </p>
 
-          {/* Paystack — Mobile Money + Carte (principal) */}
+          {/* Paystack — Mobile Money + Carte */}
           <button
             onClick={() => handlePay("paystack")}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
@@ -108,7 +108,7 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-text-primary text-sm font-semibold">Orange Money · MTN · Wave · Carte</p>
-              <p className="text-text-muted text-xs">Tous moyens — sécurisé par Paystack</p>
+              <p className="text-text-muted text-xs">Mobile Money africain — sécurisé par Paystack</p>
             </div>
             <span className="text-text-muted text-xs font-mono">
               {plan.prix_fcfa.toLocaleString("fr-FR")} F
@@ -117,7 +117,7 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
 
           <div className="mx-3 border-t border-border/50" />
 
-          {/* Stripe — Carte Europe / USA (alternatif) */}
+          {/* Stripe — Visa / Mastercard internationale (toutes cartes) */}
           <button
             onClick={() => handlePay("stripe")}
             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
@@ -127,12 +127,20 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
-              <p className="text-text-muted text-xs">Europe · USA — sécurisé par Stripe</p>
+              <p className="text-text-muted text-xs">
+                Toutes cartes acceptées (Afrique, Europe, autres) — sécurisé par Stripe
+              </p>
             </div>
             <span className="text-text-muted text-xs font-mono">
               {plan.prix_eur.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
             </span>
           </button>
+
+          <p className="text-[10px] text-text-muted px-3 py-2 leading-relaxed border-t border-border/50">
+            💡 Si Orange Money / MTN / Wave refuse, essayez Visa / Mastercard ci-dessus —
+            cette option accepte les cartes ivoiriennes, sénégalaises, marocaines, et toutes
+            les cartes émises dans le monde.
+          </p>
 
           <button
             onClick={() => setOpen(false)}
