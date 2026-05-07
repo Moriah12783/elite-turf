@@ -46,6 +46,18 @@ function parseEuroAmount(s: string | undefined): number | null {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Geny annote chaque rapport par "X € pour 1€ de mise". Le `1€` n'est PAS
+ * un rapport mais l'unité de mise référence — il pollue toutes nos extractions
+ * regex. On filtre donc les montants de valeur exactement 1.0 (ils ne sont
+ * pratiquement jamais des rapports légitimes côté PMU : même les Simple Placé
+ * sur favoris extrêmes plafonnent à 1.10 €). Cette ligne unique élimine ~50 %
+ * des bugs de parsing observés en mai 2026.
+ */
+function isStakeArtifact(n: number): boolean {
+  return n === 1 || n === 1.0;
+}
+
 /** Cherche un montant € à proximité d'un label. Renvoie le 1er match. */
 function findAmountAfter(html: string, labelPattern: RegExp): number | null {
   const labelRe = new RegExp(
@@ -54,7 +66,9 @@ function findAmountAfter(html: string, labelPattern: RegExp): number | null {
   );
   const m = html.match(labelRe);
   if (!m) return null;
-  return parseEuroAmount(m[1]);
+  const amount = parseEuroAmount(m[1]);
+  if (amount == null || isStakeArtifact(amount)) return null;
+  return amount;
 }
 
 /** Cherche un duo de montants après un label (ordre, désordre). */
@@ -67,10 +81,10 @@ function findOrdreEtDesordre(html: string, label: string): { ordre?: number; des
   const startIdx = (m.index ?? 0) + m[0].length;
   const slice = html.slice(startIdx, startIdx + 2000);
 
-  // 2 montants successifs dans la fenêtre
+  // 2 montants successifs dans la fenêtre, en filtrant les "1€" stakes
   const amounts = Array.from(slice.matchAll(/([\d]+(?:[.,]\d+)?)\s*€/g))
     .map((m) => parseEuroAmount(m[1]))
-    .filter((n): n is number => n !== null);
+    .filter((n): n is number => n !== null && !isStakeArtifact(n));
 
   if (amounts.length === 0) return undefined;
   return {
@@ -87,7 +101,7 @@ function findAmountsAfter(html: string, labelPattern: RegExp, count = 3): number
   const slice = html.slice(startIdx, startIdx + 800);
   const amounts = Array.from(slice.matchAll(/([\d]+(?:[.,]\d+)?)\s*€/g))
     .map((m) => parseEuroAmount(m[1]))
-    .filter((n): n is number => n !== null);
+    .filter((n): n is number => n !== null && !isStakeArtifact(n));
   if (amounts.length === 0) return undefined;
   return amounts.slice(0, count);
 }
@@ -122,7 +136,7 @@ export function parseRapportsPMU(html: string): RapportsPMU {
     const slice = text.slice(startIdx, startIdx + 1000);
     const amounts = Array.from(slice.matchAll(/([\d]+(?:[.,]\d+)?)\s*€/g))
       .map((m) => parseEuroAmount(m[1]))
-      .filter((n): n is number => n !== null);
+      .filter((n): n is number => n !== null && !isStakeArtifact(n));
     if (amounts.length > 0) {
       result.quarte_plus = {
         ordre:    amounts[0],
@@ -140,7 +154,7 @@ export function parseRapportsPMU(html: string): RapportsPMU {
     const slice = text.slice(startIdx, startIdx + 1500);
     const amounts = Array.from(slice.matchAll(/([\d]+(?:[.,]\d+)?)\s*€/g))
       .map((m) => parseEuroAmount(m[1]))
-      .filter((n): n is number => n !== null);
+      .filter((n): n is number => n !== null && !isStakeArtifact(n));
     if (amounts.length > 0) {
       result.quinte_plus = {
         ordre:    amounts[0],
@@ -182,7 +196,7 @@ export function parseRapportsPMU(html: string): RapportsPMU {
     const slice = text.slice(startIdx, startIdx + 1500);
     const amounts = Array.from(slice.matchAll(/([\d]+(?:[.,]\d+)?)\s*€/g))
       .map((m) => parseEuroAmount(m[1]))
-      .filter((n): n is number => n !== null);
+      .filter((n): n is number => n !== null && !isStakeArtifact(n));
     if (amounts.length >= 1) {
       result.multi = {
         en_4: amounts[0],
