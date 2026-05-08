@@ -17,6 +17,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { buildGenyUrlFromStored } from "@/lib/geny";
+import { todayParisISO } from "@/lib/paris-date";
 import {
   parseRapportsPMU,
   parseCommentaire,
@@ -156,7 +157,9 @@ async function processInPool<T, R>(
 }
 
 export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArriveesResult> {
-  const date = dateISO || new Date().toISOString().split("T")[0];
+  // Default = "aujourd'hui Paris" (pas UTC) — sinon entre minuit-2h Paris on
+  // chercherait les arrivées de la veille au lieu du jour actuel.
+  const date = dateISO || todayParisISO();
   const supabase = createServiceClient();
 
   const { data: courses } = await supabase

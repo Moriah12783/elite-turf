@@ -12,6 +12,7 @@
  */
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -58,10 +59,12 @@ function decodeHtmlEntities(str: string): string {
 }
 
 function genyUrl(dateISO: string): string {
-  const today = new Date().toISOString().split("T")[0];
-  if (dateISO === today) return "https://www.geny.com/reunions-courses-pmu/_daujourdhui";
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  if (dateISO === tomorrow.toISOString().split("T")[0]) {
+  // ⚠️ Geny.com fonctionne en heure de Paris ; nos workers Cloudflare en UTC.
+  // On compare la date demandée à "aujourd'hui Paris" et "demain Paris" pour
+  // éviter le bug de décalage 1-jour entre minuit Paris et 1-2h Paris (où UTC
+  // est encore "hier"). Voir lib/paris-date.ts pour le contexte complet.
+  if (dateISO === todayParisISO()) return "https://www.geny.com/reunions-courses-pmu/_daujourdhui";
+  if (dateISO === tomorrowParisISO()) {
     return "https://www.geny.com/reunions-courses-pmu/_ddemain";
   }
   return `https://www.geny.com/reunions-courses-pmu/${dateISO}_d${dateISO}`;
@@ -322,10 +325,12 @@ export async function syncCoursesToDB(
  * @param rawDate "today", "aujourd'hui", "demain", ou "YYYY-MM-DD"
  */
 export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<GenyProgrammeResult> {
+  // Résolution des keywords "today"/"demain" en heure de PARIS (pas UTC).
+  // Sinon Cloudflare Worker (UTC) calcule mal le jour entre minuit-2h Paris.
   const dateISO = rawDate === "today" || rawDate === "aujourd'hui"
-    ? new Date().toISOString().split("T")[0]
+    ? todayParisISO()
     : rawDate === "demain"
-      ? (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })()
+      ? tomorrowParisISO()
       : rawDate;
 
   const allCourses = await scrapeGenyProgramme(dateISO);
