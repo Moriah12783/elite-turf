@@ -56,10 +56,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Récupérer geny_url stockée ───────────────────────────────────────
+    // ── Récupérer geny_url + numéros des partants (filtre validation) ────
+    // Les numéros des partants sont passés au parser pour rejeter tous les
+    // numéros HTML qui ne sont PAS des partants (sidebars, rapports €, IDs).
+    // Garantit zéro faux positif dans l'extraction de l'arrivée.
     const { data: course, error: courseErr } = await supabase
       .from("courses")
-      .select("id, geny_url")
+      .select("id, geny_url, partants(numero)")
       .eq("id", body.course_id)
       .single();
 
@@ -79,6 +82,15 @@ export async function POST(req: NextRequest) {
         { status: 422 },
       );
     }
+
+    // Liste des numéros de partants pour validation par le parser
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const validNumbers: number[] = Array.isArray((course as any).partants)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (course as any).partants
+          .map((p: { numero: number }) => p.numero)
+          .filter((n: number) => Number.isInteger(n))
+      : [];
 
     // ── Fetch Geny avec timeout ─────────────────────────────────────────
     const url = buildGenyUrlFromStored(course.geny_url, "resultats");
@@ -115,9 +127,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Parse arrivée + rapports + commentaire (best-effort) ────────────
+    // On passe validNumbers (numéros des partants) au parser pour qu'il
+    // filtre TOUT numéro qui n'est pas un partant valide → élimine
+    // sidebars, rapports €, IDs et autres faux positifs.
     let arrivee: number[] | null = null;
     try {
-      arrivee = parseArrivee(html);
+      arrivee = parseArrivee(html, validNumbers.length > 0 ? validNumbers : undefined);
     } catch (err) {
       console.warn("[prefill-from-geny] parseArrivee failed:", err);
     }
