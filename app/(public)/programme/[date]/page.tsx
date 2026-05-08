@@ -21,6 +21,7 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams, getRevalidateForDate,
 } from "@/lib/seo/dates";
+import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -115,6 +116,9 @@ export default async function ProgrammePage({ params }: PageProps) {
     ],
   };
 
+  // SportsEvent enrichi via helper centralisé : injecte endDate, eventStatus,
+  // image, description, performer, organizer (champs recommandés Google Search
+  // Console signalés en warning si absents — on règle les 7 d'un coup).
   const eventListLd = {
     "@context": "https://schema.org",
     "@type":    "ItemList",
@@ -123,22 +127,7 @@ export default async function ProgrammePage({ params }: PageProps) {
     itemListElement: courses.slice(0, 50).map((c: any, idx: number) => ({
       "@type": "ListItem",
       position: idx + 1,
-      item: {
-        "@type":     "SportsEvent",
-        name:        c.libelle,
-        startDate:   c.heure_depart ? `${c.date_course}T${c.heure_depart}` : c.date_course,
-        sport:       "Horse Racing",
-        url:         `${APP_URL}/courses/${c.id}`,
-        location: c.hippodrome ? {
-          "@type":     "Place",
-          name:        c.hippodrome.nom,
-          address: c.hippodrome.ville ? {
-            "@type":          "PostalAddress",
-            addressLocality:  c.hippodrome.ville,
-            addressCountry:   c.hippodrome.pays || "FR",
-          } : undefined,
-        } : undefined,
-      },
+      item: buildSportsEventJsonLd(c),
     })),
   };
 
