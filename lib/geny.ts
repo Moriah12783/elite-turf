@@ -1,3 +1,5 @@
+import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
+
 const GENY_BASE = "https://www.geny.com";
 
 /**
@@ -55,8 +57,10 @@ export function buildGenyUrl(
 ): string {
   // ⚠️  Les URLs individuelles Geny ne peuvent pas être reconstruites sans l'ID interne.
   // On renvoie la page programme du jour comme fallback lisible par l'utilisateur.
-  const today = new Date().toISOString().split("T")[0];
-  if (dateCourse === today) return `${GENY_BASE}/reunions-courses-pmu/_daujourdhui`;
+  // Comparaison faite en heure de PARIS car Geny est hébergé en France et nos
+  // workers tournent en UTC (cf. lib/paris-date.ts pour le contexte).
+  if (dateCourse === todayParisISO()) return `${GENY_BASE}/reunions-courses-pmu/_daujourdhui`;
+  if (dateCourse === tomorrowParisISO()) return `${GENY_BASE}/reunions-courses-pmu/_ddemain`;
   return `${GENY_BASE}/reunions-courses-pmu/${dateCourse}_d${dateCourse}`;
 }
 
