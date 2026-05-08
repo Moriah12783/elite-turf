@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
+import ArriveesDateNav from "@/components/arrivees/ArriveesDateNav";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
@@ -119,6 +120,24 @@ export default async function ArriveesPage({ params }: PageProps) {
     };
   });
 
+  // ── Dates avec arrivées disponibles (30 derniers jours) ─────────────────
+  // Pour la nav : pastille ✓ sur les jours qui ont au moins 1 arrivée enregistrée.
+  // On récupère les dates DISTINCT qui ont au moins 1 course TERMINE avec arrivee_officielle
+  // dans la fenêtre [J-30, J+1]. Limité à 30j pour limiter la charge query.
+  const minPillDate = new Date(new Date(today).getTime() - 30 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const maxPillDate = new Date(new Date(today).getTime() + 1 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const { data: rawDates } = await supabase
+    .from("courses")
+    .select("date_course")
+    .gte("date_course", minPillDate)
+    .lte("date_course", maxPillDate)
+    .not("arrivee_officielle", "is", null);
+  const datesWithArrivees = Array.from(
+    new Set((rawDates ?? []).map((r: { date_course: string }) => r.date_course)),
+  );
+
   // Courses avec arrivée officielle
   const finies = allCourses.filter(
     (c: any) => Array.isArray(c.arrivee_officielle) && c.arrivee_officielle.length > 0,
@@ -215,13 +234,19 @@ export default async function ArriveesPage({ params }: PageProps) {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <nav className="mb-6 flex items-center gap-2 text-xs text-text-muted">
+        <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
           <Link href="/" className="hover:text-gold-primary">Accueil</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-text-muted">Arrivées</span>
           <ChevronRight className="w-3 h-3" />
           <span className="text-text-secondary">{dateShort}</span>
         </nav>
+
+        {/* ── Navigation entre dates (historique consultable) ───────── */}
+        <ArriveesDateNav
+          currentDate={params.date}
+          datesWithArrivees={datesWithArrivees}
+        />
 
         {/* ── Stats ────────────────────────────────────────────────── */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
