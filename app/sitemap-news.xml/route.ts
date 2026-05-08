@@ -127,14 +127,15 @@ export async function GET() {
 
     // On n'inclut que les dates qui ont AU MOINS 1 arrivée publiée
     // (sinon la page est vide, Google News rejette ou déclasse).
+    // On récupère TOUTES les courses du jour pour pouvoir aussi détecter
+    // si un Quinté+ a eu lieu (sinon on génèrerait pas /quinte-plus/<date>).
     for (const dateISO of datesToCheck) {
       const { data: courses } = await supabase
         .from("courses")
-        .select("id, paris_disponibles", { count: "exact" })
+        .select("id, paris_disponibles")
         .eq("date_course", dateISO)
         .eq("statut", "TERMINE")
-        .not("arrivee_officielle", "is", null)
-        .limit(1);
+        .not("arrivee_officielle", "is", null);
 
       if (!courses?.length) continue;
 
