@@ -15,6 +15,7 @@
  */
 
 import { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -39,7 +40,9 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true;
-export const revalidate    = 600; // sera surchargée à 60s pour aujourd'hui via fetch revalidation
+// Past dates / future : ISR 600s. Aujourd'hui : noStore() ci-dessous (full-dynamic)
+// pour que les arrivées du Quinté+ s'affichent dès la sync Geny → DB sans cache.
+export const revalidate    = 600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   if (!isValidDateParam(params.date)) return { title: "Date invalide — Elite Turf" };
@@ -86,6 +89,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function QuintePlusPage({ params }: PageProps) {
   if (!isValidDateParam(params.date)) notFound();
+
+  // Aujourd'hui : bypass du cache ISR pour afficher cotes/partants/arrivée
+  // dès qu'ils sont sync depuis Geny. Past/futur restent en ISR 600s.
+  if (isToday(params.date)) noStore();
 
   const today    = todayParis();
   const minDate  = new Date(new Date(today).getTime() - 90 * 24 * 3600 * 1000)

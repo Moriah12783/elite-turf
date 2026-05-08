@@ -12,6 +12,7 @@
  */
 
 import { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -42,7 +43,8 @@ export async function generateStaticParams() {
 }
 
 export const dynamicParams = true;
-// Past dates : 24h. Today : revalidé via course events. Future : 600s.
+// Past dates / future : ISR 600s. Aujourd'hui : noStore() ci-dessous (full-dynamic)
+// pour que les arrivées s'affichent dès la sync Geny → DB sans attendre le cache.
 export const revalidate = 600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -76,6 +78,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ArriveesPage({ params }: PageProps) {
   if (!isValidDateParam(params.date)) notFound();
+
+  // Pour aujourd'hui : on bypasse le cache ISR pour afficher les arrivées
+  // dès que le cron geny-arrivees les sync en DB. Le scénario typique : la
+  // course se termine à 17h32, le cron sync à 17h35, l'utilisateur F5 à 17h36
+  // → il VEUT voir l'arrivée immédiatement, pas attendre 9 min de cache.
+  // Past/futur restent en ISR 600s (résultats figés / programme stable).
+  if (isToday(params.date)) noStore();
 
   const today    = todayParis();
   const minDate  = new Date(new Date(today).getTime() - 365 * 24 * 3600 * 1000)
