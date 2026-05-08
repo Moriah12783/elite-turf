@@ -50,88 +50,235 @@ function extractNums(str: string): number[] {
 const MAX_HORSES = 10;
 
 /**
- * Cherche tous les groupes du type "X-Y-Z-..." (au moins 3 numéros 1-99
- * séparés par - ou –) dans une chaîne de caractères. Retourne les candidats
- * avec leur position d'apparition dans la string.
+ * Construit le predicate de validité d'un numéro de cheval.
  *
- * **Pourquoi tracker la position** : dans une page Geny, la VRAIE arrivée
- * apparaît juste après le label "Arrivée définitive". Les autres séquences
- * trouvées plus loin sont presque toujours des sidebars/widgets/footers
- * qui listent d'autres arrivées (ex: "Course 18 du jour: 1-6-2-12-3-..."),
- * et ces séquences peuvent être PLUS LONGUES que la vraie arrivée. Sans
- * tracking de position, on prend le mauvais match.
+ * Si `validNumbers` est fourni (depuis la table `partants` de la DB) → on
+ * filtre strictement contre cette liste (élimine 100% des faux positifs :
+ * sidebars, rapports €, IDs HTML, etc.).
+ *
+ * Sinon → fallback heuristique : numéro doit être entre 1 et 20 (plage
+ * typique des partants PMU). Moins fiable mais utilisable hors contexte DB.
  */
-interface ArriveeCandidate {
-  nums: number[];
-  pos:  number;  // index de début du match dans la string
+function buildIsValidNum(validNumbers?: number[]): (n: number) => boolean {
+  if (validNumbers && validNumbers.length > 0) {
+    const set = new Set(validNumbers);
+    return (n: number) => set.has(n);
+  }
+  return (n: number) => n >= 1 && n <= 20;
 }
 
-function findAllArriveeCandidates(text: string): ArriveeCandidate[] {
-  const candidates: ArriveeCandidate[] = [];
-  // Pattern : 3+ numéros (1-2 chiffres) séparés par - ou – ou , éventuels espaces
-  const re = /\b(\d{1,2}(?:\s*[\-–,]\s*\d{1,2}){2,})\b/g;
+/**
+ * Limite la section au PREMIER marqueur de fin d'arrivée trouvé. Geny insère
+ * souvent les sections suivantes après l'arrivée définitive (Rapports PMU,
+ * Commentaires, sidebar avec autres arrivées du jour). On coupe la section
+ * à leur premier mot pour éviter d'absorber leur contenu.
+ *
+ * Marqueurs de fin pris en compte :
+ *  - Rapports PMU / officiels (= bloc des rapports €)
+ *  - Commentaire d'arrivée
+ *  - Arrivée Tiercé/Quarté (= sous-arrivées spéciales)
+ *  - Détail des paris / Cotes finales
+ *  - "Autres arrivées" / "Course suivante" (= sidebars de navigation)
+ *  - HTML structuraux : <aside>, <nav>, <footer> (= éléments hors-contenu)
+ */
+function trimToArriveeOnly(section: string): string {
+  const stopRe = /Rapports?\s*PMU|Rapports?\s*officiels|Commentaire\s*d['']?arriv|Arriv[eé]e\s*(?:Tierc[eé]|Quart[eé])|D[eé]tail\s*des\s*paris|Cotes\s*finales|Autres\s*arriv[eé]es?|Course\s*suivante|<aside\b|<nav\b|<footer\b/i;
+  const m = section.match(stopRe);
+  if (m && m.index != null && m.index > 0) {
+    return section.slice(0, m.index);
+  }
+  return section;
+}
+
+/**
+ * Pre-traitement HTML pour éliminer les artefacts qui polluent l'extraction
+ * de numéros :
+ *  - Labels de position : "1er", "2e", "3ème" (suffixes ordinaux)
+ *  - Décimaux : "1.50", "12,80" (rapports € formatés)
+ *  - Montants en € : "100 €", "1234€"
+ */
+function stripArtifacts(text: string): string {
+  return text
+    .replace(/\b\d+(?:er|ère|e|ème|ième)\b/gi, "")  // 1er, 2e, 3ème
+    .replace(/\b\d+[.,]\d+\b/g, "")                 // 1.50, 12,80
+    .replace(/\d+\s*€/g, "");                       // 100€, 1234 €
+}
+
+/**
+ * Extrait les numéros d'arrivée en parcourant le texte SÉQUENTIELLEMENT et
+ * en gardant uniquement les numéros présents dans `validNumbers`. L'ordre
+ * d'apparition dans le HTML est l'ordre d'arrivée (1er, 2e, 3e, ...).
+ *
+ * **Pourquoi cette approche est robuste** :
+ *  - Quel que soit le format HTML (table, span, dash-separated, mixed),
+ *    on extrait CHAQUE numéro entier indépendamment.
+ *  - Le filtre validNumbers élimine TOUS les faux positifs (sidebars,
+ *    rapports, IDs, dates, etc.) qui ne sont pas des partants de la course.
+ *  - Le dédoublonnage préserve l'ordre (premier apparition gagne).
+ */
+function extractNumbersInOrder(
+  text: string,
+  isValid: (n: number) => boolean,
+): number[] {
+  const found: number[] = [];
+  const seen = new Set<number>();
+  const re = /\b(\d{1,2})\b/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
-    const nums = m[1]
-      .split(/\s*[\-–,]\s*/)
-      .map(Number)
-      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 99);
-    // Pas de doublons (sinon ce n'est pas une arrivée mais une plage genre "1-1-1")
-    if (nums.length >= 3 && new Set(nums).size === nums.length) {
-      candidates.push({ nums, pos: m.index });
-    }
+    const n = parseInt(m[1], 10);
+    if (!isValid(n)) continue;
+    if (seen.has(n)) continue;
+    seen.add(n);
+    found.push(n);
+    if (found.length >= MAX_HORSES) break;
   }
-  return candidates;
+  return found;
 }
 
-export function parseArrivee(html: string): number[] | null {
-  // ── Stratégie 1 (priorité) : section "Arrivée définitive/officielle" ────
-  // On isole les blocs HTML labelés explicitement. La VRAIE arrivée apparaît
-  // dans les ~800 premiers caractères après le label. Au-delà, on capture
-  // souvent un sidebar/widget qui liste d'autres arrivées (ex: "Course 18,
-  // Course 1, Course 6, Course 2, Course 12, Course 3" — qui peut former
-  // une séquence plus longue mais fausse).
-  //
-  // Window de 800 chars (assez pour un tableau de 8 chevaux) pour limiter
-  // les faux positifs sidebar.
-  // Choix : on prend le PREMIER candidat trouvé (= le plus proche du label),
-  // pas le plus long.
+/**
+ * Parse le tableau structuré Geny `<table id="arrivees">`.
+ *
+ * Format observé sur Geny.com (vérifié 2026-05-08) :
+ *   <table id="arrivees">
+ *     <tr>headers</tr>
+ *     <tr>
+ *       <td>1</td>          <!-- POSITION (1er) — ignorer -->
+ *       <td>8</td>           <!-- NUMÉRO CHEVAL ← garder -->
+ *       <td>Rougegarde</td>  <!-- nom -->
+ *       ...
+ *     </tr>
+ *     ...
+ *   </table>
+ *
+ * Stratégie : trouver le tableau, parser chaque <tr> de données, extraire
+ * la 2ème <td> qui contient le numéro de cheval. C'est bulletproof car
+ * indépendant des artefacts HTML alentour (height="18", strong 1er, etc.).
+ */
+function parseArriveeTable(html: string, isValid: (n: number) => boolean): number[] | null {
+  // ⚠️ Pré-traitement : Geny imbrique depuis 2026 des sous-tables
+  // <table class="table-oei">…</table> dans la cellule "Cheval" pour afficher
+  // les icônes (œillères, attache-langue, etc.). Cette imbrication casse le
+  // regex <table>...</table> non-greedy qui se ferme à la première sous-table.
+  // On retire donc TOUTES les tables imbriquées avant de chercher la principale.
+  const flatHtml = html.replace(
+    /<table\b[^>]*class=["'][^"']*table-oei[^"']*["'][^>]*>[\s\S]*?<\/table>/gi,
+    "",
+  );
+
+  // Cherche le tableau d'arrivée principal. Geny utilise id="arrivees".
+  const tableMatch = flatHtml.match(/<table[^>]*id=["']arrivees["'][^>]*>([\s\S]*?)<\/table>/i);
+  if (!tableMatch) return null;
+
+  const tableContent = tableMatch[1];
+  // Chaque ligne <tr>...</tr>
+  const rowRe = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+  const horses: number[] = [];
+  const seen = new Set<number>();
+  let rowMatch: RegExpExecArray | null;
+
+  while ((rowMatch = rowRe.exec(tableContent)) !== null) {
+    const rowContent = rowMatch[1];
+    // Extrait toutes les <td>...</td> de la ligne
+    const cellRe = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
+    const cells: string[] = [];
+    let cellMatch: RegExpExecArray | null;
+    while ((cellMatch = cellRe.exec(rowContent)) !== null) {
+      cells.push(cellMatch[1]);
+    }
+
+    // Skip les lignes header (pas de cellules data, ou avec class="enteteColonne")
+    if (cells.length < 2) continue;
+    if (/enteteColonne|<th\b/i.test(rowContent)) continue;
+
+    // La 2ème cellule contient le numéro de cheval. On extrait le 1er nombre
+    // 1-2 chiffres trouvé (souvent entouré d'espaces et tags).
+    const horseCell = cells[1];
+    const numMatch = horseCell.match(/(?:^|>)\s*(\d{1,2})\s*(?:<|$)/);
+    if (!numMatch) continue;
+
+    const num = parseInt(numMatch[1], 10);
+    if (!isValid(num)) continue;
+    if (seen.has(num)) continue;
+
+    seen.add(num);
+    horses.push(num);
+    if (horses.length >= MAX_HORSES) break;
+  }
+
+  return horses.length >= 3 ? horses : null;
+}
+
+/**
+ * Parse l'arrivée d'une course depuis le HTML d'une page Geny.com de type
+ * /arrivee-et-rapports-pmu?id_course=X.
+ *
+ * @param html         HTML brut de la page Geny
+ * @param validNumbers Liste des numéros valides (= partants de la course
+ *                     depuis la DB). Si fournie, garantit une extraction
+ *                     bulletproof (rejette tout numéro non-partant).
+ *                     Si absente, fallback sur heuristique 1-20.
+ *
+ * Stratégie en cascade :
+ *  1. **Tableau structuré** `<table id="arrivees">` (le plus fiable)
+ *  2. Section "Arrivée définitive/officielle/complète" + extraction filtrée
+ *  3. data-attribute "data-arrivee" structuré
+ *  4. Fallback global : plus longue séquence valide du HTML entier
+ */
+export function parseArrivee(
+  html: string,
+  validNumbers?: number[],
+): number[] | null {
+  const isValid = buildIsValidNum(validNumbers);
+
+  // ── Stratégie 1 (priorité absolue) : tableau structuré Geny ─────────────
+  // <table id="arrivees"> avec position en col 1, numéro cheval en col 2.
+  // C'est le marqueur Geny stable et le plus fiable. Élimine tous les bruits
+  // (attributs HTML height, strong 1er, cotes 15/1, temps 1'39'08).
+  const fromTable = parseArriveeTable(html, isValid);
+  if (fromTable) return fromTable;
+
+  // ── Stratégie 2 : sections "Arrivée définitive/officielle" ──────────────
+  // Fallback si Geny change la classe id="arrivees". On capture la section,
+  // on la coupe au premier marqueur de fin, strip les artefacts, et on
+  // extrait les numéros valides séquentiellement.
   const sectionPatterns: RegExp[] = [
-    /[Aa]rriv[eé]e\s*d[eé]finitive[\s\S]{0,800}/,
-    /[Aa]rriv[eé]e\s*officielle[\s\S]{0,800}/,
-    /[Aa]rriv[eé]e\s*compl[eè]te[\s\S]{0,800}/,
+    /[Aa]rriv[eé]e\s*d[eé]finitive[\s\S]{0,3000}/,
+    /[Aa]rriv[eé]e\s*officielle[\s\S]{0,3000}/,
+    /[Aa]rriv[eé]e\s*compl[eè]te[\s\S]{0,3000}/,
   ];
 
   for (const sectionRe of sectionPatterns) {
     const sectionMatch = html.match(sectionRe);
     if (!sectionMatch) continue;
-
-    const candidates = findAllArriveeCandidates(sectionMatch[0]);
-    if (candidates.length === 0) continue;
-
-    // Prendre le PREMIER candidat (= juste après le label), pas le plus long.
-    // C'est plus fiable contre les contaminations sidebar.
-    candidates.sort((a, b) => a.pos - b.pos);
-    return candidates[0].nums.slice(0, MAX_HORSES);
-  }
-
-  // ── Stratégie 2 : data-attributes structurés ────────────────────────────
-  const dataMatch = html.match(/data-(?:arrivee|ordre|result)[^=]*=["']([\d\s,\-–]+)["']/i);
-  if (dataMatch) {
-    const nums = extractNums(dataMatch[1]);
-    if (nums.length >= 3) {
-      return nums.slice(0, MAX_HORSES);
+    const trimmed = trimToArriveeOnly(sectionMatch[0]);
+    const cleaned = stripArtifacts(trimmed);
+    const found = extractNumbersInOrder(cleaned, isValid);
+    if (found.length >= 3) {
+      return found.slice(0, MAX_HORSES);
     }
   }
 
-  // ── Stratégie 3 (fallback global) : la plus longue séquence du HTML ─────
-  // Utilisé seulement si aucune section explicite ne match. Risque modéré
-  // de capter des numéros non-arrivée mais filtre n >= 1 && n <= 99 mitigue.
-  const allCandidates = findAllArriveeCandidates(html);
-  if (allCandidates.length === 0) return null;
-  allCandidates.sort((a, b) => b.nums.length - a.nums.length);
-  if (allCandidates[0].nums.length >= 3) {
-    return allCandidates[0].nums.slice(0, MAX_HORSES);
+  // ── Stratégie 3 : data-attributes structurés ────────────────────────────
+  const dataMatch = html.match(/data-(?:arrivee|ordre|result)[^=]*=["']([\d\s,\-–]+)["']/i);
+  if (dataMatch) {
+    const nums = dataMatch[1]
+      .split(/[\s\-–,]+/)
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && isValid(n));
+    const seen = new Set<number>();
+    const ordered = nums.filter((n) => {
+      if (seen.has(n)) return false;
+      seen.add(n);
+      return true;
+    });
+    if (ordered.length >= 3) return ordered.slice(0, MAX_HORSES);
+  }
+
+  // ── Stratégie 4 (fallback global) : recherche dans le HTML entier ───────
+  const cleanedHtml = stripArtifacts(html);
+  const fallback = extractNumbersInOrder(cleanedHtml, isValid);
+  if (fallback.length >= 3) {
+    return fallback.slice(0, MAX_HORSES);
   }
 
   return null;
@@ -142,6 +289,13 @@ interface CourseRow {
   numero_reunion: number;
   numero_course:  number;
   geny_url:       string | null;
+  /**
+   * Liste des numéros des partants de cette course (depuis la DB). Permet au
+   * parser d'arrivée de filtrer les faux positifs (sidebars, rapports, IDs
+   * HTML, etc.) en ne gardant que les numéros qui correspondent réellement
+   * à un partant.
+   */
+  validNumbers?: number[];
 }
 
 interface FetchedArrivee {
@@ -174,7 +328,7 @@ async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee 
     if (!res.ok) return null;
     const html = await res.text();
 
-    const arrivee = parseArrivee(html);
+    const arrivee = parseArrivee(html, course.validNumbers);
     if (!arrivee) return null;
 
     // Bonus : rapports PMU complets + commentaire d'arrivée (best-effort)
@@ -224,19 +378,33 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
   const date = dateISO || todayParisISO();
   const supabase = createServiceClient();
 
-  const { data: courses } = await supabase
+  // JOIN partants pour passer leurs numéros au parser → garantit zéro faux
+  // positif (sidebar, rapports €, IDs HTML rejetés automatiquement).
+  const { data: rawCourses } = await supabase
     .from("courses")
-    .select("id, numero_reunion, numero_course, geny_url")
+    .select("id, numero_reunion, numero_course, geny_url, partants(numero)")
     .eq("date_course", date)
     .is("arrivee_officielle", null);
 
-  if (!courses?.length) {
+  if (!rawCourses?.length) {
     return { ok: true, date, scraped: 0, upserted: 0, skipped: 0, not_found: 0 };
   }
 
+  // Mappe chaque course avec sa liste de numéros valides (partants)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const courses: CourseRow[] = (rawCourses as any[]).map((c) => ({
+    id:             c.id,
+    numero_reunion: c.numero_reunion,
+    numero_course:  c.numero_course,
+    geny_url:       c.geny_url,
+    validNumbers:   Array.isArray(c.partants)
+      ? c.partants.map((p: { numero: number }) => p.numero).filter((n: number) => Number.isInteger(n))
+      : undefined,
+  }));
+
   // Dédupliquer par (R, C) au cas où
   const seen = new Set<string>();
-  const unique = (courses as CourseRow[]).filter((c) => {
+  const unique = courses.filter((c) => {
     const key = `${c.numero_reunion}-${c.numero_course}`;
     if (seen.has(key)) return false;
     seen.add(key);
