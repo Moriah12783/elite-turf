@@ -1,6 +1,25 @@
 // build-trigger: 2026-05-05T15:37:39.684Z
 // build-trigger: 2026-05-05T13:42:33.816Z
 // build-trigger: 2026-05-06T13:45:00.000Z (Sentry token rotation)
+// build-trigger: 2026-05-08T10:00:00.000Z (Sentry 504 unhandledRejection swallow)
+
+// ── Sentry CLI unhandledRejection swallow ────────────────────────────────────
+// sentry-cli (child process spawné par @sentry/nextjs) peut throw un
+// unhandledRejection quand l'API Sentry retourne 504/503 (gateway timeout).
+// Ce throw échappe à l'errorHandler du plugin Webpack et fait tomber TOUT le
+// build Next.js (déjà arrivé 2× : 2026-05-06 et 2026-05-08). On l'attrape
+// globalement pour ne plus jamais bloquer un déploiement à cause de Sentry.
+process.on("unhandledRejection", (reason) => {
+  const msg = String(reason && (reason.message || reason));
+  if (msg.includes("sentry-cli") || msg.includes("sentry reported an error")) {
+    // eslint-disable-next-line no-console
+    console.warn("⚠️ Sentry CLI unhandledRejection swallowed (non-fatal):", msg);
+    return;
+  }
+  // Autres unhandledRejection : on re-throw pour ne pas masquer de vrais bugs
+  throw reason;
+});
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   images: {
@@ -69,11 +88,19 @@ module.exports = sentryEnabled
       disableLogger:            true,
       // Pas de release auto Vercel
       automaticVercelMonitors:  false,
+      // Désactive la création de release Sentry (sentry-cli releases new) qui
+      // est exactement le call qui timeout en 504 sur les builds cassés. On
+      // garde le sourcemap upload (utile pour stack traces lisibles) mais on
+      // skip la release management qui n'est pas critique.
+      release: {
+        create:   false,
+        finalize: false,
+      },
       // Sourcemaps best-effort : si Sentry API a un hoquet transitoire (504,
       // quota épuisé, réseau CI flaky), on ne casse PAS le build pour autant.
-      // Le sourcemaps upload sera tenté au prochain build. Précédent incident :
-      // 2026-05-06 build #14 cassé par "gateway timeout (http status: 504)" sur
-      // sentry-cli releases new.
+      // Le sourcemaps upload sera tenté au prochain build. Précédents incidents :
+      // 2026-05-06 build #14 et 2026-05-08 build cassés par
+      // "gateway timeout (http status: 504)" sur sentry-cli releases new.
       errorHandler: (err) => {
         // eslint-disable-next-line no-console
         console.warn("⚠️ Sentry build plugin error (non-fatal):", err.message || err);
