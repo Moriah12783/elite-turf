@@ -12,6 +12,7 @@
  */
 
 import { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, MapPin, Users, ArrowLeft, ChevronRight } from "lucide-react";
@@ -59,6 +60,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProgrammePage({ params }: PageProps) {
   if (!isValidDateParam(params.date)) notFound();
+
+  // Aujourd'hui : bypass du cache ISR pour afficher les arrivées et la mise à
+  // jour des courses (statut PROGRAMME → TERMINE) dès chaque sync Geny.
+  // Past/futur restent en ISR 600s (programme stable, résultats figés).
+  if (isToday(params.date)) noStore();
 
   // Fenêtre de validité raisonnable : -90j à +30j (hors plage = 404 SEO-friendly)
   const today    = todayParis();
@@ -302,8 +308,8 @@ export default async function ProgrammePage({ params }: PageProps) {
   );
 }
 
-// ISR dynamique : 60s pour aujourd'hui, 600s pour futur, 24h pour passé.
-// On utilise revalidate static avec la valeur la plus permissive qui couvre
-// le cas le plus exigeant (futur). Les pages passées seront dynamiquement
-// revalidées via les events DB de toute façon.
+// ISR 600s pour le futur (programme stable) et le passé (résultats figés).
+// Aujourd'hui est rendu full-dynamic via noStore() dans la fonction page,
+// pour que les changements de statut (PROGRAMME → TERMINE) et arrivées
+// apparaissent sans délai après chaque sync Geny.
 export const revalidate = 600;
