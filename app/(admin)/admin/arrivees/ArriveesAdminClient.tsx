@@ -43,6 +43,29 @@ function formatArrivee(arr: number[] | null): string {
   return arr.join("-");
 }
 
+/**
+ * Nombre minimum de chevaux à saisir selon les paris disponibles d'une course.
+ * On vise toujours 5 par défaut (Quinté+ standard PMU) sauf pour les courses
+ * qui n'ont que SIMPLE_GAGNANT/PLACE (peu de chevaux dans le pari) où 3 suffit.
+ *
+ * IMPORTANT : même si une course n'est officiellement pas Quinté+, Geny donne
+ * souvent les 5-6 premiers chevaux. Saisir 5+ chevaux enrichit la page SEO
+ * (contenu plus dense) et permet aux visiteurs de voir l'arrivée complète.
+ */
+function getMinHorses(parisDispo: string[]): { min: number; ideal: number; label: string } {
+  if (parisDispo.includes("QUINTE_PLUS") || parisDispo.includes("QUINTE")) {
+    return { min: 5, ideal: 6, label: "Quinté+" };
+  }
+  if (parisDispo.includes("QUARTE_PLUS")) {
+    return { min: 4, ideal: 5, label: "Quarté+" };
+  }
+  if (parisDispo.includes("TIERCE")) {
+    return { min: 3, ideal: 5, label: "Tiercé" };
+  }
+  // Courses sans grand pari : 3 minimum, 5 idéal pour SEO/contenu riche
+  return { min: 3, ideal: 5, label: "Course simple" };
+}
+
 function fmtEur(n: number | null | undefined): string {
   if (n == null) return "";
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -67,6 +90,12 @@ export default function ArriveesAdminClient({ course }: Props) {
   const isQuinte = course.paris_disponibles?.includes("QUINTE_PLUS");
   const isQuarte = course.paris_disponibles?.includes("QUARTE_PLUS");
   const isTierce = course.paris_disponibles?.includes("TIERCE");
+  const horsesReq = getMinHorses(course.paris_disponibles ?? []);
+
+  // Validation du nombre de chevaux côté client (avant envoi API)
+  const currentArrivee = parseArriveeInput(arriveeText);
+  const insufficientHorses =
+    currentArrivee !== null && currentArrivee.length < horsesReq.min;
 
   // ── Helper update du state rapports (immutable) ─────────────────────────
   function updateRapport<K extends keyof RapportsPMU>(
@@ -119,6 +148,12 @@ export default function ArriveesAdminClient({ course }: Props) {
     const arrivee = parseArriveeInput(arriveeText);
     if (!arrivee) {
       setError("Ordre d'arrivée invalide (3-20 numéros uniques séparés par - ou espace)");
+      return;
+    }
+    if (arrivee.length < horsesReq.min) {
+      setError(
+        `${horsesReq.label} : ${horsesReq.min} chevaux minimum requis (idéal ${horsesReq.ideal}). Tu as saisi ${arrivee.length}.`,
+      );
       return;
     }
     startTransition(async () => {
@@ -287,19 +322,53 @@ export default function ArriveesAdminClient({ course }: Props) {
 
           {/* Ordre d'arrivée */}
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1.5">
-              Ordre d&apos;arrivée <span className="text-status-loss">*</span>
+            <label className="block text-xs font-semibold text-text-muted mb-1.5 flex items-center gap-2">
+              <span>Ordre d&apos;arrivée <span className="text-status-loss">*</span></span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                isQuinte ? "bg-gold-primary/20 text-gold-primary border border-gold-primary/30" :
+                isQuarte ? "bg-purple-500/20 text-purple-400 border border-purple-500/30" :
+                isTierce ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" :
+                "bg-bg-elevated text-text-muted border border-border"
+              }`}>
+                {horsesReq.label} · min {horsesReq.min} · idéal {horsesReq.ideal}
+              </span>
             </label>
             <input
               type="text"
               value={arriveeText}
               onChange={(e) => setArriveeText(e.target.value)}
-              placeholder="ex: 4-9-12-7-1"
-              className="w-full px-3 py-2 rounded-lg bg-bg-card border border-border focus:border-gold-primary outline-none text-text-primary font-mono text-sm"
+              placeholder={
+                isQuinte ? "ex: 4-9-12-7-1-3 (les 6 premiers idéalement)" :
+                isQuarte ? "ex: 4-9-12-7-1 (les 5 premiers idéalement)" :
+                "ex: 4-9-12-7-1 (5 chevaux pour un contenu riche)"
+              }
+              className={`w-full px-3 py-2 rounded-lg bg-bg-card border outline-none text-text-primary font-mono text-sm ${
+                insufficientHorses ? "border-status-loss" : "border-border focus:border-gold-primary"
+              }`}
             />
             <p className="text-xs text-text-muted mt-1">
-              5 numéros pour Quinté+, 4 pour Quarté+, 3 pour Tiercé. Séparés par - ou espace.
+              {isQuinte ? (
+                <>
+                  <strong className="text-gold-primary">Quinté+ : 5 chevaux minimum</strong> (6 idéal pour Bonus 4).
+                  Saisir &quot;4-9-12-7-1-3&quot; → ordre Quinté + Bonus calculables.
+                </>
+              ) : isQuarte ? (
+                <>
+                  <strong className="text-purple-400">Quarté+ : 4 chevaux minimum</strong> (5 idéal pour bonus).
+                </>
+              ) : isTierce ? (
+                <>
+                  <strong className="text-blue-400">Tiercé : 3 chevaux minimum</strong>, 5 idéal pour enrichir le contenu SEO.
+                </>
+              ) : (
+                <>3 chevaux minimum, <strong>5 idéal</strong> pour enrichir la page (Geny donne souvent les 5+ premiers).</>
+              )}
             </p>
+            {insufficientHorses && (
+              <p className="text-xs text-status-loss mt-1 font-medium">
+                ⚠ {currentArrivee?.length} cheval/aux saisi(s) — il faut au moins {horsesReq.min} pour {horsesReq.label}
+              </p>
+            )}
           </div>
 
           {/* Rapports — Quinté+ (toujours expandé si applicable) */}
