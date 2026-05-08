@@ -27,6 +27,7 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
+import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -188,6 +189,20 @@ export default async function QuintePlusPage({ params }: PageProps) {
     ],
   };
 
+  // NewsArticle JSON-LD : critère Google News + Top Stories carousel.
+  const newsArticleLd = buildNewsArticleJsonLd({
+    url:           `${APP_URL}/quinte-plus/${params.date}`,
+    headline:      `Quinté+ du ${dateLong} : ${c.libelle} (${hippo?.nom})`,
+    description:   `Pronostic Quinté+ du ${dateLong}. ${c.libelle} à ${hippo?.nom} : ${c.nb_partants} partants, ${c.distance_metres ? c.distance_metres + "m" : ""} ${c.categorie || ""}. Analyse, partants, arrivée et rapports.`,
+    datePublished: today2
+      ? new Date().toISOString()
+      : `${params.date}T08:00:00.000Z`,
+    dateModified:  new Date().toISOString(),
+    image:         `${APP_URL}/images/heroes/hero-pronostics.jpg`,
+    keywords:      ["Quinté+", "pronostic Quinté+", "arrivée Quinté+", "rapports Quinté+", hippo?.nom].filter(Boolean) as string[],
+    articleSection: "Hippisme — Quinté+",
+  });
+
   const eventLd = {
     "@context":  "https://schema.org",
     "@type":     "SportsEvent",
@@ -212,6 +227,10 @@ export default async function QuintePlusPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleLd) }}
       />
       <script
         type="application/ld+json"
