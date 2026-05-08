@@ -18,6 +18,13 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${APP_URL}/sitemap.xml`,
+    // Plusieurs sitemaps : le principal pour SEO classique, et un dédié
+    // Google News (articles publiés <48h, namespace news:news). Google
+    // News crawler récupère le second en plus de la déclaration manuelle
+    // côté Publisher Center.
+    sitemap: [
+      `${APP_URL}/sitemap.xml`,
+      `${APP_URL}/sitemap-news.xml`,
+    ],
   };
 }

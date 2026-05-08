@@ -23,6 +23,7 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
+import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 // Format un rapport en EUR français : 4500 → "4 500,00 €"
@@ -150,6 +151,23 @@ export default async function ArriveesPage({ params }: PageProps) {
     ],
   };
 
+  // NewsArticle JSON-LD : critère Google News + Top Stories carousel.
+  // datePublished = aujourd'hui à 21h pour les dates passées (heure typique
+  // de finalisation des arrivées) ; pour aujourd'hui, "maintenant" pour
+  // signaler la fraîcheur. dateModified = "now" si l'on continue d'enrichir.
+  const newsArticleLd = buildNewsArticleJsonLd({
+    url:           `${APP_URL}/arrivees/${params.date}`,
+    headline:      `Arrivées PMU et rapports du ${dateLong}`,
+    description:   `Toutes les arrivées des courses hippiques du ${dateLong} : Quinté+, Tiercé, Quarté+, Couplé, Trio. Rapports officiels PMU détaillés et hippodromes.`,
+    datePublished: today2
+      ? new Date().toISOString()
+      : `${params.date}T21:00:00.000Z`,
+    dateModified:  new Date().toISOString(),
+    image:         `${APP_URL}/images/heroes/hero-performances.jpg`,
+    keywords:      ["arrivée PMU", "rapports PMU", "résultats hippiques", "Quinté+", "Tiercé", "Quarté+"],
+    articleSection: "Hippisme — Arrivées PMU",
+  });
+
   const eventListLd = {
     "@context": "https://schema.org",
     "@type":    "ItemList",
@@ -183,6 +201,10 @@ export default async function ArriveesPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleLd) }}
       />
       <script
         type="application/ld+json"

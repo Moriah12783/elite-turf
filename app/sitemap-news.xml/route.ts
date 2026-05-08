@@ -18,12 +18,14 @@
 import { NextResponse } from "next/server";
 import { BLOG_ARTICLES } from "@/lib/blog-data";
 import { currentWeekISO, currentMonth, formatWeekHumanLong, formatMonthHuman } from "@/lib/blog-auto/dates";
+import { createServiceClient } from "@/lib/supabase/server";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
-// Cache 30 min — le contenu News bouge peu sur cette fenêtre
+// Cache 30 min — le contenu News bouge peu sur cette fenêtre.
+// On passe en force-dynamic car on lit Supabase pour les arrivées du jour.
 export const revalidate = 1800;
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 interface NewsItem {
   url:        string;
@@ -108,6 +110,73 @@ export async function GET() {
       pubDate: firstOfMonth,
       keywords: ["pronostic PMU", "bilan mensuel", "statistiques turf"],
     });
+  }
+
+  // 4. Pages arrivées + quinté+ des 2 derniers jours.
+  // Ces pages sont CRITIQUES pour Google News : c'est là que se concentrent
+  // les requêtes "résultats PMU 7 mai", "arrivée Quinté+", "rapports PMU…".
+  // Concurrents (Geny, Paris-Turf) trustent grâce à leur sitemap-news.
+  try {
+    const supabase = createServiceClient();
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    const datesToCheck = [
+      today.toISOString().split("T")[0],
+      yesterday.toISOString().split("T")[0],
+    ];
+
+    // On n'inclut que les dates qui ont AU MOINS 1 arrivée publiée
+    // (sinon la page est vide, Google News rejette ou déclasse).
+    for (const dateISO of datesToCheck) {
+      const { data: courses } = await supabase
+        .from("courses")
+        .select("id, paris_disponibles", { count: "exact" })
+        .eq("date_course", dateISO)
+        .eq("statut", "TERMINE")
+        .not("arrivee_officielle", "is", null)
+        .limit(1);
+
+      if (!courses?.length) continue;
+
+      // /arrivees/<date> : page liste des arrivées
+      // pubDate : on prend "maintenant" si la date est aujourd'hui, sinon
+      // 21h locale du jour (heure typique de finalisation des arrivées).
+      const isToday = dateISO === today.toISOString().split("T")[0];
+      const pubDate = isToday
+        ? now
+        : new Date(`${dateISO}T21:00:00.000Z`);
+      if (pubDate >= cutoff) {
+        const dateHuman = new Date(dateISO + "T12:00:00").toLocaleDateString("fr-FR", {
+          day: "numeric", month: "long", year: "numeric",
+        });
+        items.push({
+          url:      `${APP_URL}/arrivees/${dateISO}`,
+          title:    `Arrivées et rapports PMU du ${dateHuman}`,
+          pubDate,
+          keywords: ["arrivée PMU", "rapports PMU", "résultats hippiques", "tiercé", "quarté", "quinté"],
+        });
+      }
+
+      // /quinte-plus/<date> : page focus du Quinté+ du jour
+      const quintePlusExists = courses.some((c: any) =>
+        Array.isArray(c.paris_disponibles)
+        && (c.paris_disponibles.includes("QUINTE_PLUS") || c.paris_disponibles.includes("QUINTE")),
+      );
+      if (quintePlusExists && pubDate >= cutoff) {
+        const dateHuman = new Date(dateISO + "T12:00:00").toLocaleDateString("fr-FR", {
+          day: "numeric", month: "long", year: "numeric",
+        });
+        items.push({
+          url:      `${APP_URL}/quinte-plus/${dateISO}`,
+          title:    `Quinté+ du ${dateHuman} : pronostic, partants et arrivée`,
+          pubDate,
+          keywords: ["quinté+ du jour", "pronostic quinté", "arrivée quinté", "rapports quinté"],
+        });
+      }
+    }
+  } catch (err) {
+    // Best-effort : si Supabase est down, on reste avec les items blog.
+    console.error("[sitemap-news] Failed to load arrivees:", err);
   }
 
   const xml = buildNewsXml(items);
