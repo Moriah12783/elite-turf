@@ -41,35 +41,83 @@ function extractNums(str: string): number[] {
   return str.split(/[\s\-,\.\/|]+/).map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= 99);
 }
 
+/**
+ * Limite max d'une arrivée scrapée. PMU utilise jusqu'à 7 chevaux pour le
+ * Quinté+ Bonus 4 (5 du Quinté + 6e + 7e bonus). Geny affiche souvent 8
+ * chevaux (les Dai exclus). On stocke jusqu'à 10 pour être large, l'affichage
+ * front choisira combien afficher selon le type de pari.
+ */
+const MAX_HORSES = 10;
+
+/**
+ * Cherche tous les groupes du type "X-Y-Z-..." (au moins 3 numéros 1-99
+ * séparés par - ou –) dans une chaîne de caractères. Retourne les groupes
+ * triés par longueur décroissante (le plus long en premier = arrivée la
+ * plus complète).
+ *
+ * Pourquoi pas un seul regex match ? Parce que Geny.com peut afficher
+ * plusieurs séquences dans la page :
+ *   - Un widget en haut "Arrivée : 8-11-9" (3 chevaux, Tiercé seul)
+ *   - Un tableau "Arrivée définitive" plus bas "8-11-9-10-4-2-7-12" (8 chevaux)
+ *
+ * L'ancien parser matchait le PREMIER pattern et s'arrêtait à 3-5 chevaux.
+ * Cette version cherche tous les candidats puis garde le plus long.
+ */
+function findAllArriveeCandidates(text: string): number[][] {
+  const candidates: number[][] = [];
+  // Pattern : 3+ numéros (1-2 chiffres) séparés par - ou – ou , éventuels espaces
+  const re = /\b(\d{1,2}(?:\s*[\-–,]\s*\d{1,2}){2,})\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const nums = m[1]
+      .split(/\s*[\-–,]\s*/)
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 99);
+    // Pas de doublons (sinon ce n'est pas une arrivée mais une plage genre "1-1-1")
+    if (nums.length >= 3 && new Set(nums).size === nums.length) {
+      candidates.push(nums);
+    }
+  }
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates;
+}
+
 export function parseArrivee(html: string): number[] | null {
-  // Pattern principal : section arrivée explicite
-  const patterns: RegExp[] = [
-    // "Arrivée officielle : 4-9-12-7-1"
-    /[Aa]rriv[eé]e\s*(?:officielle)?\s*:?\s*((?:\d+[\s\-,]+){2,}\d+)/,
-    // <strong>4 - 9 - 12 - 7 - 1</strong>
-    /<(?:strong|b)[^>]*>((?:\d+\s*[\-–]\s*){2,}\d+)<\/(?:strong|b)>/i,
-    // data-arrivee="4-9-12-7-1"
-    /data-(?:arrivee|ordre|result)[^=]*=["']([\d\s,\-]+)["']/i,
-    // class="arrivee" ... "4 9 12 7 1"
-    /class="[^"]*arriv[eé]e[^"]*"[^>]*>([\d\s\-,]+)/i,
-    // "Résultat: 4-9-12-7-1"
-    /[Rr][eé]sultat\s*:?\s*((?:\d+[\s\-,]+){2,}\d+)/,
-    // Format compact final 5 chiffres collés
-    /\b(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})\b/,
+  // ── Stratégie 1 (priorité) : section "Arrivée définitive/officielle" ────
+  // On isole d'abord les blocs HTML qui contiennent explicitement le label
+  // "Arrivée définitive" ou "Arrivée officielle". Ces sections ont les 5+
+  // premiers chevaux dans un tableau structuré.
+  const sectionPatterns: RegExp[] = [
+    /[Aa]rriv[eé]e\s*d[eé]finitive[\s\S]{0,3000}/,
+    /[Aa]rriv[eé]e\s*officielle[\s\S]{0,3000}/,
   ];
 
-  for (let i = 0; i < patterns.length; i++) {
-    const m = html.match(patterns[i]);
-    if (!m) continue;
+  for (const sectionRe of sectionPatterns) {
+    const sectionMatch = html.match(sectionRe);
+    if (!sectionMatch) continue;
 
-    // Pattern dernier (5 chiffres séparés)
-    if (i === 5 && m[1] && m[2] && m[3] && m[4] && m[5]) {
-      const nums = [+m[1], +m[2], +m[3], +m[4], +m[5]].filter((n) => n >= 1 && n <= 99);
-      if (nums.length === 5) return nums;
+    const candidates = findAllArriveeCandidates(sectionMatch[0]);
+    if (candidates.length > 0) {
+      return candidates[0].slice(0, MAX_HORSES);
     }
+  }
 
-    const nums = extractNums(m[1] ?? m[0]);
-    if (nums.length >= 3) return nums.slice(0, 5);
+  // ── Stratégie 2 : data-attributes structurés ────────────────────────────
+  const dataMatch = html.match(/data-(?:arrivee|ordre|result)[^=]*=["']([\d\s,\-–]+)["']/i);
+  if (dataMatch) {
+    const nums = extractNums(dataMatch[1]);
+    if (nums.length >= 3) {
+      return nums.slice(0, MAX_HORSES);
+    }
+  }
+
+  // ── Stratégie 3 (fallback global) : la plus longue séquence du HTML ─────
+  // Si aucune section explicite, on prend la séquence la plus longue de la
+  // page entière. Risque : capter des numéros non-arrivée (ex: téléphones
+  // "01-23-45-67-89") mais filtre n >= 1 && n <= 99 limite la casse.
+  const allCandidates = findAllArriveeCandidates(html);
+  if (allCandidates.length > 0 && allCandidates[0].length >= 3) {
+    return allCandidates[0].slice(0, MAX_HORSES);
   }
 
   return null;
