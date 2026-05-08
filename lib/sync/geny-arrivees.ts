@@ -82,24 +82,93 @@ function findAllArriveeCandidates(text: string): number[][] {
   return candidates;
 }
 
+/**
+ * Extrait les numéros d'arrivée depuis un HTML de tableau (ex: chaque cheval
+ * dans une cellule `<td>` séparée). Approche défensive :
+ *
+ *  1. Supprime d'abord les "labels de position" (1er, 2e, 3e, …) qui sont des
+ *     numéros d'ordre, PAS des numéros de cheval.
+ *  2. Supprime les montants décimaux (1.50, 12,80) qui sont des rapports €.
+ *  3. Extrait toutes les occurrences de nombres entiers 1-20 (plage typique
+ *     des numéros de cheval ; le partant max est ~20 sur les courses PMU).
+ *  4. Dédoublonne en préservant l'ordre d'apparition.
+ *
+ * Cette stratégie permet de récupérer les chevaux quand Geny utilise un
+ * tableau HTML strict (chaque cheval dans `<td>`), cas où les regex
+ * "X-Y-Z-…" basées sur des séparateurs échouent.
+ */
+function extractFromTableSection(section: string): number[] {
+  // 1. Cleanup : retire labels de position (1er, 2e, 3e, 4e, 5e, ème, ième)
+  let cleaned = section.replace(/\b(\d+)(?:er|ère|e|ème|ième)\b/gi, "");
+  // 2. Retire les décimaux (rapports € : 1.50, 12,80, 100.00)
+  cleaned = cleaned.replace(/\b\d+[.,]\d+\b/g, "");
+  // 3. Retire les montants suivis de € (rapports résiduels)
+  cleaned = cleaned.replace(/\d+\s*€/g, "");
+
+  // 4. Extrait tous les entiers 1-20 dans l'ordre d'apparition
+  const nums: number[] = [];
+  const re = /\b(\d{1,2})\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(cleaned)) !== null) {
+    const n = parseInt(m[1], 10);
+    if (n >= 1 && n <= 20) nums.push(n);
+  }
+
+  // 5. Dédoublonne en préservant l'ordre (premier apparition gagne)
+  const seen = new Set<number>();
+  return nums.filter((n) => {
+    if (seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  });
+}
+
 export function parseArrivee(html: string): number[] | null {
+  // Cible idéale : 5 chevaux minimum pour enrichir le contenu SEO.
+  // Si on trouve une séquence plus courte mais on a une section, on essaie
+  // d'aller chercher plus profond avec extractFromTableSection.
+  const TARGET_MIN = 5;
+
   // ── Stratégie 1 (priorité) : section "Arrivée définitive/officielle" ────
-  // On isole d'abord les blocs HTML qui contiennent explicitement le label
-  // "Arrivée définitive" ou "Arrivée officielle". Ces sections ont les 5+
-  // premiers chevaux dans un tableau structuré.
   const sectionPatterns: RegExp[] = [
     /[Aa]rriv[eé]e\s*d[eé]finitive[\s\S]{0,3000}/,
     /[Aa]rriv[eé]e\s*officielle[\s\S]{0,3000}/,
+    /[Aa]rriv[eé]e\s*compl[eè]te[\s\S]{0,3000}/,
   ];
+
+  let bestFromSection: number[] | null = null;
 
   for (const sectionRe of sectionPatterns) {
     const sectionMatch = html.match(sectionRe);
     if (!sectionMatch) continue;
+    const section = sectionMatch[0];
 
-    const candidates = findAllArriveeCandidates(sectionMatch[0]);
+    // 1.A : essai séquences "X-Y-Z" contiguës
+    const candidates = findAllArriveeCandidates(section);
     if (candidates.length > 0) {
-      return candidates[0].slice(0, MAX_HORSES);
+      const longest = candidates[0];
+      // Si on a déjà 5+ chevaux : retour direct
+      if (longest.length >= TARGET_MIN) {
+        return longest.slice(0, MAX_HORSES);
+      }
+      // Sinon on garde en mémoire pour comparer avec stratégie 1.B
+      bestFromSection = longest;
     }
+
+    // 1.B : extraction tableau (chaque cheval dans une cellule HTML séparée)
+    const tableNums = extractFromTableSection(section);
+    if (tableNums.length >= TARGET_MIN) {
+      return tableNums.slice(0, MAX_HORSES);
+    }
+    // Si on a une séquence courte ET une extraction tableau qui est meilleure
+    if (tableNums.length > (bestFromSection?.length ?? 0)) {
+      bestFromSection = tableNums;
+    }
+  }
+
+  // Si après les sections on a quelque chose >= 3, on retourne ça
+  if (bestFromSection && bestFromSection.length >= 3) {
+    return bestFromSection.slice(0, MAX_HORSES);
   }
 
   // ── Stratégie 2 : data-attributes structurés ────────────────────────────
@@ -112,9 +181,6 @@ export function parseArrivee(html: string): number[] | null {
   }
 
   // ── Stratégie 3 (fallback global) : la plus longue séquence du HTML ─────
-  // Si aucune section explicite, on prend la séquence la plus longue de la
-  // page entière. Risque : capter des numéros non-arrivée (ex: téléphones
-  // "01-23-45-67-89") mais filtre n >= 1 && n <= 99 limite la casse.
   const allCandidates = findAllArriveeCandidates(html);
   if (allCandidates.length > 0 && allCandidates[0].length >= 3) {
     return allCandidates[0].slice(0, MAX_HORSES);

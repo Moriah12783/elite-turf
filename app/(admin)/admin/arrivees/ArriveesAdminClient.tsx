@@ -45,25 +45,29 @@ function formatArrivee(arr: number[] | null): string {
 
 /**
  * Nombre minimum de chevaux à saisir selon les paris disponibles d'une course.
- * On vise toujours 5 par défaut (Quinté+ standard PMU) sauf pour les courses
- * qui n'ont que SIMPLE_GAGNANT/PLACE (peu de chevaux dans le pari) où 3 suffit.
  *
- * IMPORTANT : même si une course n'est officiellement pas Quinté+, Geny donne
- * souvent les 5-6 premiers chevaux. Saisir 5+ chevaux enrichit la page SEO
- * (contenu plus dense) et permet aux visiteurs de voir l'arrivée complète.
+ * **Politique unifiée 5 chevaux minimum** : pour garantir un contenu SEO
+ * homogène et dense sur la page /arrivees/ (Google adore les pages au
+ * contenu uniforme), TOUTES les courses doivent avoir au moins 5 chevaux
+ * dans leur arrivée. Geny.com fournit quasiment toujours les 5+ premiers
+ * chevaux dans la section "Arrivée définitive", même pour les courses
+ * sans pari spécifique.
+ *
+ * Le "label" sert juste à informer l'admin sur le type de pari, mais
+ * n'affecte pas la contrainte minimale (qui reste à 5 partout).
  */
 function getMinHorses(parisDispo: string[]): { min: number; ideal: number; label: string } {
   if (parisDispo.includes("QUINTE_PLUS") || parisDispo.includes("QUINTE")) {
     return { min: 5, ideal: 6, label: "Quinté+" };
   }
   if (parisDispo.includes("QUARTE_PLUS")) {
-    return { min: 4, ideal: 5, label: "Quarté+" };
+    return { min: 5, ideal: 5, label: "Quarté+" };
   }
   if (parisDispo.includes("TIERCE")) {
-    return { min: 3, ideal: 5, label: "Tiercé" };
+    return { min: 5, ideal: 5, label: "Tiercé" };
   }
-  // Courses sans grand pari : 3 minimum, 5 idéal pour SEO/contenu riche
-  return { min: 3, ideal: 5, label: "Course simple" };
+  // Courses sans grand pari : on exige quand même 5 pour homogénéité SEO
+  return { min: 5, ideal: 5, label: "Course simple" };
 }
 
 function fmtEur(n: number | null | undefined): string {
@@ -352,16 +356,11 @@ export default function ArriveesAdminClient({ course }: Props) {
                   <strong className="text-gold-primary">Quinté+ : 5 chevaux minimum</strong> (6 idéal pour Bonus 4).
                   Saisir &quot;4-9-12-7-1-3&quot; → ordre Quinté + Bonus calculables.
                 </>
-              ) : isQuarte ? (
-                <>
-                  <strong className="text-purple-400">Quarté+ : 4 chevaux minimum</strong> (5 idéal pour bonus).
-                </>
-              ) : isTierce ? (
-                <>
-                  <strong className="text-blue-400">Tiercé : 3 chevaux minimum</strong>, 5 idéal pour enrichir le contenu SEO.
-                </>
               ) : (
-                <>3 chevaux minimum, <strong>5 idéal</strong> pour enrichir la page (Geny donne souvent les 5+ premiers).</>
+                <>
+                  <strong className="text-text-primary">5 chevaux minimum</strong> pour un contenu SEO homogène.
+                  Geny donne quasiment toujours les 5+ premiers dans &quot;Arrivée définitive&quot;.
+                </>
               )}
             </p>
             {insufficientHorses && (
