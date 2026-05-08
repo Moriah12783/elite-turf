@@ -112,10 +112,15 @@ export async function GET() {
     });
   }
 
-  // 4. Pages arrivées + quinté+ des 2 derniers jours.
+  // 4. Pages programme + quinté+ + arrivées des 2 derniers jours.
   // Ces pages sont CRITIQUES pour Google News : c'est là que se concentrent
-  // les requêtes "résultats PMU 7 mai", "arrivée Quinté+", "rapports PMU…".
+  // les requêtes "pronostic Quinté+", "résultats PMU 7 mai", "rapports PMU…".
   // Concurrents (Geny, Paris-Turf) trustent grâce à leur sitemap-news.
+  //
+  // IMPORTANT : pour Google News, le contenu FRAIS (pronostic publié aujourd'hui
+  // avant la course) est aussi valuable que les résultats post-course. On ne
+  // filtre PAS sur statut = TERMINE — on inclut dès qu'une course existe pour
+  // la date (≈ programme défini, donc pronostic potentiellement publié).
   try {
     const supabase = createServiceClient();
     const today = new Date();
@@ -125,52 +130,62 @@ export async function GET() {
       yesterday.toISOString().split("T")[0],
     ];
 
-    // On n'inclut que les dates qui ont AU MOINS 1 arrivée publiée
-    // (sinon la page est vide, Google News rejette ou déclasse).
     for (const dateISO of datesToCheck) {
+      // Toutes les courses du jour (PAS de limit, PAS de filtre TERMINE).
+      // On regarde séparément :
+      //  - courses avec arrivée → légitime /arrivees/<date>
+      //  - courses QUINTE_PLUS → légitime /quinte-plus/<date> (toujours, pronostic ou arrivée)
       const { data: courses } = await supabase
         .from("courses")
-        .select("id, paris_disponibles", { count: "exact" })
-        .eq("date_course", dateISO)
-        .eq("statut", "TERMINE")
-        .not("arrivee_officielle", "is", null)
-        .limit(1);
+        .select("id, paris_disponibles, statut, arrivee_officielle")
+        .eq("date_course", dateISO);
 
       if (!courses?.length) continue;
 
-      // /arrivees/<date> : page liste des arrivées
-      // pubDate : on prend "maintenant" si la date est aujourd'hui, sinon
-      // 21h locale du jour (heure typique de finalisation des arrivées).
       const isToday = dateISO === today.toISOString().split("T")[0];
+      // Pour aujourd'hui : pubDate = now (frais). Pour hier : 21h UTC du jour.
       const pubDate = isToday
         ? now
         : new Date(`${dateISO}T21:00:00.000Z`);
-      if (pubDate >= cutoff) {
-        const dateHuman = new Date(dateISO + "T12:00:00").toLocaleDateString("fr-FR", {
-          day: "numeric", month: "long", year: "numeric",
-        });
-        items.push({
-          url:      `${APP_URL}/arrivees/${dateISO}`,
-          title:    `Arrivées et rapports PMU du ${dateHuman}`,
-          pubDate,
-          keywords: ["arrivée PMU", "rapports PMU", "résultats hippiques", "tiercé", "quarté", "quinté"],
-        });
-      }
+      if (pubDate < cutoff) continue;
 
-      // /quinte-plus/<date> : page focus du Quinté+ du jour
+      const dateHuman = new Date(dateISO + "T12:00:00").toLocaleDateString("fr-FR", {
+        day: "numeric", month: "long", year: "numeric",
+      });
+
+      // /programme/<date> : programme du jour (toujours news-worthy s'il y a des courses)
+      items.push({
+        url:      `${APP_URL}/programme/${dateISO}`,
+        title:    `Programme PMU du ${dateHuman} : courses, partants, pronostics`,
+        pubDate,
+        keywords: ["programme PMU", "courses du jour", "partants", "pronostics PMU"],
+      });
+
+      // /quinte-plus/<date> : page focus Quinté+ — incluse si AU MOINS 1 course
+      // QUINTE_PLUS existe (pronostic publié ou arrivée disponible, peu importe).
       const quintePlusExists = courses.some((c: any) =>
         Array.isArray(c.paris_disponibles)
         && (c.paris_disponibles.includes("QUINTE_PLUS") || c.paris_disponibles.includes("QUINTE")),
       );
-      if (quintePlusExists && pubDate >= cutoff) {
-        const dateHuman = new Date(dateISO + "T12:00:00").toLocaleDateString("fr-FR", {
-          day: "numeric", month: "long", year: "numeric",
-        });
+      if (quintePlusExists) {
         items.push({
           url:      `${APP_URL}/quinte-plus/${dateISO}`,
           title:    `Quinté+ du ${dateHuman} : pronostic, partants et arrivée`,
           pubDate,
           keywords: ["quinté+ du jour", "pronostic quinté", "arrivée quinté", "rapports quinté"],
+        });
+      }
+
+      // /arrivees/<date> : uniquement si AU MOINS 1 course terminée avec arrivée
+      const hasArrivee = courses.some((c: any) =>
+        c.statut === "TERMINE" && c.arrivee_officielle !== null,
+      );
+      if (hasArrivee) {
+        items.push({
+          url:      `${APP_URL}/arrivees/${dateISO}`,
+          title:    `Arrivées et rapports PMU du ${dateHuman}`,
+          pubDate,
+          keywords: ["arrivée PMU", "rapports PMU", "résultats hippiques", "tiercé", "quarté", "quinté"],
         });
       }
     }
