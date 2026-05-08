@@ -13,6 +13,7 @@ import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/g
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
+import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 
 export const dynamic = "force-dynamic";
 
@@ -210,39 +211,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // Déterminer si on doit afficher le countdown (avant le départ)
   const isUpcoming = c.statut === "PROGRAMME" || c.statut === "EN_COURS";
 
-  // ── JSON-LD SportsEvent + BreadcrumbList ─────────────────────────────────
-  // Aide Google à afficher la course dans les SERPs sport, knowledge panel
-  // d'événements et carousels Discover. Référence : schema.org/SportsEvent.
-  const startDateIso = c.date_course && c.heure_depart
-    ? `${c.date_course}T${c.heure_depart}+02:00` // heure Paris (UTC+2 été)
-    : c.date_course;
-  const dateFrLong = new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-  const sportsEventJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SportsEvent",
-    name: `${c.libelle} — ${c.hippodrome?.nom || ""}`,
-    description: `Course ${c.categorie} de ${c.distance_metres ?? ""} m, ${c.nb_partants ?? ""} partants, le ${dateFrLong} à ${c.hippodrome?.nom || ""}.`,
-    startDate: startDateIso,
-    eventStatus: c.statut === "ANNULE"
-      ? "https://schema.org/EventCancelled"
-      : c.statut === "TERMINE"
-        ? "https://schema.org/EventCompleted"
-        : "https://schema.org/EventScheduled",
-    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    sport: "Horse racing",
-    location: {
-      "@type": "Place",
-      name: c.hippodrome?.nom || "",
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: c.hippodrome?.ville || c.hippodrome?.nom || "",
-        addressCountry: c.hippodrome?.pays || "France",
-      },
-    },
-    url: `${APP_URL}/courses/${c.id}`,
-  };
+  // ── JSON-LD SportsEvent (helper centralisé) + BreadcrumbList ─────────────
+  // Helper assure tous les champs recommandés Google : endDate, image,
+  // performer, organizer, description, eventStatus, eventAttendanceMode.
+  const sportsEventJsonLd = buildSportsEventJsonLd(c);
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

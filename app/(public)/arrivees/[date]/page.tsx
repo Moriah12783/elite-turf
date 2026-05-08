@@ -24,6 +24,7 @@ import {
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
+import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 // Format un rapport en EUR français : 4500 → "4 500,00 €"
@@ -168,6 +169,8 @@ export default async function ArriveesPage({ params }: PageProps) {
     articleSection: "Hippisme — Arrivées PMU",
   });
 
+  // SportsEvent enrichi via helper centralisé : injecte endDate, eventStatus
+  // (TERMINE → EventCompleted), image, description, performer, organizer.
   const eventListLd = {
     "@context": "https://schema.org",
     "@type":    "ItemList",
@@ -176,23 +179,7 @@ export default async function ArriveesPage({ params }: PageProps) {
     itemListElement: finies.slice(0, 50).map((c: any, idx: number) => ({
       "@type":   "ListItem",
       position:  idx + 1,
-      item: {
-        "@type":    "SportsEvent",
-        name:       c.libelle,
-        startDate:  c.heure_depart ? `${c.date_course}T${c.heure_depart}` : c.date_course,
-        sport:      "Horse Racing",
-        url:        `${APP_URL}/courses/${c.id}`,
-        eventStatus: "https://schema.org/EventCompleted",
-        location: c.hippodrome ? {
-          "@type":         "Place",
-          name:            c.hippodrome.nom,
-          address: c.hippodrome.ville ? {
-            "@type":         "PostalAddress",
-            addressLocality: c.hippodrome.ville,
-            addressCountry:  c.hippodrome.pays || "FR",
-          } : undefined,
-        } : undefined,
-      },
+      item: buildSportsEventJsonLd(c),
     })),
   };
 

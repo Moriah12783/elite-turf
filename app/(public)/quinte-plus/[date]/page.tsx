@@ -28,6 +28,7 @@ import {
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
+import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -203,24 +204,11 @@ export default async function QuintePlusPage({ params }: PageProps) {
     articleSection: "Hippisme — Quinté+",
   });
 
-  const eventLd = {
-    "@context":  "https://schema.org",
-    "@type":     "SportsEvent",
-    name:        c.libelle,
-    startDate:   c.heure_depart ? `${c.date_course}T${c.heure_depart}` : c.date_course,
-    sport:       "Horse Racing",
-    url:         `${APP_URL}/quinte-plus/${params.date}`,
-    description: `Quinté+ du ${dateLong} : ${c.libelle} à ${hippo?.nom}, ${c.distance_metres ? c.distance_metres + "m" : ""} ${c.categorie || ""}. ${c.nb_partants} partants.`,
-    location: hippo ? {
-      "@type":     "Place",
-      name:        hippo.nom,
-      address: hippo.ville ? {
-        "@type":          "PostalAddress",
-        addressLocality:  hippo.ville,
-        addressCountry:   hippo.pays || "FR",
-      } : undefined,
-    } : undefined,
-  };
+  // SportsEvent enrichi (champs recommandés Google complets)
+  const eventLd = buildSportsEventJsonLd(
+    { ...c, hippodrome: hippo },
+    { url: `${APP_URL}/quinte-plus/${params.date}` },
+  );
 
   return (
     <div className="min-h-screen bg-bg-primary">
