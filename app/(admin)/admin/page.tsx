@@ -1,7 +1,8 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { Users, Star, CreditCard, CalendarDays, RefreshCw, History } from "lucide-react";
+import { Users, Star, CreditCard, CalendarDays, RefreshCw, History, Sparkles } from "lucide-react";
 import SyncResultatsButton from "@/components/admin/SyncResultatsButton";
 import BackfillResultatsButton from "@/components/admin/BackfillResultatsButton";
+import BatchPrefillPartantsButton from "@/components/admin/BatchPrefillPartantsButton";
 import CronMonitorPanel from "@/components/admin/CronMonitorPanel";
 
 // 1 EUR ≈ 655.957 XOF (taux fixe CFA)
@@ -193,6 +194,21 @@ export default async function AdminDashboard() {
           Utile pour rattraper les dates manquées.
         </p>
         <BackfillResultatsButton />
+      </div>
+
+      {/* ── Pré-remplir tous les partants du jour (batch Geny) ──────────── */}
+      <div>
+        <h2 className="font-serif text-lg font-semibold text-text-primary mb-2 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-purple-400" />
+          Pré-remplir tous les partants
+        </h2>
+        <p className="text-text-secondary text-sm mb-4">
+          Récupère depuis Geny.com les partants (numéro, nom, jockey/driver, cote, musique)
+          de toutes les courses d&apos;une date qui n&apos;ont pas encore de partants en base.
+          Pool de 4 workers en parallèle. Utile à 6h du matin pour préparer le programme du
+          jour, ou si le cron auto <code className="text-purple-400 bg-bg-elevated px-1 rounded">enrichir-partants</code> est tombé en panne.
+        </p>
+        <BatchPrefillPartantsButton />
       </div>
 
       {/* ── Monitoring Crons (dynamique, temps réel) ──────────────────── */}
