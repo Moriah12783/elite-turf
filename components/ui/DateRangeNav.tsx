@@ -6,10 +6,34 @@ import { ChevronLeft, ChevronRight, CalendarDays, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
+  /** Date courante affichée (YYYY-MM-DD) */
   currentDate: string;
-  /** Liste des dates (YYYY-MM-DD) qui ont au moins 1 arrivée enregistrée.
-   *  Permet d'afficher une pastille "✓" sur les jours avec contenu. */
-  datesWithArrivees?: string[];
+  /**
+   * Préfixe d'URL pour la navigation (ex: "/arrivees", "/quinte-plus",
+   * "/programme"). La nav génère des liens vers `${basePath}/${date}`.
+   */
+  basePath: string;
+  /**
+   * Liste des dates (YYYY-MM-DD) qui ont du contenu disponible.
+   * Permet d'afficher une pastille verte ✓ sur les pills correspondantes.
+   * Optionnel : si non fourni, pas de pastille.
+   */
+  datesWithContent?: string[];
+  /**
+   * Tooltip de la pastille verte. Par défaut "Contenu disponible".
+   * Personnalisable selon le contexte (ex: "Arrivées disponibles",
+   * "Quinté+ disponible", "Programme défini").
+   */
+  contentLabel?: string;
+  /**
+   * Limite passé en jours (par défaut -365 = 1 an d'historique).
+   * Doit être cohérent avec les bornes notFound() de la page parente.
+   */
+  pastDays?: number;
+  /**
+   * Limite futur en jours (par défaut +30 = 1 mois de programme à venir).
+   */
+  futureDays?: number;
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -29,30 +53,35 @@ function formatLabel(dateStr: string, today: string): string {
 }
 
 /**
- * Navigation date pour la page /arrivees/[date].
+ * Navigation générique entre dates pour les pages /arrivees/[date],
+ * /quinte-plus/[date], /programme/[date].
  *
- * Composants :
- *  - Bouton "← Hier" (jour précédent)
- *  - Pills cliquables : 6 jours autour de currentDate (passé privilégié)
- *  - Bouton "Demain →" (jour suivant)
- *  - Native date picker pour jumper à n'importe quelle date
- *  - Pastille ✓ sur les jours avec au moins 1 arrivée enregistrée
+ * Fonctionnalités :
+ *  - Bouton précédent/suivant (chevrons gauche/droite)
+ *  - Pills cliquables : 7 jours autour de currentDate (5 passés + courant + 1 futur)
+ *  - Pastille verte ✓ sur les jours qui ont du contenu (via datesWithContent)
+ *  - Sélecteur HTML5 `<input type="date">` pour jumper directement à n'importe
+ *    quelle date dans la fenêtre [pastDays, futureDays]
+ *  - Lien "Retour aujourd'hui" si on est sur une date différente
  *
- * Stratégie UX : les arrivées sont pour le PASSÉ, donc on affiche 5 jours
- * passés + aujourd'hui + 1 jour futur. Le user peut aller plus loin via
- * le date picker (jusqu'à -365j, +30j).
+ * UX : les pills sont scrollables horizontalement sur mobile.
  */
-export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }: Props) {
+export default function DateRangeNav({
+  currentDate,
+  basePath,
+  datesWithContent = [],
+  contentLabel = "Contenu disponible",
+  pastDays = 365,
+  futureDays = 30,
+}: Props) {
   const router = useRouter();
   const today = new Date().toISOString().split("T")[0];
-  const hasArrivees = new Set(datesWithArrivees);
+  const hasContent = new Set(datesWithContent);
 
-  // Limites cohérentes avec le serveur : -365j (historique 1 an) → +30j (programme futur)
-  const minDate = addDays(today, -365);
-  const maxDate = addDays(today, +30);
+  const minDate = addDays(today, -pastDays);
+  const maxDate = addDays(today, +futureDays);
 
-  // 7 pills : on centre sur currentDate mais on biaise vers le passé
-  // (les arrivées du futur n'existent pas, donc 5 passés + courant + 1 futur).
+  // 7 pills : on biaise vers le passé (5 passés + courant + 1 futur)
   const days = Array.from({ length: 7 }, (_, i) => addDays(currentDate, i - 5));
 
   const prevDate = addDays(currentDate, -1);
@@ -63,7 +92,7 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
   function handleDatePick(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value;
     if (v && /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= minDate && v <= maxDate) {
-      router.push(`/arrivees/${v}`);
+      router.push(`${basePath}/${v}`);
     }
   }
 
@@ -72,7 +101,7 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
       <div className="flex items-center gap-2">
         {/* Prev button */}
         <Link
-          href={isAtMin ? "#" : `/arrivees/${prevDate}`}
+          href={isAtMin ? "#" : `${basePath}/${prevDate}`}
           aria-label="Jour précédent"
           aria-disabled={isAtMin}
           className={cn(
@@ -91,11 +120,11 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
             {days.map((d) => {
               const isActive    = d === currentDate;
               const isTodayPill = d === today;
-              const hasContent  = hasArrivees.has(d);
+              const hasIt       = hasContent.has(d);
               return (
                 <Link
                   key={d}
-                  href={`/arrivees/${d}`}
+                  href={`${basePath}/${d}`}
                   className={cn(
                     "relative px-3 py-2 rounded-xl text-xs font-medium transition-all border whitespace-nowrap",
                     isActive
@@ -106,11 +135,11 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
                   )}
                 >
                   {formatLabel(d, today)}
-                  {/* Pastille verte si la date a au moins 1 arrivée */}
-                  {hasContent && !isActive && (
+                  {/* Pastille verte si du contenu existe pour cette date */}
+                  {hasIt && !isActive && (
                     <span
                       className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-status-win border border-bg-primary"
-                      title="Arrivées disponibles"
+                      title={contentLabel}
                     />
                   )}
                 </Link>
@@ -121,7 +150,7 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
 
         {/* Next button */}
         <Link
-          href={isAtMax ? "#" : `/arrivees/${nextDate}`}
+          href={isAtMax ? "#" : `${basePath}/${nextDate}`}
           aria-label="Jour suivant"
           aria-disabled={isAtMax}
           className={cn(
@@ -137,7 +166,6 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
 
       {/* Ligne secondaire : date picker + lien historique */}
       <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/30">
-        {/* Native date picker — accès direct à n'importe quelle date */}
         <label className="flex items-center gap-2 flex-1 min-w-0">
           <CalendarDays className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
           <span className="text-text-muted text-xs hidden sm:inline">Aller à :</span>
@@ -152,10 +180,9 @@ export default function ArriveesDateNav({ currentDate, datesWithArrivees = [] }:
           />
         </label>
 
-        {/* Lien vers aujourd'hui (raccourci si user perdu dans le passé) */}
         {currentDate !== today && (
           <Link
-            href={`/arrivees/${today}`}
+            href={`${basePath}/${today}`}
             className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gold-primary hover:bg-gold-primary/10 transition-colors flex-shrink-0"
           >
             <History className="w-3 h-3" />

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
-import ArriveesDateNav from "@/components/arrivees/ArriveesDateNav";
+import DateRangeNav from "@/components/ui/DateRangeNav";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
@@ -243,9 +243,11 @@ export default async function ArriveesPage({ params }: PageProps) {
         </nav>
 
         {/* ── Navigation entre dates (historique consultable) ───────── */}
-        <ArriveesDateNav
+        <DateRangeNav
           currentDate={params.date}
-          datesWithArrivees={datesWithArrivees}
+          basePath="/arrivees"
+          datesWithContent={datesWithArrivees}
+          contentLabel="Arrivées disponibles"
         />
 
         {/* ── Stats ────────────────────────────────────────────────── */}

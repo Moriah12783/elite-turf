@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
+import DateRangeNav from "@/components/ui/DateRangeNav";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
@@ -127,6 +128,22 @@ export default async function QuintePlusPage({ params }: PageProps) {
 
   const c = course as any;
 
+  // ── Dates avec Quinté+ disponibles (30 derniers jours) ──────────────
+  // Pour la nav : pastille ✓ sur les jours qui ont au moins 1 course Quinté+.
+  const minPillDate = new Date(new Date(today).getTime() - 30 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const maxPillDate = new Date(new Date(today).getTime() + 7 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const { data: rawDates } = await supabase
+    .from("courses")
+    .select("date_course")
+    .gte("date_course", minPillDate)
+    .lte("date_course", maxPillDate)
+    .contains("paris_disponibles", ["QUINTE_PLUS"]);
+  const datesWithQuinte = Array.from(
+    new Set((rawDates ?? []).map((r: { date_course: string }) => r.date_course)),
+  );
+
   const dateLong   = formatDateLong(params.date);
   const dateShort  = formatDateShort(params.date);
   const today2     = isToday(params.date);
@@ -141,7 +158,16 @@ export default async function QuintePlusPage({ params }: PageProps) {
           titre={`Quinté+ ${today2 ? "du jour" : ""}`}
           sousTitre={dateLong}
         />
-        <div className="max-w-3xl mx-auto px-4 py-12 text-center">
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <DateRangeNav
+            currentDate={params.date}
+            basePath="/quinte-plus"
+            datesWithContent={datesWithQuinte}
+            contentLabel="Quinté+ disponible"
+            pastDays={90}
+          />
+        </div>
+        <div className="max-w-3xl mx-auto px-4 pb-12 text-center">
           <div className="card-base p-10">
             <Star className="w-10 h-10 text-text-muted mx-auto mb-4" />
             <h2 className="font-serif text-xl font-bold text-text-primary mb-2">
@@ -241,13 +267,22 @@ export default async function QuintePlusPage({ params }: PageProps) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── Breadcrumb ──────────────────────────────────────────── */}
-        <nav className="mb-6 flex items-center gap-2 text-xs text-text-muted">
+        <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
           <Link href="/" className="hover:text-gold-primary">Accueil</Link>
           <ChevronRight className="w-3 h-3" />
           <Link href="/pronostics" className="hover:text-gold-primary">Pronostics</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-text-secondary">Quinté+ {dateShort}</span>
         </nav>
+
+        {/* ── Navigation entre dates (historique des Quinté+) ──────── */}
+        <DateRangeNav
+          currentDate={params.date}
+          basePath="/quinte-plus"
+          datesWithContent={datesWithQuinte}
+          contentLabel="Quinté+ disponible"
+          pastDays={90}
+        />
 
         {/* ── En-tête course ──────────────────────────────────────── */}
         <div className="card-base p-5 mb-6">
