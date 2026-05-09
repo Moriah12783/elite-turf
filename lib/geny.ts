@@ -154,35 +154,27 @@ function extractCells(rowHtml: string): string[] {
 }
 
 /**
- * Détecte si une valeur ressemble à une musique PMU (ex: "2p1p(25)3a", "Da9a", "0a").
- * Utilisé pour distinguer une colonne jockey d'une colonne musique dans le tableau Geny.
- */
-function looksLikeMusique(val: string): boolean {
-  // La musique PMU contient des chiffres suivis de lettres (p=plat, a=attelé, m=monté, s=steeplechase)
-  // et parfois des parenthèses avec des gains ex: (25), (12)
-  return /^\s*(?:\d*[a-zA-D()\s]+){2,}/.test(val) && /\d/.test(val) && /[a-zA-D]/.test(val);
-}
-
-/**
  * Parse la page HTML des partants Geny pour extraire les chevaux.
  *
- * Geny utilise deux structures de tableau selon le type de course :
+ * **Structure unifiée Geny 2026 (TROT et GALOP)** — 10 colonnes :
  *
- * GALOP (Plat / Obstacle) — colonnes TD :
- *  [0] N°    [1] Cheval  [2] C  [3] SA  [4] Poids  [5] Déch
- *  [6] Jockey  [7] Entraîneur  [8] Musique  [9] Valeur  [10] CotesRéf  [11] DernièresCotes
+ *  [0] N°            [1] Cheval        [2] SA (sexe+age, ex "M3", "F3", "H9")
+ *  [3] Distance      [4] Jockey/Driver [5] Entraîneur
+ *  [6] Musique       [7] Gains         [8] Cote ancienne
+ *  [9] Cote actuelle (= cote probable)
  *
- * TROT (Attelé / Monté) — colonnes TD :
- *  [0] N°    [1] Cheval  [2] SA  [3] Poids  [4] RédKm  [5] Déch
- *  [6] Musique  [7] Gains  [8] Driver  [9] Entraîneur  [10-11] Cotes
+ * Vérifié 2026-05-09 sur Caen (trot) + Hyères (galop) : structure identique
+ * pour les deux disciplines.
  *
- * On détecte automatiquement le type en vérifiant si cells[6] ressemble à une musique PMU.
+ * Note historique : avant 2026, Geny utilisait deux structures différentes
+ * (12 colonnes pour galop, 12 pour trot avec ordre différent). Le parser
+ * faisait une détection trot vs galop. Maintenant tout est unifié.
  *
- * NB : depuis 2026, Geny imbrique une sous-table <table class="table-oei">
- * dans la cellule "Cheval" pour afficher les icônes œillères/attache-langue.
- * Cette sous-table casse le regex <tr>...</tr> non-greedy. On la retire AVANT
- * de parser, et on isole le <tbody> du tableau "tableau_partants" pour éviter
- * de capturer les <tr> d'autres tableaux de la page (stats jockeys, etc.).
+ * NB : Geny imbrique une sous-table <table class="table-oei"> dans la
+ * cellule "Cheval" pour afficher les icônes œillères/attache-langue. Cette
+ * sous-table casse le regex <tr>...</tr> non-greedy. On la retire AVANT
+ * de parser, et on isole le <tbody> du tableau "tableau_partants" pour
+ * éviter de capturer les <tr> d'autres tableaux de la page (stats jockeys).
  */
 function parseGenyPartants(html: string): GenyParticipant[] {
   const participants: GenyParticipant[] = [];
@@ -205,60 +197,57 @@ function parseGenyPartants(html: string): GenyParticipant[] {
   while ((rowMatch = rowRe.exec(tbody)) !== null) {
     const cells = extractCells(rowMatch[1]);
 
-    // On veut au moins 8 colonnes et la première doit être un numéro de partant (1-30)
+    // Structure 2026 : 10 colonnes minimum (parfois 11 si Geny ajoute une col).
+    // Ancien minimum 8 maintenu pour compat avec d'éventuelles pages anciennes.
     if (cells.length < 8) continue;
     const num = parseInt(cells[0], 10);
     if (isNaN(num) || num < 1 || num > 30) continue;
 
-    const nom = cells[1] || `Cheval ${num}`;
+    // Geny intègre des icônes (œillères, attache-langue, déferré) via des
+    // caractères Unicode Private Use Area (U+E900-U+E9FF). On les retire pour
+    // garder un nom propre. Les `&#xe904;` sont déjà décodés par stripHtml.
+    const nom = (cells[1] || `Cheval ${num}`)
+      .replace(/[-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
     // Ignore les lignes entêtes récurrentes (ex: "Cheval")
     if (/^cheval$/i.test(nom)) continue;
 
-    // Détection auto galop vs trot :
-    // Si cells[6] ressemble à une musique PMU → structure TROT
-    const isTrot = looksLikeMusique(cells[6] ?? "");
+    // ── Mapping unifié structure 2026 ─────────────────────────────────
+    // [2] = SA → ex "M3" (mâle 3 ans), "F3" (femelle), "H9" (hongre 9 ans)
+    const sa  = cells[2] || "";
+    const sexe = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
+    const age  = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
 
-    let jockeyNom: string;
-    let entraineurNom: string;
-    let musique: string | undefined;
-    let placeCorde: number | undefined;
-    let sexe: string | undefined;
-    let age: number | undefined;
-    let poids: number | undefined;
+    // [3] = Distance (info course, identique pour tous → ignoré ici car
+    //       c'est une donnée de la course, pas du partant individuel)
+    // Pas de "poids" dans la structure 2026 — pour le galop, le poids du
+    //  jockey n'est plus exposé dans cette table simplifiée.
+    const poids: number | undefined = undefined;
+    const placeCorde: number | undefined = undefined;
 
-    if (isTrot) {
-      // ── Structure TROT ──────────────────────────────────────────────
-      // [2]=SA  [3]=Poids  [6]=Musique  [7]=Gains  [8]=Driver  [9]=Entraîneur
-      const sa = cells[2] || "";
-      sexe      = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
-      age       = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
-      poids     = parseFloat((cells[3] || "").replace(",", ".")) || undefined;
-      musique   = cells[6] || undefined;
-      // cells[7] = Gains (numérique, ex: "87,985") — ignoré
-      jockeyNom    = cells[8] || "";   // Driver
-      entraineurNom = cells[9] || "";  // Entraîneur
-    } else {
-      // ── Structure GALOP ─────────────────────────────────────────────
-      // [2]=C  [3]=SA  [4]=Poids  [5]=Déch  [6]=Jockey  [7]=Entraîneur  [8]=Musique
-      placeCorde   = parseInt(cells[2], 10) || undefined;
-      const sa     = cells[3] || "";
-      sexe         = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
-      age          = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
-      poids        = parseFloat((cells[4] || "").replace(",", ".")) || undefined;
-      jockeyNom    = cells[6] || "";
-      entraineurNom = cells[7] || "";
-      musique      = cells[8] || undefined;
-    }
+    // [4] = Jockey (galop) ou Driver (trot)
+    const jockeyNom = (cells[4] || "").trim();
 
-    // Musique : nettoyer "-" ou valeurs vides
+    // [5] = Entraîneur
+    const entraineurNom = (cells[5] || "").trim();
+
+    // [6] = Musique
+    let musique: string | undefined = (cells[6] || "").trim() || undefined;
     if (musique === "-" || musique === "") musique = undefined;
 
-    // Cotes : préférer "Dernières cotes" [11], sinon "Cotes réf." [10]
+    // [7] = Gains (numérique, ignoré pour l'instant)
+
+    // [8] = Cote ancienne, [9] = Cote actuelle. On préfère [9] (la plus à jour).
+    const coteActu = (cells[9] || "").trim();
+    const coteAncienne = (cells[8] || "").trim();
     const coteRaw =
-      (cells[11] && cells[11] !== "-" ? cells[11] : null) ??
-      (cells[10] && cells[10] !== "-" ? cells[10] : null) ?? "";
-    const coteProbable = parseFloat(coteRaw.replace(",", ".")) || undefined;
+      (coteActu && coteActu !== "-" ? coteActu : "") ||
+      (coteAncienne && coteAncienne !== "-" ? coteAncienne : "");
+    const coteProbable = coteRaw
+      ? (parseFloat(coteRaw.replace(",", ".")) || undefined)
+      : undefined;
 
     // Détection non-partant : Geny met "Non-partant" dans la colonne jockey
     // ou dans le nom du cheval pour les chevaux qui ne courront pas.
@@ -274,7 +263,7 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       age,
       poids,
       jockey:      jockeyNom && !nonPartant ? { nom: jockeyNom } : undefined,
-      entraineur:  entraineurNom  ? { nom: entraineurNom }  : undefined,
+      entraineur:  entraineurNom ? { nom: entraineurNom } : undefined,
       musique,
       coteProbable,
       nonPartant,
