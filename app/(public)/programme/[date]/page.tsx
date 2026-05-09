@@ -18,6 +18,7 @@ import { notFound } from "next/navigation";
 import { Calendar, MapPin, Users, ArrowLeft, ChevronRight } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
+import DateRangeNav from "@/components/ui/DateRangeNav";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams, getRevalidateForDate,
@@ -93,6 +94,24 @@ export default async function ProgrammePage({ params }: PageProps) {
     hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
   }));
 
+  // ── Dates avec programme disponible (pour pastilles ✓ de la nav) ────
+  // Pour /programme, presque toutes les dates ont des courses (programme PMU
+  // quotidien). On récupère quand même la fenêtre [J-30, J+7] pour mettre
+  // une pastille sur les jours qui ont au moins 1 course.
+  const minPillDate = new Date(new Date(today).getTime() - 30 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const maxPillDate = new Date(new Date(today).getTime() + 7 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const { data: rawDates } = await supabase
+    .from("courses")
+    .select("date_course")
+    .gte("date_course", minPillDate)
+    .lte("date_course", maxPillDate)
+    .neq("statut", "ANNULE");
+  const datesWithProgramme = Array.from(
+    new Set((rawDates ?? []).map((r: { date_course: string }) => r.date_course)),
+  );
+
   // Regrouper par hippodrome
   const groups: Record<string, { hippodrome: any; courses: any[] }> = {};
   for (const c of courses) {
@@ -157,13 +176,22 @@ export default async function ProgrammePage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* ── Breadcrumb ──────────────────────────────────────────── */}
-        <nav className="mb-6 flex items-center gap-2 text-xs text-text-muted">
+        <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
           <Link href="/" className="hover:text-gold-primary">Accueil</Link>
           <ChevronRight className="w-3 h-3" />
           <Link href="/courses" className="hover:text-gold-primary">Programme</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-text-secondary">{dateShort}</span>
         </nav>
+
+        {/* ── Navigation entre dates ────────────────────────────────── */}
+        <DateRangeNav
+          currentDate={params.date}
+          basePath="/programme"
+          datesWithContent={datesWithProgramme}
+          contentLabel="Programme défini"
+          pastDays={90}
+        />
 
         {/* ── Stats ────────────────────────────────────────────────── */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
