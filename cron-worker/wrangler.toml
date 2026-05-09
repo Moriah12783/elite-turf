@@ -1,0 +1,105 @@
+# ────────────────────────────────────────────────────────────────────────
+# Worker Cloudflare dédié aux Cron Triggers — ELITE TURF
+# ────────────────────────────────────────────────────────────────────────
+#
+# Pourquoi un worker séparé ?
+#   - L'app principale (`elite-turf`) est générée par OpenNext qui ne supporte
+#     pas nativement le `scheduled()` handler (entry point géré).
+#   - Modifier `.open-next/worker.js` est fragile (regénéré à chaque build).
+#   - Solution propre : un mini-Worker dédié qui fait juste des HTTP fetch
+#     vers les endpoints `/api/cron/*` de l'app principale, déclenchés par
+#     les Cron Triggers Cloudflare natifs.
+#
+# Déploiement (une seule fois) :
+#   1. Set le secret CRON_SECRET (mêmes valeur que l'app principale) :
+#      $ npx wrangler secret put CRON_SECRET --config cron-worker/wrangler.toml
+#   2. Deploy le worker :
+#      $ npx wrangler deploy --config cron-worker/wrangler.toml
+#   3. Vérifier dans Cloudflare dashboard → elite-turf-crons → Triggers
+#      que les 32 crons sont bien actifs.
+#
+# Mise à jour des schedules :
+#   - Modifier la liste `[triggers].crons` ci-dessous
+#   - Modifier le mapping `CRON_MAP` dans src/index.ts
+#   - Re-deploy : `npx wrangler deploy --config cron-worker/wrangler.toml`
+#
+# Coût : Cloudflare Workers Paid plan (5 USD/mois) déjà actif. Les Cron
+# Triggers sont gratuits jusqu'à 100/worker. On en a 32, OK.
+
+name = "elite-turf-crons"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ────────────────────────────────────────────────────────────────────────
+# Variables non-secrètes (URL de l'app à déclencher)
+# ────────────────────────────────────────────────────────────────────────
+[vars]
+APP_URL = "https://www.elite-turf.fr"
+
+# CRON_SECRET est passé via :
+#   $ wrangler secret put CRON_SECRET --config cron-worker/wrangler.toml
+# (ne PAS commiter ici)
+
+# ────────────────────────────────────────────────────────────────────────
+# Cron Triggers — copie 1:1 des schedules de l'ancien vercel.json
+# ────────────────────────────────────────────────────────────────────────
+[triggers]
+crons = [
+  # ── IA Pronostics & contenus ────────────────────────────────────────
+  "45 5 * * *",      # ia-pronostics (génération nuit)
+  "0 7 * * *",       # ia-auto-publish (publication matin)
+  "0 19 * * *",      # ia-rapport-soir
+  "45 9 * * *",      # pronostic-gratuit (publication 9h45)
+
+  # ── Sync programme + partants ───────────────────────────────────────
+  "41 7 * * *",      # lonaci-sync (matin)
+  "37 11 * * *",     # lonaci-sync (rappel midi)
+  "27 9 * * *",      # enrichir-partants (9h27)
+  "47 11 * * *",     # enrichir-partants (11h47)
+  "13 13 * * *",     # enrichir-partants (13h13)
+  "13 15 * * *",     # enrichir-partants (15h13)
+  "43 17 * * *",     # pmu-demain (programme du lendemain à 17h43)
+
+  # ── Sync arrivées (toutes les heures 13h-19h UTC) ───────────────────
+  "11 13 * * *",     # geny-arrivees
+  "11 14 * * *",
+  "11 15 * * *",
+  "11 16 * * *",
+  "11 17 * * *",
+  "11 18 * * *",
+  "11 19 * * *",
+
+  # ── Sync résultats (post-courses) ───────────────────────────────────
+  "23 6 * * *",      # admin/sync-resultats matinal
+  "17 19 * * *",     # admin/sync-resultats soir 1
+  "17 20 * * *",     # admin/sync-resultats soir 2
+  "17 21 * * *",     # admin/sync-resultats soir 3
+  "17 22 * * *",     # admin/sync-resultats soir 4
+  "37 20 * * *",     # admin/rapport-journalier (recap soir)
+
+  # ── Abonnements & paiements ─────────────────────────────────────────
+  "7 1 * * *",       # expire-abonnements (1h07 nuit)
+  "13 9 * * *",      # rappel-expiration (matin)
+  "*/15 * * * *",    # paystack-recovery (toutes les 15 min)
+
+  # ── Monitoring & SEO ────────────────────────────────────────────────
+  "*/30 * * * *",    # health-alerter (toutes les 30 min)
+  "45 3 * * *",      # seo-etl (sitemap + canonicals 3h45 nuit)
+
+  # ── Notifications utilisateurs ──────────────────────────────────────
+  "23 * * * *",      # welcome-emails (toutes les heures à :23)
+  "0 6 * * *",       # daily-push matin
+  "0 17 * * *",      # daily-push soir
+]
+
+# ────────────────────────────────────────────────────────────────────────
+# Limits & observabilité
+# ────────────────────────────────────────────────────────────────────────
+[observability]
+enabled = true
+head_sampling_rate = 1.0  # log 100% des invocations cron (faible volume)
+
+# Max 30s de CPU par cron run — suffisant pour fetch HTTP simple
+[limits]
+cpu_ms = 30000
