@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2, Zap } from "lucide-react";
+import { Plus, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2, Zap, Sparkles, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Partant {
@@ -64,9 +64,11 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
     return Array.from({ length: nbPartants }, (_, i) => emptyPartant(i + 1));
   });
 
-  const [saving,    setSaving]    = useState(false);
-  const [enriching, setEnriching] = useState(false);
-  const [showExtra, setShowExtra] = useState(false);
+  const [saving,         setSaving]         = useState(false);
+  const [enriching,      setEnriching]      = useState(false);
+  const [prefilling,     setPrefilling]     = useState(false);
+  const [showExtra,      setShowExtra]      = useState(false);
+  const [confirmPrefill, setConfirmPrefill] = useState(false);
 
   // ── Mise à jour d'un champ ──────────────────────────────────────────
   function update(key: string, field: keyof Partant, value: any) {
@@ -126,6 +128,88 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
     }
   }
 
+  // ── Détecter si on a déjà des partants en DB ───────────────────────
+  // Critère : au moins 1 ligne avec un id (= persisté) ET un nom_cheval rempli.
+  // On ne compte pas les rows vides pré-générées par emptyPartant().
+  const hasExistingPartants = rows.some((r) => !!r.id && r.nom_cheval.trim().length > 0);
+
+  // ── Pré-remplir depuis Geny ────────────────────────────────────────
+  // Mirror du flux /admin/arrivees : POST endpoint Geny → state local
+  // (sans persister) → admin vérifie/corrige → click Enregistrer pour PUT.
+  async function prefillFromGeny() {
+    setPrefilling(true);
+    try {
+      const res = await fetch(`/api/admin/partants/${courseId}/prefill-from-geny`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+
+      const fetched = Array.isArray(data.partants) ? data.partants : [];
+      if (fetched.length === 0) {
+        toast.error("Geny n'a retourné aucun partant pour cette course.");
+        return;
+      }
+
+      // Remplace tout le state local par les nouveaux partants Geny.
+      // Les ids existants en DB sont oubliés volontairement → l'API PUT
+      // (delete + insert) gère le remplacement complet à la sauvegarde.
+      setRows(
+        fetched.map((p: {
+          numero:      number;
+          nom_cheval:  string;
+          jockey:      string | null;
+          entraineur:  string | null;
+          cote:        number | null;
+          musique:     string | null;
+          poids_kg:    number | null;
+          non_partant: boolean;
+        }) => ({
+          _key:        crypto.randomUUID(),
+          // PAS d'id local : à l'enregistrement, l'API PUT supprime tout puis ré-insère
+          numero:      p.numero,
+          nom_cheval:  p.nom_cheval || "",
+          jockey:      p.jockey || "",
+          entraineur:  p.entraineur || "",
+          cote:        p.cote ?? "",
+          musique:     p.musique || "",
+          poids_kg:    p.poids_kg ?? "",
+          deferre:     false,
+          non_partant: !!p.non_partant,
+        })),
+      );
+
+      // Toast succès + warnings éventuels
+      toast.success(
+        `${fetched.length} partant(s) pré-remplis depuis Geny — vérifie puis enregistre`,
+      );
+      const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+      for (const w of warnings) {
+        toast(w, { icon: "⚠️", duration: 6000 });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur inconnue";
+      toast.error(`Pré-remplissage échoué : ${message}`);
+    } finally {
+      setPrefilling(false);
+      setConfirmPrefill(false);
+    }
+  }
+
+  // ── Handler du bouton "Pré-remplir Geny" ──────────────────────────
+  // Si on a déjà des partants en DB → ouvre la modal de confirmation
+  // (option C : éviter de perdre des éditions manuelles précieuses).
+  // Sinon → lance directement le prefill.
+  function handlePrefillClick() {
+    if (hasExistingPartants) {
+      setConfirmPrefill(true);
+    } else {
+      void prefillFromGeny();
+    }
+  }
+
   // ── Enrichir depuis PMU ─────────────────────────────────────────────
   async function enrich() {
     setEnriching(true);
@@ -172,9 +256,19 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={handlePrefillClick}
+            disabled={prefilling}
+            title="Récupère la liste complète des partants depuis Geny.com (numéro, nom, jockey, cote, musique, NP)"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-400 disabled:opacity-60 text-sm rounded-lg transition-colors"
+          >
+            {prefilling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {prefilling ? "Récupération…" : "Pré-remplir Geny"}
+          </button>
+          <button
+            type="button"
             onClick={enrich}
             disabled={enriching}
-            title="Récupère jockey, cote, musique, poids depuis l'API PMU"
+            title="Récupère jockey, cote, musique, poids depuis l'API PMU (déprécié — utilise Pré-remplir Geny)"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 disabled:opacity-60 text-sm rounded-lg transition-colors"
           >
             {enriching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -377,6 +471,78 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             {saving ? "Enregistrement…" : `Enregistrer ${rows.filter(r => r.nom_cheval.trim()).length} partant(s)`}
           </button>
+        </div>
+      )}
+
+      {/* ── Modal de confirmation pré-remplissage Geny ─────────────── */}
+      {confirmPrefill && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !prefilling && setConfirmPrefill(false)}
+        >
+          <div
+            className="card-base max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-serif text-lg font-bold text-text-primary mb-1">
+                  Pré-remplir depuis Geny ?
+                </h3>
+                <p className="text-text-secondary text-sm">
+                  Cette course contient déjà <strong className="text-text-primary">
+                  {rows.filter((r) => r.nom_cheval.trim()).length} partant(s)
+                  </strong> en base. Le pré-remplissage va <strong className="text-status-loss">
+                  remplacer entièrement</strong> le tableau par les données Geny.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !prefilling && setConfirmPrefill(false)}
+                disabled={prefilling}
+                className="p-1 text-text-muted hover:text-text-primary transition-colors flex-shrink-0 disabled:opacity-50"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="rounded-lg bg-status-loss/10 border border-status-loss/30 p-3 mb-4 text-sm text-text-secondary">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-status-loss flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-status-loss">Attention</strong> : tes éditions manuelles
+                  (corrections de cote, musiques, NP) seront perdues. Tu pourras encore éditer
+                  avant de cliquer sur Enregistrer.
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmPrefill(false)}
+                disabled={prefilling}
+                className="px-4 py-2 rounded-lg bg-bg-elevated hover:bg-bg-hover border border-border text-text-secondary text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={prefillFromGeny}
+                disabled={prefilling}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 disabled:opacity-60 text-white text-sm font-semibold transition-colors"
+              >
+                {prefilling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {prefilling ? "Récupération…" : "Confirmer & remplacer"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
