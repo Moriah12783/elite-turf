@@ -94,12 +94,14 @@ crons = [
 ]
 
 # ────────────────────────────────────────────────────────────────────────
-# Limits & observabilité
+# Observabilité
 # ────────────────────────────────────────────────────────────────────────
 [observability]
 enabled = true
 head_sampling_rate = 1.0  # log 100% des invocations cron (faible volume)
 
-# Max 30s de CPU par cron run — suffisant pour fetch HTTP simple
-[limits]
-cpu_ms = 30000
+# Note : la section [limits].cpu_ms a été retirée car elle requiert un
+# plan Cloudflare Workers Standard (au-dessus de Paid de base). Les
+# defaults Workers Paid (Bundled) sont largement suffisants pour des
+# crons qui font juste un HTTP fetch (1-2s).
+# Si nécessaire un jour, upgrader le plan puis ré-ajouter [limits].
