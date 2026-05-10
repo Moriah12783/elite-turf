@@ -32,24 +32,18 @@ export function emailBase(content: string, previewText = ""): string {
         <table class="container" width="580" cellpadding="0" cellspacing="0" border="0"
                style="width:580px;max-width:580px;">
 
-          <!-- Header / Logo -->
+          <!-- Header / Logo (intégré sur fond gris perle, sans encadré) -->
           <tr>
-            <td align="center" style="padding:0 0 20px 0;">
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="background:#FFFFFF;border:1px solid #E5E7EB;border-bottom:3px solid #C9A84C;border-radius:12px 12px 0 0;padding:18px 36px;text-align:center;">
-                    <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}" style="text-decoration:none;display:block;">
-                      <img
-                        src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
-                        alt="Elite Turf"
-                        width="200"
-                        height="200"
-                        style="display:block;margin:0 auto;width:200px;height:200px;object-fit:contain;"
-                      />
-                    </a>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding:8px 0 16px 0;">
+              <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}" style="text-decoration:none;display:inline-block;">
+                <img
+                  src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
+                  alt="Elite Turf"
+                  width="120"
+                  height="120"
+                  style="display:block;margin:0 auto;width:120px;height:120px;object-fit:contain;border:0;outline:none;"
+                />
+              </a>
             </td>
           </tr>
 
@@ -58,9 +52,9 @@ export function emailBase(content: string, previewText = ""): string {
             <td style="background:linear-gradient(90deg,transparent,#C9A84C,transparent);height:1px;font-size:0;line-height:0;">&nbsp;</td>
           </tr>
 
-          <!-- Corps — carte blanche immaculée -->
+          <!-- Corps — carte blanche immaculée (coins arrondis en haut) -->
           <tr>
-            <td style="background:#FFFFFF;border-left:1px solid #E5E7EB;border-right:1px solid #E5E7EB;padding:40px 44px;">
+            <td style="background:#FFFFFF;border:1px solid #E5E7EB;border-bottom:0;border-radius:12px 12px 0 0;padding:40px 44px;">
               ${content}
             </td>
           </tr>

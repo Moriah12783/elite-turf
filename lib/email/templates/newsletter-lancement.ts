@@ -150,21 +150,21 @@ n'osent même pas espérer. Et ce n'est pas de la chance — c'est de l'analyse.
         <table class="container" width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;">
 
           <!-- ══════════════════════════════════════
-               LOGO TOP (fond nuit)
+               LOGO TOP (logo image, cohérent avec emailBase)
           ══════════════════════════════════════ -->
           <tr>
-            <td style="padding:0 0 0 0;text-align:center;background:#0F1923;
-                       border-radius:16px 16px 0 0;padding:20px 0 16px;">
-              <span style="font-family:Georgia,'Times New Roman',serif;
-                           font-size:11px;color:#C9A84C;letter-spacing:5px;
-                           text-transform:uppercase;display:block;margin-bottom:6px;">
-                Maison de pronostics
-              </span>
-              <span style="font-family:Georgia,'Times New Roman',serif;
-                           font-size:30px;font-weight:700;letter-spacing:4px;color:#C9A84C;">
-                ELITE&nbsp;<span style="color:#FFFFFF;">TURF</span>
-              </span>
-              <span style="display:block;margin-top:8px;font-family:Georgia,serif;
+            <td style="text-align:center;background:#0F1923;
+                       border-radius:16px 16px 0 0;padding:20px 0 12px;">
+              <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+                <img
+                  src="${APP_URL}/images/logo.png"
+                  alt="Elite Turf"
+                  width="120"
+                  height="120"
+                  style="display:block;margin:0 auto 6px auto;width:120px;height:120px;object-fit:contain;border:0;outline:none;"
+                />
+              </a>
+              <span style="display:block;font-family:Georgia,serif;
                            font-size:12px;color:rgba(201,168,76,0.6);letter-spacing:3px;
                            font-style:italic;">
                 L'Œil de l'Élite — N°${numeroEdition}

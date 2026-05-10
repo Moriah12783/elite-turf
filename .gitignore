@@ -44,3 +44,9 @@ lighthouse-report.html
 
 # Claude Code worktrees (évite faux submodules)
 .claude/worktrees/
+
+# Tmp / previews locaux (générés par scripts, ne jamais commiter)
+tmp/
+
+# Env Vercel (anciennes clés migration → ne jamais commiter)
+.env.vercel
