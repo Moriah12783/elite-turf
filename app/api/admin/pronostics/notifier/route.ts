@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronostic";
+
+const CRON_SECRET = process.env.CRON_SECRET || "";
 
 /**
  * POST /api/admin/pronostics/notifier
@@ -11,9 +13,61 @@ import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronosti
  * - GRATUIT  → tous les utilisateurs actifs
  * - PRO      → STARTER + PRO + ELITE
  * - ELITE    → ELITE uniquement
+ *
+ * ── Sécurité ─────────────────────────────────────────────────────────────
+ * Cette route peut envoyer des milliers d'emails. 2 voies d'auth acceptées :
+ *
+ *   1. **Bearer CRON_SECRET** dans le header Authorization
+ *      → pour les scripts automatisés (curl, jobs internes, etc.)
+ *
+ *   2. **Session admin Supabase** (cookie)
+ *      → pour les clics depuis l'interface admin web (/admin/pronostics).
+ *      L'utilisateur doit avoir `profiles.role = 'ADMIN'`.
+ *
+ * Si aucune des 2 voies ne valide → 401 Unauthorized.
  */
+async function checkAuth(req: NextRequest): Promise<{ ok: boolean; reason?: string }> {
+  // ── Voie 1 : Bearer CRON_SECRET ────────────────────────────────────
+  const auth = req.headers.get("authorization") || "";
+  if (CRON_SECRET && auth === `Bearer ${CRON_SECRET}`) {
+    return { ok: true };
+  }
+
+  // ── Voie 2 : Session admin Supabase ────────────────────────────────
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { ok: false, reason: "non authentifié" };
+    }
+
+    const svc = createServiceClient();
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.role === "ADMIN") {
+      return { ok: true };
+    }
+    return { ok: false, reason: "réservé aux admins" };
+  } catch {
+    return { ok: false, reason: "erreur vérification session" };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
+    // ── 0. Authentification obligatoire ─────────────────────────────────
+    const authResult = await checkAuth(req);
+    if (!authResult.ok) {
+      return NextResponse.json(
+        { error: "Unauthorized", reason: authResult.reason },
+        { status: 401 },
+      );
+    }
+
     const { pronosticId } = await req.json();
     if (!pronosticId) {
       return NextResponse.json({ error: "pronosticId requis" }, { status: 400 });
