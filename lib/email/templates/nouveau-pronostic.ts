@@ -1,5 +1,6 @@
 import { emailBase, emailButton, emailDivider, emailBadge } from "../base";
 import { renderHeaderBanner, BANNER_NOUVEAU_PRONOSTIC } from "./banners/header-banner";
+import { formatTypePari } from "../../utils/format-pari";
 
 interface NouveauPronosticData {
   nomComplet: string;
@@ -25,6 +26,9 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   const niveauLabel = isElite ? "✦ Elite Exclusif" : isPro ? "★ Pro" : "Gratuit";
   const niveauColor = isElite ? "#7C3AED" : isPro ? "#C9A84C" : "#16A34A";
 
+  // Format humain du type de pari (QUINTE_PLUS → Quinté+, TIERCE → Tiercé, etc.)
+  const typePariLabel = formatTypePari(data.typePari);
+
   const content = `
     ${renderHeaderBanner(BANNER_NOUVEAU_PRONOSTIC)}
 
@@ -39,7 +43,7 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
             <p style="margin:0;color:#1E3A5F;font-size:18px;font-weight:700;
                       font-family:Georgia,serif;">${data.hippodrome}</p>
             <p style="margin:4px 0 0 0;color:#C9A84C;font-size:13px;font-weight:600;">
-              ${data.dateString} · ${data.typePari}
+              ${data.dateString} · ${typePariLabel}
             </p>
           </td>
           <td style="text-align:right;vertical-align:top;">
@@ -51,10 +55,10 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
 
     <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:22px;
                font-weight:700;color:#1E3A5F;line-height:1.3;">
-      ${data.typePari} du jour — Nos experts ont parlé 🏇
+      ${typePariLabel} du jour — Nos experts ont parlé 🏇
     </h1>
     <p style="margin:0 0 20px 0;color:#1F2937;font-size:14px;line-height:1.6;">
-      Bonjour ${prenom}, notre analyse pour le <strong style="color:#C9A84C;">${data.typePari}</strong>
+      Bonjour ${prenom}, notre analyse pour le <strong style="color:#C9A84C;">${typePariLabel}</strong>
       de <strong style="color:#1E3A5F;">${data.hippodrome}</strong> est disponible.
     </p>
 
@@ -91,7 +95,7 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
           <div style="background:#F8FAFC;border:1px solid #E5E7EB;border-radius:8px;
                       padding:14px;text-align:center;">
             <p style="margin:0 0 4px 0;font-size:22px;font-weight:700;
-                      color:#1E3A5F;font-family:Georgia,serif;">${data.typePari}</p>
+                      color:#1E3A5F;font-family:Georgia,serif;">${typePariLabel}</p>
             <p style="margin:0;color:#9CA3AF;font-size:11px;text-transform:uppercase;
                       letter-spacing:0.5px;">Type de pari</p>
           </div>
@@ -120,7 +124,7 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   `;
 
   return {
-    subject: `🏇 ${data.typePari} ${data.hippodrome} — Pronostic publié`,
+    subject: `🏇 ${typePariLabel} ${data.hippodrome} — Pronostic publié`,
     html: emailBase(
       content,
       `Pronostic ${data.typePari} publié pour ${data.hippodrome}. Consultez notre sélection.`
