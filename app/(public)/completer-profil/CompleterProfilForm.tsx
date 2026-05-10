@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Phone, Save, Loader2, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -92,19 +91,21 @@ export default function CompleterProfilForm({
 
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          phone:        phoneTrimmed,
+      // Appel à l'API serveur (qui utilise service_role pour bypass RLS récursive)
+      const res = await fetch("/api/profile/complete", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          phone:      phoneTrimmed,
           pays,
-          nom_complet:  nomComplet.trim(),
-          updated_at:   new Date().toISOString(),
-        })
-        .eq("id", userId);
+          nomComplet: nomComplet.trim(),
+        }),
+      });
 
-      if (error) {
-        toast.error(`Erreur : ${error.message}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        toast.error(`Erreur : ${data.reason || data.error || "inconnue"}`);
         return;
       }
 
@@ -112,7 +113,7 @@ export default function CompleterProfilForm({
       // Petite pause pour que le toast soit visible
       setTimeout(() => router.push("/espace-membre"), 800);
     } catch (err) {
-      toast.error("Erreur inattendue. Réessayez.");
+      toast.error("Erreur réseau. Réessayez.");
     } finally {
       setLoading(false);
     }
