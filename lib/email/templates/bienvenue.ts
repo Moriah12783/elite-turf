@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
+import { renderHeaderBanner, BANNER_BIENVENUE } from "./banners/header-banner";
 
 interface BienvenueData {
   nomComplet: string;
@@ -13,15 +14,13 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
   const content = `
-    <!-- Titre -->
-    <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:26px;
+    ${renderHeaderBanner(BANNER_BIENVENUE)}
+
+    <!-- Salutation personnalisée sous le banner -->
+    <h2 style="margin:28px 0 16px 0;font-family:Georgia,serif;font-size:20px;
                font-weight:700;color:#1E3A5F;line-height:1.3;">
       Bienvenue, ${prenom} ! 🏇
-    </h1>
-    <p style="margin:0 0 24px 0;color:#C9A84C;font-size:14px;font-weight:600;
-              letter-spacing:0.5px;">
-      Votre compte Elite Turf est actif
-    </p>
+    </h2>
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Votre inscription a bien été confirmée pour <strong style="color:#1E3A5F;">${email}</strong>.
@@ -62,7 +61,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
     </p>
     <p style="margin:0;color:#6B7280;font-size:13px;text-align:center;line-height:1.6;">
       Accédez aux analyses complètes Tiercé · Quarté+ · Quinté+<br/>
-      dès <strong style="color:#C9A84C;">29€</strong>
+      dès <strong style="color:#C9A84C;">65€</strong>
     </p>
 
     ${emailButton(`${appUrl}/abonnements`, "Voir les formules d'abonnement")}

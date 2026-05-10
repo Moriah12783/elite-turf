@@ -3,6 +3,8 @@
  * Design : Fond gris perle #F3F4F6 · Carte blanche · Accents Or/Bleu Nuit
  */
 
+import { renderHeaderBanner, BANNER_NEWSLETTER } from "./banners/header-banner";
+
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
 export interface NewsletterData {
@@ -193,28 +195,22 @@ export function templateNewsletter(data: NewsletterData): { subject: string; htm
         <table class="container" width="600" cellpadding="0" cellspacing="0" border="0"
                style="width:600px;max-width:600px;">
 
-          <!-- ── HEADER LOGO ── -->
+          <!-- ── HEADER LOGO (logo image, sans encadré, cohérent avec emailBase) ── -->
           <tr>
-            <td align="center" style="padding:0 0 0 0;">
-              <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td style="background:#FFFFFF;border:1px solid #E5E7EB;border-bottom:3px solid #C9A84C;
-                             border-radius:12px 12px 0 0;padding:20px 36px;text-align:center;">
-                    <span style="font-family:Georgia,serif;font-size:11px;color:#9CA3AF;
-                                 letter-spacing:4px;text-transform:uppercase;display:block;margin-bottom:4px;">
-                      Maison de pronostics
-                    </span>
-                    <span style="font-family:Georgia,serif;font-size:28px;font-weight:700;
-                                 color:#C9A84C;letter-spacing:3px;display:block;">
-                      ELITE <span style="color:#1E3A5F;">TURF</span>
-                    </span>
-                    <span style="font-family:Georgia,serif;font-size:13px;color:#6B7280;
-                                 letter-spacing:2px;display:block;margin-top:6px;font-style:italic;">
-                      L'Œil de l'Élite ${editionLabel}
-                    </span>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding:8px 0 16px 0;">
+              <a href="${APP_URL}" style="text-decoration:none;display:inline-block;">
+                <img
+                  src="${APP_URL}/images/logo.png"
+                  alt="Elite Turf"
+                  width="120"
+                  height="120"
+                  style="display:block;margin:0 auto 8px auto;width:120px;height:120px;object-fit:contain;border:0;outline:none;"
+                />
+              </a>
+              <span style="font-family:Georgia,serif;font-size:13px;color:#6B7280;
+                           letter-spacing:2px;display:block;font-style:italic;">
+                L'Œil de l'Élite ${editionLabel}
+              </span>
             </td>
           </tr>
 
@@ -222,6 +218,13 @@ export function templateNewsletter(data: NewsletterData): { subject: string; htm
           <tr>
             <td style="background:linear-gradient(90deg,transparent,#C9A84C,transparent);
                        height:1px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- ── BANNER PHOTO ── -->
+          <tr>
+            <td style="border-left:1px solid #E5E7EB;border-right:1px solid #E5E7EB;padding:0;font-size:0;line-height:0;">
+              ${renderHeaderBanner(BANNER_NEWSLETTER)}
+            </td>
           </tr>
 
           <!-- ── CORPS BLANC ── -->

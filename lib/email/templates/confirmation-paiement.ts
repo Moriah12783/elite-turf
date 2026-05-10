@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider, emailBadge } from "../base";
+import { renderHeaderBanner, BANNER_CONFIRMATION_PAIEMENT } from "./banners/header-banner";
 
 interface ConfirmationPaiementData {
   nomComplet: string;
@@ -37,21 +38,14 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
        "Support WhatsApp sous 48h"];
 
   const content = `
-    <!-- Icône succès -->
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="display:inline-block;width:64px;height:64px;background:#F0FDF4;
-                  border:2px solid #86EFAC;border-radius:50%;line-height:64px;
-                  font-size:28px;text-align:center;">✓</div>
-    </div>
+    ${renderHeaderBanner(BANNER_CONFIRMATION_PAIEMENT)}
 
-    <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:24px;
-               font-weight:700;color:#1E3A5F;text-align:center;line-height:1.3;">
-      Paiement confirmé !
-    </h1>
-    <p style="margin:0 0 24px 0;color:#16A34A;font-size:14px;font-weight:600;
-              text-align:center;letter-spacing:0.5px;">
-      Votre abonnement est maintenant actif
-    </p>
+    <!-- Icône succès sous le banner -->
+    <div style="text-align:center;margin:28px 0 16px 0;">
+      <div style="display:inline-block;width:48px;height:48px;background:#F0FDF4;
+                  border:2px solid #86EFAC;border-radius:50%;line-height:48px;
+                  font-size:22px;text-align:center;">✓</div>
+    </div>
 
     <!-- Badge plan -->
     <div style="text-align:center;margin-bottom:24px;">
