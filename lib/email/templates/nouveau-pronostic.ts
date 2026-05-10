@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider, emailBadge } from "../base";
+import { renderHeaderBanner, BANNER_NOUVEAU_PRONOSTIC } from "./banners/header-banner";
 
 interface NouveauPronosticData {
   nomComplet: string;
@@ -25,9 +26,11 @@ export function templateNouveauPronostic(data: NouveauPronosticData): {
   const niveauColor = isElite ? "#7C3AED" : isPro ? "#C9A84C" : "#16A34A";
 
   const content = `
+    ${renderHeaderBanner(BANNER_NOUVEAU_PRONOSTIC)}
+
     <!-- En-tête course -->
     <div style="background:#FFFBF0;border:1px solid rgba(201,168,76,0.35);
-                border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+                border-radius:10px;padding:16px 20px;margin:28px 0 24px 0;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td>

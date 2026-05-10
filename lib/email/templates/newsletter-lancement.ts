@@ -5,6 +5,8 @@
  * Compatible : Gmail · Outlook · Apple Mail · Yahoo.
  */
 
+import { renderHeaderBanner } from "./banners/header-banner";
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export interface NewsletterLancementData {
@@ -176,40 +178,29 @@ n'osent même pas espérer. Et ce n'est pas de la chance — c'est de l'analyse.
           </tr>
 
           <!-- ══════════════════════════════════════
-               HERO — IMAGE CHEVAL
+               BANNER HERO PHOTO + TITRES (dynamique)
           ══════════════════════════════════════ -->
           <tr>
-            <td style="padding:0;background:#0F1923;line-height:0;font-size:0;">
-              <img
-                class="hero-img"
-                src="${APP_URL}/images/heroes/hero-courses.jpg"
-                alt="Elite Turf — Cheval en course"
-                width="580"
-                style="width:580px;max-width:100%;height:280px;object-fit:cover;
-                       object-position:center 30%;display:block;border:none;"
-              />
+            <td style="padding:0;font-size:0;line-height:0;
+                       border-left:1px solid #E5E7EB;border-right:1px solid #E5E7EB;">
+              ${renderHeaderBanner({
+                title:         titreHero,
+                subtitle:      sousTitreHero,
+                photoFilename: "cheval-4-course-groupe.jpg",
+              })}
             </td>
           </tr>
 
-          <!-- Dégradé sous l'image → fondu vers le titre -->
+          <!-- Pastille édition sous le banner -->
           <tr>
-            <td style="background:linear-gradient(180deg,#1a2a3a 0%,#0F1923 100%);
-                       padding:20px 40px 32px;text-align:center;">
-              <!-- Pastille édition -->
+            <td style="background:#FFFFFF;border-left:1px solid #E5E7EB;border-right:1px solid #E5E7EB;
+                       padding:16px 40px 0;text-align:center;">
               <span style="display:inline-block;padding:4px 16px;
-                           background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);
+                           background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);
                            border-radius:20px;font-size:11px;font-weight:700;
-                           color:#C9A84C;letter-spacing:1px;margin-bottom:16px;">
+                           color:#C9A84C;letter-spacing:1px;">
                 ✦ ÉDITION EXCLUSIVE · LANCEMENT
               </span>
-              <h1 style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;
-                         font-size:26px;font-weight:700;color:#FFFFFF;line-height:1.35;">
-                ${titreHero}
-              </h1>
-              <p style="margin:0;font-size:15px;color:rgba(201,168,76,0.85);
-                        font-style:italic;font-family:Georgia,serif;">
-                ${sousTitreHero}
-              </p>
             </td>
           </tr>
 

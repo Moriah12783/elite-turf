@@ -3,6 +3,8 @@
  * Design : Fond gris perle #F3F4F6 · Carte blanche · Accents Or/Bleu Nuit
  */
 
+import { renderHeaderBanner, BANNER_NEWSLETTER } from "./banners/header-banner";
+
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr");
 
 export interface NewsletterData {
@@ -222,6 +224,13 @@ export function templateNewsletter(data: NewsletterData): { subject: string; htm
           <tr>
             <td style="background:linear-gradient(90deg,transparent,#C9A84C,transparent);
                        height:1px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- ── BANNER PHOTO ── -->
+          <tr>
+            <td style="border-left:1px solid #E5E7EB;border-right:1px solid #E5E7EB;padding:0;font-size:0;line-height:0;">
+              ${renderHeaderBanner(BANNER_NEWSLETTER)}
+            </td>
           </tr>
 
           <!-- ── CORPS BLANC ── -->

@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
+import { renderHeaderBanner, BANNER_RAPPEL_EXPIRATION } from "./banners/header-banner";
 
 interface RappelExpirationData {
   nomComplet: string;
@@ -30,16 +31,14 @@ export function templateRappelExpiration(data: RappelExpirationData): {
     "🔔 Rappel d'expiration";
 
   const content = `
-    <!-- Alerte -->
+    ${renderHeaderBanner(BANNER_RAPPEL_EXPIRATION)}
+
+    <!-- Alerte d'urgence sous le banner -->
     <div style="background:${urgenceBg};border:1px solid ${urgenceBorder};
-                border-radius:10px;padding:16px 20px;margin-bottom:24px;text-align:center;">
+                border-radius:10px;padding:16px 20px;margin:28px 0 24px 0;text-align:center;">
       <p style="margin:0;font-size:16px;font-weight:700;color:${urgenceColor};">${urgenceLabel}</p>
     </div>
 
-    <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:24px;
-               font-weight:700;color:#1E3A5F;line-height:1.3;">
-      Votre accès expire bientôt
-    </h1>
     <p style="margin:0 0 20px 0;color:#1F2937;font-size:14px;line-height:1.6;">
       Bonjour ${prenom}, votre abonnement <strong style="color:#C9A84C;">Plan ${data.planNom}</strong>
       expire le <strong style="color:#1E3A5F;">${fmtDate(data.dateFin)}</strong>.

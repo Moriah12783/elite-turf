@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
+import { renderHeaderBanner, BANNER_WELCOME_J3 } from "./banners/header-banner";
 
 /** J+3 après inscription — "Notre méthodologie + transparence" */
 export function templateWelcomeJ3({ nomComplet }: { nomComplet: string }): {
@@ -9,12 +10,11 @@ export function templateWelcomeJ3({ nomComplet }: { nomComplet: string }): {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
   const content = `
-    <h1 style="margin:0 0 6px 0;font-family:Georgia,serif;font-size:26px;font-weight:700;color:#1E3A5F;line-height:1.3;">
+    ${renderHeaderBanner(BANNER_WELCOME_J3)}
+
+    <h2 style="margin:28px 0 16px 0;font-family:Georgia,serif;font-size:20px;font-weight:700;color:#1E3A5F;line-height:1.3;">
       ${prenom}, comment Elite Turf fait ses pronostics
-    </h1>
-    <p style="margin:0 0 24px 0;color:#C9A84C;font-size:14px;font-weight:600;letter-spacing:0.5px;">
-      Jour 4 — Notre méthodologie en transparence
-    </p>
+    </h2>
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Beaucoup de sites turf prétendent avoir une "IA secrète" ou des "tuyaux exclusifs".

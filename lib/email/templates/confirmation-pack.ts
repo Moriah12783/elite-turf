@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
+import { renderHeaderBanner, BANNER_CONFIRMATION_PACK } from "./banners/header-banner";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
@@ -64,6 +65,8 @@ function templateDecuverte(prenom: string, dateExp: string, nbAlertes: number): 
   ];
 
   const content = `
+    ${renderHeaderBanner(BANNER_CONFIRMATION_PACK)}
+
     <!-- Badge statut -->
     <div style="text-align:center;margin-bottom:20px;">
       <span style="display:inline-block;padding:5px 18px;background:#F0FDF4;
@@ -158,6 +161,8 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
   ];
 
   const content = `
+    ${renderHeaderBanner(BANNER_CONFIRMATION_PACK)}
+
     <!-- Badge statut -->
     <div style="text-align:center;margin-bottom:20px;">
       <span style="display:inline-block;padding:5px 18px;background:#FFFBF0;
@@ -252,6 +257,8 @@ function templateElite(prenom: string, dateExp: string): string {
   ];
 
   const content = `
+    ${renderHeaderBanner(BANNER_CONFIRMATION_PACK)}
+
     <!-- Badge statut -->
     <div style="text-align:center;margin-bottom:20px;">
       <span style="display:inline-block;padding:5px 18px;background:#F5F3FF;
