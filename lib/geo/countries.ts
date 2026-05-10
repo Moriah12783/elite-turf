@@ -16,7 +16,13 @@
 export interface PaymentMethod {
   nom:        string;
   description: string;
-  icon:       string; // emoji ou code
+  icon:       string;       // emoji ou code
+  /**
+   * Si true, affiche un badge "Bientôt" sur la card.
+   * Utilisé pour les pays où Paystack ne couvre pas encore le Mobile Money
+   * (mais qu'on veut quand même montrer pour le SEO + perception).
+   */
+  bientot?:   boolean;
 }
 
 export interface Country {
@@ -25,7 +31,20 @@ export interface Country {
   nom:         string;
   nomComplet:  string;        // "République de Côte d'Ivoire"
   drapeau:     string;        // emoji
+  /**
+   * Devise d'AFFICHAGE actuelle (utilisée par formatPrice et PriceDualCurrency).
+   * Pour les pays où Paystack ne couvre pas encore le paiement local → on met
+   * "EUR" pour ne pas tromper l'utilisateur sur la conversion automatique au
+   * checkout. On activera la devise locale au cas par cas quand le paiement
+   * local sera opérationnel (FedaPay, Hub2, CinetPay, etc.).
+   */
   devise:      "XOF" | "XAF" | "MAD" | "EUR";
+  /**
+   * Devise NATIVE réelle du pays (informative, pour migration future).
+   * Ex: Madagascar → "MGA", Burkina → "XOF". Quand le paiement local sera prêt,
+   * on basculera `devise = deviseNative`.
+   */
+  deviseNative?: "XOF" | "XAF" | "MAD" | "EUR" | "MGA";
   capitale:    string;
   // Opérateur officiel local de courses (pour mention contextuelle)
   operateurOfficiel?: {
@@ -33,7 +52,7 @@ export interface Country {
     site:    string;          // URL
     courte:  string;          // courte description
   };
-  // Méthodes de paiement utilisées dans le pays (Paystack supporte tout ça)
+  // Méthodes de paiement utilisées dans le pays
   paiements:   PaymentMethod[];
   // Mots-clés SEO ciblés pour ce pays
   motsCles:    string[];
@@ -191,6 +210,203 @@ export const COUNTRIES: Country[] = [
       "courses PMU Mali",
     ],
     accroche: "Pronostics PMU France pour les turfistes maliens — analyse experte des courses françaises.",
+  },
+
+  // ────────────────────────────────────────────────────────────────────
+  // 🆕 Pays ajoutés (mai 2026) — devise EUR par défaut tant que les
+  // moyens de paiement Mobile Money locaux ne sont pas opérationnels via
+  // Paystack. La `deviseNative` est conservée pour migration future.
+  // Les paiements Mobile Money sont listés avec `bientot: true` pour
+  // signaler clairement que c'est en cours d'activation.
+  // ────────────────────────────────────────────────────────────────────
+
+  {
+    code:         "BF",
+    slug:         "burkina-faso",
+    nom:          "Burkina Faso",
+    nomComplet:   "Burkina Faso",
+    drapeau:      "🇧🇫",
+    devise:       "EUR",
+    deviseNative: "XOF",
+    capitale:     "Ouagadougou",
+    operateurOfficiel: {
+      nom:    "PMU'B / LONAB",
+      site:   "https://www.lonab.bf",
+      courte: "Loterie Nationale Burkinabè — opérateur officiel des courses PMU",
+    },
+    paiements: [
+      { nom: "Orange Money BF", description: "Orange Money Burkina Faso", icon: "🟧", bientot: true },
+      { nom: "Moov Money BF",   description: "Moov Africa Burkina",       icon: "🟥", bientot: true },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard",          icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Burkina Faso",
+      "pronostic Quinté+ Ouagadougou",
+      "PMU'B pronostic",
+      "LONAB pronostic",
+      "courses PMU Burkina",
+    ],
+    accroche: "Pronostics PMU France pour les parieurs burkinabè — analyses expertes accessibles depuis Ouagadougou et tout le Burkina.",
+    liensPMU: [
+      { label: "PMU'B / LONAB", href: "https://www.lonab.bf" },
+    ],
+  },
+
+  {
+    code:         "TD",
+    slug:         "tchad",
+    nom:          "Tchad",
+    nomComplet:   "République du Tchad",
+    drapeau:      "🇹🇩",
+    devise:       "EUR",
+    deviseNative: "XAF",
+    capitale:     "N'Djamena",
+    paiements: [
+      { nom: "Airtel Money TD", description: "Airtel Money Tchad",  icon: "🟥", bientot: true },
+      { nom: "Moov Money TD",   description: "Moov Africa Tchad",   icon: "🟧", bientot: true },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard",   icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Tchad",
+      "pronostic Quinté+ N'Djamena",
+      "courses PMU Tchad",
+      "Quinté+ Tchad",
+    ],
+    accroche: "Pronostics PMU France pour les turfistes tchadiens — analyses expertes des courses françaises livrées chaque matin.",
+  },
+
+  {
+    code:         "GA",
+    slug:         "gabon",
+    nom:          "Gabon",
+    nomComplet:   "République Gabonaise",
+    drapeau:      "🇬🇦",
+    devise:       "EUR",
+    deviseNative: "XAF",
+    capitale:     "Libreville",
+    paiements: [
+      { nom: "Airtel Money GA", description: "Airtel Money Gabon",   icon: "🟥", bientot: true },
+      { nom: "Mobicash",        description: "Mobicash Gabon",       icon: "🟦", bientot: true },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard",    icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Gabon",
+      "pronostic Quinté+ Libreville",
+      "courses PMU Gabon",
+      "Quinté+ Gabon",
+    ],
+    accroche: "Pronostics PMU France pour les parieurs gabonais — décryptage Quinté+, Tiercé, Quarté+ par nos experts depuis Paris.",
+  },
+
+  {
+    code:         "TG",
+    slug:         "togo",
+    nom:          "Togo",
+    nomComplet:   "République Togolaise",
+    drapeau:      "🇹🇬",
+    devise:       "EUR",
+    deviseNative: "XOF",
+    capitale:     "Lomé",
+    operateurOfficiel: {
+      nom:    "LONATO",
+      site:   "https://www.lonato.tg",
+      courte: "Loterie Nationale Togolaise — opérateur officiel des paris hippiques",
+    },
+    paiements: [
+      { nom: "TMoney (Togocom)", description: "Mobile Money Togocom", icon: "🟦", bientot: true },
+      { nom: "Flooz (Moov)",     description: "Mobile Money Moov",    icon: "🟥", bientot: true },
+      { nom: "Carte bancaire",   description: "Visa / Mastercard",    icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Togo",
+      "pronostic Quinté+ Lomé",
+      "LONATO pronostic",
+      "courses PMU Togo",
+    ],
+    accroche: "Pronostics PMU France pour les turfistes togolais — courses jouables via LONATO ou agences agréées.",
+    liensPMU: [
+      { label: "LONATO", href: "https://www.lonato.tg" },
+    ],
+  },
+
+  {
+    code:         "CG",
+    slug:         "congo-brazzaville",
+    nom:          "Congo Brazzaville",
+    nomComplet:   "République du Congo",
+    drapeau:      "🇨🇬",
+    devise:       "EUR",
+    deviseNative: "XAF",
+    capitale:     "Brazzaville",
+    paiements: [
+      { nom: "Airtel Money CG", description: "Airtel Money Congo",    icon: "🟥", bientot: true },
+      { nom: "MTN MoMo CG",     description: "MTN Mobile Money Congo", icon: "🟨", bientot: true },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard",      icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Congo",
+      "pronostic Quinté+ Brazzaville",
+      "courses PMU Congo",
+      "Quinté+ Congo Brazzaville",
+    ],
+    accroche: "Pronostics PMU France pour les parieurs congolais — analyses expertes depuis Paris pour Brazzaville et tout le Congo.",
+  },
+
+  {
+    code:         "MG",
+    slug:         "madagascar",
+    nom:          "Madagascar",
+    nomComplet:   "République de Madagascar",
+    drapeau:      "🇲🇬",
+    devise:       "EUR",
+    deviseNative: "MGA",
+    capitale:     "Antananarivo",
+    paiements: [
+      { nom: "Mvola (Telma)",     description: "Mobile Money Telma",    icon: "🟧", bientot: true },
+      { nom: "Orange Money MG",   description: "Orange Money Madagascar", icon: "🟧", bientot: true },
+      { nom: "Airtel Money MG",   description: "Airtel Money Madagascar", icon: "🟥", bientot: true },
+      { nom: "Carte bancaire",    description: "Visa / Mastercard",     icon: "💳" },
+    ],
+    motsCles: [
+      "pronostic PMU Madagascar",
+      "pronostic Quinté+ Antananarivo",
+      "tiercé Madagascar",
+      "courses PMU Madagascar",
+      "PMU Tana",
+    ],
+    accroche: "Pronostics PMU France pour les turfistes malgaches — analyses expertes accessibles depuis Antananarivo et toute la Grande Île.",
+  },
+
+  {
+    code:         "RE",
+    slug:         "reunion",
+    nom:          "La Réunion",
+    nomComplet:   "Département de La Réunion (974)",
+    drapeau:      "🇷🇪",
+    devise:       "EUR",
+    deviseNative: "EUR",
+    capitale:     "Saint-Denis",
+    operateurOfficiel: {
+      nom:    "PMU France",
+      site:   "https://www.pmu.fr",
+      courte: "PMU France — opérateur officiel (La Réunion = département français)",
+    },
+    paiements: [
+      { nom: "Carte bancaire", description: "Visa / Mastercard / CB française", icon: "💳" },
+      { nom: "Virement SEPA",  description: "Virement bancaire européen",       icon: "🏦" },
+      { nom: "PayPal",         description: "Paiement sécurisé PayPal",         icon: "🟦" },
+    ],
+    motsCles: [
+      "pronostic PMU Réunion",
+      "pronostic Quinté+ Réunion 974",
+      "turf Réunion",
+      "PMU 974",
+      "courses PMU département Réunion",
+    ],
+    accroche: "Pronostics PMU France pour les turfistes réunionnais — analyses expertes des courses du jour pour jouer depuis le 974.",
+    liensPMU: [
+      { label: "PMU France", href: "https://www.pmu.fr" },
+    ],
   },
 ];
 

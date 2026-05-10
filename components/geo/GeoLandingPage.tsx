@@ -137,14 +137,28 @@ export default async function GeoLandingPage({ country }: Props) {
             {country.paiements.map((p) => (
               <div
                 key={p.nom}
-                className="card-base p-4 flex flex-col items-center text-center"
+                className={`card-base p-4 flex flex-col items-center text-center relative ${
+                  p.bientot ? "opacity-80" : ""
+                }`}
               >
+                {p.bientot && (
+                  <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-gold-faint border border-gold-primary/40 rounded-full text-[9px] font-bold text-gold-primary uppercase tracking-wider">
+                    Bientôt
+                  </span>
+                )}
                 <div className="text-3xl mb-2" aria-hidden="true">{p.icon}</div>
                 <h3 className="text-text-primary text-sm font-semibold mb-1">{p.nom}</h3>
                 <p className="text-text-muted text-xs">{p.description}</p>
               </div>
             ))}
           </div>
+          {country.paiements.some((p) => p.bientot) && (
+            <p className="text-gold-primary text-xs italic mt-4">
+              🟡 Les paiements Mobile Money marqués <strong>« Bientôt »</strong> seront
+              activés très prochainement. En attendant, vous pouvez payer par carte
+              bancaire (Visa/Mastercard acceptées sans frais cachés).
+            </p>
+          )}
           <p className="text-text-muted text-xs italic mt-4">
             Validation en moins de 2 minutes. Reçu envoyé par email. Activation immédiate de votre abonnement.
           </p>
@@ -285,13 +299,27 @@ export default async function GeoLandingPage({ country }: Props) {
             </details>
             <details className="card-base p-5 group cursor-pointer">
               <summary className="font-semibold text-text-primary text-base list-none flex items-start justify-between gap-3">
-                Le paiement en {country.devise === "MAD" ? "Dirhams" : country.devise === "EUR" ? "Euros" : "FCFA"} est-il automatique ?
+                Comment se passe le paiement depuis le {country.nom} ?
                 <ChevronRight className="w-4 h-4 text-gold-primary flex-shrink-0 mt-1 transition-transform group-open:rotate-90" />
               </summary>
               <p className="text-text-secondary text-sm leading-relaxed mt-3 pt-3 border-t border-border/50">
-                Oui. Quand vous choisissez {country.paiements[0]?.nom || "Mobile Money"} comme méthode de paiement,
-                le montant est converti automatiquement et vous payez directement dans votre devise locale.
-                Aucune carte bancaire internationale n&apos;est nécessaire.
+                {country.paiements.some((p) => !p.bientot && (p.nom.includes("Money") || p.nom.includes("Wave") || p.nom.includes("MoMo") || p.nom.includes("Mvola") || p.nom.includes("Flooz") || p.nom.includes("TMoney")))
+                  ? <>
+                      Quand vous choisissez <strong>{country.paiements.find((p) => !p.bientot && (p.nom.includes("Money") || p.nom.includes("Wave") || p.nom.includes("MoMo")))?.nom || "Mobile Money"}</strong> comme
+                      méthode de paiement, le montant est converti automatiquement
+                      en {country.devise === "MAD" ? "Dirhams" : country.devise === "EUR" ? "Euros" : "Francs CFA"} et
+                      vous payez directement dans votre devise locale. Aucune carte
+                      bancaire internationale n&apos;est nécessaire.
+                    </>
+                  : <>
+                      Nos abonnements sont actuellement tarifés en <strong>Euros (€)</strong>.
+                      Le paiement se fait par <strong>carte bancaire (Visa/Mastercard)</strong>,
+                      acceptées partout au {country.nom}.
+                      {country.paiements.some((p) => p.bientot) && <> Les options <strong>Mobile Money</strong> (
+                        {country.paiements.filter((p) => p.bientot).map((p) => p.nom).join(", ")})
+                        seront activées très prochainement.</>}
+                    </>
+                }
               </p>
             </details>
             <details className="card-base p-5 group cursor-pointer">
