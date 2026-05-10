@@ -7,28 +7,54 @@ import { Eye, EyeOff, UserPlus, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
-const PAYS_OPTIONS = [
-  "Côte d'Ivoire",
-  "Sénégal",
-  "Cameroun",
-  "Burkina Faso",
-  "Mali",
-  "Bénin",
-  "Togo",
-  "Guinée",
-  "Guinée-Bissau",
-  "Niger",
-  "Tchad",
-  "Congo Brazzaville",
-  "RD Congo",
-  "Gabon",
-  "Centrafrique",
-  "Madagascar",
-  "Canada",
-  "France",
-  "Belgique",
-  "Autre",
+/**
+ * Pays + indicatif téléphonique international (E.164).
+ * Quand l'utilisateur sélectionne un pays, le champ téléphone est pré-rempli
+ * automatiquement avec le bon préfixe (UX mobile-first).
+ *
+ * Ordre : Afrique francophone d'abord (cibles principales Elite Turf),
+ * puis Europe/Amérique, puis "Autre" en dernier.
+ */
+const PAYS_OPTIONS: Array<{ nom: string; indicatif: string }> = [
+  { nom: "Côte d'Ivoire",        indicatif: "+225" },
+  { nom: "Sénégal",              indicatif: "+221" },
+  { nom: "Cameroun",             indicatif: "+237" },
+  { nom: "Burkina Faso",         indicatif: "+226" },
+  { nom: "Mali",                 indicatif: "+223" },
+  { nom: "Bénin",                indicatif: "+229" },
+  { nom: "Togo",                 indicatif: "+228" },
+  { nom: "Guinée",               indicatif: "+224" },
+  { nom: "Guinée-Bissau",        indicatif: "+245" },
+  { nom: "Niger",                indicatif: "+227" },
+  { nom: "Tchad",                indicatif: "+235" },
+  { nom: "Congo Brazzaville",    indicatif: "+242" },
+  { nom: "RD Congo",             indicatif: "+243" },
+  { nom: "Gabon",                indicatif: "+241" },
+  { nom: "Centrafrique",         indicatif: "+236" },
+  { nom: "Madagascar",           indicatif: "+261" },
+  { nom: "Maroc",                indicatif: "+212" },
+  { nom: "La Réunion",           indicatif: "+262" },
+  { nom: "France",               indicatif: "+33"  },
+  { nom: "Belgique",             indicatif: "+32"  },
+  { nom: "Canada",               indicatif: "+1"   },
+  { nom: "Autre",                indicatif: ""     },
 ];
+
+/** Map pays → indicatif pour lookup rapide. */
+const INDICATIF_BY_PAYS: Record<string, string> = Object.fromEntries(
+  PAYS_OPTIONS.map((p) => [p.nom, p.indicatif]),
+);
+
+/**
+ * Vérifie si la valeur actuelle du téléphone est "juste un préfixe vide"
+ * (ex: "+225", "+225 ", "+33"). Si oui, on peut le remplacer en changeant
+ * de pays. Sinon → on respecte ce que l'utilisateur a tapé.
+ */
+function estPrefixSeul(phone: string): boolean {
+  const trimmed = phone.trim();
+  if (!trimmed) return true;
+  return /^\+\d{1,4}\s*$/.test(trimmed);
+}
 
 function InscriptionForm() {
   const router = useRouter();
@@ -38,7 +64,9 @@ function InscriptionForm() {
   const [form, setForm] = useState({
     nomComplet: "",
     email: "",
-    phone: "",
+    // Pré-rempli avec l'indicatif Côte d'Ivoire (+225 ) par défaut puisque
+    // c'est le pays par défaut sélectionné.
+    phone: "+225 ",
     pays: "Côte d'Ivoire",
     password: "",
     confirmPassword: "",
@@ -48,11 +76,38 @@ function InscriptionForm() {
   const [step, setStep] = useState<"form" | "success">("form");
 
   const updateForm = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      // Cas spécial : quand on change de pays, auto-update le préfixe
+      // téléphone si l'utilisateur n'a pas encore tapé ses chiffres
+      // (sinon on ne touche pas pour ne pas écraser sa saisie).
+      if (field === "pays") {
+        const nouvelIndicatif = INDICATIF_BY_PAYS[value] || "";
+        const nouveauPhone =
+          estPrefixSeul(prev.phone) && nouvelIndicatif
+            ? `${nouvelIndicatif} `
+            : prev.phone;
+        return { ...prev, pays: value, phone: nouveauPhone };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Validation téléphone obligatoire (souple) ─────────────────────
+    const phoneTrimmed = form.phone.trim();
+    if (!phoneTrimmed || estPrefixSeul(phoneTrimmed)) {
+      toast.error("Le numéro de téléphone est requis");
+      return;
+    }
+    // Vérification minimale : au moins 8 chiffres au total (pour éviter
+    // les saisies dégénérées type "+225" tout court)
+    const digits = phoneTrimmed.replace(/\D/g, "");
+    if (digits.length < 8) {
+      toast.error("Numéro de téléphone trop court (8 chiffres minimum)");
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       toast.error("Les mots de passe ne correspondent pas");
@@ -205,34 +260,44 @@ function InscriptionForm() {
           />
         </div>
 
-        {/* Phone + Pays on same row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-text-secondary text-sm font-medium mb-2">
-              Téléphone (optionnel)
-            </label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => updateForm("phone", e.target.value)}
-              placeholder="+225 07..."
-              className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-text-secondary text-sm font-medium mb-2">
-              Pays
-            </label>
-            <select
-              value={form.pays}
-              onChange={(e) => updateForm("pays", e.target.value)}
-              className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-sm appearance-none"
-            >
-              {PAYS_OPTIONS.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
+        {/* Pays + Téléphone (l'ordre matters : pays d'abord pour que
+            l'auto-prefix téléphone fonctionne quand on change de pays) */}
+        <div>
+          <label className="block text-text-secondary text-sm font-medium mb-2">
+            Pays <span className="text-status-loss">*</span>
+          </label>
+          <select
+            value={form.pays}
+            onChange={(e) => updateForm("pays", e.target.value)}
+            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary text-sm appearance-none"
+            required
+          >
+            {PAYS_OPTIONS.map((p) => (
+              <option key={p.nom} value={p.nom}>
+                {p.nom}{p.indicatif ? ` (${p.indicatif})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-text-secondary text-sm font-medium mb-2">
+            Téléphone (Mobile Money / WhatsApp) <span className="text-status-loss">*</span>
+          </label>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(e) => updateForm("phone", e.target.value)}
+            placeholder={
+              (INDICATIF_BY_PAYS[form.pays] || "+225") + " 07 89 45 67 89"
+            }
+            required
+            className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
+          />
+          <p className="mt-1.5 text-text-muted text-xs leading-relaxed">
+            🔒 Utilisé uniquement pour vos paiements Mobile Money et notre support WhatsApp.
+            Jamais partagé avec des tiers.
+          </p>
         </div>
 
         {/* Password */}
