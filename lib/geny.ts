@@ -154,6 +154,59 @@ function extractCells(rowHtml: string): string[] {
 }
 
 /**
+ * Détecte si une chaîne ressemble à une "musique PMU" (historique récent
+ * d'un cheval) plutôt qu'à un vrai nom d'entraineur ou de jockey.
+ *
+ * Format musique : suite de codes "place + lettre type-course" séparés par
+ * tirets ou collés. Exemples réels rencontrés en BDD à cause du bug parser :
+ *   "0a(25)DaDa"     — places + (année) + suspension
+ *   "3m5m0a6m4m"     — courses au monté
+ *   "0h3h7h1h"       — courses haies
+ *   "2p1p3p"         — courses plat
+ *   "(25)1a4a8a"     — avec parenthèse année
+ *
+ * Lettres turf : a (attelé/plat), m (monté), h (haies), p (plat/parcours),
+ *                s (steeple), D (disqualifié), T (tombé), R (refus), t (tiré).
+ *
+ * @returns true si la chaîne ressemble à une musique (à rejeter pour
+ *          entraineur/jockey), false sinon.
+ */
+export function looksLikeMusique(str: string): boolean {
+  if (!str) return false;
+  const s = str.trim();
+  // Trop court pour être un nom réaliste (1-2 chars) → suspect
+  if (s.length < 3) return false;
+
+  // Si la chaîne contient des espaces normaux (ex: "J. Dupont", "F. Boudot"),
+  // c'est presque toujours un vrai nom. La musique est généralement collée
+  // ou séparée par tirets/parenthèses uniquement.
+  if (/\s+[A-Z]/.test(s) && !/\d/.test(s.replace(/\(.*?\)/g, ""))) return false;
+
+  // Pattern 1 : suite chiffre+lettre turf répétée (au moins 2 fois)
+  //   ex: "0h3h7h1h", "3m5m0a6m4m", "2p1p3p", "1a2a4a"
+  if (/^(\(\d{2}\))?(\d[ahmpsDTRt]){2,}$/i.test(s.replace(/\s+/g, ""))) {
+    return true;
+  }
+
+  // Pattern 2 : commence par chiffre+lettre turf et contient peu de
+  // caractères "non-musique"
+  //   ex: "0a(25)DaDa", "(25)1a4a8a"
+  const sansParentheses = s.replace(/\(\d+\)/g, "");
+  if (/^[\d]([ahmpsDTRt]\d){2,}/i.test(sansParentheses.replace(/\s+/g, ""))) {
+    return true;
+  }
+
+  // Pattern 3 : ratio chiffres + lettres turf >= 70% de la chaîne
+  const totalChars = s.replace(/[\s\-]/g, "").length;
+  const musiqueChars = (s.match(/[\d]|[ahmpsDTRt]/gi) || []).length;
+  if (totalChars >= 4 && musiqueChars / totalChars >= 0.7) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Parse la page HTML des partants Geny pour extraire les chevaux.
  *
  * **Structure unifiée Geny 2026 (TROT et GALOP)** — 10 colonnes :
@@ -198,10 +251,17 @@ function parseGenyPartants(html: string): GenyParticipant[] {
     const cells = extractCells(rowMatch[1]);
 
     // Structure 2026 : 10 colonnes minimum (parfois 11 si Geny ajoute une col).
-    // Ancien minimum 8 maintenu pour compat avec d'éventuelles pages anciennes.
+    // ⚠️ AVANT : on tolérait `< 8` ce qui causait un décalage cells[5]/cells[6]
+    // → l'entraineur recevait la MUSIQUE du cheval (bug parser massif :
+    //   356 faux entraineurs créés en BDD sur 1591, soit 22% pollution).
+    // Maintenant on accepte 8-9 colonnes mais SANS extraire entraineur/musique
+    // pour éviter la corruption.
     if (cells.length < 8) continue;
     const num = parseInt(cells[0], 10);
     if (isNaN(num) || num < 1 || num > 30) continue;
+
+    /** Structure complète disponible (10+ colonnes) → on peut tout extraire. */
+    const fullStructure = cells.length >= 10;
 
     // Geny intègre des icônes (œillères, attache-langue, déferré) via des
     // caractères Unicode Private Use Area (U+E900-U+E9FF). On les retire pour
@@ -230,12 +290,26 @@ function parseGenyPartants(html: string): GenyParticipant[] {
     // [4] = Jockey (galop) ou Driver (trot)
     const jockeyNom = (cells[4] || "").trim();
 
-    // [5] = Entraîneur
-    const entraineurNom = (cells[5] || "").trim();
+    // [5] = Entraîneur — UNIQUEMENT si structure complète (10+ colonnes)
+    // Sinon on prend le risque d'avoir la musique du cheval à la place.
+    let entraineurNom = fullStructure ? (cells[5] || "").trim() : "";
 
-    // [6] = Musique
-    let musique: string | undefined = (cells[6] || "").trim() || undefined;
+    // [6] = Musique — UNIQUEMENT si structure complète
+    let musique: string | undefined = fullStructure
+      ? ((cells[6] || "").trim() || undefined)
+      : undefined;
     if (musique === "-" || musique === "") musique = undefined;
+
+    // ── Garde-fou anti-pollution : si l'entraineur "ressemble à une musique"
+    //    (ex: "0a(25)DaDa", "3m5m0a6m4m", "0h3h7h1h"), c'est un bug parser
+    //    Geny qui n'a pas renvoyé la bonne colonne → on rejette l'entraineur
+    //    et on remonte cette valeur en musique si la musique est vide.
+    if (entraineurNom && looksLikeMusique(entraineurNom)) {
+      if (!musique) {
+        musique = entraineurNom;
+      }
+      entraineurNom = "";
+    }
 
     // [7] = Gains (numérique, ignoré pour l'instant)
 

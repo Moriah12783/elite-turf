@@ -26,10 +26,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!e) return { title: "Jockey introuvable — Elite Turf" };
   const tauxVic = tauxVictoire(e);
   const tauxStr = tauxVic !== null ? ` Taux victoire ${tauxVic.toFixed(1)}%.` : "";
+
+  // Anti "thin content" : noindex pour jockeys avec <3 courses en BDD
+  const thinContent = (e.nb_courses ?? 0) < 3;
+
   return {
     title: `${e.nom} — Jockey PMU : statistiques et historique | Elite Turf`,
     description: `Jockey ${e.nom} : ${e.nb_courses ?? 0} courses, ${e.nb_victoires ?? 0} victoires, ${e.nb_places ?? 0} top 3.${tauxStr} Performances détaillées.`,
     alternates: { canonical: `${APP_URL}/jockeys/${params.slug}` },
+    robots: thinContent
+      ? { index: false, follow: true }
+      : { index: true,  follow: true },
   };
 }
 

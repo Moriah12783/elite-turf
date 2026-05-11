@@ -13,6 +13,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/observability/logger";
 import { slugify } from "@/lib/seo/slugs";
+import { looksLikeMusique } from "@/lib/geny";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -164,6 +165,18 @@ async function processEntite(
   const nomsMap = await aggregateNames(supabase, col);
   const winsMap = await computeWinStats(supabase, col);
 
+  // ── Filtrage anti-pollution pour jockeys + entraineurs ─────────────
+  // Le parser Geny (lib/geny.ts) pouvait confondre la colonne "musique du
+  // cheval" avec entraineur/jockey quand la structure HTML était décalée
+  // (< 10 colonnes). Ces noms pollués (ex: "0h3h7h1h", "3m5m0a6m4m") créent
+  // de faux entraineurs dans la table → SEO pollué + GSC marque comme doublons.
+  // On les filtre EN AMONT pour ne plus jamais les agréger.
+  // (Note : on ne filtre pas `chevaux` car les noms de chevaux peuvent
+  // légitimement contenir des chiffres/lettres atypiques : "Hello 3", "K2",
+  // etc. Le risque de faux positif est trop élevé.)
+  const shouldFilter = entite === "entraineurs" || entite === "jockeys";
+
+  let filteredCount = 0;
   const rows = Array.from(nomsMap.entries())
     .map(([nom, { nb_courses, derniere }]) => {
       const w = winsMap.get(nom) ?? { victoires: 0, places: 0 };
@@ -176,13 +189,26 @@ async function processEntite(
         derniere_course_at: derniere,
       };
     })
-    .filter((r) => r.slug.length > 0);
+    .filter((r) => {
+      if (r.slug.length === 0) return false;
+      if (shouldFilter && looksLikeMusique(r.nom)) {
+        filteredCount++;
+        return false;
+      }
+      return true;
+    });
+
+  if (filteredCount > 0) {
+    logger.info("seo-etl", `Filtré ${filteredCount} entrées suspectes (musique pattern)`, {
+      entite, filtered: filteredCount,
+    });
+  }
 
   const { inserted, errors } = await upsertEntites(supabase, entite, rows, dryRun);
 
   return {
     entite,
-    noms_distincts:   nomsMap.size,
+    noms_distincts:   nomsMap.size - filteredCount,
     insert_or_update: inserted,
     errors,
   };

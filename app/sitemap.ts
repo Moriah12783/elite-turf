@@ -186,10 +186,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Acteurs : chevaux/jockeys/entraineurs (top 1000 chacun par activité récente)
     // Volume cumulé ≈ 3000 URLs SEO. Cap pour ne pas exploser sitemap.xml.
+    //
+    // ⚠️ FILTRAGE : on n'inclut QUE les entités avec >=3 courses en BDD.
+    // Raison : Google marque les pages d'entités "thin content" comme doublons
+    // dans GSC ("Page en double sans URL canonique sélectionnée par l'utilisateur")
+    // → c'est mieux de ne pas les soumettre du tout et de garder le crawl budget
+    // pour les pages money.
     for (const t of ["chevaux", "jockeys", "entraineurs"] as const) {
       const { data } = await supabase
         .from(t)
-        .select("slug, derniere_course_at")
+        .select("slug, derniere_course_at, nb_courses")
+        .gte("nb_courses", 3)
         .order("derniere_course_at", { ascending: false, nullsFirst: false })
         .limit(1000);
       if (data) {
@@ -198,7 +205,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             url: `${APP_URL}/${t}/${e.slug}`,
             lastModified: e.derniere_course_at ? new Date(e.derniere_course_at) : now,
             changeFrequency: "weekly" as const,
-            priority: 0.55,
+            // Plus de courses = plus prioritaire (0.55-0.70)
+            priority: Math.min(0.7, 0.55 + (e.nb_courses ?? 0) / 100),
           });
         }
       }
