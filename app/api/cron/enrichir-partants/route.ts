@@ -34,6 +34,17 @@ const FETCH_TIMEOUT_MS   = 6000;
 /** Cap pour rester < 50 subrequests Cloudflare Free (50 - 3 ops bulk = 47, on prend 40 marge). */
 const MAX_COURSES_PER_RUN = 40;
 
+/**
+ * Self-cleanup : DELAY de grâce avant qu'une course sans partants soit
+ * considérée fantôme. 3 jours = safe margin pour :
+ *  - laisser le temps aux 4 ticks d'enrichir-partants de re-tenter
+ *  - couvrir les courses créées tard la veille soir (cron geny-programme)
+ *  - éviter de supprimer une course que Geny n'a temporairement pas servie
+ */
+const GHOST_GRACE_DAYS = 3;
+/** Cap deletions par tick pour anti-timeout Cloudflare (60s max). */
+const MAX_GHOST_DELETIONS_PER_RUN = 500;
+
 interface CourseRow {
   id:             string;
   numero_reunion: number;
@@ -89,6 +100,101 @@ async function processInPool<T, R>(
   }
   await Promise.all(Array.from({ length: Math.min(workerCount, items.length) }, () => next()));
   return results;
+}
+
+/**
+ * Self-cleanup des courses fantômes : DELETE des courses qui sont à la fois
+ *  - dans le passé d'au moins GHOST_GRACE_DAYS jours
+ *  - sans aucun partant en BDD
+ *  - sans aucun pronostic en BDD (garde-fou business)
+ *
+ * Pourquoi ici (intégré au cron enrichir-partants) plutôt qu'un cron dédié :
+ *  - le cron tourne déjà 4×/jour → cleanup quasi temps réel
+ *  - même CRON_SECRET, même service_role, pas de surface ajoutée
+ *  - le coût Cloudflare est minimal (1-2 subrequests bulk)
+ *
+ * Pourquoi la grâce de 3 jours plutôt que strict "< today" :
+ *  - laisse le temps aux 4 ticks quotidiens de re-tenter le scrape
+ *  - couvre les courses créées tard la veille (cron programme + Geny lent)
+ *  - évite les faux positifs sur les courses tardives Maroc/UTC
+ *
+ * Garde-fou : CASCADE supprime arrivees + partants + pronostics. Mais comme
+ * on filtre déjà sur "0 partants + 0 pronostic", le CASCADE est no-op.
+ * Quelques arrivees peuvent être supprimées (cas exotique : course TERMINE
+ * sans partants synchronisés — donnée déjà cassée par construction).
+ */
+async function cleanupGhostCourses(
+  supabase: ReturnType<typeof createServiceClient>,
+): Promise<{ deleted: number; skipped_pronostic: number; capped: boolean }> {
+  // Calcul du seuil : date_course < today - GRACE_DAYS
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - GHOST_GRACE_DAYS);
+  const cutoffISO = cutoff.toISOString().split("T")[0];
+
+  // 1. Identifier les fantômes (SELECT, lecture seule)
+  // On ne peut pas exprimer "0 partants AND 0 pronostic" directement en
+  // Supabase JS lib → 3 queries :
+  //   a) candidates = courses passées
+  //   b) avec partants → exclure
+  //   c) avec pronostic → exclure (préserver valeur business)
+  const { data: candidates, error: errCand } = await supabase
+    .from("courses")
+    .select("id")
+    .lt("date_course", cutoffISO)
+    .limit(MAX_GHOST_DELETIONS_PER_RUN * 4); // marge x4 avant filtrage
+
+  if (errCand || !candidates || candidates.length === 0) {
+    return { deleted: 0, skipped_pronostic: 0, capped: false };
+  }
+  const candidateIds = candidates.map((c) => c.id);
+
+  // Exclure celles AVEC partants
+  const { data: withPartants } = await supabase
+    .from("partants")
+    .select("course_id")
+    .in("course_id", candidateIds);
+  const idsWithPartants = new Set((withPartants ?? []).map((p) => p.course_id));
+
+  // Exclure celles AVEC pronostic (garde-fou business)
+  const { data: withPronostic } = await supabase
+    .from("pronostics")
+    .select("course_id")
+    .in("course_id", candidateIds);
+  const idsWithPronostic = new Set((withPronostic ?? []).map((p) => p.course_id));
+
+  const ghostIds = candidateIds.filter(
+    (id) => !idsWithPartants.has(id) && !idsWithPronostic.has(id),
+  );
+  const capped = ghostIds.length > MAX_GHOST_DELETIONS_PER_RUN;
+  const toDelete = ghostIds.slice(0, MAX_GHOST_DELETIONS_PER_RUN);
+
+  if (toDelete.length === 0) {
+    return {
+      deleted:           0,
+      skipped_pronostic: idsWithPronostic.size,
+      capped:            false,
+    };
+  }
+
+  // 2. DELETE bulk
+  const { error: errDel } = await supabase
+    .from("courses")
+    .delete()
+    .in("id", toDelete);
+
+  if (errDel) {
+    logger.error("enrichir-partants", "Ghost cleanup DELETE failed", {
+      error:    errDel.message,
+      attempt:  toDelete.length,
+    });
+    return { deleted: 0, skipped_pronostic: idsWithPronostic.size, capped };
+  }
+
+  return {
+    deleted:           toDelete.length,
+    skipped_pronostic: idsWithPronostic.size,
+    capped,
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -209,6 +315,26 @@ export async function GET(req: NextRequest) {
     const errors  = outcomes.filter((o) => o.status === "error").length;
     const status  = errors > aEnrichir.length / 2 ? "failure" : "success";
 
+    // ── Self-cleanup fantômes ───────────────────────────────────────────────
+    // Tourne APRÈS le scraping principal : si le cron timeout côté Cloudflare,
+    // le cleanup peut être skipped sans impact sur l'enrichissement.
+    // Toujours best-effort : un échec du cleanup ne casse pas le cron.
+    let cleanupResult = { deleted: 0, skipped_pronostic: 0, capped: false };
+    try {
+      cleanupResult = await cleanupGhostCourses(supabase);
+      if (cleanupResult.deleted > 0) {
+        logger.info("enrichir-partants", `Self-cleanup : ${cleanupResult.deleted} courses fantômes supprimées`, {
+          deleted:           cleanupResult.deleted,
+          skipped_pronostic: cleanupResult.skipped_pronostic,
+          capped:            cleanupResult.capped,
+        });
+      }
+    } catch (cleanupErr) {
+      logger.error("enrichir-partants", "Self-cleanup failed (non-blocking)", {
+        error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr),
+      });
+    }
+
     await cronLog.finish(status, {
       date:           today,
       total_courses:  courses.length,
@@ -219,6 +345,7 @@ export async function GET(req: NextRequest) {
       errors,
       partants_inserted: inserted,
       has_more,
+      cleanup:        cleanupResult,
       ...(errors > 0 ? {
         error: `${errors} courses en erreur`,
         sample_errors: outcomes.filter((o) => o.status === "error").slice(0, 3),
@@ -235,6 +362,7 @@ export async function GET(req: NextRequest) {
       errors,
       partants_inserted: inserted,
       has_more,
+      cleanup:           cleanupResult,
       ...(has_more ? {
         note: `${remainingAll.length - aEnrichir.length} courses restantes — relancer le cron pour traiter le reste`,
       } : {}),
