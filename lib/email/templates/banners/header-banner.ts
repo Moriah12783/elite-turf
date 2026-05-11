@@ -57,15 +57,15 @@ export function renderHeaderBanner({ title, subtitle, photoFilename }: BannerCon
               background-size:cover;background-position:center right;background-repeat:no-repeat;">
   <tr>
     <td height="200" valign="middle"
-        style="height:200px;padding:0;background-image:linear-gradient(90deg,#1E3A5F 0%,#1E3A5F 35%,rgba(30,58,95,0.7) 60%,rgba(30,58,95,0.2) 90%,rgba(30,58,95,0) 100%);">
+        style="height:200px;padding:0;background-image:linear-gradient(90deg,#1E3A5F 0%,#1E3A5F 50%,rgba(30,58,95,0.92) 65%,rgba(30,58,95,0.55) 85%,rgba(30,58,95,0.1) 100%);">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td valign="middle" style="padding:36px 32px;">
 
-            <!-- Titre serif blanc -->
+            <!-- Titre serif blanc — text-shadow renforcé pour clients qui ignorent les gradients CSS (Outlook web) -->
             <p style="margin:0 0 10px 0;font-family:Georgia,'Times New Roman',serif;
                       font-size:24px;font-weight:700;color:#FFFFFF;line-height:1.2;
-                      letter-spacing:0.3px;text-shadow:0 1px 2px rgba(0,0,0,0.4);">
+                      letter-spacing:0.3px;text-shadow:0 2px 6px rgba(0,0,0,0.85), 0 0 12px rgba(0,0,0,0.5);">
               ${escapeHtml(title)}
             </p>
 
@@ -78,10 +78,10 @@ export function renderHeaderBanner({ title, subtitle, photoFilename }: BannerCon
               </tr>
             </table>
 
-            <!-- Sous-titre or brossé -->
+            <!-- Sous-titre or brossé — text-shadow renforcé idem -->
             <p style="margin:0;font-family:Georgia,'Times New Roman',serif;
-                      font-size:13px;font-weight:600;color:#C9A84C;font-style:italic;
-                      letter-spacing:0.4px;line-height:1.4;text-shadow:0 1px 2px rgba(0,0,0,0.3);">
+                      font-size:13px;font-weight:600;color:#E8C97A;font-style:italic;
+                      letter-spacing:0.4px;line-height:1.4;text-shadow:0 2px 5px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.45);">
               ${escapeHtml(subtitle)}
             </p>
 
