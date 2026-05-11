@@ -7,6 +7,8 @@ import {
   AlertCircle, ChevronUp, ChevronDown, Lock, Zap,
 } from "lucide-react";
 import Link from "next/link";
+import type { CourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
+import TabStatsRich from "@/components/courses/TabStatsRich";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,10 @@ interface Props {
   genyUrl: string;
   isVedette?: boolean;       // course avec pronostic publié
   isSubscribed?: boolean;    // utilisateur PREMIUM ou VIP
+  /** Stats enrichies (croisement BDD chevaux/jockeys/entraineurs). Optionnel
+   *  pour conserver la rétro-compat ; si absent on retombe sur TabStats simple. */
+  statsEnrichies?: CourseStatsEnrichies;
+  hasPublishedPronostic?: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -902,6 +908,8 @@ export default function CourseTabsClient({
   genyUrl,
   isVedette = false,
   isSubscribed = false,
+  statsEnrichies,
+  hasPublishedPronostic = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
 
@@ -955,7 +963,14 @@ export default function CourseTabsClient({
         />
       )}
       {activeTab === "stats" && (
-        <TabStats partants={partants} />
+        statsEnrichies
+          ? <TabStatsRich
+              stats={statsEnrichies}
+              hasPublishedPronostic={hasPublishedPronostic}
+              isSubscribed={isSubscribed}
+              courseStatut={statut}
+            />
+          : <TabStats partants={partants} />
       )}
     </div>
   );
