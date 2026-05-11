@@ -12,9 +12,18 @@ interface LogoEliteTurfProps {
   className?: string;
 }
 
-/** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
-/** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
-/** L'image logo.png est carrée (2000×2000) — on fixe la hauteur, la largeur suit */
+/**
+ * Logo Elite Turf — Variante navbar (transparent background, gold horseshoe).
+ *
+ * Migré du V1 (cheval marron + "elite-turf.fr" jaune) vers V2 (fer à cheval
+ * or sur transparent + "ELITE TURF" blanc + "Pronostics PMU" en or).
+ *
+ * Le SVG transparent s'intègre nativement sur les fonds sombres (bg-bg-primary
+ * du site = dark navy) sans avoir besoin de cadre/box.
+ *
+ * Pour les contextes fond clair (PDF, partenaires), utiliser plutôt
+ * /images/logo-v2/logo-square-white.svg via une prop dédiée si besoin.
+ */
 const sizeMap = {
   sm: { height: 80 },    // admin sidebar
   md: { height: 96 },    // auth / footer
@@ -32,10 +41,10 @@ export default function LogoEliteTurf({
   const inner = (
     <span className={cn("flex flex-col items-start group", className)}>
       <Image
-        src="/images/logo.png"
-        alt="Elite Turf"
-        width={2000}
-        height={2000}
+        src="/images/logo-v2/logo-square-transparent.svg"
+        alt="Elite Turf — Pronostics PMU"
+        width={1000}
+        height={1000}
         className="object-contain transition-opacity duration-200 group-hover:opacity-90"
         style={{ height: s.height, width: "auto" }}
         priority
