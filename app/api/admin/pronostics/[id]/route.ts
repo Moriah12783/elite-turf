@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 /**
  * PATCH /api/admin/pronostics/[id]
  * Mise à jour d'un pronostic via service client (bypass RLS).
- * Protégé par vérification du rôle ADMIN.
+ * Protégé par vérification du rôle ADMIN (Bearer CRON_SECRET OU session admin).
  */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // 🔒 Auth admin obligatoire — avant cette PR, le commentaire affirmait
+  // "Protégé par vérification du rôle ADMIN" mais le code ne checkait rien.
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const body = await req.json();
@@ -65,11 +71,16 @@ export async function PATCH(
 
 /**
  * DELETE /api/admin/pronostics/[id]
+ * Protégé par vérification du rôle ADMIN (Bearer CRON_SECRET OU session admin).
  */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // 🔒 Auth admin obligatoire
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const { error } = await supabase.from("pronostics").delete().eq("id", params.id);

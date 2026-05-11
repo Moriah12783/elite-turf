@@ -12,6 +12,7 @@ import { logCronStart } from "@/lib/cron-logger";
 import { runGenyProgrammeSync } from "@/lib/sync/geny-programme";
 import { runLonaciSync }        from "@/lib/sync/lonaci";
 import { runGenyArriveesSync }  from "@/lib/sync/geny-arrivees";
+import { requireAdminAuth }     from "@/lib/auth/checkAdminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,10 @@ const TARGETS: Record<string, Target> = {
 };
 
 export async function POST(req: NextRequest) {
+  // 🔒 Auth admin obligatoire (Bearer CRON_SECRET OU cookie session ADMIN)
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const { target } = await req.json().catch(() => ({ target: "" }));
 
   const endpoint = TARGETS[target];

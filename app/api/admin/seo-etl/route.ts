@@ -16,31 +16,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/observability/logger";
 import { runSeoEtl, type EntiteType } from "@/lib/sync/seo-etl";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 60;
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
-
 async function runEndpoint(req: NextRequest): Promise<NextResponse> {
-  // ── Auth ──────────────────────────────────────────────────────────
-  const auth = req.headers.get("authorization") || "";
-  const hasCronAuth = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
-
-  if (!hasCronAuth) {
-    const adminClient    = createServiceClient();
-    const supabaseClient = await createClient();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    const { data: profile } = await adminClient
-      .from("profiles").select("role").eq("id", user.id).single();
-    if (!profile || profile.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  // 🔒 Auth admin : Bearer CRON_SECRET OU session admin (cookie)
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
 
   // ── Params ─────────────────────────────────────────────────────────
   let entites: EntiteType[] | undefined;

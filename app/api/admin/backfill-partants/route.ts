@@ -19,7 +19,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
 import { logger } from "@/lib/observability/logger";
 
@@ -82,30 +83,12 @@ async function processInPool<T, R>(
   return results;
 }
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
-
 async function runBackfill(req: NextRequest): Promise<NextResponse> {
-  // Auth : accept EITHER (a) Bearer CRON_SECRET (utilitaire scripts), OR
-  // (b) ADMIN session cookie (usage navigateur).
-  const auth = req.headers.get("authorization") || "";
-  const hasCronAuth = CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
+  // 🔒 Auth admin : Bearer CRON_SECRET (scripts) OU session ADMIN (cookie navigateur)
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
 
   const adminClient = createServiceClient();
-
-  if (!hasCronAuth) {
-    const supabaseClient = await createClient();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    if (!profile || profile.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
 
   // Params (POST body OU GET query params, pour permettre l'usage navigateur direct)
   let days = 14;

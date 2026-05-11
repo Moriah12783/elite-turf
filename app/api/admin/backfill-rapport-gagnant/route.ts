@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import {
   computeRapportGagnant,
   type PronosticResultat,
@@ -21,28 +22,6 @@ import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 120;
-
-const CRON_SECRET = process.env.CRON_SECRET || "";
-
-async function authorize(req: NextRequest): Promise<NextResponse | null> {
-  const auth = req.headers.get("authorization") ?? "";
-  if (CRON_SECRET && auth === `Bearer ${CRON_SECRET}`) return null;
-
-  const supabaseClient = await createClient();
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-
-  const adminClient = createServiceClient();
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (!profile || profile.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  return null;
-}
 
 interface ProcessOutcome {
   pronosticId: string;
@@ -55,7 +34,7 @@ interface ProcessOutcome {
 }
 
 export async function POST(req: NextRequest) {
-  const authError = await authorize(req);
+  const authError = await requireAdminAuth(req);
   if (authError) return authError;
 
   const url = new URL(req.url);
