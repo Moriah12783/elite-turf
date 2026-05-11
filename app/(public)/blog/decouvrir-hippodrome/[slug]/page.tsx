@@ -64,10 +64,10 @@ export default async function GuideHippodromePage({ params }: PageProps) {
     description: `Guide hippodrome ${stats.nom} (${stats.ville}, ${stats.pays}). ${stats.nb_courses_total}+ courses analysées.`,
     datePublished: nowISO,
     dateModified:  nowISO,
-    author:    { "@type": "Organization", name: "Elite Turf", url: APP_URL },
+    author:    { "@type": "Person", name: "Stéphane Y.", url: `${APP_URL}/equipe-redactionnelle`, jobTitle: "Fondateur & Rédacteur en chef" },
     publisher: {
-      "@type": "Organization", name: "Elite Turf",
-      logo: { "@type": "ImageObject", url: `${APP_URL}/og-image.jpg` },
+      "@type": "NewsMediaOrganization", name: "Elite Turf", url: APP_URL,
+      logo: { "@type": "ImageObject", url: `${APP_URL}/images/logo-v2/logo-square-1000.png`, width: 1000, height: 1000 },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": `${APP_URL}/blog/decouvrir-hippodrome/${params.slug}` },
     about: {
