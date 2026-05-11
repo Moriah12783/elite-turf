@@ -6,9 +6,12 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 
 export const metadata: Metadata = {
   title: "Mentions Légales — Elite Turf",
-  description: "Mentions légales du site EliteTurf.fr",
+  description: "Mentions légales et informations éditeur du site Elite Turf — directeur de publication, hébergeur, propriété intellectuelle.",
   alternates: { canonical: `${APP_URL}/mentions-legales` },
-  robots: { index: false, follow: false },
+  // Index autorisé (Google News Publisher Center DOIT pouvoir crawler cette page
+  // pour vérifier l'identité de l'éditeur). Auparavant noindex/nofollow → bloquait
+  // la soumission Publisher Center.
+  robots: { index: true, follow: true },
 };
 
 export default function MentionsLegalesPage() {
@@ -31,17 +34,24 @@ export default function MentionsLegalesPage() {
           <section className="card-base p-6">
             <h2 className="font-serif font-bold text-text-primary text-lg mb-4">Éditeur du site</h2>
             <p>
-              Le site <strong className="text-text-primary">EliteTurf</strong> (eliteturf.fr) est édité par{" "}
+              Le site <strong className="text-text-primary">Elite Turf</strong> (elite-turf.fr) est édité par{" "}
               <strong className="text-text-primary">Yapi Landry Stéphane</strong>,
-              domicilié à Paris, France.
+              dont le siège est situé au{" "}
+              <strong className="text-text-primary">34 boulevard des Italiens, 75009 Paris, France</strong>.
             </p>
             <p className="mt-3">
               <strong className="text-text-primary">Directeur de la publication :</strong> Yapi Landry Stéphane
             </p>
             <p className="mt-2">
-              <strong className="text-text-primary">Contact :</strong>{" "}
+              <strong className="text-text-primary">Contact rédaction :</strong>{" "}
               <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
                 contact@elite-turf.fr
+              </a>
+            </p>
+            <p className="mt-2">
+              <strong className="text-text-primary">Téléphone :</strong>{" "}
+              <a href="tel:+33644686720" className="text-gold-light hover:underline">
+                +33 6 44 68 67 20
               </a>
             </p>
           </section>
@@ -50,12 +60,14 @@ export default function MentionsLegalesPage() {
             <h2 className="font-serif font-bold text-text-primary text-lg mb-4">Hébergement</h2>
             <p>
               Le site est hébergé par{" "}
-              <strong className="text-text-primary">Vercel Inc.</strong>,
-              situé au 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.
+              <strong className="text-text-primary">Cloudflare, Inc.</strong>,
+              situé au 101 Townsend Street, San Francisco, CA 94107, États-Unis.
             </p>
             <p className="mt-2">
               Site web :{" "}
-              <span className="text-gold-light">vercel.com</span>
+              <a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-gold-light hover:underline">
+                cloudflare.com
+              </a>
             </p>
           </section>
 

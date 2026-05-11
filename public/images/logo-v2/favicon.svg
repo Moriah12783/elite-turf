@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Elite Turf — Favicon 512×512 (icône seule, sans texte)
+  Usage : navigateurs (32×32 sera scalé), Google News carte article, apple-touch-icon.
+
+  Optimisé pour lisibilité miniature : pas de texte, stroke épais relatif au canvas
+  (stroke 80 / 512 = 15.6% → reste lisible à 32px).
+-->
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#E8C97A"/>
+      <stop offset="35%"  stop-color="#D4B86A"/>
+      <stop offset="65%"  stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#A0832A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background bleu nuit avec coins arrondis (iOS-style app icon) -->
+  <rect width="512" height="512" rx="90" fill="#1E3A5F"/>
+
+  <!-- Fer à cheval centré (sans texte, max recognition) -->
+  <g transform="translate(256, 270)">
+    <path d="M -118 -135 L -118 -28 A 118 118 0 0 0 118 -28 L 118 -135"
+          stroke="url(#goldGradient)"
+          stroke-width="78"
+          fill="none"
+          stroke-linecap="round"/>
+    <!-- 4 trous de clous (réduits, gardent identité "fer travaillé") -->
+    <circle cx="105"  cy="12"   r="9" fill="#1E3A5F"/>
+    <circle cx="92"   cy="-65"  r="9" fill="#1E3A5F"/>
+    <circle cx="-105" cy="12"   r="9" fill="#1E3A5F"/>
+    <circle cx="-92"  cy="-65"  r="9" fill="#1E3A5F"/>
+  </g>
+</svg>
