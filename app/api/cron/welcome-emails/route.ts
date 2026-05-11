@@ -21,7 +21,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendEmailDetailed } from "@/lib/email";
+import { sendEmailDetailed, DEFAULT_BULK_RATE_PER_SECOND } from "@/lib/email";
 import { logCronStart } from "@/lib/cron-logger";
 import { logger } from "@/lib/observability/logger";
 import { templateWelcomeJ1 } from "@/lib/email/templates/welcome-series-j1";
@@ -145,6 +145,11 @@ export async function GET(req: NextRequest) {
         stats.failed++;
         logger.error("welcome-emails", `Send failed: ${sendRes.error}`, { user_id: profile.id, type: step.type });
       }
+
+      // Throttle Resend rate-limit (5/sec par défaut, voir lib/email/index.ts).
+      // On ne peut pas utiliser sendEmailBatch ici car la logique per-user
+      // (check email_sent_log AVANT chaque envoi) ne pré-collecte pas en batch.
+      await new Promise((r) => setTimeout(r, Math.ceil(1000 / DEFAULT_BULK_RATE_PER_SECOND)));
     }
 
     await cronLog.finish(stats.failed > 0 ? "failure" : "success", stats);
