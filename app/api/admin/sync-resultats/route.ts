@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuResultats } from "@/lib/pmu-api";
 import { logCronStart } from "@/lib/cron-logger";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 type CourseJoin = {
   id: string;
@@ -87,6 +88,11 @@ function calculerResultat(
 // ── Route principale ──────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // 🔒 Auth admin obligatoire (Bearer CRON_SECRET OU cookie session ADMIN)
+  // Avant : commentaire "Sécurisé par Bearer" mais ZÉRO vérification dans le code.
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const logger = logCronStart("resultats-pronostics");
 
   const supabase = createServiceClient();

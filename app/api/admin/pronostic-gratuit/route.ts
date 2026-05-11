@@ -7,9 +7,8 @@
  * Body : { course_id, selection: number[], analyse_courte, confiance }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
-
-const CRON_SECRET = process.env.CRON_SECRET || "";
+import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 function getTodayParis(): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -21,26 +20,9 @@ function getTodayParis(): string {
 // ── POST : créer le pronostic gratuit ───────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // Auth : admin connecté OU cron secret
-  const authHeader = req.headers.get("authorization") || "";
-  const isCron = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
-
-  if (!isCron) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-
-    const adminClient = createServiceClient();
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "ADMIN") {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
-    }
-  }
+  // 🔒 Auth admin : Bearer CRON_SECRET OU session admin (cookie)
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
 
   const body = await req.json();
   const { course_id, selection, analyse_courte, confiance = 3 } = body;
