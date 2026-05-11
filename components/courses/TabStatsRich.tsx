@@ -24,8 +24,8 @@ import {
   BarChart3, TrendingUp, Star, Trophy, Zap,
   Crown, Diamond, Flame, Info, Users, Award,
 } from "lucide-react";
-import type { CourseStatsEnrichies, PartantEnrichi, StatsHistoriques } from "@/lib/courses/getCourseStatsEnrichies";
-import { MIN_COURSES_FIABLES } from "@/lib/courses/getCourseStatsEnrichies";
+import type { CourseStatsEnrichies, PartantEnrichi, StatsHistoriques } from "@/lib/courses/stats-types";
+import { MIN_COURSES_FIABLES } from "@/lib/courses/stats-types";
 
 interface Props {
   stats:               CourseStatsEnrichies;

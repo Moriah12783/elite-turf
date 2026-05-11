@@ -7,7 +7,7 @@ import {
   AlertCircle, ChevronUp, ChevronDown, Lock, Zap,
 } from "lucide-react";
 import Link from "next/link";
-import type { CourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
+import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
 import TabStatsRich from "@/components/courses/TabStatsRich";
 
 // ── Types ──────────────────────────────────────────────────────────────────
