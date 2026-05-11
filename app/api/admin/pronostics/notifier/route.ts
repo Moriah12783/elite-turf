@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmailBatch } from "@/lib/email";
 import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronostic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
@@ -131,36 +131,33 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── 3. Envoyer les emails (par lots de 50) ───────────────────────────────
-    let sent = 0;
-    let errors = 0;
-
-    for (const abonne of abonnes) {
-      if (!abonne.email) continue;
-
-      const { subject, html } = templateNouveauPronostic({
-        nomComplet:    abonne.nom_complet ?? abonne.email,
-        hippodrome,
-        dateString,
-        typePari,
-        niveauAcces,
-        analysesCourte: prono.analyse_courte ?? "",
-        nbPartants,
-        pronosticId:   prono.id,
+    // ── 3. Envoyer les emails avec throttling unifié (sendEmailBatch) ───────
+    // Avant : séquentiel + pause 200ms toutes les 10 emails = burst risk + inégal
+    // Maintenant : sendEmailBatch garantit exactement 5 emails/sec (default)
+    const payloads = abonnes
+      .filter((a) => a.email)
+      .map((a) => {
+        const { subject, html } = templateNouveauPronostic({
+          nomComplet:    a.nom_complet ?? a.email,
+          hippodrome,
+          dateString,
+          typePari,
+          niveauAcces,
+          analysesCourte: prono.analyse_courte ?? "",
+          nbPartants,
+          pronosticId:   prono.id,
+        });
+        return { to: a.email, subject, html };
       });
 
-      const ok = await sendEmail({ to: abonne.email, subject, html });
-      if (ok) sent++; else errors++;
-
-      // Petite pause pour ne pas saturer Resend sur de gros volumes
-      if (sent % 10 === 0) await new Promise(r => setTimeout(r, 200));
-    }
+    const result = await sendEmailBatch(payloads);
 
     return NextResponse.json({
       ok: true,
-      sent,
-      errors,
-      total: abonnes.length,
+      sent:   result.sent,
+      errors: result.failed,
+      total:  result.total,
+      duration_ms: result.duration_ms,
       niveau: niveauAcces,
     });
 

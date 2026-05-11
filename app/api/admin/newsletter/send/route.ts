@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendEmailDetailed } from "@/lib/email";
+import { sendEmailBatch } from "@/lib/email";
 import { templateNewsletterLancement } from "@/lib/email/templates/newsletter-lancement";
 import { PROMO } from "@/lib/promo";
-
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function isAdmin(): Promise<boolean> {
   const supabase = await createClient();
@@ -70,46 +66,34 @@ export async function POST(req: NextRequest) {
   const destinataires = await collectDestinataires();
   if (!destinataires.length) return NextResponse.json({ message: "Aucun destinataire trouvé", envoyes: 0 });
 
-  const envoyes: string[] = [];
-  const echecs: { email: string; raison: string }[] = [];
+  // Prepare tous les emails (rendering + payload) puis batch send avec throttling
+  // unifié via sendEmailBatch. Rate par défaut = 5/sec → safe pour Resend Pro.
+  const payloads = destinataires.map((dest) => {
+    const { subject, html } = templateNewsletterLancement({
+      prenom:         dest.prenom,
+      numeroEdition,
+      reductionPct:   PROMO.reductionPct,
+      dateExpiration: PROMO.dateExpiration,
+      codePromo:      PROMO.code,
+    });
+    return { to: dest.email, subject, html, meta: { prenom: dest.prenom } };
+  });
 
-  const BATCH = 10;
-  for (let i = 0; i < destinataires.length; i += BATCH) {
-    const batch = destinataires.slice(i, i + BATCH);
+  const result = await sendEmailBatch(payloads);
 
-    await Promise.all(
-      batch.map(async (dest) => {
-        try {
-          const { subject, html } = templateNewsletterLancement({
-            prenom:         dest.prenom,
-            numeroEdition,
-            reductionPct:   PROMO.reductionPct,
-            dateExpiration: PROMO.dateExpiration,
-            codePromo:      PROMO.code,
-          });
-          const { ok, error } = await sendEmailDetailed({ to: dest.email, subject, html });
-          if (ok) {
-            envoyes.push(dest.email);
-          } else {
-            echecs.push({ email: dest.email, raison: error || "Refusé par Resend" });
-          }
-        } catch (err: any) {
-          echecs.push({ email: dest.email, raison: err?.message || "Erreur inconnue" });
-        }
-      })
-    );
+  const echecs = result.details
+    .filter((d) => !d.ok)
+    .map((d) => ({ email: d.email, raison: d.error || "Refusé par Resend" }));
 
-    if (i + BATCH < destinataires.length) await delay(1000);
-  }
-
-  console.log(`[Newsletter Lancement] Envoyés: ${envoyes.length}, Échecs: ${echecs.length}`);
+  console.log(`[Newsletter Lancement] Envoyés: ${result.sent}/${result.total} en ${result.duration_ms}ms, Échecs: ${result.failed}`);
   if (echecs.length) console.error("[Newsletter Lancement] Échecs:", echecs);
 
   return NextResponse.json({
     mode:    "envoi-reel",
-    total:   destinataires.length,
-    envoyes: envoyes.length,
-    echecs:  echecs.length,
+    total:   result.total,
+    envoyes: result.sent,
+    echecs:  result.failed,
+    duration_ms:    result.duration_ms,
     details_echecs: echecs,
   });
 }
