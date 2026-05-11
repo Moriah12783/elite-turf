@@ -26,10 +26,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!e) return { title: "Entraîneur introuvable — Elite Turf" };
   const tauxVic = tauxVictoire(e);
   const tauxStr = tauxVic !== null ? ` Taux victoire ${tauxVic.toFixed(1)}%.` : "";
+
+  // Anti "thin content" : noindex pour entraineurs avec <3 courses en BDD
+  const thinContent = (e.nb_courses ?? 0) < 3;
+
   return {
     title: `${e.nom} — Entraîneur PMU : statistiques et historique | Elite Turf`,
     description: `Entraîneur ${e.nom} : ${e.nb_courses ?? 0} courses, ${e.nb_victoires ?? 0} victoires, ${e.nb_places ?? 0} top 3.${tauxStr} Écurie et performances.`,
     alternates: { canonical: `${APP_URL}/entraineurs/${params.slug}` },
+    robots: thinContent
+      ? { index: false, follow: true }
+      : { index: true,  follow: true },
   };
 }
 

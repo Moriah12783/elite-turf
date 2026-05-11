@@ -27,10 +27,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!e) return { title: "Cheval introuvable — Elite Turf" };
   const tauxVic = tauxVictoire(e);
   const tauxStr = tauxVic !== null ? ` Taux victoire ${tauxVic.toFixed(1)}%.` : "";
+
+  // ── Anti "thin content" / "doublon Google" ─────────────────────────
+  // Si le cheval a moins de 3 courses en BDD, la page est très pauvre et
+  // Google la marque "doublon sans canonical sélectionné" dans GSC.
+  // → On lui demande explicitement de ne PAS indexer ces pages (noindex)
+  //   mais on laisse follow=true pour préserver le crawl des liens internes.
+  const thinContent = (e.nb_courses ?? 0) < 3;
+
   return {
     title: `${e.nom} — Cheval PMU : performances et historique | Elite Turf`,
     description: `${e.nom} : ${e.nb_courses ?? 0} courses, ${e.nb_victoires ?? 0} victoires, ${e.nb_places ?? 0} places.${tauxStr} Historique complet.`,
     alternates: { canonical: `${APP_URL}/chevaux/${params.slug}` },
+    robots: thinContent
+      ? { index: false, follow: true }
+      : { index: true,  follow: true },
   };
 }
 
