@@ -70,35 +70,41 @@ export default async function BlogArticlePage({
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
 
-  // ── JSON-LD : schéma Article pour Google ─────────────────────────────
+  // ── JSON-LD : schéma Article pour Google News ────────────────────────
+  // Google News exige author = Person (avec nom réel), pas Organization.
+  // publisher = NewsMediaOrganization (cohérent layout.tsx) + logo carré 1000x1000.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "NewsArticle",
     headline: article.titre,
     description: article.description,
     image: article.image.startsWith("http") ? article.image : `${APP_URL}${article.image}`,
     datePublished: article.date,
-    dateModified: article.date,
+    dateModified:  article.date,
     author: {
-      "@type": "Organization",
-      name: "Elite Turf",
-      url: APP_URL,
+      "@type": "Person",
+      name:    "Stéphane Y.",
+      url:     `${APP_URL}/equipe-redactionnelle`,
+      jobTitle: "Fondateur & Rédacteur en chef",
     },
     publisher: {
-      "@type": "Organization",
-      name: "Elite Turf",
+      "@type": "NewsMediaOrganization",
+      name:    "Elite Turf",
+      url:     APP_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${APP_URL}/og-image.jpg`,
+        url:    `${APP_URL}/images/logo-v2/logo-square-1000.png`,
+        width:  1000,
+        height: 1000,
       },
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${APP_URL}/blog/${article.slug}`,
+      "@id":   `${APP_URL}/blog/${article.slug}`,
     },
-    keywords: article.keywords.join(", "),
+    keywords:       article.keywords.join(", "),
     articleSection: article.categorie,
-    inLanguage: "fr-FR",
+    inLanguage:     "fr-FR",
   };
 
   return (

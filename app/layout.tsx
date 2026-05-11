@@ -84,32 +84,54 @@ export const metadata: Metadata = {
   },
 };
 
-// JSON-LD Organisation — injecté une seule fois sur tout le site
+// JSON-LD NewsMediaOrganization — schema.org enrichi pour Google News Publisher Center.
+// Type "NewsMediaOrganization" (vs "Organization" classique) signale à Google que ce
+// site est un éditeur de news → conditions requises pour figurer dans Google News.
+// Référence : https://schema.org/NewsMediaOrganization
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "NewsMediaOrganization",
   name: "Elite Turf",
   url: APP_URL,
-  logo: `${APP_URL}/og-image.jpg`,
+  // Logo carré 1000x1000 (PNG rasterisé depuis le SVG V2 — fer à cheval or sur bleu nuit).
+  // Format préconisé Google News : carré, lisible à 50px (Knowledge Graph + cartes article).
+  logo: {
+    "@type": "ImageObject",
+    url:    `${APP_URL}/images/logo-v2/logo-square-1000.png`,
+    width:  1000,
+    height: 1000,
+  },
+  // Image de couverture additionnelle (variante horizontale pour Knowledge Graph)
+  image: `${APP_URL}/images/logo-v2/logo-horizontal-1000.png`,
   description:
     "Pronostics PMU premium pour les parieurs francophones d'Afrique et d'Europe. Tiercé, Quarté+, Quinté+ analysés par des experts depuis Paris.",
+  // Liens vers pages de transparence éditoriale — exigés par Google News Publisher Center
+  publishingPrinciples:     `${APP_URL}/equipe-redactionnelle`,
+  actionableFeedbackPolicy: `${APP_URL}/contact`,
+  ethicsPolicy:             `${APP_URL}/equipe-redactionnelle`,
+  // Fondateur — schema NewsMediaOrganization requiert founder ou employee identifiable
+  founder: {
+    "@type": "Person",
+    name:    "Yapi Landry Stéphane",
+    jobTitle: "Fondateur & Directeur de la publication",
+  },
   address: {
     "@type": "PostalAddress",
-    streetAddress: "34 boulevard des Italiens",
+    streetAddress:  "34 boulevard des Italiens",
     addressLocality: "Paris",
-    postalCode: "75009",
+    postalCode:     "75009",
     addressCountry: "FR",
   },
   contactPoint: {
     "@type": "ContactPoint",
-    telephone: "+33-6-44-68-67-20",
-    contactType: "customer service",
+    telephone:        "+33-6-44-68-67-20",
+    email:            "contact@elite-turf.fr",
+    contactType:      "customer service",
     availableLanguage: "French",
+    areaServed:       ["FR", "CI", "SN", "CM", "MA", "BF", "TG", "BJ", "ML"],
   },
-  sameAs: [
-    "https://www.facebook.com/eliteturf",
-    "https://www.youtube.com/@eliteturf",
-  ],
+  // Pas de sameAs Facebook/YouTube pour l'instant (comptes pas encore actifs).
+  // À réactiver quand les comptes seront créés et alimentés.
 };
 
 export default function RootLayout({

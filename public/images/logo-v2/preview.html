@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Elite Turf — Logo V2 Preview</title>
+<style>
+  body { margin: 0; padding: 32px; background: #F3F4F6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #1E3A5F; }
+  h1 { font-family: Georgia, serif; font-size: 32px; margin-bottom: 8px; }
+  .subtitle { color: #6B7280; margin-bottom: 32px; font-size: 14px; }
+  .grid { display: grid; gap: 32px; }
+  .card { background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 24px; }
+  .card h2 { font-family: Georgia, serif; font-size: 20px; margin: 0 0 8px 0; color: #1E3A5F; }
+  .card .usage { color: #6B7280; font-size: 12px; margin-bottom: 16px; }
+  .card .preview-row { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; padding: 16px; background: #F8FAFC; border-radius: 8px; }
+  .size-label { font-family: monospace; font-size: 11px; color: #9CA3AF; margin-top: 4px; }
+  .size-100 img, .size-100 object { width: 100px; height: auto; display: block; }
+  .size-50  img, .size-50  object { width: 50px;  height: auto; display: block; }
+  .size-32  img, .size-32  object { width: 32px;  height: auto; display: block; border: 1px dashed #D1D5DB; }
+  .preview-block { text-align: center; }
+  .preview-block.large img, .preview-block.large object { width: 300px; height: auto; display: block; }
+  hr { border: none; border-top: 1px solid #E5E7EB; margin: 32px 0; }
+  .news-mockup { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 12px; max-width: 400px; }
+  .news-mockup-header { display: flex; gap: 10px; align-items: center; }
+  .news-mockup-header img, .news-mockup-header object { width: 32px; height: 32px; border-radius: 4px; }
+  .news-mockup-source { font-size: 13px; color: #1E3A5F; font-weight: 600; }
+  .news-mockup-date { font-size: 11px; color: #9CA3AF; }
+  .news-mockup-title { margin-top: 10px; font-size: 15px; font-weight: 600; color: #1F2937; line-height: 1.3; }
+</style>
+</head>
+<body>
+
+<h1>Elite Turf — Logo V2 Preview</h1>
+<p class="subtitle">5 SVG générés pour Google News Publisher Center, JSON-LD Organization, favicons et emails. Direction artistique : fer à cheval ouverture vers le haut (porte-bonheur) en or brossé sur bleu nuit.</p>
+
+<div class="grid">
+
+  <!-- 1. CARRÉ BLEU NUIT -->
+  <div class="card">
+    <h2>1. Logo carré — Bleu nuit</h2>
+    <p class="usage"><code>logo-square-blue.svg</code> · 1000×1000 · <strong>Usage principal :</strong> JSON-LD Organization, Publisher Center, og-image refresh</p>
+    <div class="preview-row">
+      <div class="preview-block large">
+        <object data="logo-square-blue.svg" type="image/svg+xml"></object>
+        <div class="size-label">300×300 (preview)</div>
+      </div>
+      <div class="preview-block size-100">
+        <object data="logo-square-blue.svg" type="image/svg+xml"></object>
+        <div class="size-label">100×100</div>
+      </div>
+      <div class="preview-block size-50">
+        <object data="logo-square-blue.svg" type="image/svg+xml"></object>
+        <div class="size-label">50×50</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CARRÉ BLANC -->
+  <div class="card">
+    <h2>2. Logo carré — Blanc</h2>
+    <p class="usage"><code>logo-square-white.svg</code> · 1000×1000 · <strong>Usage :</strong> Emails sur fond clair, documents impression, partenariats</p>
+    <div class="preview-row">
+      <div class="preview-block large">
+        <object data="logo-square-white.svg" type="image/svg+xml"></object>
+        <div class="size-label">300×300</div>
+      </div>
+      <div class="preview-block size-100">
+        <object data="logo-square-white.svg" type="image/svg+xml"></object>
+        <div class="size-label">100×100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. HORIZONTAL BLEU NUIT -->
+  <div class="card">
+    <h2>3. Logo horizontal — Bleu nuit</h2>
+    <p class="usage"><code>logo-horizontal-blue.svg</code> · 1000×200 · <strong>Usage :</strong> Knowledge Graph Google, header email, signature dark mode</p>
+    <div style="background:#F8FAFC; border-radius:8px; padding:16px;">
+      <object data="logo-horizontal-blue.svg" type="image/svg+xml" style="width:600px; height:auto; display:block;"></object>
+      <div class="size-label" style="margin-top:8px;">600×120</div>
+    </div>
+    <div style="background:#F8FAFC; border-radius:8px; padding:16px; margin-top:16px;">
+      <object data="logo-horizontal-blue.svg" type="image/svg+xml" style="width:300px; height:auto; display:block;"></object>
+      <div class="size-label" style="margin-top:8px;">300×60 (taille email standard)</div>
+    </div>
+  </div>
+
+  <!-- 4. HORIZONTAL BLANC -->
+  <div class="card">
+    <h2>4. Logo horizontal — Blanc</h2>
+    <p class="usage"><code>logo-horizontal-white.svg</code> · 1000×200 · <strong>Usage :</strong> Variante claire emails fond blanc, partenariats</p>
+    <div style="background:#F8FAFC; border-radius:8px; padding:16px;">
+      <object data="logo-horizontal-white.svg" type="image/svg+xml" style="width:600px; height:auto; display:block;"></object>
+    </div>
+  </div>
+
+  <!-- 5. FAVICON -->
+  <div class="card">
+    <h2>5. Favicon (sans texte)</h2>
+    <p class="usage"><code>favicon.svg</code> · 512×512 · <strong>Usage :</strong> Navigateurs (onglet), apple-touch-icon, Google News cards article</p>
+    <div class="preview-row">
+      <div class="preview-block size-100">
+        <object data="favicon.svg" type="image/svg+xml"></object>
+        <div class="size-label">100×100</div>
+      </div>
+      <div class="preview-block size-50">
+        <object data="favicon.svg" type="image/svg+xml"></object>
+        <div class="size-label">50×50</div>
+      </div>
+      <div class="preview-block size-32">
+        <object data="favicon.svg" type="image/svg+xml"></object>
+        <div class="size-label">32×32 (taille onglet navigateur)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOCKUP GOOGLE NEWS -->
+  <div class="card">
+    <h2>📱 Simulation Google News (mockup)</h2>
+    <p class="usage">Comment ton logo apparaîtra dans le feed Google News mobile</p>
+    <div class="preview-row" style="background: #f0f0f0;">
+      <div class="news-mockup">
+        <div class="news-mockup-header">
+          <object data="favicon.svg" type="image/svg+xml"></object>
+          <div>
+            <div class="news-mockup-source">Elite Turf</div>
+            <div class="news-mockup-date">il y a 2 heures</div>
+          </div>
+        </div>
+        <div class="news-mockup-title">Pronostic Quinté+ du jour : analyse complète du Prix de Marigny à Vichy</div>
+      </div>
+      <div class="news-mockup">
+        <div class="news-mockup-header">
+          <object data="favicon.svg" type="image/svg+xml"></object>
+          <div>
+            <div class="news-mockup-source">Elite Turf</div>
+            <div class="news-mockup-date">il y a 5 minutes</div>
+          </div>
+        </div>
+        <div class="news-mockup-title">Arrivée Quinté+ : le 7 confirme son favori, rapports publiés</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

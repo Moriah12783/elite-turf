@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Elite Turf — Logo carré 1000×1000 (background blanc immaculé)
+  Usage : Emails sur fond clair, documents impression, partenariats.
+-->
+<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#D4B86A"/>
+      <stop offset="40%"  stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#8C6F22"/>
+    </linearGradient>
+    <linearGradient id="navyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#2C4E7A"/>
+      <stop offset="100%" stop-color="#1E3A5F"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="3" result="offsetBlur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background blanc -->
+  <rect width="1000" height="1000" fill="#FFFFFF"/>
+
+  <!-- Bande dorée subtile -->
+  <rect x="0" y="0" width="1000" height="3" fill="#C9A84C" opacity="0.4"/>
+  <rect x="0" y="997" width="1000" height="3" fill="#C9A84C" opacity="0.4"/>
+
+  <!-- Fer à cheval (or sur blanc) -->
+  <g transform="translate(500, 400)" filter="url(#dropShadow)">
+    <path d="M -180 -200 L -180 -40 A 180 180 0 0 0 180 -40 L 180 -200"
+          stroke="url(#goldGradient)"
+          stroke-width="115"
+          fill="none"
+          stroke-linecap="round"/>
+    <!-- Trous de clous en blanc (visibles sur fond blanc) -->
+    <circle cx="160"  cy="20"   r="13" fill="#FFFFFF"/>
+    <circle cx="148"  cy="-65"  r="13" fill="#FFFFFF"/>
+    <circle cx="130"  cy="-150" r="13" fill="#FFFFFF"/>
+    <circle cx="-160" cy="20"   r="13" fill="#FFFFFF"/>
+    <circle cx="-148" cy="-65"  r="13" fill="#FFFFFF"/>
+    <circle cx="-130" cy="-150" r="13" fill="#FFFFFF"/>
+  </g>
+
+  <!-- ELITE TURF en bleu nuit pour meilleur contraste sur blanc -->
+  <text x="500" y="790"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="118"
+        font-weight="bold"
+        fill="url(#navyGradient)"
+        letter-spacing="14">ELITE TURF</text>
+
+  <text x="500" y="870"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="34"
+        font-style="italic"
+        fill="#8C6F22"
+        letter-spacing="6">Pronostics PMU</text>
+
+  <line x1="420" y1="900" x2="580" y2="900"
+        stroke="#C9A84C" stroke-width="2" opacity="0.6"/>
+</svg>

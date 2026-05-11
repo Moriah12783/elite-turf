@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Elite Turf — Logo horizontal 1000×200 (background blanc immaculé)
+  Usage : Variante claire (emails sur fond blanc, partenariats, signature mail texte clair).
+-->
+<svg viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#D4B86A"/>
+      <stop offset="40%"  stop-color="#C9A84C"/>
+      <stop offset="100%" stop-color="#8C6F22"/>
+    </linearGradient>
+    <linearGradient id="navyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#2C4E7A"/>
+      <stop offset="100%" stop-color="#1E3A5F"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="200" fill="#FFFFFF"/>
+
+  <!-- Bandes dorées subtiles -->
+  <rect x="0" y="0"   width="1000" height="2" fill="#C9A84C" opacity="0.4"/>
+  <rect x="0" y="198" width="1000" height="2" fill="#C9A84C" opacity="0.4"/>
+
+  <!-- Fer à cheval (or sur blanc) -->
+  <g transform="translate(120, 105)">
+    <path d="M -55 -65 L -55 -15 A 55 55 0 0 0 55 -15 L 55 -65"
+          stroke="url(#goldGradient)"
+          stroke-width="34"
+          fill="none"
+          stroke-linecap="round"/>
+    <circle cx="48"  cy="0"   r="4" fill="#FFFFFF"/>
+    <circle cx="42"  cy="-35" r="4" fill="#FFFFFF"/>
+    <circle cx="-48" cy="0"   r="4" fill="#FFFFFF"/>
+    <circle cx="-42" cy="-35" r="4" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Séparateur vertical doré -->
+  <line x1="225" y1="50" x2="225" y2="150"
+        stroke="#C9A84C" stroke-width="1" opacity="0.5"/>
+
+  <!-- ELITE TURF en bleu nuit pour meilleur contraste sur blanc -->
+  <text x="255" y="105"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="62"
+        font-weight="bold"
+        fill="url(#navyGradient)"
+        letter-spacing="6">ELITE TURF</text>
+
+  <text x="257" y="148"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="21"
+        font-style="italic"
+        fill="#8C6F22"
+        letter-spacing="2.5">Pronostics PMU francophones</text>
+</svg>

@@ -73,7 +73,9 @@ export default function ContactPage() {
           <div className="flex-1">
             <h2 className="font-serif font-bold text-text-primary mb-1">Adresse</h2>
             <p className="text-text-secondary text-sm">
-              Elite Turf<br />75008 Paris, France
+              Elite Turf<br />
+              34 boulevard des Italiens<br />
+              75009 Paris, France
             </p>
           </div>
         </div>
