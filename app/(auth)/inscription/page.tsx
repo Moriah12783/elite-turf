@@ -7,54 +7,9 @@ import { Eye, EyeOff, UserPlus, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
-/**
- * Pays + indicatif téléphonique international (E.164).
- * Quand l'utilisateur sélectionne un pays, le champ téléphone est pré-rempli
- * automatiquement avec le bon préfixe (UX mobile-first).
- *
- * Ordre : Afrique francophone d'abord (cibles principales Elite Turf),
- * puis Europe/Amérique, puis "Autre" en dernier.
- */
-const PAYS_OPTIONS: Array<{ nom: string; indicatif: string }> = [
-  { nom: "Côte d'Ivoire",        indicatif: "+225" },
-  { nom: "Sénégal",              indicatif: "+221" },
-  { nom: "Cameroun",             indicatif: "+237" },
-  { nom: "Burkina Faso",         indicatif: "+226" },
-  { nom: "Mali",                 indicatif: "+223" },
-  { nom: "Bénin",                indicatif: "+229" },
-  { nom: "Togo",                 indicatif: "+228" },
-  { nom: "Guinée",               indicatif: "+224" },
-  { nom: "Guinée-Bissau",        indicatif: "+245" },
-  { nom: "Niger",                indicatif: "+227" },
-  { nom: "Tchad",                indicatif: "+235" },
-  { nom: "Congo Brazzaville",    indicatif: "+242" },
-  { nom: "RD Congo",             indicatif: "+243" },
-  { nom: "Gabon",                indicatif: "+241" },
-  { nom: "Centrafrique",         indicatif: "+236" },
-  { nom: "Madagascar",           indicatif: "+261" },
-  { nom: "Maroc",                indicatif: "+212" },
-  { nom: "La Réunion",           indicatif: "+262" },
-  { nom: "France",               indicatif: "+33"  },
-  { nom: "Belgique",             indicatif: "+32"  },
-  { nom: "Canada",               indicatif: "+1"   },
-  { nom: "Autre",                indicatif: ""     },
-];
-
-/** Map pays → indicatif pour lookup rapide. */
-const INDICATIF_BY_PAYS: Record<string, string> = Object.fromEntries(
-  PAYS_OPTIONS.map((p) => [p.nom, p.indicatif]),
-);
-
-/**
- * Vérifie si la valeur actuelle du téléphone est "juste un préfixe vide"
- * (ex: "+225", "+225 ", "+33"). Si oui, on peut le remplacer en changeant
- * de pays. Sinon → on respecte ce que l'utilisateur a tapé.
- */
-function estPrefixSeul(phone: string): boolean {
-  const trimmed = phone.trim();
-  if (!trimmed) return true;
-  return /^\+\d{1,4}\s*$/.test(trimmed);
-}
+// Source unique : lib/utils/pays.ts. Contient PAYS_OPTIONS (22 pays +
+// indicatifs E.164), INDICATIF_BY_PAYS (map dérivée), et estPrefixSeul().
+import { PAYS_OPTIONS, INDICATIF_BY_PAYS, estPrefixSeul } from "@/lib/utils/pays";
 
 function InscriptionForm() {
   const router = useRouter();

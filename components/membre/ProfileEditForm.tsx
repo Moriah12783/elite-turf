@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { User, Phone, MapPin, Save, X, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getPaysNoms } from "@/lib/utils/pays";
 
 interface Props {
   userId: string;
@@ -11,11 +12,9 @@ interface Props {
   pays: string;
 }
 
-const PAYS_OPTIONS = [
-  "Côte d'Ivoire", "France (diaspora)", "Sénégal", "Cameroun", "Mali",
-  "Burkina Faso", "Guinée", "Bénin", "Togo", "Niger", "Congo",
-  "Gabon", "Madagascar", "Maroc", "Tunisie", "Autre",
-];
+// Source unique : lib/utils/pays.ts (PAYS_OPTIONS canonique avec indicatifs).
+// Ici on n'a besoin que des noms (pas du préfixe téléphone, géré séparément).
+const PAYS_NOMS = getPaysNoms();
 
 export default function ProfileEditForm({ userId, nomComplet, phone, pays }: Props) {
   const [editing, setEditing] = useState(false);
@@ -97,7 +96,7 @@ export default function ProfileEditForm({ userId, nomComplet, phone, pays }: Pro
           onChange={(e) => setForm({ ...form, pays: e.target.value })}
           className="flex-1 bg-bg-card border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-gold-primary/50"
         >
-          {PAYS_OPTIONS.map((p) => (
+          {PAYS_NOMS.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
