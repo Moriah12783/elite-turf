@@ -14,6 +14,7 @@ import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
+import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 
 export const dynamic = "force-dynamic";
 
@@ -193,6 +194,12 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const allPartants: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
   const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
   const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
+
+  // ── Stats enrichies (croisement avec tables chevaux/jockeys/entraineurs) ──
+  // 3 queries Supabase parallèles via .in("slug", [...]). Coût ~50-150ms.
+  // Si une entité n'est pas encore en BDD (course très récente, cron pas passé),
+  // la UI handle gracefully avec un fallback "Données en cours de constitution".
+  const statsEnrichies = await getCourseStatsEnrichies(partants);
 
   // Construire le lien Geny : utiliser l'URL réelle stockée si disponible,
   // sinon fallback sur la page programme du jour.
@@ -402,6 +409,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
               genyUrl={genyUrl}
               isVedette={!!pronosticPublie}
               isSubscribed={["STARTER","PRO","ELITE"].includes(userSubscription)}
+              statsEnrichies={statsEnrichies}
+              hasPublishedPronostic={!!pronosticPublie}
             />
 
           </div>
