@@ -180,3 +180,9 @@ export const BANNER_NEWSLETTER_LANCEMENT: BannerConfig = {
   subtitle:      "Un événement à ne pas manquer",
   photoFilename: "cheval-4-course-groupe.jpg",
 };
+
+export const BANNER_MIGRATION_PHONE: BannerConfig = {
+  title:         "Complétez votre profil Elite Turf",
+  subtitle:      "1 minute pour activer toutes les fonctionnalités",
+  photoFilename: "cheval-1-galop-vert.jpg",
+};
