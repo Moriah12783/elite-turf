@@ -73,15 +73,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? ` — ${quinteTitle}, ${hippoName}`
     : "";
 
+  // ── Boost CTR : trophée + "gratuit" + appel à action ──
+  // Le mot "Quinté+" est très concurrentiel → on doit se démarquer en SERP.
+  // Emoji 🏆 = signal "championnat" → ⭐ pour le pronostic Elite Turf.
+  // Mention explicite "gratuit" = lève la friction d'achat.
   return {
-    title: `Quinté+ ${today ? "du jour" : `du ${dateCompact}`}${titleSuffix} | Elite Turf`,
+    title: `🏆 Quinté+ ${today ? "du jour" : `du ${dateCompact}`}${titleSuffix} : pronostic gratuit | Elite Turf`,
     description: quinteTitle
-      ? `Pronostic Quinté+ ${dateLong} : ${quinteTitle} à ${hippoName}. Partants, cotes probables, analyse experte et arrivée officielle.`
-      : `Quinté+ du ${dateLong} : pronostic, partants, cotes et arrivée officielle. Analyse hippique premium par Elite Turf.`,
+      ? `🏆 Pronostic Quinté+ du ${dateLong} : ${quinteTitle} à ${hippoName}. Sélection Elite Turf, partants, cotes en direct, arrivée officielle et rapports PMU.`
+      : `🏆 Pronostic Quinté+ gratuit du ${dateLong} : partants, cotes probables, arrivée officielle et rapports. Sélection experte Elite Turf publiée avant le départ.`,
     alternates: { canonical: `${APP_URL}/quinte-plus/${params.date}` },
     openGraph: {
-      title: `Quinté+ ${dateCompact}${titleSuffix}`,
-      description: `Programme + pronostic + arrivée du Quinté+ du ${dateLong}.`,
+      title: `🏆 Quinté+ ${dateCompact}${titleSuffix} — Pronostic Elite Turf`,
+      description: `Pronostic + partants + arrivée du Quinté+ du ${dateLong}.`,
       url: `${APP_URL}/quinte-plus/${params.date}`,
       type: "website",
     },

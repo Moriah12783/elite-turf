@@ -64,13 +64,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  // ── Boost CTR : signal "résultats officiels" + emoji trophée + rapports ──
+  // Les requêtes "résultats PMU [date]" et "arrivée quinté+ [date]" sont à fort
+  // intent commercial → on signale immédiatement la fraîcheur + l'officialité.
   return {
-    title: `Arrivées PMU ${today ? "du jour" : `du ${dateCompact}`} | Résultats officiels Elite Turf`,
-    description: `Toutes les arrivées des courses hippiques du ${dateLong} : Quinté+, Tiercé, Quarté+. Résultats officiels et ordre d'arrivée.`,
+    title: `🏆 Arrivées PMU ${today ? "du jour" : `du ${dateCompact}`} · Quinté+, Tiercé, Quarté+ | Résultats officiels`,
+    description: `🏆 Toutes les arrivées et rapports PMU du ${dateLong} : Quinté+, Tiercé, Quarté+, Couplé, Trio. Résultats officiels + ordre d'arrivée + dividendes par hippodrome.`,
     alternates: { canonical: `${APP_URL}/arrivees/${params.date}` },
     openGraph: {
-      title: `Arrivées PMU ${dateCompact}`,
-      description: `Résultats officiels des courses du ${dateLong}.`,
+      title: `🏆 Arrivées PMU ${dateCompact} — Résultats officiels Elite Turf`,
+      description: `Arrivées et rapports officiels des courses du ${dateLong}.`,
       url: `${APP_URL}/arrivees/${params.date}`,
       type: "website",
     },

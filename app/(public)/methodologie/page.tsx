@@ -15,8 +15,40 @@ import {
   CheckCircle2, MapPin, BookOpen, Zap,
 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
+import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
+
+// FAQ Schema.org — visent les requêtes "comment fonctionne pronostic PMU",
+// "méthode pronostic hippique", "taux réussite pronostics PMU".
+// Renforcent l'E-E-A-T (Expertise/Authority/Trustworthiness) pour Google YMYL.
+const METHODOLOGIE_FAQ = [
+  {
+    question: "Comment Elite Turf produit ses pronostics PMU ?",
+    answer:
+      "Notre méthode combine 3 étapes : (1) agrégation quotidienne des données officielles PMU et Geny.com (partants, cotes, musique, performances historiques) ; (2) analyse algorithmique croisant 40+ critères (taux victoire historique, forme récente, distance préférée, terrain) ; (3) validation par un expert humain qui ajuste la sélection en fonction des signaux non-quantifiables (météo, déclarations entraîneurs). Chaque pronostic est publié AVANT le départ avec horodatage vérifiable.",
+  },
+  {
+    question: "Quel est le taux de réussite des pronostics Elite Turf ?",
+    answer:
+      "Sur 12 mois glissants, environ 30-40% de nos pronostics sont gagnants ou partiels selon le type de pari. Ce taux varie selon la difficulté de la course (un Quinté+ à 18 partants est plus dur qu'un Tiercé à 8). Tous les résultats sont confrontés à l'arrivée officielle PMU et consultables sur notre page Performances.",
+  },
+  {
+    question: "Sur quelles données vos analyses sont-elles basées ?",
+    answer:
+      "Nous utilisons exclusivement des sources officielles : PMU.fr (programme, arrivées, rapports), Geny.com (musique, cotes probables, commentaires), LONACI/LONASE/PMU Maroc pour les courses locales africaines, et notre base historique propriétaire (~500 000 lignes de partants depuis 2023) pour calculer les statistiques chevaux, jockeys et entraîneurs.",
+  },
+  {
+    question: "Utilisez-vous l'intelligence artificielle ?",
+    answer:
+      "Oui, l'IA intervient dans l'étape de croisement des données pour traiter rapidement de gros volumes (40+ critères × 18 partants × 7 courses par jour). Mais la décision finale reste humaine : nos experts révisent chaque sélection avant publication. L'IA accélère l'analyse, elle ne la remplace pas.",
+  },
+  {
+    question: "Vos pronostics sont-ils sponsorisés ou influencés ?",
+    answer:
+      "Non. Aucun pronostic Elite Turf n'est sponsorisé, payé ou influencé par des propriétaires de chevaux, entraîneurs, jockeys, hippodromes ou opérateurs de paris. Notre indépendance éditoriale est totale et garantie par notre charte éthique publique consultable sur la page Équipe rédactionnelle.",
+  },
+];
 
 export const revalidate = 86400; // 24h — page statique éditoriale
 
@@ -291,6 +323,10 @@ export default function MethodologiePage() {
             En savoir plus sur l&apos;équipe Elite Turf <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
+
+        {/* FAQ Schema.org — boost CTR via rich snippets en SERP */}
+        <FaqJsonLd items={METHODOLOGIE_FAQ} />
+        <FaqSection items={METHODOLOGIE_FAQ} title="Questions fréquentes sur notre méthodologie" />
       </div>
     </div>
   );

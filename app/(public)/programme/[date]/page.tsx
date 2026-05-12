@@ -46,13 +46,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
              : future ? "à venir"
              : "passées";
 
+  // ── Boost CTR : emoji début (signal SERP) + intent commercial fort ──
+  // Avant : "Programme courses PMU du jour | Elite Turf"
+  // Après : "🏇 Programme PMU du jour · Quinté+, Tiercé, Quarté+ analysés"
+  // → emoji 🏇 = signal hippique visible en SERP
+  // → "Quinté+, Tiercé, Quarté+" = capture les requêtes types de pari
+  // → "analysés" = valeur perçue (vs simple "programme")
+  const emoji = today ? "🏇" : future ? "📅" : "🏆";
+  const titleSuffix = today
+    ? "Quinté+, Tiercé, Quarté+ analysés"
+    : future ? "Programme complet à venir"
+             : "Résultats et arrivées";
+
   return {
-    title: `Programme courses PMU ${today ? "du jour" : dateCompact} | Elite Turf`,
-    description: `Toutes les courses hippiques ${verb} (${dateLong}) : Longchamp, Vincennes, Cagnes, Abidjan… Hippodromes, horaires, partants et pronostics experts.`,
+    title: `${emoji} Programme PMU ${today ? "du jour" : dateCompact} · ${titleSuffix} | Elite Turf`,
+    description: `${emoji} Toutes les courses PMU ${verb} (${dateLong}) : Vincennes, Longchamp, Cagnes-sur-Mer, Casablanca, Abidjan. Horaires, partants, cotes et pronostics gratuits Elite Turf.`,
     alternates: { canonical: `${APP_URL}/programme/${params.date}` },
     openGraph: {
-      title: `Programme courses ${dateCompact}`,
-      description: `Programme PMU complet du ${dateLong}.`,
+      title: `${emoji} Programme PMU ${dateCompact} — Elite Turf`,
+      description: `Programme PMU complet du ${dateLong} avec pronostics experts.`,
       url: `${APP_URL}/programme/${params.date}`,
       type: "website",
     },
