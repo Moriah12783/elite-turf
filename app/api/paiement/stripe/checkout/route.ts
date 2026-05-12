@@ -80,7 +80,8 @@ export async function POST(req: NextRequest) {
             product_data: {
               name:        `Elite Turf — Pack ${plan.nom === "Starter" ? "Découverte" : plan.nom === "Pro" ? "Performance" : plan.nom === "Test" ? "Test (1 €)" : "Elite"}`,
               description: `${plan.description} · Accès ${plan.duree_jours} jours`,
-              images:      [`${APP_URL}/images/logo.png`],
+              // Logo V2 (fond blanc — adapté à la page Stripe Checkout sur fond blanc)
+              images:      [`${APP_URL}/images/logo-v2/logo-square-white-1000.png`],
             },
           },
         },

@@ -76,11 +76,12 @@ export default async function TopSemainePage({ params }: PageProps) {
     description: `Bilan hebdomadaire des courses PMU : ${stats.nb_courses_termine} courses, ${stats.nb_quintes_termine} Quinté+, ${stats.hippodromes_actifs.length} hippodromes actifs.`,
     datePublished: fin,
     dateModified:  fin,
-    author:    { "@type": "Organization", name: "Elite Turf", url: APP_URL },
+    author:    { "@type": "Person", name: "Stéphane Y.", url: `${APP_URL}/equipe-redactionnelle`, jobTitle: "Fondateur & Rédacteur en chef" },
     publisher: {
-      "@type": "Organization",
+      "@type": "NewsMediaOrganization",
       name:    "Elite Turf",
-      logo: { "@type": "ImageObject", url: `${APP_URL}/og-image.jpg` },
+      url:     APP_URL,
+      logo: { "@type": "ImageObject", url: `${APP_URL}/images/logo-v2/logo-square-1000.png`, width: 1000, height: 1000 },
     },
     mainEntityOfPage: {
       "@type": "WebPage",

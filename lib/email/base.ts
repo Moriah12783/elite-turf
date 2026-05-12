@@ -37,7 +37,7 @@ export function emailBase(content: string, previewText = ""): string {
             <td align="center" style="padding:8px 0 16px 0;">
               <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}" style="text-decoration:none;display:inline-block;">
                 <img
-                  src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
+                  src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo-v2/logo-square-white-1000.png"
                   alt="Elite Turf"
                   width="120"
                   height="120"
@@ -87,7 +87,7 @@ export function emailBase(content: string, previewText = ""): string {
               </table>
 
               <img
-                src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo.png"
+                src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo-v2/logo-square-white-1000.png"
                 alt="Elite Turf"
                 width="100"
                 height="100"
