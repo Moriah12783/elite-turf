@@ -41,11 +41,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { todayParisISO } from "@/lib/paris-date";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
-
-const CRON_SECRET = process.env.CRON_SECRET || "";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -118,11 +117,12 @@ function defaultAnalyse(niveau: Niveau, libelle: string, selection: number[]): s
 // ── Handler ────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  // 1. Auth
-  const auth = req.headers.get("authorization") || "";
-  if (!CRON_SECRET || auth !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // 1. Auth — Bearer CRON_SECRET (scripts curl) OU session admin (cookie depuis UI)
+  // Permet d'appeler l'endpoint depuis :
+  //   - la page admin /admin/pronostics/bulk (cookie)
+  //   - un script bash/PowerShell automatisé (Bearer)
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
 
   // 2. Parse body
   let body: { date?: string; pronostics?: PronosticInput[] };
