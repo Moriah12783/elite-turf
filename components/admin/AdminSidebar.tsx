@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
-  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy
+  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin",                      icon: LayoutDashboard, label: "Dashboard",        exact: true },
   { href: "/admin/courses",              icon: CalendarDays,    label: "Courses" },
   { href: "/admin/pronostics",           icon: Star,            label: "Pronostics" },
+  { href: "/admin/pronostics/bulk",      icon: Zap,             label: "Publier en masse" },
   { href: "/admin/pronostic-gratuit",    icon: Gift,            label: "Pronostic Gratuit" },
   { href: "/admin/arrivees",             icon: Trophy,          label: "Arrivées & Rapports" },
   { href: "/admin/utilisateurs",         icon: Users,           label: "Utilisateurs" },
@@ -28,8 +29,17 @@ export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname.startsWith(href);
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact) return pathname === href;
+    if (!pathname.startsWith(href)) return false;
+    // Évite que "/admin/pronostics" match aussi sur "/admin/pronostics/bulk"
+    // (problème classique des prefixes). Si une autre nav plus spécifique
+    // matche également, on laisse celle-là gagner.
+    const moreSpecific = navItems.some(
+      (n) => n.href !== href && n.href.startsWith(href) && pathname.startsWith(n.href),
+    );
+    return !moreSpecific;
+  };
 
   return (
     <>
