@@ -1,5 +1,6 @@
 import type { ElementType } from "react";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
@@ -12,6 +13,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { SubscriptionStatus, PronosticResult } from "@/types";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
+import { isBot } from "@/lib/utils/is-bot";
 
 interface PageProps {
   params: { id: string };
@@ -127,12 +129,23 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
 
-  // Incrémenter les vues (best effort)
-  supabase
-    .from("pronostics")
-    .update({ nb_vues: (p.nb_vues || 0) + 1 })
-    .eq("id", p.id)
-    .then(() => {});
+  // Incrémenter les vues UNIQUEMENT pour les humains (best effort)
+  // ─────────────────────────────────────────────────────────────────────────
+  // Avant ce fix : ~50-70% des vues comptées étaient des bots (Googlebot,
+  // Bingbot, OpenGraph Facebook/WhatsApp, scrapers, health checks). Les stats
+  // étaient gonflées et impossibles à piloter.
+  //
+  // Maintenant on filtre via User-Agent (helper lib/utils/is-bot.ts). Les bots
+  // continuent à pouvoir crawler la page pour le SEO (bon pour Google News)
+  // mais ils n'incrementent plus le compteur.
+  const userAgent = headers().get("user-agent");
+  if (!isBot(userAgent)) {
+    supabase
+      .from("pronostics")
+      .update({ nb_vues: (p.nb_vues || 0) + 1 })
+      .eq("id", p.id)
+      .then(() => {});
+  }
 
   return (
     <div className="min-h-screen bg-bg-primary">
