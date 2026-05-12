@@ -7,8 +7,46 @@ import PronosticCard from "@/components/pronostics/PronosticCard";
 import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
+import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
+
+// FAQ rich snippets : 6 questions à fort intent commercial / informationnel.
+// Visent les requêtes "comment lire pronostic PMU", "qu'est-ce que quinté+",
+// "pronostic PMU gratuit", "comment être notifié pronostic", etc.
+// Google peut afficher ces FAQ directement en SERP → boost CTR ×1.5-2.
+const PRONOSTICS_FAQ = [
+  {
+    question: "Les pronostics Elite Turf sont-ils gratuits ?",
+    answer:
+      "Oui, Elite Turf publie chaque jour un pronostic gratuit (Tiercé ou Quarté+) accessible sans inscription. Les pronostics Quinté+ premium et Elite sont réservés aux abonnés (dès 65€). Tous les pronostics gratuits suivent la même méthode rigoureuse que nos analyses premium.",
+  },
+  {
+    question: "À quelle heure les pronostics du jour sont-ils publiés ?",
+    answer:
+      "Nos pronostics sont publiés chaque matin avant 8h (heure de Paris), soit avant 7h GMT pour les abonnés en Afrique de l'Ouest. Vous pouvez recevoir une notification WhatsApp dès qu'un pronostic est disponible en complétant votre profil avec votre numéro de téléphone.",
+  },
+  {
+    question: "Qu'est-ce qu'un Quinté+ et comment le jouer ?",
+    answer:
+      "Le Quinté+ est le pari star du PMU : il consiste à trouver les 5 premiers chevaux d'une course de référence dans l'ordre (gain maximum) ou dans le désordre. Notre sélection Quinté+ vous propose entre 5 et 8 chevaux selon le niveau de couverture choisi.",
+  },
+  {
+    question: "Comment lire un pronostic Elite Turf ?",
+    answer:
+      "Chaque pronostic affiche : la sélection ordonnée des chevaux (du plus probable au moins probable), le type de pari recommandé (Tiercé, Quarté+, Quinté+), le niveau de confiance (Faible à Très élevé) et une analyse courte expliquant le raisonnement. Les analyses détaillées sont disponibles pour les abonnés.",
+  },
+  {
+    question: "Quel est le taux de réussite des pronostics Elite Turf ?",
+    answer:
+      "Notre historique sur 12 mois affiche un taux de pronostics gagnants ou partiels d'environ 30-40% selon le type de pari (variable selon la période). Tous nos résultats sont vérifiables sur la page Performances et confrontés à l'arrivée officielle PMU.",
+  },
+  {
+    question: "Comment être notifié des nouveaux pronostics ?",
+    answer:
+      "Trois options : (1) notifications WhatsApp pour les abonnés ayant complété leur téléphone, (2) newsletter email matinale gratuite, (3) push notifications navigateur. Vous pouvez activer ces options dans votre espace membre après inscription.",
+  },
+];
 
 export const metadata: Metadata = {
   title: "Pronostics du Jour — Elite Turf",
@@ -262,6 +300,10 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
             <PaywallBanner niveau="PRO" />
           </div>
         )}
+
+        {/* FAQ Schema.org : rich snippet potentiel en SERP — boost CTR ×1.5-2 */}
+        <FaqJsonLd items={PRONOSTICS_FAQ} />
+        <FaqSection items={PRONOSTICS_FAQ} title="Questions fréquentes sur les pronostics" />
       </div>
     </div>
   );

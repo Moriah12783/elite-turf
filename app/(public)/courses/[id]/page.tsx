@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = createServiceClient();
   const { data: c } = await supabase
     .from("courses")
-    .select("libelle, date_course, hippodrome:hippodromes(nom, pays)")
+    .select("libelle, date_course, heure_depart, nb_partants, categorie, distance_metres, statut, hippodrome:hippodromes(nom, pays)")
     .eq("id", params.id)
     .single();
   if (!c) return { title: "Course — Elite Turf" };
@@ -47,12 +47,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         day: "numeric", month: "long", year: "numeric",
       })
     : "";
-  // Indexable depuis 2026-05-05 — récupérer le trafic long-tail
-  // (pronostic Quinté+, fiche course, partants, cotes du jour) que les
-  // concurrents Geny/Zone-Turf/Paris-Turf trustent depuis des années.
+
+  // ── Boost CTR : meta enrichie avec données chiffrées + signaux d'intent ──
+  // Avant : "Programme, partants, cotes et pronostic de la course X à Y le Z."
+  //   → générique, pas de chiffres, pas de fraîcheur, CTR ~4%.
+  // Après : "🏇 X — Y, 13h55 · 13 partants, cotes live, pronostic Elite Turf."
+  //   → emoji visuel SERP + heure départ (intent) + nb partants (curiosité)
+  //   + "live" (fraîcheur) + "pronostic Elite Turf" (valeur perçue).
+  const heureCourte = c.heure_depart ? c.heure_depart.slice(0, 5) : "";
+  const partantsStr = c.nb_partants ? `${c.nb_partants} partants` : "";
+  const distanceStr = c.distance_metres ? `${c.distance_metres}m` : "";
+  const isTermine   = c.statut === "TERMINE";
+  const cotesLabel  = isTermine ? "arrivée officielle" : "cotes live";
+
+  // Titre court (max ~60 chars idéal en SERP). Garde le libellé + hippo + indice.
+  const title = isTermine
+    ? `🏆 ${c.libelle} — ${hippoName} ${dateFr} : arrivée & rapports`
+    : `🏇 ${c.libelle} — ${hippoName} ${heureCourte ? `${heureCourte} ` : ""}| Pronostic Elite Turf`;
+
+  // Description riche (max ~155 chars). Concentre l'info utile au visiteur.
+  const description = isTermine
+    ? `🏆 Arrivée officielle ${c.libelle} à ${hippoName} le ${dateFr}${partantsStr ? ` · ${partantsStr}` : ""}. Rapports PMU détaillés + pronostic Elite Turf décodé.`
+    : `🏇 ${c.libelle} à ${hippoName}${heureCourte ? ` à ${heureCourte}` : ""}${partantsStr ? ` · ${partantsStr}` : ""}${distanceStr ? `, ${distanceStr}` : ""} · ${cotesLabel}, musique des chevaux, pronostic Elite Turf gratuit.`;
+
   return {
-    title: `${c.libelle} — ${hippoName} ${dateFr} | Pronostic & Partants`,
-    description: `Programme, partants, cotes et pronostic de la course ${c.libelle} à ${hippoName} le ${dateFr}. Analyse hippique premium par Elite Turf.`,
+    title,
+    description,
     alternates: { canonical: `${APP_URL}/courses/${params.id}` },
   };
 }

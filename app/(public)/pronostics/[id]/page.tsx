@@ -25,15 +25,44 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = createServiceClient();
   const { data } = await supabase
     .from("pronostics")
-    .select("analyse_courte, course:courses(libelle, hippodrome:hippodromes(nom))")
+    .select("analyse_courte, niveau_acces, type_pari, selection, confiance, resultat, course:courses(libelle, date_course, heure_depart, hippodrome:hippodromes(nom))")
     .eq("id", params.id)
     .single();
 
   if (!data) return { title: "Pronostic — Elite Turf" };
   const course = data.course as any;
+  const hippoName = course?.hippodrome?.nom || "";
+  const libelle   = course?.libelle || "Pronostic";
+  const heure     = course?.heure_depart ? course.heure_depart.slice(0, 5) : "";
+
+  // ── Boost CTR : enrichir titre + description avec données du pronostic ──
+  // Ajouter niveau d'accès (Elite/Pro/Gratuit), type de pari, nb chevaux
+  // sélectionnés, et confiance → signaux d'autorité + curiosité.
+  const niveauEmoji = data.niveau_acces === "ELITE" ? "🏆"
+                   : data.niveau_acces === "PRO"   ? "⭐"
+                   : "🏇";
+  const typePari = (data.type_pari || "").replace("_PLUS", "+").replace("_", " ");
+  const nbChevaux = Array.isArray(data.selection) ? data.selection.length : 0;
+
+  // Si la course est terminée, signaler le résultat (effet de preuve sociale)
+  const resultLabel = data.resultat === "GAGNANT"  ? "✅ GAGNANT"
+                    : data.resultat === "PARTIEL"  ? "🎯 PARTIEL"
+                    : "";
+
+  // Titre : reste court, met le résultat en évidence si terminé
+  const title = resultLabel
+    ? `${resultLabel} — ${libelle} ${hippoName} | Pronostic ${typePari} Elite Turf`
+    : `${niveauEmoji} Pronostic ${typePari} ${libelle} — ${hippoName} | Elite Turf`;
+
+  // Description : utiliser analyse_courte mais préfixer avec contexte chiffré
+  const prefix = nbChevaux > 0
+    ? `${niveauEmoji} ${typePari} en ${nbChevaux} chevaux · ${hippoName}${heure ? ` ${heure}` : ""}. `
+    : "";
+  const description = `${prefix}${data.analyse_courte || ""}`.slice(0, 160);
+
   return {
-    title: `${course?.libelle || "Pronostic"} — ${course?.hippodrome?.nom || ""} | Elite Turf`,
-    description: data.analyse_courte,
+    title,
+    description,
     alternates: { canonical: `${APP_URL}/pronostics/${params.id}` },
   };
 }

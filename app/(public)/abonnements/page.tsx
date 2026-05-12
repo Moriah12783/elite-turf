@@ -9,6 +9,43 @@ import { PLAN_CONFIG } from "@/types";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
+import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+
+// FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
+// "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
+// Page à forte intent commercial → rich snippet = boost CTR critique.
+const ABONNEMENTS_FAQ = [
+  {
+    question: "Comment payer mon abonnement Elite Turf en Mobile Money ?",
+    answer:
+      "Nous acceptons Orange Money, MTN Mobile Money, Moov Money et Wave depuis 8 pays africains (Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Mali, Bénin, Togo, Maroc). Le paiement Mobile Money est instantané, votre abonnement est activé en moins de 60 secondes après confirmation. Pour les utilisateurs européens, le paiement par carte bancaire (Stripe) est également disponible.",
+  },
+  {
+    question: "Quelle est la différence entre Starter, Pro et Elite ?",
+    answer:
+      "Le pack Starter donne accès aux pronostics Pro (Tiercé, Quarté+). Le pack Pro ajoute le Quinté+ premium et l'historique 30 jours. Le pack Elite inclut tout cela + l'accès aux analyses Elite Top Selection avec score composite, les notifications WhatsApp prioritaires et le support direct sous 2h. Les tarifs commencent à 65€ pour 30 jours d'accès Starter.",
+  },
+  {
+    question: "Puis-je annuler mon abonnement à tout moment ?",
+    answer:
+      "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite.",
+  },
+  {
+    question: "Mon abonnement se renouvelle-t-il automatiquement ?",
+    answer:
+      "Non. Elite Turf fonctionne uniquement par abonnement ponctuel : vous payez pour une période fixe (30 jours), puis vous décidez activement de renouveler ou non. Aucun prélèvement automatique = aucune surprise sur votre compte ou carte bancaire.",
+  },
+  {
+    question: "Je n'arrive pas à payer en Mobile Money, que faire ?",
+    answer:
+      "Vérifiez d'abord que votre solde Mobile Money est suffisant et que votre compte n'est pas bloqué par votre opérateur. Si le problème persiste, contactez-nous sur WhatsApp au +33 6 44 68 67 20 — nous répondons sous 2h en moyenne et pouvons activer manuellement votre abonnement après vérification du paiement.",
+  },
+  {
+    question: "Quel est le délai de remboursement en cas de problème ?",
+    answer:
+      "Si vous rencontrez un problème technique majeur dans les 24h suivant votre paiement (compte non activé, accès refusé, etc.), nous procédons à un remboursement intégral sous 48h ouvrées. Pour toute autre demande, contactez notre support à contact@elite-turf.fr.",
+  },
+];
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -512,6 +549,10 @@ export default async function AbonnementsPage() {
             Nous contacter sur WhatsApp
           </a>
         </div>
+
+        {/* FAQ Schema.org — boost CTR via rich snippets en SERP commerciale */}
+        <FaqJsonLd items={ABONNEMENTS_FAQ} />
+        <FaqSection items={ABONNEMENTS_FAQ} title="Questions fréquentes sur les abonnements" />
 
       </div>
     </div>
