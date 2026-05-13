@@ -24,7 +24,7 @@
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 import type { PartantInput } from "@/lib/courses/stats-types";
 import { createServiceClient } from "@/lib/supabase/server";
-import type { FieldAnalysis, PartantPourAnalyse } from "../types";
+import type { FieldAnalyzerResult, RunnerForAnalysis } from "../types";
 
 /**
  * Charge les partants d'une course depuis Supabase.
@@ -59,19 +59,19 @@ async function loadPartants(courseId: string): Promise<PartantInput[]> {
  *   3. Format compact pour les agents suivants (PartantPourAnalyse[])
  */
 export async function runFieldAnalyzerAgent(courseId: string): Promise<{
-  result: FieldAnalysis | null;
+  result: FieldAnalyzerResult | null;
   error?: string;
 }> {
-  // TODO Phase 2 : implémentation complète
+  // TODO Session 3 (refactor selon cahier des charges §13.2) :
   //   1. partants = await loadPartants(courseId)
   //   2. stats = await getCourseStatsEnrichies(partants)
-  //   3. mapper PartantEnrichi → PartantPourAnalyse (slim version pour LLM tokens)
-  //   4. extraire top_3 et outsiders depuis stats.partants
+  //   3. mapper PartantEnrichi → RunnerForAnalysis (slim version pour LLM tokens)
+  //   4. construire FieldAnalyzerResult complet (data_completeness_score, complexity, etc.)
 
   void courseId;
   void loadPartants;
   void getCourseStatsEnrichies;
-  void ({} as PartantPourAnalyse);
+  void ({} as RunnerForAnalysis);
 
   return {
     result: null,

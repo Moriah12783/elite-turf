@@ -25,7 +25,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { callClaude, CLAUDE_MODELS } from "../claude-client";
-import type { CourseCandidate, CourseSelectionResult } from "../types";
+import type { CourseCandidate, CourseSelectorResult } from "../types";
 
 /**
  * Récupère toutes les courses du jour candidates depuis Supabase.
@@ -50,19 +50,22 @@ async function loadTodayCandidates(date: string): Promise<CourseCandidate[]> {
  * Évite d'envoyer 30 courses à Claude (économie tokens).
  */
 function shortlistByNiveau(courses: CourseCandidate[]): {
-  eliteCandidates:   CourseCandidate[];
-  proCandidates:     CourseCandidate[];
-  gratuitCandidates: CourseCandidate[];
+  eliteCandidates:    CourseCandidate[];
+  proCandidates:      CourseCandidate[];
+  starterCandidates:  CourseCandidate[];
+  freeCandidates:     CourseCandidate[];
 } {
-  // TODO Phase 2 :
-  //   - eliteCandidates : Quinté+ + hippodrome prestigieux (whitelist)
-  //   - proCandidates : Quinté+/Quarté+ hors elite + nb_partants >= 10
-  //   - gratuitCandidates : Tiercé jouable + nb_partants >= 8
+  // TODO Session 4 (refactor selon cahier des charges) :
+  //   - eliteCandidates : Quinté+ + hippodrome prestigieux + validation Afrique
+  //   - proCandidates : Quinté+/Quarté+ hors elite, nb_partants >= 10
+  //   - starterCandidates : Tiercé jouable + validation Afrique corroborée
+  //   - freeCandidates : Tiercé libre, validation Afrique min (score >= 68)
   void courses;
   return {
     eliteCandidates:   [],
     proCandidates:     [],
-    gratuitCandidates: [],
+    starterCandidates: [],
+    freeCandidates:    [],
   };
 }
 
@@ -76,7 +79,7 @@ function shortlistByNiveau(courses: CourseCandidate[]): {
  *   4. Validation : 3 courses distinctes, hippodromes différents si possible
  */
 export async function runCourseSelectorAgent(date: string): Promise<{
-  result: CourseSelectionResult | null;
+  result: CourseSelectorResult | null;
   tokens_input:  number;
   tokens_output: number;
   error?: string;

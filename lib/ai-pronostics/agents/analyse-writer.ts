@@ -33,15 +33,15 @@
 
 import { callClaude, CLAUDE_MODELS } from "../claude-client";
 import type {
-  AnalyseWritten,
-  FieldAnalysis,
+  AnalyseWriterResult,
+  FieldAnalyzerResult,
   NiveauAcces,
-  SelectionBuilt,
+  SelectionBuilderResult,
 } from "../types";
 
 interface AnalyseWriterInput {
-  selection: SelectionBuilt;
-  field:     FieldAnalysis;
+  selection: SelectionBuilderResult;
+  field:     FieldAnalyzerResult;
   niveau:    NiveauAcces;
   course_libelle:    string;
   course_hippodrome: string;
@@ -68,7 +68,7 @@ Réponds UNIQUEMENT avec un JSON valide :
  * Agent principal : rédige l'analyse_courte avec Claude Haiku.
  */
 export async function runAnalyseWriterAgent(input: AnalyseWriterInput): Promise<{
-  result: AnalyseWritten | null;
+  result: AnalyseWriterResult | null;
   tokens_input:  number;
   tokens_output: number;
   error?: string;
