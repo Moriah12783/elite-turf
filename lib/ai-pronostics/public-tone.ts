@@ -175,5 +175,51 @@ export function sanitizeForPublic(text: string | null | undefined): SanitizeResu
     .replace(/\(\s*\)/g, "")         // parenthèses vides → rien
     .trim();
 
+  // ── Déduplication : 2 patterns regex différents peuvent retourner LA
+  //    MÊME formulation publique (ex: "Validation LONACI directe" et
+  //    "Public prioritaire : Côte d'Ivoire..." remplacés tous les deux
+  //    par PUBLIC_FRANCOPHONE_FRAMING). Sans dédup, on a "X. X." → moche.
+  //
+  //    Détecte une même phrase répétée 2× consécutivement (séparée par
+  //    point + espace) et ne garde qu'une seule occurrence.
+  out = dedupeConsecutiveSentences(out);
+  if (applied.length >= 2) {
+    // Si on a appliqué 2+ règles, le risque de doublon est réel — on
+    // documente la dédup dans le log d'audit pour transparence.
+    applied.push("__deduped");
+  }
+
   return { text: out, appliedRules: applied };
+}
+
+/**
+ * Si la même phrase apparaît 2× (ou plus) consécutivement séparées par
+ * "." ou ". ", on ne garde qu'une seule occurrence.
+ *
+ * Algorithme simple : split par ". ", scan séquentiel, skip si phrase
+ * identique à la précédente (insensible casse + espaces normalisés).
+ *
+ * @example
+ *   "A. B. B. C." → "A. B. C."
+ *   "B. b." → "B." (case insensitive)
+ */
+function dedupeConsecutiveSentences(text: string): string {
+  if (!text || !text.includes(".")) return text;
+
+  // Split en gardant les délimiteurs (. ! ?) pour reconstruire fidèlement
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const out: string[] = [];
+  let previousNormalized = "";
+
+  for (const sentence of sentences) {
+    const normalized = sentence.toLowerCase().replace(/\s+/g, " ").trim();
+    if (normalized === previousNormalized && normalized.length > 0) {
+      // Skip : c'est un doublon consécutif
+      continue;
+    }
+    out.push(sentence);
+    previousNormalized = normalized;
+  }
+
+  return out.join(" ");
 }
