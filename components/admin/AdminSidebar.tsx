@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
-  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap
+  CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap, Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/admin/courses",              icon: CalendarDays,    label: "Courses" },
   { href: "/admin/pronostics",           icon: Star,            label: "Pronostics" },
   { href: "/admin/pronostics/bulk",      icon: Zap,             label: "Publier en masse" },
+  { href: "/admin/pronostics/ai-review", icon: Brain,           label: "Revue IA Multi-Agents" },
   { href: "/admin/pronostic-gratuit",    icon: Gift,            label: "Pronostic Gratuit" },
   { href: "/admin/arrivees",             icon: Trophy,          label: "Arrivées & Rapports" },
   { href: "/admin/utilisateurs",         icon: Users,           label: "Utilisateurs" },

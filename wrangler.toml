@@ -12,3 +12,22 @@ routes = [
   { pattern = "elite-turf.fr", custom_domain = true },
   { pattern = "www.elite-turf.fr", custom_domain = true }
 ]
+
+# ─────────────────────────────────────────────────────────────────────────
+# Cron triggers (Cloudflare Workers Cron)
+# ─────────────────────────────────────────────────────────────────────────
+#
+# 🚨 ACTIVATION : décommenter quand le système Multi-Agents est prêt à tourner
+# en production (Session 5 +  course_source_evidence alimenté).
+#
+# Cloudflare Cron tourne en UTC. On déclenche à 02:00 UTC et 03:00 UTC pour
+# couvrir les 2 cas DST :
+#   - hiver : Paris = UTC+1 → 02:00 UTC = 03:00 Paris ❌, 03:00 UTC = 04:00 Paris ✅
+#   - été   : Paris = UTC+2 → 02:00 UTC = 04:00 Paris ✅, 03:00 UTC = 05:00 Paris ❌
+# Puis le code Worker vérifie que parisHour === 4 et skip sinon (cf cahier §15.2).
+#
+# [triggers]
+# crons = ["0 2 * * *", "0 3 * * *"]
+#
+# Note alternative : on peut aussi déclencher via Vercel Cron ou un cron
+# externe qui appelle GET /api/cron/ia-pronostics-v2 avec Bearer CRON_SECRET.
