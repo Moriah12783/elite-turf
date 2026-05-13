@@ -35,6 +35,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import type { AnalyseWriterResult, NiveauAcces } from "@/lib/ai-pronostics/types";
+import { sanitizeForPublic } from "@/lib/ai-pronostics/public-tone";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
@@ -73,16 +74,40 @@ function mapConfiance(level: "LOW" | "MEDIUM" | "HIGH" | undefined, fallback: Ni
 }
 
 /**
- * Synthétise l'analyse_courte legacy depuis le subscriber_content (rich).
- * Garde l'intro + la lecture de course + risques résumés.
+ * Synthétise l'analyse_courte legacy depuis le subscriber_content (rich)
+ * PUIS applique le sanitizer public (`sanitizeForPublic`) qui retire les
+ * mentions LONACI, listes pays Afrique, et "heure Abidjan" — au profit
+ * d'un ton international francophone neutre (cf lib/ai-pronostics/
+ * public-tone.ts pour la rationale produit).
+ *
+ * IMPORTANT : on N'INJECTE PLUS le `badge` ("Validation LONACI directe" /
+ * "Validation Afrique corroborée") dans le texte public — cette info
+ * reste enregistrée en BDD sur `pronostics.source='AI-MULTI-AGENT'` et
+ * sur `ai_pronostic_drafts.validation_status` (audit/admin) mais
+ * n'apparaît plus textuellement côté abonné.
+ *
+ * @param subscriber Contenu rich généré par AnalyseWriter (LLM)
+ * @returns Texte sanitizé et capé à 950 chars
  */
-function buildAnalyseCourte(subscriber: AnalyseWriterResult["subscriber_content"], badge: string): string {
+function buildAnalyseCourte(subscriber: AnalyseWriterResult["subscriber_content"]): {
+  text: string;
+  sanitizerRulesApplied: string[];
+} {
   const parts: string[] = [];
-  if (subscriber.intro)        parts.push(subscriber.intro.trim());
-  if (subscriber.race_reading) parts.push(subscriber.race_reading.trim());
+  if (subscriber.intro)         parts.push(subscriber.intro.trim());
+  if (subscriber.course_context) parts.push(subscriber.course_context.trim());
+  if (subscriber.race_reading)  parts.push(subscriber.race_reading.trim());
   if (subscriber.risks?.length) parts.push(`Risques : ${subscriber.risks.slice(0, 2).join(" — ")}`);
-  parts.push(badge);
-  return parts.join(" ").slice(0, 950);  // colonne text mais on cappe par sécurité
+
+  const rawText = parts.join(" ");
+
+  // ⚙️ Sanitization éditoriale (décision PO 2026-05-13)
+  const { text, appliedRules } = sanitizeForPublic(rawText);
+
+  return {
+    text: text.slice(0, 950),
+    sanitizerRulesApplied: appliedRules,
+  };
 }
 
 /**
@@ -144,10 +169,10 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
 
   const subscriber = draft.subscriber_content as AnalyseWriterResult["subscriber_content"];
 
-  const analyseCourte = buildAnalyseCourte(subscriber, draft.validation_badge);
-  const typePari     = mapTypePari(niveauIA, selectionNumbers.length);
-  const confiance    = mapConfiance(subscriber?.confidence_level, niveauLegacy);
-  const nowISO       = new Date().toISOString();
+  const { text: analyseCourte, sanitizerRulesApplied } = buildAnalyseCourte(subscriber);
+  const typePari   = mapTypePari(niveauIA, selectionNumbers.length);
+  const confiance  = mapConfiance(subscriber?.confidence_level, niveauLegacy);
+  const nowISO     = new Date().toISOString();
 
   // 3. UPSERT dans `pronostics`
   // On cherche un pronostic existant sur (course_id, niveau_acces) — pas
@@ -237,6 +262,7 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     draft_id:     draftId,
     pronostic_id: pronosticId,
     action,
+    sanitizer_rules_applied: sanitizerRulesApplied,  // transparence admin
     niveau_legacy: niveauLegacy,
   });
 }
