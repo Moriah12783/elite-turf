@@ -118,7 +118,10 @@ CREATE INDEX IF NOT EXISTS idx_ai_pronostic_drafts_course
 -- ─────────────────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.touch_ai_pronostic_drafts_updated_at()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
