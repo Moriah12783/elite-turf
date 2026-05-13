@@ -583,13 +583,22 @@ export interface DirectorRunResult {
 export const CLAUDE_MODELS = {
   /** Reasoning complexe : sélection courses, validation éditoriale */
   SONNET: "claude-sonnet-4-5",
-  /** Tâches simples : rédaction, transformations
+  /**
+   * Tâches simples : rédaction, transformations.
    *
-   * NB : on utilise la version pinned 20241022 plutôt que l'alias "-latest"
-   * qui a renvoyé des 404 sur le compte API Elite-Turf en test prod
-   * (cf hotfix Session 6 → 7). Si Haiku 4.5 sort officiellement et qu'on
-   * souhaite migrer, changer ici. */
-  HAIKU:  "claude-3-5-haiku-20241022",
+   * Historique des essais (en test prod) :
+   *   - `claude-3-5-haiku-latest`     → 404 (alias retiré)
+   *   - `claude-3-5-haiku-20241022`   → 404 (snapshot déprécié)
+   *
+   * Vérification doc officielle Anthropic (mai 2026) : toute la gamme
+   * Haiku 3.5 est dépréciée. Le modèle Haiku actuel est `claude-haiku-4-5`
+   * (snapshot `claude-haiku-4-5-20251001` sous-jacent).
+   *
+   * Tarif Haiku 4.5 : $1/MTok input + $5/MTok output (vs ~$0.80/$4 pour 3.5).
+   * Coût AnalyseWriter passe de ~$0.005 à ~$0.007 → pipeline complet
+   * ~$0.10/jour soit ~$3/mois (budget cahier $2.70 +/- arrondi).
+   */
+  HAIKU:  "claude-haiku-4-5",
 } as const;
 
 export type ClaudeModel = typeof CLAUDE_MODELS[keyof typeof CLAUDE_MODELS];
