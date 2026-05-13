@@ -5,6 +5,7 @@ import ScrollToTop from "@/components/layout/ScrollToTop";
 import DynamicPageBackground from "@/components/layout/DynamicPageBackground";
 import StickyMobileCTA from "@/components/layout/StickyMobileCTA";
 import ScrollDepthTracker from "@/components/layout/ScrollDepthTracker";
+import WhatsAppFloatingButton from "@/components/public/WhatsAppFloatingButton";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +22,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <ScrollToTop />
         <StickyMobileCTA />
         <ScrollDepthTracker />
+        <WhatsAppFloatingButton />
       </div>
     </div>
   );
