@@ -581,15 +581,25 @@ export interface DirectorRunResult {
 // ─────────────────────────────────────────────────────────────────────────
 
 export const CLAUDE_MODELS = {
-  /** Reasoning complexe : sélection courses, validation éditoriale */
+  /**
+   * Reasoning complexe : sélection courses, validation éditoriale.
+   * `claude-sonnet-4-5` est toujours disponible (catégorie "Legacy models"
+   * dans la doc Anthropic). On pourra migrer vers `claude-sonnet-4-6`
+   * pour bénéficier des améliorations 4.6 (même prix).
+   */
   SONNET: "claude-sonnet-4-5",
-  /** Tâches simples : rédaction, transformations
+  /**
+   * Tâches simples : rédaction, transformations.
    *
-   * NB : on utilise la version pinned 20241022 plutôt que l'alias "-latest"
-   * qui a renvoyé des 404 sur le compte API Elite-Turf en test prod
-   * (cf hotfix Session 6 → 7). Si Haiku 4.5 sort officiellement et qu'on
-   * souhaite migrer, changer ici. */
-  HAIKU:  "claude-3-5-haiku-20241022",
+   * NB historique : on a tenté `claude-3-5-haiku-latest` puis
+   * `claude-3-5-haiku-20241022` — tous deux renvoient 404 en mai 2026
+   * (Anthropic a déprécié la gamme Haiku 3.5).
+   * → On migre vers `claude-haiku-4-5` (alias officiel, snapshot
+   *   `claude-haiku-4-5-20251001` sous-jacent).
+   *   Tarif : $1/MTok input, $5/MTok output (légèrement + cher que 3.5
+   *   mais qualité supérieure).
+   */
+  HAIKU:  "claude-haiku-4-5",
 } as const;
 
 export type ClaudeModel = typeof CLAUDE_MODELS[keyof typeof CLAUDE_MODELS];
