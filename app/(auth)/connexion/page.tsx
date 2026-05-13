@@ -1,14 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
+/**
+ * Whitelist des chemins de redirection autorisés après login.
+ * Évite l'open-redirect via ?redirect=https://attaquant.com
+ *
+ * On accepte uniquement les chemins internes commençant par "/" et
+ * ne contenant pas "//" ni "@" (qui peuvent embarquer un host externe).
+ */
+function sanitizeRedirect(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/")) return "/";
+  if (raw.startsWith("//") || raw.includes("@")) return "/";
+  return raw;
+}
+
+/**
+ * Mappe le message d'erreur Supabase brut vers un message UI clair.
+ * Cf https://supabase.com/docs/guides/auth/auth-helpers/auth-error-codes
+ *
+ * Avant ce fix, toute erreur ≠ "Invalid login credentials" affichait
+ * un générique "Erreur de connexion. Réessayez." qui a masqué pendant
+ * 1h le bug de la clé anon désactivée → on log désormais la cause
+ * exacte dans la console + on affiche un message plus informatif.
+ */
+function mapAuthError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("invalid login credentials") || m.includes("invalid_credentials")) {
+    return "Email ou mot de passe incorrect.";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Email non confirmé — vérifie ta boîte mail.";
+  }
+  if (m.includes("rate limit") || m.includes("too many")) {
+    return "Trop de tentatives. Réessaie dans quelques minutes.";
+  }
+  if (m.includes("invalid api key") || m.includes("api key")) {
+    return "Erreur de configuration serveur. Contacte l'admin.";
+  }
+  if (m.includes("network") || m.includes("fetch")) {
+    return "Erreur réseau. Vérifie ta connexion internet.";
+  }
+  // Message tel-quel pour les cas non couverts → l'admin verra l'erreur
+  // exacte plutôt qu'un générique opaque.
+  return `Erreur de connexion : ${msg}`;
+}
+
+/**
+ * Wrapper Suspense obligatoire en Next.js 14 dès qu'on utilise
+ * `useSearchParams()` dans un client component, sinon le rendu statique
+ * est entièrement déopté (warning au build, et SSG cassé).
+ */
 export default function ConnexionPage() {
+  return (
+    <Suspense fallback={<ConnexionSkeleton />}>
+      <ConnexionForm />
+    </Suspense>
+  );
+}
+
+function ConnexionSkeleton() {
+  return (
+    <div className="card-base p-6 sm:p-8 text-center">
+      <Loader2 className="w-6 h-6 animate-spin mx-auto text-gold-primary" />
+      <p className="text-text-secondary text-sm mt-3">Chargement…</p>
+    </div>
+  );
+}
+
+function ConnexionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = sanitizeRedirect(searchParams.get("redirect"));
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,19 +93,22 @@ export default function ConnexionPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Email ou mot de passe incorrect");
-        } else {
-          toast.error("Erreur de connexion. Réessayez.");
-        }
+        // Log défensif : facilite le debug si une nouvelle erreur Supabase
+        // arrive (changement d'API, dépréciation de clé, etc.)
+        // eslint-disable-next-line no-console
+        console.error("[connexion] Supabase signIn error:", error);
+        toast.error(mapAuthError(error.message ?? "Erreur inconnue"));
         return;
       }
 
       toast.success("Connexion réussie !");
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
-    } catch {
-      toast.error("Une erreur est survenue");
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[connexion] Unexpected error:", err);
+      const msg = err instanceof Error ? err.message : "Une erreur est survenue";
+      toast.error(`Erreur inattendue : ${msg}`);
     } finally {
       setLoading(false);
     }
