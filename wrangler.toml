@@ -18,16 +18,24 @@ routes = [
 # ─────────────────────────────────────────────────────────────────────────
 #
 # 🚨 ACTIVATION : décommenter quand le système Multi-Agents est prêt à tourner
-# en production (Session 5 +  course_source_evidence alimenté).
+# en production (Sessions 1-6 complétées + tests validés).
 #
-# Cloudflare Cron tourne en UTC. On déclenche à 02:00 UTC et 03:00 UTC pour
-# couvrir les 2 cas DST :
-#   - hiver : Paris = UTC+1 → 02:00 UTC = 03:00 Paris ❌, 03:00 UTC = 04:00 Paris ✅
-#   - été   : Paris = UTC+2 → 02:00 UTC = 04:00 Paris ✅, 03:00 UTC = 05:00 Paris ❌
-# Puis le code Worker vérifie que parisHour === 4 et skip sinon (cf cahier §15.2).
+# Cloudflare Cron tourne en UTC. On déclenche à des heures qui couvrent
+# les 2 cas DST :
+#   - hiver : Paris = UTC+1 → 01:30 UTC = 02:30 Paris (sourcing) puis 03:00 UTC = 04:00 Paris (pronostics)
+#   - été   : Paris = UTC+2 → 01:30 UTC = 03:30 Paris (sourcing) puis 02:00 UTC = 04:00 Paris (pronostics)
+# Puis le code Worker vérifie l'heure Paris et skip si hors fenêtre (cf cahier §15.2).
+#
+# Deux crons coordonnés :
+#   - 1h30 UTC : /api/cron/source-evidence-collector → peuple course_source_evidence
+#   - 2h00 UTC : /api/cron/ia-pronostics-v2          → consomme les preuves + génère drafts
 #
 # [triggers]
-# crons = ["0 2 * * *", "0 3 * * *"]
+# crons = [
+#   "30 1 * * *",   # source-evidence-collector (env. 3h30 Paris été / 2h30 hiver)
+#   "0 2 * * *",    # ia-pronostics-v2          (env. 4h Paris été / 3h Paris hiver)
+#   "0 3 * * *",    # backup ia-pronostics-v2   (couvre l'autre cas DST)
+# ]
 #
 # Note alternative : on peut aussi déclencher via Vercel Cron ou un cron
-# externe qui appelle GET /api/cron/ia-pronostics-v2 avec Bearer CRON_SECRET.
+# externe qui appelle ces endpoints avec Bearer CRON_SECRET.
