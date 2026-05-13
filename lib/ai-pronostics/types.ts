@@ -583,8 +583,13 @@ export interface DirectorRunResult {
 export const CLAUDE_MODELS = {
   /** Reasoning complexe : sélection courses, validation éditoriale */
   SONNET: "claude-sonnet-4-5",
-  /** Tâches simples : rédaction, transformations */
-  HAIKU:  "claude-3-5-haiku-latest",
+  /** Tâches simples : rédaction, transformations
+   *
+   * NB : on utilise la version pinned 20241022 plutôt que l'alias "-latest"
+   * qui a renvoyé des 404 sur le compte API Elite-Turf en test prod
+   * (cf hotfix Session 6 → 7). Si Haiku 4.5 sort officiellement et qu'on
+   * souhaite migrer, changer ici. */
+  HAIKU:  "claude-3-5-haiku-20241022",
 } as const;
 
 export type ClaudeModel = typeof CLAUDE_MODELS[keyof typeof CLAUDE_MODELS];
