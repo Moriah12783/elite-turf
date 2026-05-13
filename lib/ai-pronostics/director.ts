@@ -355,6 +355,24 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
         continue;
       }
 
+      // 🛡️ Garde-fou anti-cascade : si SelectionBuilder n'a pas réussi à
+      // remplir la sélection au nombre attendu (typiquement quand le field
+      // est trop fragile : trop de chevaux INSUFFICIENT_DATA ou A_EVITER),
+      // on N'APPELLE PAS AnalyseWriter (économie LLM) ni QualityValidator
+      // (qui rejetterait sur "X attend N chevaux, 0 reçus").
+      //
+      // Cette condition se déclenche typiquement quand status =
+      // NEEDS_HUMAN_REVIEW + selected_runners vide, suite à
+      // `eligible.length < expectedSize` dans SelectionBuilder.
+      if (selectionResult.selected_runners.length === 0) {
+        result.errors.push({
+          agent: "SelectionBuilder",
+          course_id: courseId,
+          message: `Sélection vide pour ${pkg.access_level} : field insuffisant (${fieldResult.runners_analysis.length} partants, ${fieldResult.data_completeness_score}/100 complétude). ${selectionResult.self_critique.main_risk}`,
+        });
+        continue;
+      }
+
       // 2c. AnalyseWriter
       const writerOut = await runAnalyseWriterAgent({
         selection:          selectionResult,

@@ -31,6 +31,34 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 import type { PartantEnrichi, PartantInput } from "@/lib/courses/stats-types";
 import { MIN_COURSES_FIABLES } from "@/lib/courses/stats-types";
+
+/**
+ * Seuil interne FieldAnalyzer (≠ MIN_COURSES_FIABLES qui est calibré pour
+ * l'affichage public "top jockeys/entraîneurs").
+ *
+ * On accepte les stats dès 1 course en BDD — mais on pondère leur poids
+ * par `min(1, nb_courses / 5)` pour ne pas surinterpréter un cheval avec
+ * 1 victoire sur 1 course (= taux 100% mais bruit pur).
+ *
+ * Justification : Elite-Turf est en phase initiale → BDD chevaux jeune
+ * (la plupart à nb_courses 1-4). Le seuil 5 strict écarterait 100% des
+ * partants → pipeline impossible. Cf hotfix Session 7.
+ */
+const FIELDANALYZER_MIN_COURSES = 1;
+
+/**
+ * Calcule le facteur de fiabilité [0..1] basé sur nb_courses.
+ *   - 0 si pas de stats
+ *   - 0.2 à 1 course
+ *   - 0.4 à 2 courses
+ *   - 1.0 à 5+ courses
+ * Utilisé pour pondérer les scores quand l'échantillon est petit.
+ */
+function reliabilityFactor(nb_courses: number | undefined | null): number {
+  const n = nb_courses ?? 0;
+  if (n <= 0) return 0;
+  return Math.min(1, n / 5);
+}
 import type {
   FieldAnalyzerResult,
   FieldAnalyzerStatus,
@@ -103,26 +131,36 @@ function computeFormScore(p: PartantEnrichi): { score: number; missing: boolean 
 }
 
 /**
- * Score de régularité = taux de places historique du cheval.
- * Pondéré par nb_courses pour éviter le bruit.
+ * Score de régularité = taux de places historique du cheval, pondéré par
+ * la taille de l'échantillon (reliabilityFactor).
+ *
+ * Seuil tolérant : accepte les stats dès 1 course. Si nb_courses = 1 et
+ * taux_place = 100%, le score retourné sera 20 (100 × 0.2 reliability).
  */
 function computeRegularityScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const s = p.stats_cheval;
-  if (!s || s.nb_courses < MIN_COURSES_FIABLES) return { score: 0, missing: true };
+  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 0, missing: true };
   const tauxPlace = s.taux_place ?? 0;
-  return { score: clamp100(tauxPlace), missing: false };
+  const reliability = reliabilityFactor(s.nb_courses);
+  // Score brut pondéré par fiabilité + base neutre (50) × (1 - reliability)
+  // → pour 1 course, on reste proche de 50 (neutre, on n'a pas assez de data).
+  const weighted = tauxPlace * reliability + 50 * (1 - reliability);
+  return { score: clamp100(weighted), missing: false };
 }
 
 /**
- * Score jockey/driver = taux victoire historique du jockey.
+ * Score jockey/driver = mix taux_victoire (60%) + taux_place (40%),
+ * pondéré par reliabilityFactor (échantillon).
  */
 function computeJockeyScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const s = p.stats_jockey;
-  if (!s || s.nb_courses < MIN_COURSES_FIABLES) return { score: 0, missing: true };
-  // Mix taux_victoire (poids 60%) + taux_place (poids 40%) — capté à 100
+  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 0, missing: true };
   const tauxV = s.taux_victoire ?? 0;
   const tauxP = s.taux_place    ?? 0;
-  return { score: clamp100(tauxV * 0.6 + tauxP * 0.4), missing: false };
+  const reliability = reliabilityFactor(s.nb_courses);
+  const raw = tauxV * 0.6 + tauxP * 0.4;
+  const weighted = raw * reliability + 50 * (1 - reliability);
+  return { score: clamp100(weighted), missing: false };
 }
 
 /**
@@ -130,10 +168,13 @@ function computeJockeyScore(p: PartantEnrichi): { score: number; missing: boolea
  */
 function computeTrainerScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const s = p.stats_entraineur;
-  if (!s || s.nb_courses < MIN_COURSES_FIABLES) return { score: 0, missing: true };
+  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 0, missing: true };
   const tauxV = s.taux_victoire ?? 0;
   const tauxP = s.taux_place    ?? 0;
-  return { score: clamp100(tauxV * 0.6 + tauxP * 0.4), missing: false };
+  const reliability = reliabilityFactor(s.nb_courses);
+  const raw = tauxV * 0.6 + tauxP * 0.4;
+  const weighted = raw * reliability + 50 * (1 - reliability);
+  return { score: clamp100(weighted), missing: false };
 }
 
 /**
@@ -150,20 +191,28 @@ function computeValueScore(p: PartantEnrichi, formScore: number): number {
 }
 
 /**
- * Score de risque = inversement corrélé à la régularité + forme +
- * complétude des données. Élevé = à éviter.
+ * Score de risque inversement corrélé à la régularité + forme.
+ *
+ * IMPORTANT : on ne pénalise PLUS l'absence de données dans le risque.
+ * Risque ≠ "données manquantes" — un cheval inconnu n'est pas plus risqué
+ * qu'un cheval connu, juste moins prédictible. Cette distinction est
+ * captée séparément par `confidence_score`.
+ *
+ * (Avant le hotfix Session 7, le risk_score grimpait à 90+ quand les stats
+ *  étaient absentes → tous les partants classés A_EVITER → SelectionBuilder
+ *  retournait vide.)
  */
 function computeRiskScore(
   p: PartantEnrichi,
   regularityScore: number,
   formScore: number,
-  missingFields: number,
+  _missingFields: number,
 ): number {
-  // Base risque = 100 - moyenne(régularité, forme) / 2
-  const baseRisk = 100 - (regularityScore + formScore) / 2;
-  // Pénalité pour données manquantes (jusqu'à +20)
-  const missingPenalty = Math.min(20, missingFields * 5);
-  return clamp100(baseRisk + missingPenalty);
+  void _missingFields;       // gardé dans la signature pour compat, mais non utilisé
+  void p;
+  // Base risque = 100 - moyenne(régularité, forme)
+  const avg = (regularityScore + formScore) / 2;
+  return clamp100(100 - avg);
 }
 
 /**
@@ -187,14 +236,21 @@ function classifyProfile(args: {
 }): RunnerProfile {
   const { global, confidence, value, risk, missingCount } = args;
 
-  if (missingCount >= 4)        return "INSUFFICIENT_DATA";
-  if (risk >= 75)               return "A_EVITER";
+  // ── INSUFFICIENT_DATA : ≥ 5 champs manquants sur 5 (max possible).
+  //    Critère plus strict qu'avant (4 → 5) car la nouvelle formule de
+  //    régularité accepte les chevaux 1-4 courses → moins de "missing".
+  if (missingCount >= 5)        return "INSUFFICIENT_DATA";
+
+  // ── A_EVITER : très haut risque (≥ 85). Seuil relevé depuis 75
+  //    car avant le hotfix Session 7, le risk_score grimpait artificiellement
+  //    à 90+ par manque de données → tout en A_EVITER.
+  if (risk >= 85)               return "A_EVITER";
+
   if (confidence >= 75 && global >= 70) return "BASE_POTENTIELLE";
   if (confidence >= 65 && global >= 60) return "FAVORI_LOGIQUE";
   if (value >= 55)              return "OUTSIDER";
   if (value >= 30 && risk < 70) return "TOCARD_SPECULATIF";
   if (risk >= 60)               return "RISQUE";
-  // Par défaut, niveau correct mais sans saillance
   return "FAVORI_LOGIQUE";
 }
 
