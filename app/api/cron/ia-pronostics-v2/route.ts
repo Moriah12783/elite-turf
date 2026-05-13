@@ -48,12 +48,14 @@ export async function GET(req: NextRequest) {
     });
 
     await cronLog.finish(result.ok ? "success" : "failure", {
-      date:         result.date,
-      drafts_count: result.drafts.length,
-      errors_count: result.errors.length,
-      duration_ms:  result.duration_ms,
-      tokens:       result.tokens_used,
-      dry_run:      dryRun,
+      date:                  result.date,
+      drafts_saved:          result.drafts_saved,
+      drafts_blocked:        result.drafts_blocked,
+      drafts_needs_review:   result.drafts_needs_review,
+      errors_count:          result.errors.length,
+      duration_ms:           result.duration_ms,
+      tokens:                result.tokens_used,
+      dry_run:               dryRun,
     });
 
     return NextResponse.json(result, { status: result.ok ? 200 : 500 });

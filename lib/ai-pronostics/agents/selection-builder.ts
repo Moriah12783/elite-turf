@@ -28,14 +28,14 @@
 
 import { callClaude, CLAUDE_MODELS } from "../claude-client";
 import type {
-  FieldAnalysis,
+  FieldAnalyzerResult,
   NiveauAcces,
-  SelectionBuilt,
-  TypePari,
+  SelectionBuilderResult,
+  SelectionType,
 } from "../types";
 
 interface SelectionBuilderInput {
-  field:     FieldAnalysis;
+  field:     FieldAnalyzerResult;
   niveau:    NiveauAcces;
   /** Pour info contextuelle (libelle, hippodrome) */
   course_libelle:    string;
@@ -43,13 +43,15 @@ interface SelectionBuilderInput {
 }
 
 /**
- * Définit la taille de sélection et le type de pari selon le niveau.
+ * Définit la taille de sélection et le type de pari selon le niveau
+ * (cahier des charges §3 - 4 niveaux d'accès).
  */
-function getSelectionStrategy(niveau: NiveauAcces): { type_pari: TypePari; size: number } {
+function getSelectionStrategy(niveau: NiveauAcces): { type: SelectionType; size: number } {
   switch (niveau) {
-    case "ELITE":   return { type_pari: "QUINTE_PLUS", size: 6 };
-    case "PRO":     return { type_pari: "QUINTE_PLUS", size: 8 };
-    case "GRATUIT": return { type_pari: "TIERCE",      size: 6 };
+    case "ELITE":   return { type: "ELITE_QUINTE_6", size: 6 };
+    case "PRO":     return { type: "QUINTE_8",      size: 8 };
+    case "STARTER": return { type: "QUINTE_8",      size: 8 };
+    case "FREE":    return { type: "FREE_6",        size: 6 };
   }
 }
 
@@ -70,7 +72,7 @@ function buildSelectionDeterministic(input: SelectionBuilderInput): number[] {
  * Agent principal : construit la sélection + validation Claude.
  */
 export async function runSelectionBuilderAgent(input: SelectionBuilderInput): Promise<{
-  result: SelectionBuilt | null;
+  result: SelectionBuilderResult | null;
   tokens_input:  number;
   tokens_output: number;
   error?: string;

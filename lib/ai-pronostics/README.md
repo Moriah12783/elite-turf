@@ -1,24 +1,79 @@
-# Multi-Agents IA Elite Turf — Documentation architecture
+# Elite-Turf IA — Système Multi-Agents (v2 conforme spec Afrique)
 
-> **Statut actuel** : Phase 1 (fondations posées, agents non implémentés).
-> L'ancien cron `app/api/cron/ia-pronostics` (monolithique, 2 pronostics)
-> reste actif tant que la Phase 2 + 3 ne sont pas terminées.
+> **Statut actuel** : Session 1 — Alignement avec le cahier des charges
+> `elite-turf-specification-multi-agent-afrique.md` (v1.0, 2 328 lignes).
+>
+> Tous les agents sont **encore stubs** et désactivés en production.
+> L'ancien cron `app/api/cron/ia-pronostics` (1 agent monolithique, 2
+> pronostics France-centric) reste actif tant que les Sessions 2-5 ne
+> sont pas terminées.
 
-## 🎯 Objectif
+---
 
-Remplacer la publication manuelle quotidienne des 3 pronostics (Elite, Pro,
-Gratuit) par un système IA qui :
+## 🎯 Vision produit (cahier des charges §1)
 
-1. Tourne automatiquement chaque nuit à 4h Paris
-2. Sélectionne les 3 meilleures courses du jour selon le niveau d'accès
-3. Analyse les fields avec nos données enrichies (stats historiques BDD)
-4. Génère une sélection chevaux selon stratégie par niveau
-5. Rédige une analyse_courte style Elite Turf
-6. Valide la qualité avant insertion BDD
-7. **Stocke avec `publie=false`** → attend review/édition de Stéphane
-8. Notifie Stéphane sur Slack/WhatsApp
+Elite-Turf n'est **pas** un site de pronostics standard. C'est une **machine
+éditoriale premium orientée Afrique francophone**, fondée sur :
 
-L'humain garde le contrôle éditorial final (publication = action manuelle).
+- la sélection intelligente des courses ;
+- **la validation de disponibilité Afrique** (cœur du système) ;
+- la qualité des sources ;
+- le croisement des données ;
+- l'analyse factuelle ;
+- la prudence éditoriale ;
+- la **validation humaine avant publication** ;
+- la segmentation claire entre Gratuit, Starter, Pro et Elite.
+
+> 🚫 La promesse "Nous garantissons les gains" est INTERDITE.
+> ✅ La promesse correcte est : "Nous garantissons une **méthode**
+>    exigeante de sélection, d'analyse, de validation et de contrôle qualité."
+
+---
+
+## 🌍 Audience prioritaire
+
+**~90% des visiteurs viennent d'Afrique francophone** — la logique produit
+doit donc partir de ce marché, et non du marché français.
+
+Ordre de priorité (cahier §2) :
+
+1. Côte d'Ivoire (cœur de l'audience)
+2. Afrique subsaharienne francophone
+3. Sénégal, Burkina, Bénin, Mali, Gabon, Cameroun, Togo, Tchad
+4. Maghreb (Maroc, Algérie, Tunisie)
+5. Outre-mer
+6. France
+7. Belgique
+
+---
+
+## 🚨 Règle maîtresse Elite-Turf (cahier §3)
+
+```txt
+Une course ne peut être publiée QUE si :
+
+1. Sa pertinence sportive du jour est claire.
+2. Sa disponibilité Afrique est confirmée OU fortement corroborée.
+3. Sa présence LONACI est validée directement
+   OU sa présence Afrique est corroborée par des sources officielles
+   whitelistées.
+4. Sa discipline est confirmée par la source officielle adaptée :
+   - Trot : LeTROT
+   - Galop/Plat/Haies/Steeple : France Galop
+   - Courses marocaines : SOREC / e-SOREC
+5. Les données PMU, Afrique et discipline ne se contredisent pas.
+6. Le croisement des sources permet une lecture solide.
+7. Le contenu final affiche obligatoirement :
+   - « Validation LONACI directe »
+   OU
+   - « Validation Afrique corroborée »
+
+Si ces conditions ne sont pas remplies → REJET automatique.
+```
+
+**Formule produit** : *Pas de validation Afrique, pas de pronostic Elite-Turf.*
+
+---
 
 ## 🏗 Architecture
 
@@ -47,111 +102,165 @@ L'humain garde le contrôle éditorial final (publication = action manuelle).
                     └──────┬───────┘    └──────────────┘
                            ↓
                   ┌─────────────────────┐
-                  │ INSERT en BDD       │
-                  │ source='AI-MULTI'   │
-                  │ publie=false ⚠️     │  ← attend review humaine
+                  │ 6. Notification     │  ← nouveau (vs Phase 1)
+                  │     Builder         │
+                  │ (no LLM)            │
+                  └──────────┬──────────┘
+                             ↓
+                  ┌─────────────────────┐
+                  │ INSERT ai_pronostic │
+                  │       _drafts       │  ← nouvelle table BDD
+                  │ status=APPROVED_    │
+                  │ FOR_ADMIN_REVIEW    │
+                  └──────────┬──────────┘
+                             ↓
+                  ┌─────────────────────┐
+                  │  Slack notif        │
+                  │  + email admin      │
+                  └──────────┬──────────┘
+                             ↓
+                  ┌─────────────────────┐
+                  │ /admin/pronostics/  │  ← review humaine
+                  │     ai-review       │     OBLIGATOIRE
                   └─────────────────────┘
 ```
+
+---
 
 ## 📁 Structure des fichiers
 
 ```
 lib/ai-pronostics/
-├── README.md                        ← ce fichier
-├── types.ts                         ← types partagés (NiveauAcces, agents I/O)
-├── claude-client.ts                 ← wrapper API Anthropic (retry, JSON parsing)
-├── director.ts                      ← orchestrateur principal
+├── README.md                          ← ce fichier (v2 conforme spec)
+├── types.ts                           ← types stricts conformes schémas JSON spec
+├── sources.ts                         ← whitelist sources (LONACI, PMU, LeTROT…)
+├── forbidden-expressions.ts           ← filtre "gain garanti", "tuyau sûr"…
+├── claude-client.ts                   ← wrapper API Anthropic (retry, JSON)
+├── director.ts                        ← orchestrateur principal
 └── agents/
-    ├── course-selector.ts           ← Agent 1 : choisit 3 courses (LLM)
-    ├── field-analyzer.ts            ← Agent 2 : enrichit le field (déterministe)
-    ├── selection-builder.ts         ← Agent 3 : construit la sélection (LLM)
-    ├── analyse-writer.ts            ← Agent 4 : rédige l'analyse (LLM)
-    └── quality-validator.ts         ← Agent 5 : valide avant INSERT (déterministe)
+    ├── course-selector.ts             ← Agent 1 (à refondre Session 4)
+    ├── field-analyzer.ts              ← Agent 2 (à refondre Session 3)
+    ├── selection-builder.ts           ← Agent 3 (à refondre Session 4)
+    ├── analyse-writer.ts              ← Agent 4 (à refondre Session 4)
+    ├── quality-validator.ts           ← Agent 5 (à refondre Session 3)
+    └── notification-builder.ts        ← Agent 6 (à créer Session 4)
 
 app/api/cron/ia-pronostics-v2/
-└── route.ts                         ← endpoint cron (auth Bearer)
+└── route.ts                           ← endpoint cron (auth Bearer)
 ```
 
-## 🤖 Détail des 5 Agents
+---
 
-### Agent 1 — Course Selector
+## 🎚 Les 4 niveaux d'accès (cahier §11.2)
+
+| Niveau | Sélection | Type pari | Audience | Particularité |
+|---|---|---|---|---|
+| **FREE** | 6 chevaux | TIERCE/QUINTE | Visiteurs gratuits | Course **différente** des courses ELITE |
+| **STARTER** | 8 chevaux | QUINTE+ | Nouveaux abonnés 7j | Équivalent PRO pendant période active |
+| **PRO** | 8 chevaux | QUINTE+ | Abonnés Pro | Couverture large, sécurité places |
+| **ELITE** | 6 chevaux | QUINTE+ | Abonnés Elite | Sélection resserrée, courses vedettes |
+
+---
+
+## 🤖 Détail des 6 Agents
+
+### Agent 1 — CourseSelector (cahier §9)
 
 | Aspect | Détail |
 |---|---|
-| **Modèle** | Claude Sonnet 4.5 (reasoning éditorial) |
-| **Input** | Liste des courses du jour (Supabase) |
-| **Output** | 3 courses choisies (Elite, Pro, Gratuit) + raisonnement |
+| **Modèle** | Claude Sonnet 4.5 (raisonnement éditorial) |
+| **Input** | Courses du jour (Supabase) + preuves sources |
+| **Output** | `CourseSelectorResult` (3 courses + raisonnement + rejets) |
 | **Coût** | ~$0.015 / run |
 
-**Stratégie de sélection** :
-- **ELITE** : Quinté+ + hippodrome prestigieux (Vincennes, Longchamp, Chantilly, Auteuil, Cagnes, Deauville, Saint-Cloud) + 12-18 partants
-- **PRO** : Quinté+ ou Quarté+ hors elite, ≥ 10 partants
-- **GRATUIT** : Tiercé accessible (LONACI/Maroc en bonus), ≥ 8 partants
+**Mission** : sélectionner 3 courses ET valider leur disponibilité Afrique.
 
-### Agent 2 — Field Analyzer
+Scoring (cahier §9.3) :
+```txt
+africa_course_score =
+  0.25 * africa_availability_score
++ 0.20 * source_crosscheck_score
++ 0.15 * data_completeness_score
++ 0.15 * field_readability_score
++ 0.10 * discipline_confirmation_score
++ 0.10 * subscriber_relevance_score
++ 0.05 * value_opportunity_score
+- 0.15 * contradiction_risk_score
+- 0.10 * source_fragility_score
+```
+
+Seuils minimum par niveau : FREE=68, STARTER/PRO=75, ELITE=85.
+
+### Agent 2 — FieldAnalyzer (cahier §10)
 
 | Aspect | Détail |
 |---|---|
-| **Modèle** | Aucun — pur TypeScript déterministe |
-| **Input** | course_id |
-| **Output** | Partants enrichis (score composite + badges + stats historiques) |
+| **Modèle** | Aucun (pur TypeScript déterministe) |
+| **Input** | `course_id` + validation_status confirmée |
+| **Output** | `FieldAnalyzerResult` (analyse partants + scores) |
 | **Coût** | $0 |
 
-**Réutilise** `lib/courses/getCourseStatsEnrichies.ts` qu'on a déjà construit
-pour la section Statistiques de la page course. Croise partants × tables
-chevaux/jockeys/entraîneurs.
+**Réutilise** `lib/courses/getCourseStatsEnrichies.ts` qu'on a déjà construit.
+**Bloque** si validation Afrique absente.
 
-### Agent 3 — Selection Builder
+### Agent 3 — SelectionBuilder (cahier §11)
 
 | Aspect | Détail |
 |---|---|
-| **Modèle** | Claude Sonnet 4.5 (validation éditoriale + ajustement) |
+| **Modèle** | Sonnet 4.5 (validation éditoriale + ajustement marginal) |
 | **Input** | Field enrichi + niveau d'accès |
-| **Output** | Sélection finale (numéros) + confiance |
-| **Coût** | ~$0.02 / run × 3 = ~$0.06 |
+| **Output** | `SelectionBuilderResult` (sélection finale + raisons) |
+| **Coût** | ~$0.02 / run × 3 courses = $0.06 |
 
-**Stratégies par niveau** :
-- **ELITE (Quinté+, 6 chevaux)** : sélection serrée, base top 3 + 3 ajustements
-- **PRO (Quinté+, 8 chevaux)** : couverture large, 4 base + 4 outsiders raisonnables
-- **GRATUIT (Tiercé libre, 6 chevaux)** : mix favori + outsider
+**Pondération déterministe** (cahier §11.4) :
+```txt
+global_selection_score =
+  0.25 * confidence_score
++ 0.20 * regularity_score
++ 0.15 * form_score
++ 0.10 * distance_score
++ 0.10 * terrain_score
++ 0.10 * jockey_driver_score
++ 0.05 * trainer_score
++ 0.05 * value_score
+- 0.20 * risk_score
+```
 
-Le LLM intervient pour valider/ajuster la sélection algo initiale (max 2
-substitutions avec raisonnement).
-
-### Agent 4 — Analyse Writer
+### Agent 4 — AnalyseWriter (cahier §12)
 
 | Aspect | Détail |
 |---|---|
-| **Modèle** | Claude 3.5 Haiku (rédaction structurée, économique) |
-| **Input** | Selection + field + niveau + course info |
-| **Output** | analyse_courte (150-300 chars, style Elite Turf) |
+| **Modèle** | Haiku 3.5 (rédaction structurée, économique) |
+| **Input** | Selection + field + niveau |
+| **Output** | `AnalyseWriterResult` (contenu rédigé adapté au niveau) |
 | **Coût** | ~$0.005 / run × 3 = ~$0.015 |
 
-**Charte éditoriale** :
-- Ton : professionnel, analytique, rassurant
-- 2-4 phrases, 150-300 chars
-- Référence aux chevaux par leur numéro (#N)
-- Justification analytique brève (musique, cote, taux historique)
-- **Mots interdits** : "garanti", "sûr", "imbattable", etc.
+**Templates différents** par niveau (Free/Starter/Pro/Elite) avec structure
+imposée — voir cahier §12.4 à §12.6 pour les templates exacts.
 
-### Agent 5 — Quality Validator
+### Agent 5 — QualityValidator (cahier §13)
 
 | Aspect | Détail |
 |---|---|
-| **Modèle** | Aucun — pur TypeScript déterministe |
-| **Input** | PronosticDraft + field |
-| **Output** | { ok: boolean, errors[], warnings[] } |
+| **Modèle** | Aucun (déterministe) |
+| **Input** | Draft + field + selection |
+| **Output** | `QualityValidatorResult` (status APPROVED / NEEDS_REVIEW / REJECTED) |
 | **Coût** | $0 |
 
-**Checks effectués** :
-- ✅ Tous les numéros existent dans le field
-- ✅ Pas de doublons
-- ✅ Taille selection valide selon type_pari
-- ✅ Au moins 1 favori (cote ≤ 10)
-- ✅ analyse_courte longueur OK (100-400 chars)
-- ✅ Pas de mots interdits dans analyse
+**19 règles de rejet automatique** (cahier §13.2) — protection critique
+de la marque et des abonnés.
 
-## 💰 Coûts estimés
+### Agent 6 — NotificationBuilder (cahier §16) — ⭐ Nouveau vs Phase 1
+
+| Aspect | Détail |
+|---|---|
+| **Modèle** | Aucun |
+| **Output** | Message court pour Slack + email admin |
+| **Coût** | $0 |
+
+---
+
+## 💰 Coûts estimés du système complet
 
 | Composant | Tokens/run | Coût/run | Coût/mois |
 |---|---|---|---|
@@ -160,76 +269,137 @@ substitutions avec raisonnement).
 | SelectionBuilder × 3 (Sonnet) | ~6k | $0.06 | $1.80 |
 | AnalyseWriter × 3 (Haiku) | ~3k | $0.015 | $0.45 |
 | QualityValidator × 3 | 0 | $0 | $0 |
-| **TOTAL** | **~10k** | **~$0.09** | **~$2.70** |
+| NotificationBuilder | 0 | $0 | $0 |
+| **TOTAL** | **~10k** | **~$0.09** | **~$2.70/mois** |
 
-Très abordable. À comparer au temps gagné par Stéphane (~10-15 min/jour =
-5-7h/mois économisées).
+---
 
-## 🚦 Phases d'implémentation
+## 📋 Plan d'implémentation (5 sessions)
 
-### ✅ Phase 1 — Fondations (TERMINÉ, ce commit)
+### ✅ Session 1 — Alignement métier (ce commit)
 
-- Structure de dossiers `lib/ai-pronostics/`
-- Types TypeScript complets
-- Helper claude-client (retry, JSON parsing)
-- 5 stubs d'agents avec TODO détaillés
-- Director stub avec workflow commenté
-- Endpoint `/api/cron/ia-pronostics-v2` (désactivé en pratique car les agents
-  ne sont pas encore implémentés)
-- Cette doc
+Sortie de cette session :
+- [x] `types.ts` réécrit selon les schémas JSON spec (4 niveaux, validation Afrique, disciplines, statuts pipeline)
+- [x] `sources.ts` créé (whitelist statique LONACI/PMU/LeTROT/SOREC/LONASE/LONAB/PMUC/PMUG/PMU Mali + sources interdites)
+- [x] `forbidden-expressions.ts` créé (19 patterns interdits + notes responsables)
+- [x] `README.md` v2 conforme spec
+- [x] Stubs d'agents conservés mais marqués "à refondre"
+- [x] Aucun impact production (tout est stub désactivé)
 
-### 📋 Phase 2 — Implémentation agents (3-4h, à faire)
+### 📋 Session 2 — BDD (1h30)
 
-Implémenter les TODO de chaque agent dans l'ordre :
-1. FieldAnalyzer (le plus simple, déterministe, base de données)
-2. QualityValidator (déterministe, validation)
-3. AnalyseWriter (Haiku, simple prompt rédaction)
-4. SelectionBuilder (Sonnet, plus complexe)
-5. CourseSelector (Sonnet, le plus complexe — sélection multi-critères)
+3 migrations Supabase :
+- `source_whitelist` (cahier §21) — whitelist dynamique éditable
+- `course_source_evidence` (cahier §22) — preuves sources par course
+- `ai_pronostic_drafts` (cahier §23) — drafts AI séparés des pronostics live
 
-Pour chaque agent :
-- Implémenter la fonction principale
-- Écrire un test unitaire (peut être simple : input fixture → output attendu)
-- Tester via curl `/api/cron/ia-pronostics-v2?dry_run=1`
+Seed initial de `source_whitelist` depuis `lib/ai-pronostics/sources.ts`.
 
-### 📋 Phase 3 — Production + monitoring (2-3h, à faire)
+### 📋 Session 3 — Agents déterministes (2h)
 
-- Activer le cron Cloudflare à 4h Paris
-- Désactiver l'ancien cron `ia-pronostics`
-- Slack notification après chaque run (success + erreurs)
-- Page admin `/admin/pronostics/ai-review` pour valider/éditer les drafts
-- Monitoring coûts API (alerter si dépasse $5/mois)
+Implémentation complète :
+- **FieldAnalyzer** (réutilise `getCourseStatsEnrichies`)
+- **QualityValidator** (19 règles spec §13.2)
 
-## 🔧 Tester en local (après Phase 2)
+### 📋 Session 4 — Agents LLM (3h)
 
-```bash
-# Dry-run : exécute les agents mais n'insert PAS en BDD
-curl https://www.elite-turf.fr/api/cron/ia-pronostics-v2?dry_run=1 \
-  -H "Authorization: Bearer $CRON_SECRET"
+Implémentation complète :
+- **CourseSelector** (scoring Afrique + arbitrage Claude)
+- **SelectionBuilder** (algo + validation Claude)
+- **AnalyseWriter** (4 templates Free/Starter/Pro/Elite)
+- **NotificationBuilder** (message Slack)
 
-# Run réel (insert publie=false)
-curl https://www.elite-turf.fr/api/cron/ia-pronostics-v2 \
-  -H "Authorization: Bearer $CRON_SECRET"
+### 📋 Session 5 — Production (2h)
 
-# Force une date spécifique
-curl "https://www.elite-turf.fr/api/cron/ia-pronostics-v2?date=2026-05-13" \
-  -H "Authorization: Bearer $CRON_SECRET"
+- **Orchestrateur** complet (workflow + sauvegarde drafts)
+- **Cron Cloudflare** 4h Paris (check timezone Worker UTC)
+- **Page admin** `/admin/pronostics/ai-review` (badges 🟢🟡🔴⚠️🔒⭐)
+- **Bascule** ancien cron `ia-pronostics` → désactivé
+
+---
+
+## ✅ Mentions publiques obligatoires (cahier §4)
+
+Chaque pronostic publié DOIT contenir l'une de ces deux mentions
+visibles dans le contenu :
+
+```txt
+Validation LONACI directe
 ```
 
-## 🔄 Migration depuis l'ancien cron
+```txt
+Validation Afrique corroborée
+```
 
-1. Phase 2 + 3 terminées et testées en dry-run pendant 7 jours
-2. Comparer manuellement les sélections IA-v2 vs IA-v1 vs sélections expertes
-3. Si v2 > v1 sur la qualité éditoriale → bascule :
-   - Désactiver cron `ia-pronostics` dans wrangler/cron-triggers
-   - Activer cron `ia-pronostics-v2`
-4. Garder l'ancien code 1 mois pour rollback safe, puis supprimer
+Ces mentions doivent apparaître dans :
+- Le contenu abonné (premium)
+- Le contenu gratuit
+- La page admin `/admin/pronostics/ai-review`
+- Les logs de validation
+- Les objets JSON des drafts
+
+---
+
+## 🚫 Expressions interdites (cahier §24)
+
+Toute détection = REJECTED automatique :
+
+```txt
+- gain garanti
+- sûr à 100%
+- tuyau sûr
+- impossible à battre
+- banque absolue
+- misez gros
+- all-in
+- certitude du jour
+- base infaillible
+- cadeau des dieux
+```
+
+✅ Expressions recommandées (vocabulaire Elite-Turf) :
+
+```txt
+- base intéressante
+- profil solide
+- chance régulière
+- outsider à surveiller
+- possibilité intéressante
+- sélection prudente
+- lecture favorable
+- risque à intégrer
+- course ouverte
+- prudence nécessaire
+```
+
+---
+
+## 🔒 Anti-cannibalisation Free / Elite (cahier §18)
+
+```txt
+Le pronostic gratuit doit être différent des courses vedette Elite.
+free.course_id NOT IN elite_featured.course_ids
+```
+
+Interdiction stricte :
+- Même `course_id`
+- Même réunion + même course
+- Même `race_number`
+- Même hippodrome + même heure + même nom de prix
+
+> *Le gratuit attire. L'Elite convertit. Les deux ne doivent pas se
+> marcher dessus.*
+
+---
 
 ## 📚 Références
 
-- **Pattern Director + Workers** : inspiré de l'architecture Anthropic
-  Computer Use + adaptations multi-agents (cf. blog post Anthropic 2024)
-- **Pas de framework Mastra.ai** : décision pour rester léger Cloudflare
-  Workers + contrôle des coûts API
-- **stats enrichies réutilisées** : `lib/courses/getCourseStatsEnrichies.ts`
-  (déjà construit pour la section Statistiques de page course)
+- 📜 **Cahier des charges complet** :
+  `~/Downloads/elite-turf-specification-multi-agent-afrique.md`
+  (v1.0, 2 328 lignes, 31 sections)
+- **Pattern Director + Workers** : inspiré architecture multi-agents
+  Anthropic (cf. blog post 2024)
+- **Stack tech** : Anthropic SDK natif via fetch (pas de Mastra.ai
+  pour rester léger Cloudflare Workers)
+- **Réutilise** : `lib/courses/getCourseStatsEnrichies.ts` (FieldAnalyzer)
+- **Auth endpoints** : `lib/auth/checkAdminAuth.requireBearerOnly` (cron)

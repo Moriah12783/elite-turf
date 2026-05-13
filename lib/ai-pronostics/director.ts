@@ -33,7 +33,7 @@ import { runFieldAnalyzerAgent }    from "./agents/field-analyzer";
 import { runSelectionBuilderAgent } from "./agents/selection-builder";
 import { runAnalyseWriterAgent }    from "./agents/analyse-writer";
 import { runQualityValidatorAgent } from "./agents/quality-validator";
-import type { DirectorRunResult, PronosticDraft, NiveauAcces } from "./types";
+import type { DirectorRunResult, AiPronosticDraft, NiveauAcces } from "./types";
 
 interface DirectorOptions {
   /** Date cible (défaut = aujourd'hui Paris) */
@@ -57,11 +57,13 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
   const dryRun = opts.dryRun ?? false;
 
   const result: DirectorRunResult = {
-    ok:           false,
+    ok:                  false,
     date,
-    duration_ms:  0,
-    drafts:       [],
-    errors:       [],
+    duration_ms:         0,
+    drafts_saved:        0,
+    drafts_blocked:      0,
+    drafts_needs_review: 0,
+    errors:              [],
     tokens_used: {
       sonnet_input:  0,
       sonnet_output: 0,
@@ -177,12 +179,12 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
   void runAnalyseWriterAgent;
   void runQualityValidatorAgent;
   void dryRun;
-  void ({} as PronosticDraft);
+  void ({} as AiPronosticDraft);
   void ({} as NiveauAcces);
 
   result.errors.push({
     agent:   "Director",
-    message: "Multi-Agents système non implémenté (Phase 1 — fondations uniquement). Voir TODO comments.",
+    message: "Multi-Agents système non implémenté (Session 1 — fondations uniquement alignées sur cahier des charges). Pipeline complet à venir Sessions 3-5.",
   });
   result.duration_ms = Date.now() - t0;
   return result;

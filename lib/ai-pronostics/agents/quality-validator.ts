@@ -24,9 +24,9 @@
  */
 
 import type {
-  FieldAnalysis,
-  PronosticDraft,
-  ValidationResult,
+  AiPronosticDraft,
+  FieldAnalyzerResult,
+  QualityValidatorResult,
 } from "../types";
 
 const MOTS_INTERDITS = [
@@ -34,22 +34,26 @@ const MOTS_INTERDITS = [
   "gagne à coup", "victoire assurée", "100% gagnant",
 ];
 
-const SELECTION_SIZES = {
-  SIMPLE:      { min: 1, max: 2 },
-  TIERCE:      { min: 3, max: 7 },
-  QUARTE:      { min: 4, max: 8 },
-  QUINTE_PLUS: { min: 5, max: 10 },
+const SELECTION_SIZES_LOCAL = {
+  FREE_6:         { min: 6, max: 6 },
+  QUINTE_8:       { min: 8, max: 8 },
+  ELITE_QUINTE_6: { min: 6, max: 6 },
 };
 
 interface ValidatorInput {
-  draft: PronosticDraft;
-  field: FieldAnalysis;
+  draft: AiPronosticDraft;
+  field: FieldAnalyzerResult;
 }
 
 /**
- * Agent principal : valide le pronostic, retourne ok=true/false + erreurs.
+ * Agent principal : valide le pronostic, retourne status + erreurs/warnings.
+ *
+ * TODO Session 3 (refactor selon cahier des charges §13.5) :
+ *   - retourner un QualityValidatorResult complet (status, scores, checks détaillés)
+ *   - intégrer detectForbiddenExpressions, containsAfricaValidationMention, mentionsRisk
+ *   - vérifier anti-cannibalisation FREE vs ELITE (cahier §14)
  */
-export function runQualityValidatorAgent(input: ValidatorInput): ValidationResult {
+export function runQualityValidatorAgent(input: ValidatorInput): QualityValidatorResult {
   const errors:   string[] = [];
   const warnings: string[] = [];
   const { draft, field } = input;
@@ -91,13 +95,61 @@ export function runQualityValidatorAgent(input: ValidatorInput): ValidationResul
 
   void draft;
   void field;
-  void SELECTION_SIZES;
+  void SELECTION_SIZES_LOCAL;
   void MOTS_INTERDITS;
+  void errors;
+  void warnings;
 
+  // Stub Phase 1 — retourne un QualityValidatorResult minimal "non implémenté".
   return {
-    course_id: draft.course_id,
-    ok:        errors.length === 0,
-    errors,
-    warnings,
+    agent:        "QualityValidator",
+    draft_id:     draft.id ?? "",
+    course_id:    draft.course_id,
+    access_level: draft.access_level,
+    status:       "NEEDS_HUMAN_REVIEW",
+    quality_score: 0,
+    africa_validation_check: {
+      passed:                     false,
+      validation_status:          draft.validation_status,
+      mandatory_mention_present:  false,
+      source_evidence_sufficient: false,
+    },
+    access_level_check: {
+      passed:                           false,
+      expected_runner_count:            0,
+      actual_runner_count:              0,
+      free_course_different_from_elite: true,
+    },
+    source_policy_check: {
+      passed:                                     true,
+      forbidden_sources_detected:                 [],
+      secondary_sources_used_only_for_enrichment: true,
+    },
+    discipline_check: {
+      passed:       false,
+      discipline:   "PLAT",
+      confirmed_by: "",
+    },
+    checks: {
+      json_valid:                       true,
+      no_gain_promise:                  true,
+      runners_exist:                    false,
+      no_non_runner_selected:           true,
+      has_risk_section:                 false,
+      has_confidence_level:             false,
+      has_fact_based_reasoning:         false,
+      selection_consistent_with_scores: false,
+      subscriber_readability_ok:        false,
+    },
+    blocking_issues: [
+      {
+        code:     "AGENT_NOT_IMPLEMENTED_SESSION_1",
+        message:  "QualityValidator non implémenté (Session 3 à venir)",
+        severity: "BLOCKING",
+      },
+    ],
+    warnings:        [],
+    suggested_fixes: [],
+    admin_comment:   "Stub Phase 1 — refactor Session 3 selon cahier §13.4",
   };
 }
