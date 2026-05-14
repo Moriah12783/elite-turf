@@ -1,7 +1,10 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ActeurDetailPage from "@/components/acteurs/ActeurDetailPage";
-import { getEntiteBySlug, getCoursesForEntite, tauxVictoire } from "@/lib/seo/acteurs";
+import {
+  getEntiteBySlug, getCoursesForEntite, computeRichStats,
+  buildActeurTitle, buildActeurDescription, isIndexable,
+} from "@/lib/seo/acteurs";
 import { createServiceClient } from "@/lib/supabase/server";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
@@ -24,19 +27,23 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const e = await getEntiteBySlug("jockeys", params.slug);
   if (!e) return { title: "Jockey introuvable — Elite Turf" };
-  const tauxVic = tauxVictoire(e);
-  const tauxStr = tauxVic !== null ? ` Taux victoire ${tauxVic.toFixed(1)}%.` : "";
 
-  // Anti "thin content" : noindex pour jockeys avec <3 courses en BDD
-  const thinContent = (e.nb_courses ?? 0) < 3;
+  const rows = await getCoursesForEntite("jockeys", e.nom, 50);
+  const stats = computeRichStats("jockeys", rows);
 
   return {
-    title: `${e.nom} — Jockey PMU : statistiques et historique | Elite Turf`,
-    description: `Jockey ${e.nom} : ${e.nb_courses ?? 0} courses, ${e.nb_victoires ?? 0} victoires, ${e.nb_places ?? 0} top 3.${tauxStr} Performances détaillées.`,
-    alternates: { canonical: `${APP_URL}/jockeys/${params.slug}` },
-    robots: thinContent
-      ? { index: false, follow: true }
-      : { index: true,  follow: true },
+    title:       buildActeurTitle("jockeys", e, stats),
+    description: buildActeurDescription("jockeys", e, stats),
+    alternates:  { canonical: `${APP_URL}/jockeys/${params.slug}` },
+    robots: isIndexable(stats)
+      ? { index: true,  follow: true }
+      : { index: false, follow: true },
+    openGraph: {
+      title:       buildActeurTitle("jockeys", e, stats),
+      description: buildActeurDescription("jockeys", e, stats),
+      url:         `${APP_URL}/jockeys/${params.slug}`,
+      type:        "profile",
+    },
   };
 }
 
@@ -44,5 +51,14 @@ export default async function JockeyDetail({ params }: PageProps) {
   const entite = await getEntiteBySlug("jockeys", params.slug);
   if (!entite) notFound();
   const rows = await getCoursesForEntite("jockeys", entite.nom, 50);
-  return <ActeurDetailPage type="jockeys" entite={entite} rows={rows} heroImg="/images/heroes/hero-pronostics.jpg" />;
+  const stats = computeRichStats("jockeys", rows);
+  return (
+    <ActeurDetailPage
+      type="jockeys"
+      entite={entite}
+      rows={rows}
+      stats={stats}
+      heroImg="/images/heroes/hero-pronostics.jpg"
+    />
+  );
 }
