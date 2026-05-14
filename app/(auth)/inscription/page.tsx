@@ -26,6 +26,9 @@ function InscriptionForm() {
     password: "",
     confirmPassword: "",
   });
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [cguAccepted, setCguAccepted] = useState(false);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"form" | "success">("form");
@@ -64,6 +67,15 @@ function InscriptionForm() {
       return;
     }
 
+    if (!ageConfirmed) {
+      toast.error("Vous devez confirmer avoir 18 ans ou plus");
+      return;
+    }
+    if (!cguAccepted) {
+      toast.error("Vous devez accepter les CGU et la Politique de confidentialité");
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       toast.error("Les mots de passe ne correspondent pas");
       return;
@@ -86,6 +98,11 @@ function InscriptionForm() {
             phone: form.phone,
             pays: form.pays,
             plan_souhaite: planSelectionne,
+            whatsapp_opt_in: whatsappOptIn,
+            whatsapp_opt_in_date: whatsappOptIn ? new Date().toISOString() : null,
+            whatsapp_opt_in_text: whatsappOptIn
+              ? "J'accepte de recevoir des messages WhatsApp de la part de TSALACH VENTURES LLC (Elite Turf) concernant mes pronostics et mon abonnement."
+              : null,
           },
         },
       });
@@ -295,20 +312,62 @@ function InscriptionForm() {
           />
         </div>
 
-        {/* CGU */}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" required className="mt-0.5 accent-[#C9A84C]" />
-          <span className="text-text-muted text-xs leading-relaxed">
-            J&apos;accepte les{" "}
-            <Link href="/cgu" className="text-gold-primary hover:underline">
-              Conditions d&apos;utilisation
-            </Link>{" "}
-            et la{" "}
-            <Link href="/confidentialite" className="text-gold-primary hover:underline">
-              Politique de confidentialité
-            </Link>
-          </span>
-        </label>
+        {/* ── Consentements légaux ── */}
+        <div className="space-y-3 pt-1">
+          {/* Case 1 — Âge (obligatoire) */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => setAgeConfirmed(e.target.checked)}
+              className="mt-0.5 accent-[#C9A84C] flex-shrink-0"
+            />
+            <span className="text-text-muted text-xs leading-relaxed">
+              <span className="text-status-loss font-medium">*</span>{" "}
+              Je confirme avoir <strong className="text-text-secondary">18 ans ou plus</strong>.
+              L&apos;accès au site est réservé aux majeurs.
+            </span>
+          </label>
+
+          {/* Case 2 — CGU (obligatoire) */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cguAccepted}
+              onChange={(e) => setCguAccepted(e.target.checked)}
+              className="mt-0.5 accent-[#C9A84C] flex-shrink-0"
+            />
+            <span className="text-text-muted text-xs leading-relaxed">
+              <span className="text-status-loss font-medium">*</span>{" "}
+              J&apos;accepte les{" "}
+              <Link href="/cgu" target="_blank" className="text-gold-primary hover:underline">
+                Conditions Générales d&apos;Utilisation
+              </Link>{" "}
+              et la{" "}
+              <Link href="/confidentialite" target="_blank" className="text-gold-primary hover:underline">
+                Politique de confidentialité
+              </Link>{" "}
+              de TSALACH VENTURES LLC (Elite Turf).
+            </span>
+          </label>
+
+          {/* Case 3 — WhatsApp opt-in (facultative) */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={whatsappOptIn}
+              onChange={(e) => setWhatsappOptIn(e.target.checked)}
+              className="mt-0.5 accent-[#C9A84C] flex-shrink-0"
+            />
+            <span className="text-text-muted text-xs leading-relaxed">
+              <span className="text-text-muted/60 italic">(Facultatif)</span>{" "}
+              J&apos;accepte de recevoir des messages WhatsApp de la part de{" "}
+              <strong className="text-text-secondary">TSALACH VENTURES LLC (Elite Turf)</strong>{" "}
+              concernant mes pronostics et mon abonnement. Désabonnement possible à tout moment
+              en répondant STOP.
+            </span>
+          </label>
+        </div>
 
         <button
           type="submit"

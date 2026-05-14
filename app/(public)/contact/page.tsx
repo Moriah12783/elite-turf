@@ -65,17 +65,21 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* ── ADRESSE ── */}
+        {/* ── ADRESSE LÉGALE ── */}
         <div className="card-base p-6 flex items-start gap-5">
           <div className="w-12 h-12 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center flex-shrink-0">
             <MapPin className="w-6 h-6 text-text-secondary" />
           </div>
           <div className="flex-1">
-            <h2 className="font-serif font-bold text-text-primary mb-1">Adresse</h2>
+            <h2 className="font-serif font-bold text-text-primary mb-1">Adresse légale</h2>
             <p className="text-text-secondary text-sm">
-              Elite Turf<br />
-              34 boulevard des Italiens<br />
-              75009 Paris, France
+              <strong className="text-text-primary">TSALACH VENTURES LLC</strong><br />
+              30 N Gould St, STE R<br />
+              Sheridan, WY 82801<br />
+              États-Unis
+            </p>
+            <p className="text-text-muted text-xs mt-2">
+              Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC.
             </p>
           </div>
         </div>

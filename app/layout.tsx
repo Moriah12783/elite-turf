@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   title: {
-    default: "Elite Turf — Pronostics PMU pour les parieurs francophones",
+    default: "Elite Turf — Analyses hippiques informatives",
     template: "%s | Elite Turf",
   },
   description:
-    "Elite Turf — Pronostics PMU premium pour les parieurs francophones. Tiercé, Quarté+, Quinté+ analysés par nos experts depuis Paris. Abonnement dès 65€. Orange Money, MTN, Wave acceptés.",
+    "Elite Turf propose des analyses hippiques, données de courses et contenus méthodologiques. Marque exploitée par TSALACH VENTURES LLC. Aucun gain garanti.",
   keywords: [
     "pronostic PMU",
     "pronostic Quinté+",
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   // Pas de canonical global — chaque page gère le sien pour éviter le duplicate content
   openGraph: {
-    title: "Elite Turf — Pronostics PMU pour les parieurs francophones",
+    title: "Elite Turf — Analyses hippiques informatives",
     description:
-      "Pronostics PMU premium depuis Paris. Tiercé, Quarté+, Quinté+ analysés par nos experts. Dès 65€ — Orange Money, MTN, Wave acceptés.",
+      "Analyses hippiques, données de courses et contenus méthodologiques. Elite Turf est une marque exploitée par TSALACH VENTURES LLC.",
     url: APP_URL,
     siteName: "Elite Turf",
     locale: "fr_FR",
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Elite Turf — Pronostics PMU parieurs francophones",
-    description: "Pronostics PMU experts depuis Paris. Tiercé, Quarté+, Quinté+ dès 65€.",
+    title: "Elite Turf — Analyses hippiques informatives",
+    description: "Analyses hippiques et contenus méthodologiques. Marque exploitée par TSALACH VENTURES LLC.",
     images: [`${APP_URL}/og-image.jpg`],
   },
   robots: {
@@ -84,54 +84,49 @@ export const metadata: Metadata = {
   },
 };
 
-// JSON-LD NewsMediaOrganization — schema.org enrichi pour Google News Publisher Center.
-// Type "NewsMediaOrganization" (vs "Organization" classique) signale à Google que ce
-// site est un éditeur de news → conditions requises pour figurer dans Google News.
-// Référence : https://schema.org/NewsMediaOrganization
+// JSON-LD — Organisation + données légales TSALACH VENTURES LLC
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": "NewsMediaOrganization",
+  "@type": "Organization",
   name: "Elite Turf",
+  legalName: "TSALACH VENTURES LLC",
+  alternateName: "Elite Turf",
   url: APP_URL,
-  // Logo carré 1000x1000 (PNG rasterisé depuis le SVG V2 — fer à cheval or sur bleu nuit).
-  // Format préconisé Google News : carré, lisible à 50px (Knowledge Graph + cartes article).
+  email: "contact@elite-turf.fr",
   logo: {
     "@type": "ImageObject",
     url:    `${APP_URL}/images/logo-v2/logo-square-1000.png`,
     width:  1000,
     height: 1000,
   },
-  // Image de couverture additionnelle (variante horizontale pour Knowledge Graph)
   image: `${APP_URL}/images/logo-v2/logo-horizontal-1000.png`,
   description:
-    "Pronostics PMU premium pour les parieurs francophones d'Afrique et d'Europe. Tiercé, Quarté+, Quinté+ analysés par des experts depuis Paris.",
-  // Liens vers pages de transparence éditoriale — exigés par Google News Publisher Center
+    "Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC, dédiée aux analyses hippiques informatives.",
   publishingPrinciples:     `${APP_URL}/equipe-redactionnelle`,
   actionableFeedbackPolicy: `${APP_URL}/contact`,
   ethicsPolicy:             `${APP_URL}/equipe-redactionnelle`,
   // Fondateur — schema NewsMediaOrganization requiert founder ou employee identifiable
   founder: {
     "@type": "Person",
-    name:    "Yapi Landry Stéphane",
-    jobTitle: "Fondateur & Directeur de la publication",
+    name:    "Landry Stéphane Y.",
+    jobTitle: "Directeur de la publication",
   },
   address: {
     "@type": "PostalAddress",
-    streetAddress:  "34 boulevard des Italiens",
-    addressLocality: "Paris",
-    postalCode:     "75009",
-    addressCountry: "FR",
+    streetAddress:   "30 N Gould St, STE R",
+    addressLocality: "Sheridan",
+    addressRegion:   "WY",
+    postalCode:      "82801",
+    addressCountry:  "US",
   },
   contactPoint: {
     "@type": "ContactPoint",
-    telephone:        "+33-6-44-68-67-20",
+    telephone:        "+33644686720",
     email:            "contact@elite-turf.fr",
-    contactType:      "customer service",
-    availableLanguage: "French",
+    contactType:      "customer support",
+    availableLanguage: ["French"],
     areaServed:       ["FR", "CI", "SN", "CM", "MA", "BF", "TG", "BJ", "ML"],
   },
-  // Pas de sameAs Facebook/YouTube pour l'instant (comptes pas encore actifs).
-  // À réactiver quand les comptes seront créés et alimentés.
 };
 
 export default function RootLayout({

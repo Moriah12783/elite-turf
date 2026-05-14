@@ -14,8 +14,15 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720").replace(/\s/g, "");
-const DEFAULT_MESSAGE = "Bonjour Elite Turf, je souhaite plus d'informations sur vos pronostics.";
+// Bascule WABA — mettre NEXT_PUBLIC_USE_WABA_API_NUMBER=true dans Vercel
+// APRÈS validation complète du compte WhatsApp Business API par Meta.
+const USE_WABA = process.env.NEXT_PUBLIC_USE_WABA_API_NUMBER === "true";
+const WHATSAPP_NUMBER = (
+  USE_WABA
+    ? process.env.NEXT_PUBLIC_WABA_API_NUMBER || "+33644696806"
+    : process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720"
+).replace(/\s/g, "");
+const DEFAULT_MESSAGE = "Bonjour Elite Turf, je souhaite obtenir des informations.";
 
 // Pages où le bouton est masqué pour éviter chevauchement avec d'autres CTAs sticky
 const HIDDEN_PATHS = [
