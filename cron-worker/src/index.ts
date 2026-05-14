@@ -56,8 +56,22 @@ interface Env {
  */
 const CRON_MAP: Record<string, string> = {
   // ── IA Pronostics & contenus ──────────────────────────────────────
-  "45 5 * * *":   "/api/cron/ia-pronostics",
-  "0 7 * * *":    "/api/cron/ia-auto-publish",
+  //
+  // Système Multi-Agents (cahier §13-17) — depuis 2026-05-14
+  //
+  // Bascule legacy → Multi-Agents (PR du 2026-05-14, décision PO) :
+  // les anciens endpoints /api/cron/ia-pronostics (45 5 * * *) et
+  // /api/cron/ia-auto-publish (0 7 * * *) ne sont plus planifiés. Le
+  // code reste en place dans app/api/cron/ au cas où on veuille les
+  // ré-activer (debug, fallback), mais Cloudflare ne les déclenche
+  // plus automatiquement.
+  //
+  // Nouveaux schedules :
+  //   "30 2 * * *" (3h30 Paris hiver / 4h30 été) → preuves LONACI+PMU
+  //   "0 3 * * *"  (4h Paris hiver / 5h été)     → pipeline Multi-Agents
+  // 30 min d'écart pour que les preuves soient en BDD avant le pipeline.
+  "30 2 * * *":   "/api/cron/source-evidence-collector",
+  "0 3 * * *":    "/api/cron/ia-pronostics-v2",
   "0 19 * * *":   "/api/cron/ia-rapport-soir",
   "45 9 * * *":   "/api/cron/pronostic-gratuit",
 
