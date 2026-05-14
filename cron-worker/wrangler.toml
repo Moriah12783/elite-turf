@@ -47,8 +47,23 @@ APP_URL = "https://www.elite-turf.fr"
 [triggers]
 crons = [
   # ── IA Pronostics & contenus ────────────────────────────────────────
-  "45 5 * * *",      # ia-pronostics (génération nuit)
-  "0 7 * * *",       # ia-auto-publish (publication matin)
+  #
+  # Système Multi-Agents (cahier §13-17) — depuis 2026-05-14
+  #   1. source-evidence-collector génère les preuves LONACI + PMU.fr
+  #      (table course_source_evidence) pour valider la disponibilité
+  #      Afrique de chaque course.
+  #   2. ia-pronostics-v2 sélectionne les courses validées, fait tourner
+  #      le pipeline 6 agents (Director + 5 Workers), et stocke les
+  #      drafts dans ai_pronostic_drafts pour review humaine sur
+  #      /admin/pronostics/ai-review (PAS de publication auto).
+  #
+  # NB Cloudflare cron = UTC fixe, pas de DST automatique :
+  #   - "30 2 * * *" = 3h30 Paris hiver / 4h30 Paris été
+  #   - "0 3 * * *"  = 4h    Paris hiver / 5h    Paris été
+  # Conforme cahier §15.2 en hiver (4h Paris), glissement +1h accepté
+  # en été (cron Cloudflare ne supporte pas Europe/Paris timezone).
+  "30 2 * * *",      # source-evidence-collector (preuves LONACI+PMU avant pipeline)
+  "0 3 * * *",       # ia-pronostics-v2 (pipeline Multi-Agents → drafts review humaine)
   "0 19 * * *",      # ia-rapport-soir
   "45 9 * * *",      # pronostic-gratuit (publication 9h45)
 
