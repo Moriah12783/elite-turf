@@ -126,7 +126,28 @@ export function safeSmallInt(n: number | undefined | null, min = 1, max = 99): n
 
 // ── Helpers HTML ─────────────────────────────────────────────────────────────
 
-/** Supprime les balises HTML et décode les entités de base */
+/**
+ * Entités HTML nommées rencontrées dans Geny (notamment dans les `<thead>` :
+ * "Derni&egrave;res cotes", "R&eacute;sultats", "&Eacute;quipe").
+ * Couvre les caractères accentués français + ñ/ç majuscules/minuscules.
+ * (Liste minimale ; pour décodage exhaustif HTML5 il faudrait une lib.)
+ */
+const NAMED_ENTITIES: Record<string, string> = {
+  agrave: "à", aacute: "á", acirc: "â", atilde: "ã", auml: "ä", aring: "å", aelig: "æ",
+  egrave: "è", eacute: "é", ecirc: "ê", euml: "ë",
+  igrave: "ì", iacute: "í", icirc: "î", iuml: "ï",
+  ograve: "ò", oacute: "ó", ocirc: "ô", otilde: "õ", ouml: "ö", oslash: "ø",
+  ugrave: "ù", uacute: "ú", ucirc: "û", uuml: "ü",
+  yacute: "ý", yuml: "ÿ", ccedil: "ç", ntilde: "ñ", szlig: "ß",
+  Agrave: "À", Aacute: "Á", Acirc: "Â", Atilde: "Ã", Auml: "Ä", Aring: "Å", AElig: "Æ",
+  Egrave: "È", Eacute: "É", Ecirc: "Ê", Euml: "Ë",
+  Igrave: "Ì", Iacute: "Í", Icirc: "Î", Iuml: "Ï",
+  Ograve: "Ò", Oacute: "Ó", Ocirc: "Ô", Otilde: "Õ", Ouml: "Ö", Oslash: "Ø",
+  Ugrave: "Ù", Uacute: "Ú", Ucirc: "Û", Uuml: "Ü",
+  Yacute: "Ý", Ccedil: "Ç", Ntilde: "Ñ",
+};
+
+/** Supprime les balises HTML et décode les entités de base. */
 function stripHtml(raw: string): string {
   return raw
     .replace(/<[^>]+>/g, " ")
@@ -136,6 +157,7 @@ function stripHtml(raw: string): string {
     .replace(/&nbsp;/g, " ")
     .replace(/&apos;/g, "'")
     .replace(/&quot;/g, '"')
+    .replace(/&([A-Za-z]+);/g, (full, name) => NAMED_ENTITIES[name] ?? full)
     .replace(/&#(\d+);/g,    (_, n)   => String.fromCharCode(parseInt(n, 10)))
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/\s+/g, " ")
@@ -207,115 +229,180 @@ export function looksLikeMusique(str: string): boolean {
 }
 
 /**
+ * Normalise un libellé d'en-tête HTML pour comparaison robuste :
+ *  - retire HTML, entités, accents, ponctuation, espaces
+ *  - passe en lowercase
+ * Ex : "Entraîneur" → "entraineur", "Dernières cotes" → "dernierescotes",
+ *      "Cotes références" → "cotesreferences", "N°" → "n".
+ */
+function normalizeHeader(raw: string): string {
+  return stripHtml(raw)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/** Champs structurés que le parser sait remplir depuis le tableau Geny. */
+interface GenyHeaderIndex {
+  num?:          number;
+  nom?:          number;
+  placeCorde?:   number;  // colonne "C" (Plat uniquement)
+  sa?:           number;  // sexe + age, ex "F6", "M3", "H9"
+  poids?:        number;  // colonne "Poids" (Plat uniquement)
+  jockey?:       number;  // "Jockey" (Plat) ou "Driver" (Trot) — alias
+  entraineur?:   number;
+  musique?:      number;
+  coteAncienne?: number;  // "Cotes références"
+  coteActuelle?: number;  // "Dernières cotes"
+}
+
+/**
+ * Mapping libellé Geny normalisé → champ partant.
+ * Colonnes ignorées (décision PO 2026-05-14) : Dist./Distance, Déch., Gains,
+ * Valeur. Elles ne sont pas reportées en BDD.
+ */
+const HEADER_TO_FIELD: Record<string, keyof GenyHeaderIndex> = {
+  n:               "num",
+  cheval:          "nom",
+  c:               "placeCorde",
+  sa:              "sa",
+  poids:           "poids",
+  jockey:          "jockey",
+  driver:          "jockey",
+  entraineur:      "entraineur",
+  musique:         "musique",
+  cotesreferences: "coteAncienne",
+  dernierescotes:  "coteActuelle",
+};
+
+/** Construit un mapping {champ → index colonne} depuis le <thead> Geny. */
+function parseTheadIndex(theadHtml: string): GenyHeaderIndex {
+  const idx: GenyHeaderIndex = {};
+  const re = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = re.exec(theadHtml)) !== null) {
+    const key = normalizeHeader(m[1]);
+    const field = HEADER_TO_FIELD[key];
+    // Premier mapping gagne (évite qu'un en-tête dupliqué écrase l'indice).
+    if (field && idx[field] === undefined) idx[field] = i;
+    i++;
+  }
+  return idx;
+}
+
+/**
  * Parse la page HTML des partants Geny pour extraire les chevaux.
  *
- * **Structure unifiée Geny 2026 (TROT et GALOP)** — 10 colonnes :
+ * **Mapping dynamique par <thead>** (refactor 2026-05-14) : on lit les
+ * en-têtes du tableau et on construit un index colonne par colonne. Cela
+ * couvre les deux structures Geny rencontrées :
  *
- *  [0] N°            [1] Cheval        [2] SA (sexe+age, ex "M3", "F3", "H9")
- *  [3] Distance      [4] Jockey/Driver [5] Entraîneur
- *  [6] Musique       [7] Gains         [8] Cote ancienne
- *  [9] Cote actuelle (= cote probable)
+ * - **TROT** (10 colonnes) : N° / Cheval / SA / Dist. / Driver / Entraîneur /
+ *   Musique / Gains / Cotes références / Dernières cotes
  *
- * Vérifié 2026-05-09 sur Caen (trot) + Hyères (galop) : structure identique
- * pour les deux disciplines.
+ * - **PLAT/GALOP** (12 colonnes) : N° / Cheval / C / SA / Poids / Déch. /
+ *   Jockey / Entraîneur / Musique / Valeur / Cotes références / Dernières cotes
  *
- * Note historique : avant 2026, Geny utilisait deux structures différentes
- * (12 colonnes pour galop, 12 pour trot avec ordre différent). Le parser
- * faisait une détection trot vs galop. Maintenant tout est unifié.
+ * Avant ce refactor, le parser supposait une structure "unifiée 10 cols",
+ * ce qui décalait toutes les colonnes en Plat : le poids était stocké comme
+ * jockey, le jockey comme musique, et la cote prise depuis la colonne
+ * "Valeur" Geny (≠ cote réelle). ~43% des partants étaient corrompus.
  *
- * NB : Geny imbrique une sous-table <table class="table-oei"> dans la
- * cellule "Cheval" pour afficher les icônes œillères/attache-langue. Cette
- * sous-table casse le regex <tr>...</tr> non-greedy. On la retire AVANT
- * de parser, et on isole le <tbody> du tableau "tableau_partants" pour
- * éviter de capturer les <tr> d'autres tableaux de la page (stats jockeys).
+ * NB technique : Geny imbrique une sous-table <table class="table-oei"> dans
+ * la cellule "Cheval" pour afficher les icônes œillères/attache-langue. Cette
+ * sous-table casse le regex <tr>...</tr> non-greedy. On la retire AVANT de
+ * parser, et on isole thead/tbody du tableau "tableau_partants" pour éviter
+ * de capturer les <tr> d'autres tableaux de la page (stats jockeys).
  */
 function parseGenyPartants(html: string): GenyParticipant[] {
   const participants: GenyParticipant[] = [];
 
-  // 1) Localiser le <tbody> du tableau principal des partants
-  const tbodyMatch = html.match(
-    /id="tableau_partants"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i,
+  // 1) Localiser thead + tbody du tableau principal en une seule passe.
+  const tableMatch = html.match(
+    /id="tableau_partants"[\s\S]*?(<thead[\s\S]*?<\/thead>)[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/i,
   );
-  if (!tbodyMatch) {
-    console.warn("[Geny parser] tableau_partants/tbody introuvable");
+  if (!tableMatch) {
+    console.warn("[Geny parser] tableau_partants/thead/tbody introuvable");
     return [];
   }
-  // 2) Retirer les sous-tables imbriquées (icônes œillères, attache-langue)
-  //    qui pourrissent le matching <tr> non-greedy.
-  const tbody = tbodyMatch[1].replace(/<table[^>]*>[\s\S]*?<\/table>/gi, "");
+
+  const idx = parseTheadIndex(tableMatch[1]);
+  // Garde-fou : sans num+nom on ne peut rien faire d'utile.
+  if (idx.num === undefined || idx.nom === undefined) {
+    console.warn("[Geny parser] en-têtes critiques (N°, Cheval) introuvables", idx);
+    return [];
+  }
+
+  // 2) Retirer les sous-tables imbriquées qui cassent le regex <tr>.
+  const tbody = tableMatch[2].replace(/<table[^>]*>[\s\S]*?<\/table>/gi, "");
 
   const rowRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let rowMatch: RegExpExecArray | null;
 
+  /** Lit une cellule via l'index colonne et renvoie une string trimée. "" si absent. */
+  const cellAt = (cells: string[], i: number | undefined): string =>
+    i !== undefined && i < cells.length ? (cells[i] || "").trim() : "";
+
   while ((rowMatch = rowRe.exec(tbody)) !== null) {
     const cells = extractCells(rowMatch[1]);
+    // Doit au moins contenir la colonne nom pour être exploitable.
+    if (cells.length <= idx.nom) continue;
 
-    // Structure 2026 : 10 colonnes minimum (parfois 11 si Geny ajoute une col).
-    // ⚠️ AVANT : on tolérait `< 8` ce qui causait un décalage cells[5]/cells[6]
-    // → l'entraineur recevait la MUSIQUE du cheval (bug parser massif :
-    //   356 faux entraineurs créés en BDD sur 1591, soit 22% pollution).
-    // Maintenant on accepte 8-9 colonnes mais SANS extraire entraineur/musique
-    // pour éviter la corruption.
-    if (cells.length < 8) continue;
-    const num = parseInt(cells[0], 10);
+    const num = parseInt(cellAt(cells, idx.num), 10);
     if (isNaN(num) || num < 1 || num > 30) continue;
 
-    /** Structure complète disponible (10+ colonnes) → on peut tout extraire. */
-    const fullStructure = cells.length >= 10;
-
-    // Geny intègre des icônes (œillères, attache-langue, déferré) via des
-    // caractères Unicode Private Use Area (U+E900-U+E9FF). On les retire pour
-    // garder un nom propre. Les `&#xe904;` sont déjà décodés par stripHtml.
-    const nom = (cells[1] || `Cheval ${num}`)
-      .replace(/[-]/g, "")
+    // Geny intègre des icônes (œillères, attache-langue) via des
+    // caractères Unicode Private Use Area (U+E900-U+E9FF). On les retire
+    // pour garder un nom propre.
+    const nom = cellAt(cells, idx.nom)
+      .replace(/[-]/g, "")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim() || `Cheval ${num}`;
 
     // Ignore les lignes entêtes récurrentes (ex: "Cheval")
     if (/^cheval$/i.test(nom)) continue;
 
-    // ── Mapping unifié structure 2026 ─────────────────────────────────
-    // [2] = SA → ex "M3" (mâle 3 ans), "F3" (femelle), "H9" (hongre 9 ans)
-    const sa  = cells[2] || "";
+    // SA → "F6" (femelle 6 ans), "M3" (mâle), "H9" (hongre)
+    const sa = cellAt(cells, idx.sa);
     const sexe = sa.length > 0 ? sa.charAt(0).toUpperCase() : undefined;
-    const age  = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
+    const age = sa.length > 1 ? (parseInt(sa.slice(1), 10) || undefined) : undefined;
 
-    // [3] = Distance (info course, identique pour tous → ignoré ici car
-    //       c'est une donnée de la course, pas du partant individuel)
-    // Pas de "poids" dans la structure 2026 — pour le galop, le poids du
-    //  jockey n'est plus exposé dans cette table simplifiée.
-    const poids: number | undefined = undefined;
-    const placeCorde: number | undefined = undefined;
+    // Corde "C" (Plat uniquement). Trot n'a pas cette colonne.
+    let placeCorde: number | undefined;
+    if (idx.placeCorde !== undefined) {
+      const c = parseInt(cellAt(cells, idx.placeCorde), 10);
+      if (Number.isFinite(c) && c >= 1 && c <= 30) placeCorde = c;
+    }
 
-    // [4] = Jockey (galop) ou Driver (trot)
-    const jockeyNom = (cells[4] || "").trim();
+    // Poids handicap (Plat uniquement). Trot n'a pas cette colonne.
+    let poids: number | undefined;
+    if (idx.poids !== undefined) {
+      const p = parseFloat(cellAt(cells, idx.poids).replace(",", "."));
+      // Range raisonnable poids cavalier+selle (Plat handicap : 49-62 kg
+      // typiquement, marge 30-100 pour cas atypiques).
+      if (Number.isFinite(p) && p >= 30 && p <= 100) poids = p;
+    }
 
-    // [5] = Entraîneur — UNIQUEMENT si structure complète (10+ colonnes)
-    // Sinon on prend le risque d'avoir la musique du cheval à la place.
-    let entraineurNom = fullStructure ? (cells[5] || "").trim() : "";
-
-    // [6] = Musique — UNIQUEMENT si structure complète
-    let musique: string | undefined = fullStructure
-      ? ((cells[6] || "").trim() || undefined)
-      : undefined;
+    const jockeyNom = cellAt(cells, idx.jockey);
+    let entraineurNom = cellAt(cells, idx.entraineur);
+    let musique: string | undefined = cellAt(cells, idx.musique) || undefined;
     if (musique === "-" || musique === "") musique = undefined;
 
-    // ── Garde-fou anti-pollution : si l'entraineur "ressemble à une musique"
-    //    (ex: "0a(25)DaDa", "3m5m0a6m4m", "0h3h7h1h"), c'est un bug parser
-    //    Geny qui n'a pas renvoyé la bonne colonne → on rejette l'entraineur
-    //    et on remonte cette valeur en musique si la musique est vide.
+    // Garde-fou anti-pollution historique : si l'entraineur "ressemble à
+    // une musique" (ex "3m5m0a6m4m", "0h3h7h1h"), c'est un bug Geny qui
+    // n'a pas renvoyé la bonne colonne → on rejette l'entraineur et on
+    // remonte cette valeur en musique si la musique est vide. Garde sa
+    // pertinence même avec mapping dynamique (sécurité défensive).
     if (entraineurNom && looksLikeMusique(entraineurNom)) {
-      if (!musique) {
-        musique = entraineurNom;
-      }
+      if (!musique) musique = entraineurNom;
       entraineurNom = "";
     }
 
-    // [7] = Gains (numérique, ignoré pour l'instant)
-
-    // [8] = Cote ancienne, [9] = Cote actuelle. On préfère [9] (la plus à jour).
-    const coteActu = (cells[9] || "").trim();
-    const coteAncienne = (cells[8] || "").trim();
+    // Cote : préférer "Dernières cotes" (à jour), fallback "Cotes références".
+    const coteActu = cellAt(cells, idx.coteActuelle);
+    const coteAncienne = cellAt(cells, idx.coteAncienne);
     const coteRaw =
       (coteActu && coteActu !== "-" ? coteActu : "") ||
       (coteAncienne && coteAncienne !== "-" ? coteAncienne : "");
@@ -323,8 +410,7 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       ? (parseFloat(coteRaw.replace(",", ".")) || undefined)
       : undefined;
 
-    // Détection non-partant : Geny met "Non-partant" dans la colonne jockey
-    // ou dans le nom du cheval pour les chevaux qui ne courront pas.
+    // Non-partant : Geny met "Non-partant" dans jockey ou nom du cheval.
     const nonPartant =
       /non[\s-]?partant/i.test(jockeyNom) ||
       /non[\s-]?partant/i.test(nom);

@@ -6,24 +6,27 @@ import { todayParisISO } from "@/lib/paris-date";
 import type { GenyParticipant } from "@/lib/geny";
 
 /**
- * POST /api/admin/partants/batch-prefill?date=YYYY-MM-DD
+ * POST /api/admin/partants/batch-prefill?date=YYYY-MM-DD[&force=1]
  *
  * Pré-remplit en BATCH les partants de toutes les courses d'une date
- * données qui n'ont pas encore de partants en DB et qui ont un geny_url.
+ * donnée qui n'ont pas encore de partants en DB et qui ont un geny_url.
  *
  * Utilité :
  *   - Préparation rapide du programme du jour à 6h du matin (1 clic au
  *     lieu de 30 sur /admin/courses/[id]/partants)
  *   - Récupération si le cron auto enrichir-partants tombe en panne
+ *   - Backfill (mode `force=1`) après correction d'un bug parser :
+ *     supprime les partants existants et re-scrape Geny.
  *
  * Stratégie :
  *   1. SELECT courses where date = X AND statut != ANNULE AND geny_url
  *      NOT NULL
  *   2. SELECT partants count par course
- *   3. Filtrer les courses avec 0 partants
+ *   3. Filtrer les courses (sans `force` : seulement celles avec 0 partants ;
+ *      avec `force=1` : toutes)
  *   4. Pool de 4 workers en parallèle (limite Geny rate-limit + CPU
  *      Cloudflare Worker 30s)
- *   5. Pour chaque course : fetchGenyPartants → INSERT partants
+ *   5. Pour chaque course : fetchGenyPartants → [DELETE si force] → INSERT
  *   6. Retour récap { ok, total, success, failed, errors[] }
  *
  * Auth : protégée par middleware (/api/admin/* nécessite session admin
@@ -36,6 +39,7 @@ const PER_COURSE_TIMEOUT_MS = 8000;
 interface BatchResult {
   ok:        true;
   date:      string;
+  force:     boolean;
   total:     number;
   success:   number;
   failed:    number;
@@ -61,6 +65,8 @@ interface CourseToProcess {
 
 /**
  * Map un GenyParticipant vers le format INSERT partants Supabase.
+ * Aligné sur le cron `enrichir-partants` pour inclure place_corde / age /
+ * sexe / scraped_at (FieldAnalyzer s'en sert pour data_completeness_score).
  */
 function mapToDbInsert(courseId: string, p: GenyParticipant) {
   return {
@@ -74,18 +80,29 @@ function mapToDbInsert(courseId: string, p: GenyParticipant) {
                     : null,
     musique:      p.musique?.trim() || null,
     poids_kg:     typeof p.poids === "number" && Number.isFinite(p.poids) ? p.poids : null,
+    place_corde:  typeof p.placeCorde === "number" && Number.isFinite(p.placeCorde) ? p.placeCorde : null,
+    age:          typeof p.age === "number" && Number.isFinite(p.age) ? p.age : null,
+    sexe:         p.sexe ?? null,
     deferre:      false,
     non_partant:  !!p.nonPartant,
+    scraped_at:   new Date().toISOString(),
   };
 }
 
 /**
- * Process une seule course : fetch Geny + insert partants.
+ * Process une seule course : fetch Geny + (delete +) insert partants.
+ *
+ * Si `force=true`, on supprime les partants existants avant insert (mode
+ * backfill : ré-écrase les données corrompues par un ancien bug parser).
+ * Sinon on insère directement (le filtrage des courses déjà peuplées se
+ * fait en amont via SELECT).
+ *
  * Retourne le résultat (success ou failed) sans throw.
  */
 async function processCourse(
   course: CourseToProcess,
   supabase: ReturnType<typeof createServiceClient>,
+  force: boolean,
 ): Promise<BatchResult["details"][number]> {
   const reference = `R${course.numero_reunion}C${course.numero_course}`;
 
@@ -106,6 +123,25 @@ async function processCourse(
         status:    "failed",
         error:     "Geny n'a retourné aucun partant (page vide ou parsing échoué)",
       };
+    }
+
+    // En mode force, on supprime les partants existants avant réinsertion.
+    // Indispensable pour le backfill : sinon l'insert violerait la PK
+    // (course_id, numero).
+    if (force) {
+      const { error: delErr } = await supabase
+        .from("partants")
+        .delete()
+        .eq("course_id", course.id);
+      if (delErr) {
+        return {
+          course_id: course.id,
+          reference,
+          libelle:   course.libelle,
+          status:    "failed",
+          error:     `DB delete (force): ${delErr.message}`,
+        };
+      }
     }
 
     // INSERT bulk
@@ -175,6 +211,12 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
     const date = req.nextUrl.searchParams.get("date") || todayParisISO();
+    // ?force=1 : re-scrape toutes les courses du jour (même celles déjà
+    // peuplées). Utile pour backfiller des partants corrompus par un
+    // ancien bug parser. Sans force, on saute les courses non-vides.
+    const force = ["1", "true", "yes"].includes(
+      (req.nextUrl.searchParams.get("force") || "").toLowerCase(),
+    );
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json(
@@ -203,10 +245,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Étape 2 : Filtrer les courses avec 0 partants en DB ────────────
+    // ── Étape 2 : Sélection des courses à traiter ──────────────────────
+    // Sans `force` : on saute les courses ayant déjà des partants (comportement
+    //   historique — utile pour "remplir les trous" sans toucher au reste).
+    // Avec `force=1` : on inclut tout — utilisé pour backfill après bug parser.
     const toProcess: CourseToProcess[] = (rawCourses ?? [])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((c: any) => Array.isArray(c.partants) && c.partants.length === 0)
+      .filter((c: any) => force || (Array.isArray(c.partants) && c.partants.length === 0))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((c: any) => ({
         id:             c.id,
@@ -221,18 +266,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok:       true,
         date,
+        force,
         total:    0,
         success:  0,
         failed:   0,
         duration: Date.now() - startGlobal,
         details:  [],
-        message:  "Aucune course à traiter (toutes ont déjà des partants).",
+        message:  force
+          ? "Aucune course pour cette date (date_course inconnu ou ANNULE)."
+          : "Aucune course à traiter (toutes ont déjà des partants).",
       });
     }
 
     // ── Étape 3 : Process en pool (concurrence 4) ──────────────────────
     const details = await processInPool(toProcess, CONCURRENCY, (course) =>
-      processCourse(course, supabase),
+      processCourse(course, supabase, force),
     );
 
     const success = details.filter((d) => d.status === "success").length;
@@ -250,6 +298,7 @@ export async function POST(req: NextRequest) {
     const result: BatchResult = {
       ok:       true,
       date,
+      force,
       total:    details.length,
       success,
       failed,
