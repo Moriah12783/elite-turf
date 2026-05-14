@@ -173,6 +173,7 @@ function checkAfricaValidation(
   const validStatuses: ValidationStatus[] = [
     "VALIDATION_LONACI_DIRECTE",
     "VALIDATION_AFRIQUE_CORROBOREE",
+    "VALIDATION_PMU_INTERNATIONAL",
   ];
   const passed = validStatuses.includes(draft.validation_status);
   if (!passed) {
@@ -180,11 +181,14 @@ function checkAfricaValidation(
       `validation_status="${draft.validation_status}" n'est pas une validation Afrique acceptable (cahier §13.2 R1)`);
   }
 
-  // R2 — mention obligatoire dans le texte
+  // R2 — mention obligatoire dans le texte (l'une des 3 mentions au choix
+  // selon validation_status). Le sanitizer publique retire ces mentions au
+  // publish (cf public-tone.ts) — elles ne sont obligatoires qu'au stade
+  // draft pour audit interne.
   const mentionPresent = containsAfricaValidationMention(fullText);
   if (!mentionPresent) {
     block(acc, "MANDATORY_MENTION_MISSING",
-      "Aucune des mentions obligatoires « Validation LONACI directe » ou « Validation Afrique corroborée » n'est présente dans le contenu (cahier §13.2 R2)");
+      "Aucune des mentions obligatoires « Validation LONACI directe », « Validation Afrique corroborée » ou « Validation PMU international » n'est présente dans le contenu (cahier §13.2 R2)");
   } else {
     // Si présente, vérifier qu'elle correspond bien au validation_status
     const expectedBadge = VALIDATION_BADGES[draft.validation_status as ValidationStatus];

@@ -73,16 +73,18 @@ export async function GET(req: NextRequest) {
       :                                                              "failure";
 
     await cronLog.finish(status, {
-      date:                  result.date,
-      courses_processed:     result.courses_processed,
-      evidence_inserted:     result.evidence_inserted,
-      lonaci_available:      result.lonaci_available,
-      lonaci_matches:        result.lonaci_matches,
-      lonaci_missing:        result.lonaci_missing,
-      pmu_heuristic_count:   result.pmu_heuristic_count,
-      errors_count:          result.errors.length,
-      duration_ms:           result.duration_ms,
-      dry_run:               dryRun,
+      date:                           result.date,
+      courses_processed:              result.courses_processed,
+      evidence_inserted:              result.evidence_inserted,
+      lonaci_available:               result.lonaci_available,
+      lonaci_matches:                 result.lonaci_matches,
+      lonaci_missing:                 result.lonaci_missing,
+      pmu_heuristic_count:            result.pmu_heuristic_count,
+      pmu_international_count:        result.pmu_international_count,
+      pmu_international_by_criterion: result.pmu_international_by_criterion,
+      errors_count:                   result.errors.length,
+      duration_ms:                    result.duration_ms,
+      dry_run:                        dryRun,
     });
 
     return NextResponse.json(

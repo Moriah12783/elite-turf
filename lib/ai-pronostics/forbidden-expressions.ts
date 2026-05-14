@@ -154,12 +154,24 @@ export function containsForbiddenExpression(text: string): boolean {
 
 /**
  * Vérifie qu'un texte contient la mention de validation Afrique requise.
- * Conforme cahier des charges §4 (Mentions obligatoires).
+ * Conforme cahier des charges §4 (Mentions obligatoires) amendé 2026-05-14
+ * pour le 3e palier VALIDATION_PMU_INTERNATIONAL (redistribution PMU
+ * France via opérateurs nationaux africains).
+ *
+ * Les 3 mentions reconnues :
+ *   - "Validation LONACI directe"     (palier 1, audience CI)
+ *   - "Validation Afrique corroborée" (palier 2, autres opérateurs Afrique)
+ *   - "Validation PMU international"  (palier 3, redistribution probable)
+ *
+ * 🎭 Ces mentions sont obligatoires côté draft (audit) mais cachées du
+ * contenu public par sanitizeForPublic() au moment du publish (cf
+ * public-tone.ts, décision PO 2026-05-13).
  */
 export function containsAfricaValidationMention(text: string): boolean {
   if (!text) return false;
   return /Validation\s+LONACI\s+directe/i.test(text)
-      || /Validation\s+Afrique\s+corroborée/i.test(text);
+      || /Validation\s+Afrique\s+corroborée/i.test(text)
+      || /Validation\s+PMU\s+international/i.test(text);
 }
 
 /**

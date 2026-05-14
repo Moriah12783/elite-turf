@@ -93,6 +93,37 @@ export const SOURCES_WHITELIST: SourceWhitelistEntry[] = [
     enabled:                          true,
     notes: "Programme central PMU France. Confirme la course mais NE valide PAS la disponibilité Afrique.",
   },
+  {
+    // Source VIRTUELLE (pas d'API distincte) — émise par le crawler
+    // source-evidence-collector quand une course PMU.fr remplit AU MOINS UN
+    // critère de redistribution internationale :
+    //   A. Pari premium : QUINTE_PLUS / QUARTE / TIERCE (paris_disponibles)
+    //   B. Co-localisation : autre course du même (date, hippodrome, R) est
+    //      VALIDATION_LONACI_DIRECTE
+    //   C. Réunion 1 : numero_reunion === 1 (réunion vedette du jour)
+    //
+    // 📜 Décision PO 2026-05-14 — débloque ~30 courses/jour qui n'étaient
+    //    pas dans LONACI mais sont effectivement jouables via les apps
+    //    nationales (LONASE/LONAB/PMUC/PMUG/PMU Mali/PMUB/SOREC...) qui
+    //    redistribuent les programmes premium PMU France.
+    //
+    // 🔒 Cette source ne peut être citée QUE par le collector officiel
+    //    (lib/ai-pronostics/source-crawlers/index.ts). Toute autre tentative
+    //    d'injection est traitée comme une source non whitelistée.
+    name:                             "PMU.fr-International",
+    domain:                           "pmu.fr",
+    country:                          "FR",
+    source_tier:                      "PRIMARY",
+    source_role:                      "AFRICA_AVAILABILITY",
+    is_official:                      true,
+    is_africa_operator:               false,
+    can_validate_africa_availability: true,
+    can_confirm_discipline:           false,
+    can_enrich_analysis:              false,
+    is_forbidden:                     false,
+    enabled:                          true,
+    notes: "Validation indirecte de redistribution Afrique (Quinté+/R1/co-LONACI). Source virtuelle générée par le collector. Confidence 65-80 selon critères.",
+  },
 
   // ── DISCIPLINES OFFICIELLES ──────────────────────────────────────────
   {

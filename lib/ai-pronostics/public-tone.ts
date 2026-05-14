@@ -77,6 +77,9 @@ interface ReplaceRule {
 
 const RULES: ReplaceRule[] = [
   // ── 1. Mentions de validation Afrique (cahier §13.2 R2) ──────────────
+  // Les 3 paliers (LONACI directe / Afrique corroborée / PMU international)
+  // sont tous retirés du texte public au profit d'une formulation neutre
+  // internationale. Cf décision PO 2026-05-13 + amendement 2026-05-14.
   {
     name:        "validation_lonaci_directe",
     pattern:     /\b[Vv]alidation\s+LONACI\s+directe\b/g,
@@ -85,6 +88,11 @@ const RULES: ReplaceRule[] = [
   {
     name:        "validation_afrique_corroboree",
     pattern:     /\b[Vv]alidation\s+Afrique\s+corrobor[ée]e\b/g,
+    replacement: PUBLIC_FRANCOPHONE_FRAMING,
+  },
+  {
+    name:        "validation_pmu_international",
+    pattern:     /\b[Vv]alidation\s+PMU\s+international\b/g,
     replacement: PUBLIC_FRANCOPHONE_FRAMING,
   },
 

@@ -384,9 +384,12 @@ export async function runSelectionBuilderAgent(
   input: SelectionBuilderInput,
 ): Promise<SelectionBuilderRunOutput> {
   // ── Garde-fou : validation Afrique obligatoire ─────────────────────────
+  // 3 paliers acceptés (cahier §4 amendé 2026-05-14) :
+  //   LONACI directe > Afrique corroborée > PMU international
   const validStatuses: ValidationStatus[] = [
     "VALIDATION_LONACI_DIRECTE",
     "VALIDATION_AFRIQUE_CORROBOREE",
+    "VALIDATION_PMU_INTERNATIONAL",
   ];
   if (!validStatuses.includes(input.validation_status)) {
     return {

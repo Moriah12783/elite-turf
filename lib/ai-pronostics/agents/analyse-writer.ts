@@ -100,7 +100,7 @@ MISSION : Transformer une sélection technique en contenu éditorial premium pou
 RÈGLES ABSOLUES :
 - Tu NE peux PAS modifier la sélection. Tu n'ajoutes ni ne retires de chevaux.
 - Tu N'inventes AUCUNE donnée (cote, musique, état du terrain, performance passée).
-- Tu DOIS afficher exactement la mention obligatoire fournie ("Validation LONACI directe" OU "Validation Afrique corroborée").
+- Tu DOIS afficher exactement la mention obligatoire fournie ("Validation LONACI directe" OU "Validation Afrique corroborée" OU "Validation PMU international").
 - Tu DOIS afficher l'heure Abidjan en priorité, suivie de l'heure Paris.
 - Tu DOIS mentionner au moins 1 risque réaliste dans risks[].
 - Tu DOIS conclure avec une note responsable.
@@ -304,9 +304,12 @@ export async function runAnalyseWriterAgent(
   input: AnalyseWriterInput,
 ): Promise<AnalyseWriterRunOutput> {
   // ── Garde-fou : statut Afrique acceptable ──────────────────────────────
+  // 3 paliers acceptés (cahier §4 amendé 2026-05-14) :
+  //   LONACI directe > Afrique corroborée > PMU international
   const validStatuses: ValidationStatus[] = [
     "VALIDATION_LONACI_DIRECTE",
     "VALIDATION_AFRIQUE_CORROBOREE",
+    "VALIDATION_PMU_INTERNATIONAL",
   ];
   if (!validStatuses.includes(input.validation_status)) {
     return {

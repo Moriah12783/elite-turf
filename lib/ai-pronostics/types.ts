@@ -52,19 +52,37 @@ export const SELECTION_SIZES: Record<NiveauAcces, number> = {
 
 /**
  * Statut de validation Afrique — OBLIGATOIRE pour publication.
- * Sans l'un de ces 2 statuts, aucun pronostic ne peut sortir.
+ * Sans l'un de ces 3 statuts, aucun pronostic ne peut sortir.
+ *
+ * Hiérarchie de robustesse (du plus fort au plus faible) :
+ *   1. VALIDATION_LONACI_DIRECTE     : LONACI confirme directement (preuve maximale, CI=90% audience)
+ *   2. VALIDATION_AFRIQUE_CORROBOREE : Autre opérateur africain (LONASE/LONAB/PMUC/...) confirme
+ *   3. VALIDATION_PMU_INTERNATIONAL  : Course PMU + corroboration redistribution
+ *                                      (Quinté+/Quarté+/Tiercé+, co-localisation LONACI, ou R1)
+ *
+ * Le 3e palier (ajouté 2026-05-14, décision PO) reconnaît que les opérateurs
+ * nationaux africains redistribuent SYSTÉMATIQUEMENT les programmes premium
+ * PMU France + R1 — donc même sans match LONACI direct, ces courses sont
+ * jouables côté Afrique francophone via les apps officielles nationales.
  */
 export type ValidationStatus =
   | "VALIDATION_LONACI_DIRECTE"
-  | "VALIDATION_AFRIQUE_CORROBOREE";
+  | "VALIDATION_AFRIQUE_CORROBOREE"
+  | "VALIDATION_PMU_INTERNATIONAL";
 
 /**
  * Mention publique affichée dans tout contenu publié.
  * EXACTE (pas de variantes) — pour cohérence éditoriale + audit.
+ *
+ * 🎭 IMPORTANT : depuis 2026-05-13 (décision PO sanitization éditoriale),
+ * ces badges sont conservés en BDD (audit) mais retirés du contenu PUBLIC
+ * par `sanitizeForPublic()` au moment du publish (cf public-tone.ts).
+ * Côté admin (/admin/pronostics/ai-review) ils restent visibles.
  */
 export const VALIDATION_BADGES: Record<ValidationStatus, string> = {
   VALIDATION_LONACI_DIRECTE:     "Validation LONACI directe",
   VALIDATION_AFRIQUE_CORROBOREE: "Validation Afrique corroborée",
+  VALIDATION_PMU_INTERNATIONAL:  "Validation PMU international",
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -145,6 +163,7 @@ export type PipelineStatus =
   // Validation Afrique
   | "VALIDATION_LONACI_DIRECTE"
   | "VALIDATION_AFRIQUE_CORROBOREE"
+  | "VALIDATION_PMU_INTERNATIONAL"
   | "VALIDATION_AFRIQUE_ABSENTE"
   | "VALIDATION_CONFLICT"
 
