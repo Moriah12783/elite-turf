@@ -434,8 +434,20 @@ export function buildActeurDescription(
 /**
  * Détermine si une fiche doit être indexée par Google.
  * Anti-thin-content : on indexe seulement si on a un minimum de matière.
- * Critère affiné Phase 1 : ≥3 courses ET au moins 1 course terminée.
+ *
+ * Critère affiné Phase 1 (révisé 14/05/2026 après QA noindex sur Gitano Jack
+ * & Victory Pace qui avaient 2 courses TOUTES terminées) :
+ *   - Soit ≥ 2 courses terminées (matière historique réelle même si 2 entrées)
+ *   - Soit ≥ 3 courses au total dont ≥ 1 terminée (large historique en cours)
+ *   - Soit ≥ 1 victoire (cheval gagnant = contenu pertinent même si peu vu)
+ *
+ * Idée directrice : c'est la quantité de **résultats** affichables (musique,
+ * positions, hippodromes) qui détermine la richesse, pas le nombre brut
+ * d'apparitions dans partants. 2 courses terminées = 2 positions + 2 jockeys
+ * + 2 hippodromes + 1 graphique → contenu suffisant pour Google.
  */
 export function isIndexable(stats: RichStats): boolean {
-  return stats.nb_courses >= 3 && stats.nb_courses_terminees >= 1;
+  return stats.nb_courses_terminees >= 2
+      || (stats.nb_courses >= 3 && stats.nb_courses_terminees >= 1)
+      || stats.nb_victoires >= 1;
 }
