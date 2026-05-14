@@ -176,6 +176,23 @@ function extractCells(rowHtml: string): string[] {
 }
 
 /**
+ * Détecte si une chaîne est 100% numérique (entier ou décimal) — typiquement
+ * un poids handicap (ex "57", "56,5", "59.5") qui s'est glissé dans la colonne
+ * jockey/entraineur à cause d'un layout Geny inattendu (PLAT vs TROT).
+ *
+ * Cause historique (résolue le 2026-05-14 par mapping dynamique du <thead>) :
+ *   ~34 % des partants 4-13/05/2026 avaient jockey = "57" / "58,5" etc.
+ *   à cause d'un parser qui supposait une structure fixe 10 colonnes.
+ *
+ * Cette fonction reste comme garde-fou défensif : si jamais Geny ajoute une
+ * colonne, on rejette plutôt que de polluer la BDD.
+ */
+export function looksLikeNumeric(str: string): boolean {
+  if (!str) return false;
+  return /^-?[0-9]+([,.][0-9]+)?$/.test(str.trim());
+}
+
+/**
  * Détecte si une chaîne ressemble à une "musique PMU" (historique récent
  * d'un cheval) plutôt qu'à un vrai nom d'entraineur ou de jockey.
  *
@@ -385,7 +402,7 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       if (Number.isFinite(p) && p >= 30 && p <= 100) poids = p;
     }
 
-    const jockeyNom = cellAt(cells, idx.jockey);
+    let jockeyNom = cellAt(cells, idx.jockey);
     let entraineurNom = cellAt(cells, idx.entraineur);
     let musique: string | undefined = cellAt(cells, idx.musique) || undefined;
     if (musique === "-" || musique === "") musique = undefined;
@@ -397,6 +414,24 @@ function parseGenyPartants(html: string): GenyParticipant[] {
     // pertinence même avec mapping dynamique (sécurité défensive).
     if (entraineurNom && looksLikeMusique(entraineurNom)) {
       if (!musique) musique = entraineurNom;
+      entraineurNom = "";
+    }
+
+    // Garde-fou anti-pollution v2 : si jockey ou entraineur est 100% numérique
+    // (ex "57", "56,5"), c'est le poids handicap qui s'est glissé là. On
+    // récupère le poids comme fallback si possible, puis on rejette le nom.
+    // Voir incident GSC 2026-05-14 : 1192 partants pollués sur 3493 (~34 %).
+    if (jockeyNom && looksLikeNumeric(jockeyNom)) {
+      if (poids === undefined) {
+        const p = parseFloat(jockeyNom.replace(",", "."));
+        if (Number.isFinite(p) && p >= 30 && p <= 100) poids = p;
+      }
+      jockeyNom = "";
+    }
+    if (entraineurNom && looksLikeNumeric(entraineurNom)) {
+      // L'entraineur ne devrait jamais être un nombre — on rejette purement
+      // sans tentative de récupération (pas de colonne âge / poids cohérente
+      // à cette position dans aucun layout Geny connu).
       entraineurNom = "";
     }
 
