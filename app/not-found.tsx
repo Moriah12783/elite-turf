@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Search, Home, Star } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
+
+// ── SEO : noindex sur toutes les 404 ─────────────────────────────────────
+// Google indexait certaines 404 (slugs garbage en BDD, anciennes URLs)
+// — on signale explicitement la désindexation pour accélérer le nettoyage.
+// Voir diagnostic GSC du 14/05/2026 (51 pages 404 réparties en 3 patterns).
+export const metadata: Metadata = {
+  title: "Page introuvable — Elite Turf",
+  robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
   return (
@@ -58,7 +68,7 @@ export default function NotFound() {
       </div>
 
       <p className="mt-8 text-text-muted text-xs">
-        Elite Turf · Paris, France · Pronostics PMU pour les parieurs francophones
+        Elite Turf · Analyses hippiques informatives pour les parieurs francophones
       </p>
 
     </div>
