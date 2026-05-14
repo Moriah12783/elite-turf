@@ -116,6 +116,22 @@ export default function AProposPage() {
           </div>
         </div>
 
+        {/* ── ENTITÉ LÉGALE ── */}
+        <div className="card-base p-6 border border-border/50">
+          <h2 className="font-serif font-semibold text-text-primary text-base mb-3">Entité légale</h2>
+          <p className="text-text-secondary text-sm leading-relaxed">
+            Elite Turf est une marque commerciale exploitée par{" "}
+            <strong className="text-text-primary">TSALACH VENTURES LLC</strong>, société de droit
+            américain (Wyoming LLC), 30 N Gould St, STE R, Sheridan, WY 82801, États-Unis.
+          </p>
+          <p className="text-text-muted text-xs mt-2 leading-relaxed">
+            Directeur de la publication : Landry Stéphane Y. — Contact :{" "}
+            <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
+              contact@elite-turf.fr
+            </a>
+          </p>
+        </div>
+
         {/* ── CTA ── */}
         <div className="text-center py-8 border-t border-border">
           <p className="text-text-secondary mb-6 text-lg">

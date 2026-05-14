@@ -4,7 +4,12 @@ import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
 
-const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720";
+const USE_WABA = process.env.NEXT_PUBLIC_USE_WABA_API_NUMBER === "true";
+const WHATSAPP = (
+  USE_WABA
+    ? process.env.NEXT_PUBLIC_WABA_API_NUMBER || "+33644696806"
+    : process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720"
+).replace(/\s/g, "");
 
 export default async function Footer() {
   const supabase = await createClient();
@@ -29,12 +34,12 @@ export default async function Footer() {
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-px bg-gold-primary/60" />
             <span className="text-gold-light text-xs font-medium uppercase tracking-[0.2em]">
-              Experts PMU depuis Paris
+              Analyses hippiques informatives
             </span>
             <div className="w-8 h-px bg-gold-primary/60" />
           </div>
           <p className="font-serif text-xl sm:text-2xl font-bold text-text-primary drop-shadow-lg mb-4">
-            Les courses PMU analysées depuis Paris,<br className="hidden sm:block" /> pour les parieurs francophones du monde entier
+            Des analyses hippiques claires et structurées,<br className="hidden sm:block" /> pour les passionnés de turf francophones
           </p>
           {!user && (
             <Link
@@ -68,9 +73,9 @@ export default async function Footer() {
                 <LogoEliteTurf size="md" />
               </div>
               <p className="text-text-secondary text-sm leading-relaxed mb-4">
-                L&apos;élite du pronostic hippique à portée de main.
-                Bénéficiez d&apos;analyses Quinté+ de haute précision, édictées
-                par nos experts depuis Paris pour les parieurs francophones.
+                Analyses hippiques, données de courses et contenus méthodologiques
+                pour les passionnés de turf francophones.
+                Aucun gain garanti. Aucune mise collectée.
               </p>
               <a
                 href={`https://wa.me/${WHATSAPP.replace(/\s/g, "")}`}
@@ -148,7 +153,7 @@ export default async function Footer() {
               </ul>
             </div>
 
-            {/* Contact Paris */}
+            {/* Contact */}
             <div>
               <h3 className="font-serif font-semibold text-text-primary mb-4">Contact</h3>
               <ul className="space-y-3">
@@ -163,18 +168,23 @@ export default async function Footer() {
                 </li>
                 <li>
                   <a
-                    href={`https://wa.me/${WHATSAPP.replace(/\s/g, "")}`}
+                    href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Bonjour Elite Turf, je souhaite obtenir des informations.")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-text-secondary hover:text-gold-light text-sm transition-colors"
                   >
                     <Phone className="w-4 h-4 flex-shrink-0" />
-                    {WHATSAPP}
+                    +33 6 44 68 67 20
                   </a>
                 </li>
                 <li className="flex items-start gap-2 text-text-secondary text-sm">
                   <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>Elite Turf<br />34, boulevard des Italiens<br />75009 Paris, France</span>
+                  <span>
+                    TSALACH VENTURES LLC<br />
+                    30 N Gould St, STE R<br />
+                    Sheridan, WY 82801<br />
+                    États-Unis
+                  </span>
                 </li>
               </ul>
               <div className="mt-4 p-3 bg-status-win/5 border border-status-win/20 rounded-lg">
@@ -226,11 +236,13 @@ export default async function Footer() {
             <p className="text-text-muted text-xs text-center">Retrouvez-nous bientôt sur les réseaux sociaux</p>
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-text-muted text-xs text-center sm:text-left">
-                © {new Date().getFullYear()} Elite Turf · Paris, France.
-                Pronostics PMU pour les parieurs francophones. Fournis à titre informatif.
-              </p>
-              <div className="flex items-center gap-4">
+              <div className="text-text-muted text-xs text-center sm:text-left space-y-1">
+                <p>© {new Date().getFullYear()} Elite Turf. Tous droits réservés.</p>
+                <p>Elite Turf est une marque commerciale exploitée par <strong className="text-text-secondary">TSALACH VENTURES LLC</strong>.</p>
+                <p>Analyses hippiques et contenus informatifs. Aucun gain garanti. Elite Turf ne collecte aucune mise.</p>
+                <p className="text-text-muted/70">Service réservé aux personnes majeures. Jouer comporte des risques : endettement, isolement, dépendance. Pour être aidé, contactez <strong>Joueurs Info Service au 09 74 75 13 13</strong>.</p>
+              </div>
+              <div className="flex items-center gap-4 flex-shrink-0">
                 {[
                   { label: "Mentions légales", href: "/mentions-legales" },
                   { label: "Confidentialité",  href: "/confidentialite"  },
