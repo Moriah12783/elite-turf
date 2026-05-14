@@ -285,23 +285,41 @@ function ActeursCard({
         {title}
       </p>
       <div className="space-y-1.5">
-        {items.map((a, i) => (
-          <div key={a.slug} className="flex items-center gap-2">
-            <span className="w-5 text-center text-text-muted text-[10px] font-mono">{i + 1}.</span>
-            <Link
-              href={`/${type}/${a.slug}`}
-              className="flex-1 text-text-primary text-xs font-medium hover:text-gold-light transition-colors truncate"
-            >
-              {a.nom}
-            </Link>
-            <span className="text-gold-light text-xs font-bold flex-shrink-0">
-              {fmtPct(a.taux_victoire, 0)}
-            </span>
-            <span className="text-text-muted text-[9px] flex-shrink-0 w-12 text-right">
-              {a.nb_courses} c.
-            </span>
-          </div>
-        ))}
+        {items.map((a, i) => {
+          // ── SEO : pas de lien vers les acteurs noindex (thin content) ─────
+          // Les pages /jockeys/[slug] et /entraineurs/[slug] mettent noindex
+          // pour les acteurs avec <3 courses (anti "Page en double sans URL
+          // canonique sélectionnée" de GSC). On évite donc de les linker depuis
+          // les pages de courses — Google gaspillait du crawl budget sur 144
+          // pages noindex (diagnostic SEO du 14/05/2026).
+          const isIndexable = (a.nb_courses ?? 0) >= 3 && Boolean(a.slug);
+          return (
+            <div key={a.slug || `noslug-${i}`} className="flex items-center gap-2">
+              <span className="w-5 text-center text-text-muted text-[10px] font-mono">{i + 1}.</span>
+              {isIndexable ? (
+                <Link
+                  href={`/${type}/${a.slug}`}
+                  className="flex-1 text-text-primary text-xs font-medium hover:text-gold-light transition-colors truncate"
+                >
+                  {a.nom}
+                </Link>
+              ) : (
+                <span
+                  className="flex-1 text-text-primary text-xs font-medium truncate"
+                  title="Acteur sans historique suffisant"
+                >
+                  {a.nom}
+                </span>
+              )}
+              <span className="text-gold-light text-xs font-bold flex-shrink-0">
+                {fmtPct(a.taux_victoire, 0)}
+              </span>
+              <span className="text-text-muted text-[9px] flex-shrink-0 w-12 text-right">
+                {a.nb_courses} c.
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

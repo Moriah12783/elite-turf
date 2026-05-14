@@ -48,6 +48,24 @@ async function userHasPhone(userId: string): Promise<boolean> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Catch malformed URLs (SEO fix Google Search Console) ──────────────
+  // GSC a détecté des URLs comme /https://www.elite-turf.fr/courses (2 cas)
+  // probablement issues d'un href cassé ou d'un crawl externe mal formé.
+  // On les capture ici et on redirige vers la home en 301 permanent → Google
+  // déduit que l'URL doit être supprimée de l'index.
+  //
+  // Patterns capturés :
+  //   /http:...        /https:...        /http%3A...        /https%3A...
+  //   /\\http...       /\\https...       (encodage Windows-style)
+  //   N'importe quel pathname contenant "://" (URL imbriquée).
+  if (
+    /^\/(https?:|https?%3A|\\https?:?)/i.test(pathname) ||
+    pathname.includes("://") ||
+    pathname.includes(":%2F%2F")
+  ) {
+    return NextResponse.redirect(new URL("/", request.url), 301);
+  }
+
   // ── Routes exclues du middleware (pas de vérification auth) ──
   const bypassRoutes = [
     "/auth/callback",       // échange du code Supabase PKCE
