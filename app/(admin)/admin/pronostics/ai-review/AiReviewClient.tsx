@@ -543,5 +543,8 @@ function ValidationBadge({ status }: { status: AiPronosticDraft["validation_stat
   if (status === "VALIDATION_AFRIQUE_CORROBOREE") {
     return <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">🟡 Afrique corroborée</span>;
   }
+  if (status === "VALIDATION_PMU_INTERNATIONAL") {
+    return <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30" title="Course PMU + redistribution probable (Quinté+/R1/co-LONACI)">🔵 PMU international</span>;
+  }
   return <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30">🔴 Afrique absente</span>;
 }

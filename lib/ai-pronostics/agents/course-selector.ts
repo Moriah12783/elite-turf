@@ -219,14 +219,27 @@ function computeAfricaCourseScore(
     const entry = findSourceByName(ev.source_name);
     return ev.status === "MATCHED" && entry?.can_validate_africa_availability && !entry.is_forbidden;
   });
+  const isLonaciDirect = africaValidators.some((ev) =>
+    /^lonaci(\.ci)?$/i.test(ev.source_name) && ev.source_tier === "PRIMARY",
+  );
+  const hasPmuInternationalOnly =
+    africaValidators.length > 0 &&
+    africaValidators.every((ev) => /^pmu\.fr-international$/i.test(ev.source_name));
   if (africaValidators.length === 0) {
     missing.push("AFRICA_VALIDATION");
+  } else if (isLonaciDirect) {
+    // LONACI directe = preuve maximale (CI = 90% audience).
+    africaAvailability = 100;
+  } else if (hasPmuInternationalOnly) {
+    // PMU.fr-International seul (3e palier) = redistribution probable mais
+    // pas confirmée par un opérateur africain réel.
+    // Confidence basée sur le max des critères remplis (65-80) — déjà calculée
+    // côté collector dans ev.confidence. On la transpose ici sur l'échelle 0-100.
+    africaAvailability = Math.max(...africaValidators.map((ev) => ev.confidence));
   } else {
-    // LONACI directe = 100, sinon corroboration = 70-90 selon le nombre de sources
-    const isLonaciDirect = africaValidators.some((ev) =>
-      /lonaci/i.test(ev.source_name) && ev.source_tier === "PRIMARY",
-    );
-    africaAvailability = isLonaciDirect ? 100 : Math.min(90, 60 + africaValidators.length * 10);
+    // Au moins un vrai opérateur africain (LONASE/LONAB/PMUC/PMUG/PMU Mali/
+    // PMUB/SOREC...) a corroboré → palier intermédiaire.
+    africaAvailability = Math.min(90, 60 + africaValidators.length * 10);
   }
 
   // 2. Source crosscheck : combien de sources whitelistées MATCHED ?
@@ -294,15 +307,22 @@ function computeAfricaCourseScore(
 
   const score = Math.max(0, Math.min(100, Math.round(rawScore)));
 
-  // Détermination déterministe du validation_status
+  // Détermination déterministe du validation_status (hiérarchie de
+  // robustesse : LONACI > Afrique corroborée > PMU international).
+  // Les booléens isLonaciDirect / hasPmuInternationalOnly sont déjà calculés
+  // plus haut pour éviter une 2e passe sur africaValidators.
   let validation_status: ValidationStatus | null = null;
   if (africaValidators.length > 0 && score >= 60) {
-    const isLonaciDirect = africaValidators.some((ev) =>
-      /lonaci/i.test(ev.source_name) && ev.source_tier === "PRIMARY",
-    );
-    validation_status = isLonaciDirect
-      ? "VALIDATION_LONACI_DIRECTE"
-      : "VALIDATION_AFRIQUE_CORROBOREE";
+    if (isLonaciDirect) {
+      validation_status = "VALIDATION_LONACI_DIRECTE";
+    } else if (hasPmuInternationalOnly) {
+      validation_status = "VALIDATION_PMU_INTERNATIONAL";
+    } else {
+      // Au moins un vrai opérateur africain (LONASE/LONAB/PMUC/PMUG/PMU
+      // Mali/PMUB/SOREC...) a corroboré, éventuellement avec PMU.fr-International
+      // en complément. On garde l'étiquette plus forte : AFRIQUE_CORROBOREE.
+      validation_status = "VALIDATION_AFRIQUE_CORROBOREE";
+    }
   }
 
   return { score, validation_status, missing };
