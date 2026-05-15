@@ -14,7 +14,20 @@
 import type { ClaudeModel } from "./types";
 import { CLAUDE_MODELS } from "./types";
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+/**
+ * Lit la clé API à chaque appel (pas à l'import time).
+ *
+ * Pourquoi : si un script CLI charge `.env.local` à l'exécution
+ * (cf scripts/backtest-ia-pipeline.ts), les `import` sont déjà hoistés
+ * AVANT que process.env soit peuplé. Lire la clé à chaque appel résout
+ * ce piège ESM. Aucun impact perf (lecture process.env = O(1)).
+ *
+ * Bonus en prod : permet de rotate la clé Anthropic sans redéploiement
+ * (next call relit la nouvelle valeur).
+ */
+function getAnthropicKey(): string {
+  return process.env.ANTHROPIC_API_KEY || "";
+}
 
 export interface ClaudeCallOptions {
   model:         ClaudeModel;
@@ -45,7 +58,8 @@ export interface ClaudeCallResult<T = string> {
 export async function callClaude<T = unknown>(
   opts: ClaudeCallOptions,
 ): Promise<ClaudeCallResult<T>> {
-  if (!ANTHROPIC_API_KEY) {
+  const apiKey = getAnthropicKey();
+  if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY manquante dans l'environnement");
   }
 
@@ -59,7 +73,7 @@ export async function callClaude<T = unknown>(
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:  "POST",
         headers: {
-          "x-api-key":         ANTHROPIC_API_KEY,
+          "x-api-key":         apiKey,
           "anthropic-version": "2023-06-01",
           "content-type":      "application/json",
         },
