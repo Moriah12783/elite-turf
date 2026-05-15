@@ -471,6 +471,10 @@ async function main(): Promise<void> {
 
       if (selection.length === 0) {
         skipped += 1;
+        // Log la note si dispo (surtout pour WITH_LLM : voir l'erreur LLM)
+        if (note) {
+          console.warn(`   ⚠ skip course=${course.id.slice(0, 8)} ${course.libelle.slice(0, 40)} — ${note}`);
+        }
         continue;
       }
 
