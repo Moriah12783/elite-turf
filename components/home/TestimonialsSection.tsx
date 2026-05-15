@@ -51,7 +51,7 @@ const testimonials = [
     avatarBg: "bg-gradient-to-br from-blue-600 to-blue-400",
   },
   {
-    nom: "Fatou K.",
+    nom: "F. Konaté",
     ville: "Abidjan",
     pays: "🇨🇮",
     plan: "Pack Starter",
