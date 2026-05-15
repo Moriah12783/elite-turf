@@ -56,6 +56,7 @@ import {
   VALIDATION_BADGES,
   MIN_AFRICA_SCORE_BY_LEVEL,
   MIN_QUALITY_SCORE_FOR_ADMIN,
+  AFRICA_SCORE_REVIEW_THRESHOLD,
 } from "../types";
 import {
   detectForbiddenExpressions,
@@ -438,21 +439,28 @@ function checkRiskSection(
   return true;
 }
 
-/** Seuils Afrique (cahier §13.3 fin). */
+/**
+ * Seuils Afrique (cahier §13.3 fin, recalibrés 2026-05-15).
+ *
+ * Hiérarchie :
+ *   - score < AFRICA_SCORE_REVIEW_THRESHOLD       → BLOCK (REJECTED)
+ *   - score < MIN_AFRICA_SCORE_BY_LEVEL[level]    → warn HIGH si ELITE,
+ *                                                    MEDIUM sinon (→ review)
+ *   - score ≥ MIN_AFRICA_SCORE_BY_LEVEL[level]    → pas de signal négatif
+ *
+ * Avant le recalibrage, ce check avait un seuil 68 hardcodé qui causait
+ * un warn HIGH dégénéré sur quasi tous les drafts (BDD jeune plafonne
+ * vers 74). On utilise désormais les constantes centralisées.
+ */
 function checkAfricaScoreThresholds(
   africa_course_score: number,
   access_level: NiveauAcces,
   acc: ChecksAccumulator,
 ): void {
-  if (africa_course_score < 60) {
+  if (africa_course_score < AFRICA_SCORE_REVIEW_THRESHOLD) {
     block(acc, "AFRICA_SCORE_TOO_LOW",
-      `africa_course_score=${africa_course_score} < 60 (cahier §13.3)`);
+      `africa_course_score=${africa_course_score} < ${AFRICA_SCORE_REVIEW_THRESHOLD} (cahier §13.3, plancher absolu)`);
     return;
-  }
-  if (africa_course_score < 68) {
-    warn(acc, "AFRICA_SCORE_LOW",
-      `africa_course_score=${africa_course_score} < 68 — review humaine recommandée (cahier §13.3)`,
-      "HIGH");
   }
   const requiredForLevel = MIN_AFRICA_SCORE_BY_LEVEL[access_level];
   if (africa_course_score < requiredForLevel) {
