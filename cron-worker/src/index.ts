@@ -66,19 +66,27 @@ const CRON_MAP: Record<string, string> = {
   // ré-activer (debug, fallback), mais Cloudflare ne les déclenche
   // plus automatiquement.
   //
-  // Nouveaux schedules :
-  //   "30 2 * * *" (3h30 Paris hiver / 4h30 été) → preuves LONACI+PMU
-  //   "0 3 * * *"  (4h Paris hiver / 5h été)     → pipeline Multi-Agents
-  // 30 min d'écart pour que les preuves soient en BDD avant le pipeline.
-  "30 2 * * *":   "/api/cron/source-evidence-collector",
-  "0 3 * * *":    "/api/cron/ia-pronostics-v2",
+  // Décalage horaire 2026-05-15 (post-incident "1 seul draft/jour") :
+  // Anciens schedules "30 2 * * *" + "0 3 * * *" (~05:00 Paris été)
+  // tournaient AVANT le scrape Geny+PMU (premier passage 09:27 UTC).
+  // → partants_bdd=0 pour 80% des courses → SelectionBuilder vide →
+  // director.ts faisait `continue` → 0-2 drafts/jour au lieu de 5-6.
+  //
+  // Nouveau séquencement :
+  //   "30 5 * * *" → enrichir-partants matinal (07:30 Paris été)
+  //   "15 6 * * *" → source-evidence-collector (08:15 Paris été)
+  //   "45 6 * * *" → ia-pronostics-v2 (08:45 Paris été)
+  // Pour le marché Afrique francophone (Abidjan UTC+0) : 06:45 UTC =
+  // 06:45 Abidjan = matinal idéal pour les abonnés CI/SN/BF/etc.
+  "15 6 * * *":   "/api/cron/source-evidence-collector",
+  "45 6 * * *":   "/api/cron/ia-pronostics-v2",
   "0 19 * * *":   "/api/cron/ia-rapport-soir",
   "45 9 * * *":   "/api/cron/pronostic-gratuit",
 
   // ── Sync programme + partants ─────────────────────────────────────
   "41 7 * * *":   "/api/cron/lonaci-sync",
   "37 11 * * *":  "/api/cron/lonaci-sync",
-  "27 9 * * *":   "/api/cron/enrichir-partants",
+  "30 5 * * *":   "/api/cron/enrichir-partants",   // matinal — AVANT pipeline IA
   "47 11 * * *":  "/api/cron/enrichir-partants",
   "13 13 * * *":  "/api/cron/enrichir-partants",
   "13 15 * * *":  "/api/cron/enrichir-partants",
