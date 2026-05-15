@@ -187,16 +187,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Acteurs : chevaux/jockeys/entraineurs (top 1000 chacun par activité récente)
     // Volume cumulé ≈ 3000 URLs SEO. Cap pour ne pas exploser sitemap.xml.
     //
-    // ⚠️ FILTRAGE : on n'inclut QUE les entités avec >=3 courses en BDD.
-    // Raison : Google marque les pages d'entités "thin content" comme doublons
-    // dans GSC ("Page en double sans URL canonique sélectionnée par l'utilisateur")
-    // → c'est mieux de ne pas les soumettre du tout et de garder le crawl budget
-    // pour les pages money.
+    // ⚠️ FILTRAGE : on aligne sur isIndexable() de lib/seo/acteurs.ts pour
+    // ne pas créer de mismatch sitemap (URL listée) ↔ page (robots: noindex).
+    // Critères OR (un seul suffit, anti thin-content) :
+    //   - nb_courses >= 2 (au moins 2 apparitions en BDD = historique reel)
+    //   - nb_victoires >= 1 (cheval/jockey/entr gagnant = contenu pertinent)
+    //   - nb_places >= 1 (au moins 1 top 3, idem)
+    //
+    // Historique (2026-05-15) : avant cette PR le filtre etait `nb_courses>=3`,
+    // ce qui filtrait 99,8% des chevaux car la table partants ne contient que
+    // ~40 jours d'historique. Avec ce critere souple on passe de ~500 a ~1600
+    // URLs acteurs dans le sitemap.
     for (const t of ["chevaux", "jockeys", "entraineurs"] as const) {
       const { data } = await supabase
         .from(t)
-        .select("slug, derniere_course_at, nb_courses")
-        .gte("nb_courses", 3)
+        .select("slug, derniere_course_at, nb_courses, nb_victoires, nb_places")
+        .or("nb_courses.gte.2,nb_victoires.gte.1,nb_places.gte.1")
         .order("derniere_course_at", { ascending: false, nullsFirst: false })
         .limit(1000);
       if (data) {
@@ -205,8 +211,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             url: `${APP_URL}/${t}/${e.slug}`,
             lastModified: e.derniere_course_at ? new Date(e.derniere_course_at) : now,
             changeFrequency: "weekly" as const,
-            // Plus de courses = plus prioritaire (0.55-0.70)
-            priority: Math.min(0.7, 0.55 + (e.nb_courses ?? 0) / 100),
+            // Plus de courses + victoires = plus prioritaire (0.55-0.75)
+            priority: Math.min(
+              0.75,
+              0.55 + (e.nb_courses ?? 0) / 100 + (e.nb_victoires ?? 0) / 50,
+            ),
           });
         }
       }
