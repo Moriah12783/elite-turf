@@ -79,7 +79,18 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/3 via-transparent to-purple-500/3 pointer-events-none rounded-xl" />
       )}
 
-      <div className="relative z-10 p-5 sm:p-6">
+      {/* Stretched link overlay — toute la carte est cliquable.
+          Les éléments interactifs internes (PaywallBanner) restent fonctionnels
+          via pointer-events-auto au-dessus de cet overlay (z-10). */}
+      <Link
+        href={`/pronostics/${p.id}`}
+        aria-label={`Voir le pronostic : ${p.course?.libelle || "course à venir"}`}
+        className="absolute inset-0 z-0 rounded-xl"
+      >
+        <span className="sr-only">Voir le détail du pronostic</span>
+      </Link>
+
+      <div className="relative z-10 p-5 sm:p-6 pointer-events-none">
 
         {/* ── Top: Badges ── */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -200,7 +211,7 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
 
         {/* ── Paywall banner (if no access) ── */}
         {!hasAccess && (
-          <div className="mb-5">
+          <div className="mb-5 pointer-events-auto">
             <PaywallBanner niveau={p.niveau_acces as "STARTER" | "PRO" | "ELITE"} compact />
           </div>
         )}
@@ -219,13 +230,15 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
               </div>
             )}
           </div>
-          <Link
-            href={`/pronostics/${p.id}`}
-            className="flex items-center gap-1 text-gold-primary hover:text-gold-light text-xs font-semibold transition-colors"
+          {/* CTA décoratif — le Link overlay au niveau de l'article gère la nav.
+              aria-hidden évite un double link sémantique pour le tab/screen reader. */}
+          <span
+            aria-hidden="true"
+            className="flex items-center gap-1 text-gold-primary group-hover:text-gold-light text-xs font-semibold transition-colors"
           >
             Voir le détail
             <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
+          </span>
         </div>
       </div>
     </article>
