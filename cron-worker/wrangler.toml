@@ -49,28 +49,43 @@ crons = [
   # ── IA Pronostics & contenus ────────────────────────────────────────
   #
   # Système Multi-Agents (cahier §13-17) — depuis 2026-05-14
-  #   1. source-evidence-collector génère les preuves LONACI + PMU.fr
+  #   1. enrichir-partants (premier passage) peuple les partants détaillés
+  #      en BDD (musique, jockey, cote) à partir de Geny+PMU.fr.
+  #   2. source-evidence-collector génère les preuves LONACI + PMU.fr
   #      (table course_source_evidence) pour valider la disponibilité
   #      Afrique de chaque course.
-  #   2. ia-pronostics-v2 sélectionne les courses validées, fait tourner
+  #   3. ia-pronostics-v2 sélectionne les courses validées, fait tourner
   #      le pipeline 6 agents (Director + 5 Workers), et stocke les
   #      drafts dans ai_pronostic_drafts pour review humaine sur
   #      /admin/pronostics/ai-review (PAS de publication auto).
   #
+  # Historique du décalage (2026-05-15, post-incident "1 seul draft/jour") :
+  # Avant on tournait à "30 2 * * *" (collector) + "0 3 * * *" (pipeline),
+  # soit ~05:00 Paris. PROBLÈME : les partants n'étaient scrapés qu'à partir
+  # de 09:27 UTC (enrichir-partants premier passage) → le pipeline tournait
+  # AVANT que les partants existent en BDD → FieldAnalyzer voyait des fields
+  # vides → SelectionBuilder retournait selected_runners=[] → director.ts
+  # faisait `continue` silencieusement → 0-2 drafts/jour au lieu de 5-6.
+  #
+  # Nouveau planning : enrichir-partants matinal à 05:30 UTC pour que les
+  # partants soient en BDD AVANT le pipeline.
+  #
   # NB Cloudflare cron = UTC fixe, pas de DST automatique :
-  #   - "30 2 * * *" = 3h30 Paris hiver / 4h30 Paris été
-  #   - "0 3 * * *"  = 4h    Paris hiver / 5h    Paris été
-  # Conforme cahier §15.2 en hiver (4h Paris), glissement +1h accepté
-  # en été (cron Cloudflare ne supporte pas Europe/Paris timezone).
-  "30 2 * * *",      # source-evidence-collector (preuves LONACI+PMU avant pipeline)
-  "0 3 * * *",       # ia-pronostics-v2 (pipeline Multi-Agents → drafts review humaine)
+  #   - "30 5 * * *" = 6h30 Paris hiver / 7h30 Paris été
+  #   - "15 6 * * *" = 7h15 Paris hiver / 8h15 Paris été
+  #   - "45 6 * * *" = 7h45 Paris hiver / 8h45 Paris été
+  # Glissement +1h en été accepté (cron Cloudflare ne supporte pas
+  # Europe/Paris timezone). Pour le marché Afrique francophone (UTC+0),
+  # 06:45 UTC = 06:45 Abidjan = matinal idéal pour les abonnés CI.
+  "15 6 * * *",      # source-evidence-collector (preuves LONACI+PMU avant pipeline)
+  "45 6 * * *",      # ia-pronostics-v2 (pipeline Multi-Agents → drafts review humaine)
   "0 19 * * *",      # ia-rapport-soir
   "45 9 * * *",      # pronostic-gratuit (publication 9h45)
 
   # ── Sync programme + partants ───────────────────────────────────────
   "41 7 * * *",      # lonaci-sync (matin)
   "37 11 * * *",     # lonaci-sync (rappel midi)
-  "27 9 * * *",      # enrichir-partants (9h27)
+  "30 5 * * *",      # enrichir-partants (5h30 UTC - AVANT pipeline Multi-Agents)
   "47 11 * * *",     # enrichir-partants (11h47)
   "13 13 * * *",     # enrichir-partants (13h13)
   "13 15 * * *",     # enrichir-partants (15h13)
