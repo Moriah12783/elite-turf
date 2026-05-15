@@ -66,6 +66,7 @@ loadEnvLocal();
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { runFieldAnalyzerAgent } from "@/lib/ai-pronostics/agents/field-analyzer";
+import { runSelectionBuilderAgent } from "@/lib/ai-pronostics/agents/selection-builder";
 import { SELECTION_SIZES } from "@/lib/ai-pronostics/types";
 import type { NiveauAcces, RunnerAnalysis } from "@/lib/ai-pronostics/types";
 
@@ -73,7 +74,7 @@ import type { NiveauAcces, RunnerAnalysis } from "@/lib/ai-pronostics/types";
 // Args CLI
 // ─────────────────────────────────────────────────────────────────────────
 
-type RunMode = "DETERMINISTIC" | "NAIVE_FAVORIS" | "NAIVE_RANDOM";
+type RunMode = "DETERMINISTIC" | "WITH_LLM" | "NAIVE_FAVORIS" | "NAIVE_RANDOM";
 
 interface CliArgs {
   mode:   RunMode;
@@ -93,8 +94,11 @@ function parseArgs(): CliArgs {
   };
 
   const mode = get("mode") as RunMode;
-  if (!["DETERMINISTIC", "NAIVE_FAVORIS", "NAIVE_RANDOM"].includes(mode)) {
+  if (!["DETERMINISTIC", "WITH_LLM", "NAIVE_FAVORIS", "NAIVE_RANDOM"].includes(mode)) {
     throw new Error(`Invalid --mode (got ${mode})`);
+  }
+  if (mode === "WITH_LLM" && !process.env.ANTHROPIC_API_KEY) {
+    throw new Error("ANTHROPIC_API_KEY manquante en .env.local pour le mode WITH_LLM");
   }
   const level = get("level", "ELITE").toUpperCase() as NiveauAcces;
   if (!["FREE", "STARTER", "PRO", "ELITE"].includes(level)) {
@@ -190,6 +194,65 @@ async function selectDeterministic(
   };
 }
 
+/**
+ * Sélection IA COMPLÈTE avec LLM Sonnet (SelectionBuilder réel).
+ *
+ * Différence avec DETERMINISTIC :
+ *   - DETERMINISTIC : applique uniquement le scoring §11.4, top-N.
+ *   - WITH_LLM      : SelectionBuilder appelle Sonnet 4.5 pour validation
+ *                     éditoriale + auto-critique. Peut substituer jusqu'à
+ *                     2 chevaux par rapport à la sélection déterministe.
+ *
+ * Coût : ~$0.02 par appel Sonnet. Sur 30 courses = ~$0.60. Restez modeste
+ * sur --limit pour ce mode (30-60).
+ *
+ * Hypothèse à tester : le LLM apporte-t-il un edge mesurable (≥ +3 pts en
+ * 4+/5) vs le scoring déterministe pur ? Si oui → garder en prod. Sinon →
+ * désactiver pour économiser $3/mois et simplifier le pipeline.
+ */
+async function selectWithLlm(
+  courseId:    string,
+  level:       NiveauAcces,
+  courseLib:   string,
+  hippodrome:  string,
+): Promise<{ numeros: number[]; confidence: number; fieldCompleteness: number; fieldQuality: number; note?: string }> {
+  const field = await runFieldAnalyzerAgent({
+    course_id:         courseId,
+    validation_status: "VALIDATION_LONACI_DIRECTE",
+  });
+
+  if (field.runners_analysis.length === 0) {
+    return { numeros: [], confidence: 0, fieldCompleteness: field.data_completeness_score, fieldQuality: field.field_quality_score, note: "field_vide" };
+  }
+
+  try {
+    const out = await runSelectionBuilderAgent({
+      field,
+      access_level:      level,
+      validation_status: "VALIDATION_LONACI_DIRECTE",
+      course_libelle:    courseLib,
+      course_hippodrome: hippodrome,
+    });
+    const numeros = out.result.selected_runners.map((r) => r.number);
+    return {
+      numeros,
+      confidence:        out.result.selection_confidence_score,
+      fieldCompleteness: field.data_completeness_score,
+      fieldQuality:      field.field_quality_score,
+      note:              out.result.status === "SELECTION_READY" ? undefined : `llm_status=${out.result.status}`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      numeros:           [],
+      confidence:        0,
+      fieldCompleteness: field.data_completeness_score,
+      fieldQuality:      field.field_quality_score,
+      note:              `llm_error: ${msg.slice(0, 100)}`,
+    };
+  }
+}
+
 /** Sélection naïve = top-N favoris par cote croissante. */
 async function selectNaiveFavoris(courseId: string, level: NiveauAcces): Promise<{ numeros: number[] }> {
   const supabase = createServiceClient();
@@ -265,17 +328,20 @@ interface BacktestCourse {
   categorie:    string;
   date_course:  string;
   arrivee:      number[];
+  hippodrome:   string;
 }
 
 async function loadEligibleCourses(limit: number): Promise<BacktestCourse[]> {
   const supabase = createServiceClient();
   // On veut : arrivee disponible, ≥ 5 chevaux dans l'arrivée, partants en BDD
+  // L'hippodrome est joint pour le mode WITH_LLM (SelectionBuilder l'exige).
   const { data, error } = await supabase
     .from("arrivees")
     .select(`
       ordre_arrivee,
       course:courses!inner(
-        id, libelle, categorie, date_course, nb_partants
+        id, libelle, categorie, date_course, nb_partants,
+        hippodrome:hippodromes(nom)
       )
     `)
     .order("horodatage", { ascending: false })
@@ -297,6 +363,7 @@ async function loadEligibleCourses(limit: number): Promise<BacktestCourse[]> {
       categorie:   row.course.categorie,
       date_course: row.course.date_course,
       arrivee:     arr,
+      hippodrome:  row.course.hippodrome?.nom ?? "Inconnu",
     });
     if (eligible.length >= limit) break;
   }
@@ -379,6 +446,15 @@ async function main(): Promise<void> {
           note       = out.note;
           break;
         }
+        case "WITH_LLM": {
+          const out = await selectWithLlm(course.id, args.level, course.libelle, course.hippodrome);
+          selection  = out.numeros;
+          confidence = out.confidence;
+          fieldComp  = out.fieldCompleteness;
+          fieldQual  = out.fieldQuality;
+          note       = out.note;
+          break;
+        }
         case "NAIVE_FAVORIS": {
           const out = await selectNaiveFavoris(course.id, args.level);
           selection = out.numeros;
@@ -395,6 +471,10 @@ async function main(): Promise<void> {
 
       if (selection.length === 0) {
         skipped += 1;
+        // Log la note si dispo (surtout pour WITH_LLM : voir l'erreur LLM)
+        if (note) {
+          console.warn(`   ⚠ skip course=${course.id.slice(0, 8)} ${course.libelle.slice(0, 40)} — ${note}`);
+        }
         continue;
       }
 
@@ -411,14 +491,14 @@ async function main(): Promise<void> {
           course_id:                course.id,
           access_level:             args.level,
           selected_numeros:         selection,
-          selection_confidence:     args.mode === "DETERMINISTIC" ? confidence : null,
+          selection_confidence:     (args.mode === "DETERMINISTIC" || args.mode === "WITH_LLM") ? confidence : null,
           arrivee_top5,
           hits_top5,
           hits_top3,
           is_5sur5:                 hits_top5 === 5,
           is_4plus_sur5:            hits_top5 >= 4,
-          field_data_completeness:  args.mode === "DETERMINISTIC" ? fieldComp : null,
-          field_quality_score:      args.mode === "DETERMINISTIC" ? fieldQual : null,
+          field_data_completeness:  (args.mode === "DETERMINISTIC" || args.mode === "WITH_LLM") ? fieldComp : null,
+          field_quality_score:      (args.mode === "DETERMINISTIC" || args.mode === "WITH_LLM") ? fieldQual : null,
           notes:                    note,
         });
       }

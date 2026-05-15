@@ -32,7 +32,9 @@
  * 📜 Conforme cahier §11.
  */
 
-import { callClaude, CLAUDE_MODELS } from "../claude-client";
+// Imports LLM retirés le 2026-05-15 (décision PO post-backtest étape C).
+// Le SelectionBuilder est désormais 100% déterministe — voir
+// buildDeterministicDecision() plus bas.
 import type {
   FieldAnalyzerResult,
   NiveauAcces,
@@ -207,27 +209,13 @@ function deriveReasonCodes(r: RankedRunner): ReasonCode[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// LLM — validation + auto-critique
+// Schéma interne — partagé par buildDeterministicDecision + applyLlmDecision
 // ─────────────────────────────────────────────────────────────────────────
-
-const SYSTEM_PROMPT = `Tu es SelectionBuilder, agent de validation finale des sélections Elite-Turf.
-
-Mission :
-On te soumet une sélection algorithmique (déjà calculée par scoring déterministe). Ta tâche :
-1. VALIDER ou proposer un AJUSTEMENT MARGINAL (max 2 substitutions parmi les chevaux ÉLIGIBLES fournis).
-2. Produire une auto-critique éditoriale.
-3. Décider d'un selection_confidence_score [0..100].
-
-Règles strictes :
-- Tu DOIS respecter EXACTEMENT le nombre de chevaux du niveau (FREE=6, STARTER=8, PRO=8, ELITE=6).
-- Tu ne peux UTILISER QUE des chevaux présents dans la liste "eligible_runners" fournie.
-- Tu ne peux JAMAIS inclure un cheval marqué A_EVITER ou INSUFFICIENT_DATA.
-- Tu ne dois JAMAIS surclasser un cheval uniquement pour sa cote.
-- Une BASE doit avoir confidence_score ≥ 70 ET profile = BASE_POTENTIELLE.
-- Un OUTSIDER doit avoir au moins 2 signaux positifs (≥ 2 reason_codes).
-- Si tu juges la sélection trop fragile, status = "NEEDS_HUMAN_REVIEW" et needs_admin_attention = true.
-
-Format de sortie : JSON STRICT, aucun texte hors JSON. Schéma à respecter exactement.`;
+//
+// NB : ce type s'appelait LlmSelectionDecision avant le retrait LLM
+// (2026-05-15). On le garde sous ce nom pour ne pas casser la signature
+// d'`applyLlmDecision`, mais il est désormais produit par
+// `buildDeterministicDecision` à partir de signaux pur scoring.
 
 interface LlmSelectionDecision {
   status:                     SelectionStatus;
@@ -245,52 +233,62 @@ interface LlmSelectionDecision {
   };
 }
 
-function buildUserPrompt(
-  level:        NiveauAcces,
-  eligible:     RankedRunner[],
+/**
+ * Construit le `LlmSelectionDecision` déterministiquement (sans appel LLM).
+ *
+ * Décision PO 2026-05-15 : retrait du LLM Sonnet dans SelectionBuilder
+ * suite au backtest étape C qui a montré delta hits = 0.00 sur 55 paires.
+ *
+ * Cette fonction produit le même shape que retournait le LLM, mais à partir
+ * de signaux déterministes :
+ *   - `selection_confidence_score` = moyenne des global_selection_score top-N
+ *   - `main_risk` = texte synthétisé depuis les faiblesses du field
+ *   - `needs_admin_attention` = confidence en dessous du seuil ou top-1 fragile
+ */
+function buildDeterministicDecision(
   initial:      RankedRunner[],
   expectedSize: number,
-  course_libelle: string,
-  course_hippodrome: string,
-): string {
-  const compactRunner = (r: RankedRunner) => ({
-    runner_id:        r.runner_id,
-    number:           r.number,
-    name:             r.name,
-    profile:          r.profile,
-    global_score:     r.global_score,
-    confidence_score: r.confidence_score,
-    risk_score:       r.risk_score,
-    value_score:      r.value_score,
-    form_score:       r.form_score,
-    regularity_score: r.regularity_score,
-    global_selection_score: r.global_selection_score,
-    strengths:        r.strengths,
-    weaknesses:       r.weaknesses,
-  });
+): LlmSelectionDecision {
+  const top = initial.slice(0, expectedSize);
+  const confidence = top.length === 0
+    ? 0
+    : Math.round(top.reduce((s, r) => s + r.global_selection_score, 0) / top.length);
 
-  return `Course : ${course_libelle} (${course_hippodrome})
-Niveau d'accès : ${level}
-Taille attendue : ${expectedSize} chevaux
-
-Sélection algorithmique initiale (à valider ou ajuster marginalement) :
-${JSON.stringify(initial.map(compactRunner), null, 2)}
-
-Chevaux éligibles (parmi lesquels tu peux substituer max 2) :
-${JSON.stringify(eligible.map(compactRunner), null, 2)}
-
-Réponds avec un JSON exactement conforme à ce schéma :
-{
-  "status": "SELECTION_READY" | "NEEDS_HUMAN_REVIEW" | "REJECTED",
-  "selected_runner_ids": ["<exactement ${expectedSize} runner_id>"],
-  "substitutions": [ { "out_runner_id": "...", "in_runner_id": "...", "reason": "..." } ],
-  "selection_confidence_score": 0,
-  "self_critique": {
-    "main_risk": "...",
-    "why_this_selection_fits_access_level": "...",
-    "needs_admin_attention": false
+  // main_risk : texte synthétisé depuis les faiblesses détectées dans le top
+  const topRisks: string[] = [];
+  const fragileCount = top.filter((r) => r.confidence_score < 50).length;
+  const lowFormCount = top.filter((r) => r.form_score < 40).length;
+  const highRiskCount = top.filter((r) => r.risk_score >= 60).length;
+  if (fragileCount >= Math.ceil(expectedSize / 2)) {
+    topRisks.push(`${fragileCount}/${expectedSize} chevaux à confidence < 50`);
   }
-}`;
+  if (lowFormCount >= Math.ceil(expectedSize / 2)) {
+    topRisks.push(`${lowFormCount}/${expectedSize} chevaux en forme insuffisante`);
+  }
+  if (highRiskCount > 0) {
+    topRisks.push(`${highRiskCount} chevaux à risk_score ≥ 60`);
+  }
+  const main_risk = topRisks.length > 0
+    ? topRisks.join("; ")
+    : "Sélection alignée sur les meilleurs scores du field, pas de risque majeur détecté";
+
+  const status: SelectionStatus =
+    confidence < MIN_SELECTION_CONFIDENCE_SCORE ? "NEEDS_HUMAN_REVIEW" : "SELECTION_READY";
+
+  return {
+    status,
+    selected_runner_ids: top.map((r) => r.runner_id),
+    substitutions: [],
+    selection_confidence_score: confidence,
+    self_critique: {
+      main_risk,
+      why_this_selection_fits_access_level:
+        `Top ${expectedSize} chevaux éligibles par score §11.4 (confidence ${confidence}/100)`,
+      needs_admin_attention:
+        confidence < MIN_SELECTION_CONFIDENCE_SCORE
+        || (top[0]?.confidence_score ?? 0) < 50,
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -450,34 +448,23 @@ export async function runSelectionBuilderAgent(
   // ── 3. Sélection déterministe initiale ─────────────────────────────────
   const initial = buildDeterministicSelection(ranked, input.access_level);
 
-  // ── 4. Appel LLM pour validation + auto-critique ──────────────────────
-  const userPrompt = buildUserPrompt(
-    input.access_level,
-    eligible,
-    initial,
-    expectedSize,
-    input.course_libelle,
-    input.course_hippodrome,
-  );
-
-  const llm = await callClaude<LlmSelectionDecision>({
-    model:        CLAUDE_MODELS.SONNET,
-    systemPrompt: SYSTEM_PROMPT,
-    userPrompt,
-    maxTokens:    1500,
-    expectJson:   true,
-  });
-
-  if (!llm.parsed) {
-    throw new Error("SelectionBuilder LLM n'a pas retourné de JSON parseable");
-  }
-
-  // ── 5. Mappage final ───────────────────────────────────────────────────
-  const result = applyLlmDecision(input, eligible, initial, llm.parsed);
+  // ── 4. Décision 100% déterministe (LLM retiré le 2026-05-15) ──────────
+  //
+  // Backtest Mouvement 2 étape C : sur 55 paires backtestées (25 PRO +
+  // 30 ELITE), le LLM Sonnet validait la sélection déterministe dans
+  // 87-96% des cas, avec un delta hits moyen de 0.00. Les rares
+  // substitutions s'annulaient (1 gagne, 1 perd, 28 égalités sur ELITE).
+  //
+  // Conclusion data-driven : le LLM n'apportait AUCUNE valeur prédictive
+  // mesurable. Décision PO 2026-05-15 : retrait pour économiser ~$3-4/mois
+  // de tokens Sonnet et 3-5s de latence par draft. Self-critique généré
+  // déterministiquement depuis les scores du field.
+  const decision = buildDeterministicDecision(initial, expectedSize);
+  const result = applyLlmDecision(input, eligible, initial, decision);
 
   return {
     result,
-    tokens_input:  llm.tokens_input,
-    tokens_output: llm.tokens_output,
+    tokens_input:  0,
+    tokens_output: 0,
   };
 }
