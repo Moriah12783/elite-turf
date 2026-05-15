@@ -35,6 +35,35 @@
  *     SUPABASE_SERVICE_ROLE_KEY
  */
 
+// ── Charger .env.local manuellement ───────────────────────────────────────
+// tsx ne fait pas le chargement automatique que Next.js fait, donc on lit
+// .env.local à la main (même pattern que scripts/send-test-email.ts).
+// Doit être fait AVANT les imports qui touchent à process.env (Supabase).
+import { readFileSync } from "fs";
+import { join } from "path";
+
+function loadEnvLocal(): void {
+  try {
+    const content = readFileSync(join(process.cwd(), ".env.local"), "utf8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      let value = trimmed.slice(eqIdx + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (!process.env[key]) process.env[key] = value;
+    }
+  } catch (err) {
+    console.error("⚠ Impossible de charger .env.local :", err);
+    process.exit(1);
+  }
+}
+loadEnvLocal();
+
 import { createServiceClient } from "@/lib/supabase/server";
 import { runFieldAnalyzerAgent } from "@/lib/ai-pronostics/agents/field-analyzer";
 import { SELECTION_SIZES } from "@/lib/ai-pronostics/types";
