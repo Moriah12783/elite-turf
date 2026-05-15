@@ -313,8 +313,25 @@ export default async function ProgrammePage({ params }: PageProps) {
           </div>
         )}
 
-        {/* ── Lien arrivees & quinte ───────────────────────────────── */}
-        <div className="mt-10 grid sm:grid-cols-2 gap-3">
+        {/* ── Liens annexes ────────────────────────────────────────── */}
+        {/*
+          Card "Voir tous nos pronostics" en 1ere position : Clarity 14j montre
+          que /programme/[date] a un bounce rate de 97,6% (la plus elevee du
+          site). On expose ici le hub /pronostics pour convertir le trafic SEO
+          calendaire en engagement avec le contenu Elite Turf.
+        */}
+        <div className="mt-10 grid sm:grid-cols-3 gap-3">
+          <Link
+            href="/pronostics"
+            className="card-base p-4 hover:border-gold-primary/60 transition-all flex items-center gap-3 border-gold-primary/30 bg-gradient-to-br from-bg-card to-[#1A1610]"
+          >
+            <span className="text-2xl">⭐</span>
+            <div className="flex-1">
+              <div className="text-text-primary text-sm font-semibold">Tous nos pronostics</div>
+              <div className="text-text-muted text-xs">Tiercé, Quarté+, Quinté+ du jour</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gold-primary" />
+          </Link>
           {!isFut && (
             <Link
               href={`/arrivees/${params.date}`}
@@ -333,7 +350,7 @@ export default async function ProgrammePage({ params }: PageProps) {
               href={`/quinte-plus/${params.date}`}
               className="card-base p-4 hover:border-gold-primary/40 transition-all flex items-center gap-3"
             >
-              <span className="text-2xl">⭐</span>
+              <span className="text-2xl">🏆</span>
               <div className="flex-1">
                 <div className="text-text-primary text-sm font-semibold">Quinté+ du {dateShort}</div>
                 <div className="text-text-muted text-xs">Pronostic, partants, cotes</div>
