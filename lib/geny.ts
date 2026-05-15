@@ -310,6 +310,74 @@ function parseTheadIndex(theadHtml: string): GenyHeaderIndex {
 }
 
 /**
+ * Catégorie de discipline alignée sur le champ `courses.categorie` (BDD).
+ * Le check constraint actuel n'accepte que PLAT/TROT/OBSTACLE. Les nuances
+ * Attelé/Monté/Haies/Steeple/Cross seraient idéalement dans une colonne
+ * dédiée `sous_discipline` — pour l'instant on fold ces nuances dans
+ * TROT (Attelé+Monté) et OBSTACLE (Haies+Steeple+Cross).
+ */
+export type GenyDiscipline = "PLAT" | "TROT" | "OBSTACLE";
+
+/**
+ * Détecte la discipline d'une course depuis le HTML de sa page partants Geny.
+ *
+ * Deux signaux croisés (le 2e sert de confirmation) :
+ *
+ * **1. Texte de la section caractéristiques** — Geny affiche typiquement
+ *    "Attelé - Course R (trot) - A réclamer - 10 000€ - 2650m - 11 Partants"
+ *    juste après le titre de la course. C'est le signal le plus fiable car
+ *    il donne aussi la nuance Attelé/Monté/Haies/Steeple/Cross.
+ *
+ * **2. Structure du thead** — TROT a "Driver" + pas de "Poids", PLAT a
+ *    "Jockey" + "Poids". Fallback si le texte caractéristiques n'est pas
+ *    trouvé (template Geny qui change, course ancienne, etc.).
+ *
+ * Renvoie null si aucun signal n'est exploitable — l'appelant garde alors
+ * la valeur BDD actuelle plutôt que d'écraser avec une mauvaise valeur.
+ */
+export function parseDisciplineFromHtml(html: string): GenyDiscipline | null {
+  // ── Signal 1 : texte caractéristiques (le plus fiable) ────────────────
+  // On cherche les mots-clés discipline en début de phrase, suivis d'un
+  // séparateur " - " ou d'une mention "Course".
+  const txtPatterns: Array<[RegExp, GenyDiscipline]> = [
+    [/\bSteeple[- ]?[cC]hase\b/,                       "OBSTACLE"],
+    [/\bSteeple\b/,                                    "OBSTACLE"],
+    [/\bHaies\b/,                                      "OBSTACLE"],
+    [/\bCross[- ]?country\b/,                          "OBSTACLE"],
+    [/\bCross\b/,                                      "OBSTACLE"],
+    [/\bTrot\s*Attel[eé]\b|\bAttel[eé]\b/,             "TROT"],
+    [/\bTrot\s*Mont[eé]\b|\bMont[eé]\s*-\s*Course\b/,  "TROT"],
+    [/\bTrot\b/,                                       "TROT"],
+    [/\bPlat\s*-\s*Course\b|\b[Cc]ourse\s*de\s*Plat\b/, "PLAT"],
+  ];
+  for (const [re, disc] of txtPatterns) {
+    if (re.test(html)) return disc;
+  }
+
+  // ── Signal 2 : structure du thead (fallback) ──────────────────────────
+  const theadMatch = html.match(/<thead[\s\S]*?<\/thead>/i);
+  if (theadMatch) {
+    const headers: string[] = [];
+    const re = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(theadMatch[0])) !== null) {
+      headers.push(normalizeHeader(m[1]));
+    }
+    // TROT : driver présent (Trot Attelé/Monté)
+    if (headers.includes("driver")) return "TROT";
+    // PLAT/OBSTACLE : jockey + poids (et pas de driver — déjà capturé au-dessus)
+    if (headers.includes("jockey") && headers.includes("poids")) {
+      // Sans signal texte, on ne peut pas distinguer PLAT vs OBSTACLE ici.
+      // Fallback PLAT (majoritaire). L'admin corrigera manuellement pour
+      // les rares OBSTACLE non détectées par le signal 1.
+      return "PLAT";
+    }
+  }
+
+  return null;
+}
+
+/**
  * Parse la page HTML des partants Geny pour extraire les chevaux.
  *
  * **Mapping dynamique par <thead>** (refactor 2026-05-14) : on lit les
@@ -503,6 +571,31 @@ export async function fetchGenyPartants(
   timeoutMs = 6000,
   genyUrl?: string | null,
 ): Promise<GenyParticipant[]> {
+  const result = await fetchGenyPartantsWithMeta(dateCourse, R, C, timeoutMs, genyUrl);
+  return result.partants;
+}
+
+/**
+ * Variante de `fetchGenyPartants` qui retourne aussi la **discipline** détectée
+ * dans le HTML (Plat / Trot / Obstacle).
+ *
+ * Pourquoi : le scraper de programme (`geny-programme.ts`) ne peut pas déduire
+ * la discipline depuis la page programme (pas exposée). Mais elle est
+ * détectable sur la page partants (texte caractéristiques + structure thead).
+ * `enrichir-partants` exploite cette signature étendue pour UPDATE
+ * `courses.categorie` quand elle diverge de la valeur par défaut "PLAT" mise
+ * en dur par le scraper de programme.
+ *
+ * Cette variante évite un 2e fetch HTTP : on parse la discipline depuis le
+ * MÊME HTML utilisé pour extraire les partants.
+ */
+export async function fetchGenyPartantsWithMeta(
+  dateCourse: string,
+  R: number,
+  C: number,
+  timeoutMs = 6000,
+  genyUrl?: string | null,
+): Promise<{ partants: GenyParticipant[]; discipline: GenyDiscipline | null }> {
   // Utiliser l'URL stockée en DB si disponible, sinon fallback (programme day)
   const url = genyUrl
     ? `${GENY_BASE}${genyUrl.startsWith("/") ? genyUrl : "/" + genyUrl}`
@@ -521,20 +614,23 @@ export async function fetchGenyPartants(
 
     if (!res.ok) {
       console.warn(`[Geny scrape] HTTP ${res.status} pour ${url}`);
-      return [];
+      return { partants: [], discipline: null };
     }
 
     const html = await res.text();
     const partants = parseGenyPartants(html);
+    const discipline = parseDisciplineFromHtml(html);
     if (partants.length > 0) {
-      console.log(`[Geny scrape] ${partants.length} partants extraits depuis ${url}`);
+      console.log(
+        `[Geny scrape] ${partants.length} partants extraits depuis ${url} (discipline=${discipline ?? "?"})`,
+      );
     } else {
       console.warn(`[Geny scrape] 0 partants extraits depuis ${url}`);
     }
-    return partants;
+    return { partants, discipline };
   } catch (e) {
     clearTimeout(timer);
     console.warn(`[Geny scrape] Erreur pour ${url}:`, e instanceof Error ? e.message : e);
-    return [];
+    return { partants: [], discipline: null };
   }
 }
