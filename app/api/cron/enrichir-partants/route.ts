@@ -20,7 +20,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
+import { fetchGenyPartantsWithMeta, safeCote, safePoids, safeSmallInt, type GenyParticipant, type GenyDiscipline } from "@/lib/geny";
 import { logCronStart } from "@/lib/cron-logger";
 import { logger } from "@/lib/observability/logger";
 
@@ -56,7 +56,7 @@ interface CourseRow {
 }
 
 type ScrapeOutcome =
-  | { courseId: string; libelle: string; status: "ok"; partants: GenyParticipant[] }
+  | { courseId: string; libelle: string; status: "ok"; partants: GenyParticipant[]; discipline: GenyDiscipline | null }
   | { courseId: string; libelle: string; status: "no_data" | "error"; detail?: string };
 
 /** Étape 1 : scrape Geny (lecture seule, en parallèle). Pas d'écriture DB ici. */
@@ -68,14 +68,14 @@ async function scrapeOneCourse(course: CourseRow): Promise<ScrapeOutcome> {
     };
   }
   try {
-    const partants = await fetchGenyPartants(
+    const { partants, discipline } = await fetchGenyPartantsWithMeta(
       course.date_course, course.numero_reunion, course.numero_course,
       FETCH_TIMEOUT_MS, course.geny_url,
     );
     if (partants.length === 0) {
       return { courseId: course.id, libelle: course.libelle, status: "no_data", detail: "Geny scrape retourné 0 partants" };
     }
-    return { courseId: course.id, libelle: course.libelle, status: "ok", partants };
+    return { courseId: course.id, libelle: course.libelle, status: "ok", partants, discipline };
   } catch (err) {
     return {
       courseId: course.id, libelle: course.libelle, status: "error",
@@ -261,6 +261,7 @@ export async function GET(req: NextRequest) {
 
     // 4. Étape BULK WRITE : 1 delete + 1 insert pour TOUTES les courses ok
     let inserted = 0;
+    let categorie_updates = 0;
     if (okOutcomes.length > 0) {
       const okIds = okOutcomes.map((o) => o.courseId);
 
@@ -308,6 +309,30 @@ export async function GET(req: NextRequest) {
       // 5. Update nb_partants en RPC (1 subrequest, calcule depuis partants).
       // Pas critique : on saute si pas de RPC dispo. La page courses recalcule
       // nb_partants à la volée si besoin via COUNT(*) sur partants.
+
+      // 6. Update courses.categorie quand la discipline détectée diffère.
+      //
+      // Pourquoi : `geny-programme.ts` insère TOUTES les nouvelles courses
+      // avec `categorie='PLAT'` en dur (la page programme Geny n'expose pas
+      // la discipline). Résultat avant ce fix : 34/35 courses Vincennes
+      // étiquetées PLAT alors que Vincennes est ~100% TROT. Conséquence
+      // côté pipeline IA : scoring inadapté + backtest faussé.
+      //
+      // Ici on a fetch la page partants qui, elle, contient le mot-clé
+      // discipline ("Attelé", "Plat - Course", "Haies", ...). On corrige.
+      const disciplineUpdates = okOutcomes
+        .filter((o) => o.discipline !== null)
+        .map((o) => ({ id: o.courseId, categorie: o.discipline as GenyDiscipline }));
+      if (disciplineUpdates.length > 0) {
+        const { error: catErr, count: catCount } = await supabase
+          .from("courses")
+          .upsert(disciplineUpdates, { count: "exact" });
+        if (catErr) {
+          logger.error("enrichir-partants", "Bulk update categorie failed (non-blocking)", { error: catErr.message });
+        } else {
+          categorie_updates = catCount ?? disciplineUpdates.length;
+        }
+      }
     }
 
     const ok      = okOutcomes.length;
@@ -344,6 +369,7 @@ export async function GET(req: NextRequest) {
       no_data:        noData,
       errors,
       partants_inserted: inserted,
+      categorie_updates,
       has_more,
       cleanup:        cleanupResult,
       ...(errors > 0 ? {

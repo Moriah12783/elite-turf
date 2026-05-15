@@ -625,29 +625,83 @@ export type ClaudeModel = typeof CLAUDE_MODELS[keyof typeof CLAUDE_MODELS];
 // ─────────────────────────────────────────────────────────────────────────
 // 16. CONSTANTES DE SEUILS (cahier des charges §20)
 // ─────────────────────────────────────────────────────────────────────────
+//
+// 📊 RECALIBRAGE 2026-05-15 (post-backtest étape A, décision PO)
+//
+// Le backtest sur 120 courses ELITE a montré que les seuils du cahier
+// (§20, calibrés théoriquement à un état "BDD mature") sont structurellement
+// inatteignables tant que :
+//   - la BDD chevaux est jeune (la plupart à nb_courses < 5)
+//   - PMU.fr renvoie PARTIAL au lieu de MATCHED (cf matcher.ts → plafond 74)
+//
+// Conséquence avant ce recalibrage : 100% des drafts en NEEDS_HUMAN_REVIEW,
+// aucun en APPROVED_FOR_ADMIN_REVIEW. Le statut ne sert plus à différencier
+// "solide" vs "fragile" — il est dégénéré.
+//
+// Données empiriques (backtest 120 courses, seul échantillon propre) :
+//   - selection_confidence_score : 84% des courses < 30, 0 ≥ 50, max 49
+//   - africa_course_score        : plafond observé 74 (LONACI MATCHED seul)
+//   - quality_score              : valeur typique 80-85
+//
+// Cap éditorial : on accepte de baisser les seuils pour que le pipeline
+// produise un signal utile (APPROVED vs NEEDS_REVIEW), MAIS les vraies
+// garde-fous business (validation Afrique présente, pas de sources
+// interdites, runners existent, pas de promesse de gain) restent en
+// blocking dans QualityValidator. Le seuil aval ne remplace pas ces checks.
+// ─────────────────────────────────────────────────────────────────────────
 
-/** Seuils minimum africa_course_score par niveau d'accès (§20) */
+/**
+ * Seuils minimum africa_course_score par niveau d'accès.
+ *
+ * Valeurs cahier (§20) : FREE=68, STARTER=75, PRO=75, ELITE=85.
+ * Valeurs recalibrées 2026-05-15 : -8 à -13 points par niveau, calibré sur
+ * la distribution observée (plafond empirique 74 sur LONACI MATCHED seul).
+ *
+ * Quand on enrichira la BDD chevaux et qu'on aura PMU.fr=MATCHED (score
+ * atteignant 85+), on pourra remonter ces seuils vers les valeurs cahier.
+ */
 export const MIN_AFRICA_SCORE_BY_LEVEL: Record<NiveauAcces, number> = {
-  FREE:    68,
-  STARTER: 75,
-  PRO:     75,
-  ELITE:   85,
+  FREE:    60,   // était 68
+  STARTER: 65,   // était 75
+  PRO:     65,   // était 75
+  ELITE:   72,   // était 85 — recalé sur le plafond observé 74
 };
 
 /** Seuil sous lequel CourseSelector envoie en review humaine (§9.3) */
-export const AFRICA_SCORE_REVIEW_THRESHOLD = 60;
+export const AFRICA_SCORE_REVIEW_THRESHOLD = 55;  // était 60
 
-/** Seuil minimum data_completeness_score pour FieldAnalyzer */
-export const MIN_DATA_COMPLETENESS_SCORE = 65;
+/**
+ * Seuil minimum data_completeness_score pour FieldAnalyzer.
+ *
+ * Valeur cahier : 65. BDD jeune ne l'atteint pas (data manquante = musique
+ * 1 course, pas de distance/terrain). Recalé à 45 pour laisser le pipeline
+ * produire un signal au lieu de tout bloquer en NEEDS_HUMAN_REVIEW.
+ */
+export const MIN_DATA_COMPLETENESS_SCORE = 45;  // était 65
 
 /** Seuil minimum field_quality_score pour FieldAnalyzer */
-export const MIN_FIELD_QUALITY_SCORE = 60;
+export const MIN_FIELD_QUALITY_SCORE = 45;      // était 60
 
-/** Seuil minimum selection_confidence_score pour SelectionBuilder */
-export const MIN_SELECTION_CONFIDENCE_SCORE = 65;
+/**
+ * Seuil minimum selection_confidence_score pour SelectionBuilder.
+ *
+ * Valeur cahier : 65. Empiriquement, 84% des sélections ont confidence < 30
+ * et AUCUNE n'atteint 50 sur la BDD jeune actuelle. À 65 le pipeline force
+ * 100% des drafts en NEEDS_HUMAN_REVIEW. Recalé à 25 pour qu'il devienne
+ * un signal exploitable (sépare les sélections vraiment trop fragiles
+ * confidence < 25 du reste).
+ */
+export const MIN_SELECTION_CONFIDENCE_SCORE = 25;  // était 65
 
 /** Seuil pour qu'un cheval puisse être base prioritaire */
-export const MIN_CONFIDENCE_FOR_BASE = 70;
+export const MIN_CONFIDENCE_FOR_BASE = 55;       // était 70 (idem BDD jeune)
 
-/** Seuil minimum quality_score pour passer en admin review */
+/**
+ * Seuil minimum quality_score pour passer en APPROVED_FOR_ADMIN_REVIEW.
+ *
+ * Reste à 75 — le quality_score s'appuie sur des checks objectifs (validation
+ * Afrique présente, sources whitelistées, pas de promesse de gain, etc.) qui
+ * ne dépendent pas de l'état de la BDD chevaux. Un score 80+ reste atteint
+ * empiriquement, donc le seuil 75 sépare bien APPROVED vs NEEDS_REVIEW.
+ */
 export const MIN_QUALITY_SCORE_FOR_ADMIN = 75;
