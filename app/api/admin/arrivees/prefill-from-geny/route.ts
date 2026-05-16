@@ -60,9 +60,15 @@ export async function POST(req: NextRequest) {
     // Les numéros des partants sont passés au parser pour rejeter tous les
     // numéros HTML qui ne sont PAS des partants (sidebars, rapports €, IDs).
     // Garantit zéro faux positif dans l'extraction de l'arrivée.
+    //
+    // On récupère aussi statut + date_course pour bloquer le prefill sur
+    // courses futures (sinon le parser fallback choppe les numéros de la
+    // sidebar "Dernières arrivées" de Geny → fake arrivée identique pour
+    // toutes les courses futures). Incident 2026-05-16 : 3 courses du
+    // 17/05 enregistrées avec [11,8,17,5,2,1] avant ce fix.
     const { data: course, error: courseErr } = await supabase
       .from("courses")
-      .select("id, geny_url, partants(numero)")
+      .select("id, geny_url, statut, date_course, partants(numero)")
       .eq("id", body.course_id)
       .single();
 
@@ -78,6 +84,29 @@ export async function POST(req: NextRequest) {
         {
           error:
             "Course sans geny_url (ex: course LONACI Côte d'Ivoire). Saisie manuelle requise.",
+        },
+        { status: 422 },
+      );
+    }
+
+    // ── Garde-fou : refuser le prefill pour courses non disputées ───────
+    // Geny retourne une page placeholder pour les courses futures (avec
+    // sidebar "Dernières arrivées" qui pollue notre fallback parser).
+    // On bloque ici pour éviter les faux positifs.
+    //
+    // Calcul date Paris (pas UTC) pour éviter les bascules à minuit UTC.
+    const todayParis = new Date().toLocaleDateString("fr-CA", {
+      timeZone: "Europe/Paris",
+    }); // YYYY-MM-DD
+    const isFuture  = course.date_course > todayParis;
+    const notFinished = course.statut !== "TERMINE";
+    if (isFuture || notFinished) {
+      return NextResponse.json(
+        {
+          error:
+            `Course pas encore disputée (statut=${course.statut}, date=${course.date_course}). ` +
+            "Le pré-remplissage Geny n'est disponible qu'après l'arrivée officielle (statut TERMINE). " +
+            "Patientez que la course soit courue, puis réessayez.",
         },
         { status: 422 },
       );
