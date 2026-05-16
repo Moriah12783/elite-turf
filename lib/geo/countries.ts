@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Données pays pour les pages /pronostics-pmu-[pays] et la tarification locale.
  *
  * Stratégie : positionner Elite Turf comme LE site turf de l'Afrique
@@ -90,7 +90,7 @@ export const COUNTRIES: Country[] = [
       "courses PMU Abidjan",
       "Quinté+ Côte d'Ivoire",
     ],
-    accroche: "Pronostics PMU France et courses LONACI analysés depuis Paris pour les parieurs de Côte d'Ivoire.",
+    accroche: "Pronostics PMU France et courses LONACI analysés par notre équipe experte pour les parieurs de Côte d'Ivoire.",
     liensPMU: [
       { label: "PMU-CI / LONACI",     href: "https://www.pmu.ci" },
       { label: "Hippodrome de la Riviera (Abidjan)", href: "https://www.lonaci.ci" },
@@ -295,7 +295,7 @@ export const COUNTRIES: Country[] = [
       "courses PMU Gabon",
       "Quinté+ Gabon",
     ],
-    accroche: "Pronostics PMU France pour les parieurs gabonais — décryptage Quinté+, Tiercé, Quarté+ par nos experts depuis Paris.",
+    accroche: "Pronostics PMU France pour les parieurs gabonais — décryptage Quinté+, Tiercé, Quarté+ par nos experts hippiques.",
   },
 
   {
@@ -349,7 +349,7 @@ export const COUNTRIES: Country[] = [
       "courses PMU Congo",
       "Quinté+ Congo Brazzaville",
     ],
-    accroche: "Pronostics PMU France pour les parieurs congolais — analyses expertes depuis Paris pour Brazzaville et tout le Congo.",
+    accroche: "Pronostics PMU France pour les parieurs congolais — analyses expertes pour Brazzaville et tout le Congo.",
   },
 
   {

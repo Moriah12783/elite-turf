@@ -24,7 +24,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Votre inscription a bien été confirmée pour <strong style="color:#1E3A5F;">${email}</strong>.
-      Vous avez maintenant accès aux pronostics PMU gratuits publiés chaque matin par nos experts depuis Paris.
+      Vous avez maintenant accès aux pronostics PMU gratuits publiés chaque matin par nos analystes experts.
     </p>
 
     <!-- Points forts -->

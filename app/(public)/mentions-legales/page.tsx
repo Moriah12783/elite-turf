@@ -39,13 +39,19 @@ export default function MentionsLegalesPage() {
               <p><strong className="text-text-primary">Forme juridique :</strong> Limited Liability Company (LLC), constituée dans l&apos;État du Wyoming (États-Unis)</p>
               <p><strong className="text-text-primary">Siège social :</strong> 30 N Gould St, STE R, Sheridan, WY 82801, États-Unis</p>
               <p>
+                <strong className="text-text-primary">Téléphone administratif :</strong>{" "}
+                <a href="tel:+13073819522" className="text-gold-light hover:underline">
+                  +1 307 381 9522
+                </a>
+              </p>
+              <p>
                 <strong className="text-text-primary">E-mail :</strong>{" "}
                 <a href="mailto:contact@elite-turf.fr" className="text-gold-light hover:underline">
                   contact@elite-turf.fr
                 </a>
               </p>
               <p>
-                <strong className="text-text-primary">WhatsApp :</strong>{" "}
+                <strong className="text-text-primary">WhatsApp public (support clients) :</strong>{" "}
                 <a href="https://wa.me/33644686720" target="_blank" rel="noopener noreferrer" className="text-gold-light hover:underline">
                   +33 6 44 68 67 20
                 </a>

@@ -192,12 +192,12 @@ function buildGuideEmail(prenom: string): string {
                 </tr>
               </table>
 
-              <p style="margin:0 0 4px 0;color:#6B7280;font-size:11px;font-weight:600;">Elite Turf</p>
+              <p style="margin:0 0 4px 0;color:#6B7280;font-size:11px;font-weight:600;">Elite Turf — TSALACH VENTURES LLC</p>
               <p style="margin:0 0 3px 0;color:#9CA3AF;font-size:11px;">
-                📍 34, boulevard des Italiens, 75009 Paris, France
+                30 N Gould St, STE R, Sheridan, WY 82801, États-Unis
               </p>
               <p style="margin:0 0 8px 0;color:#9CA3AF;font-size:11px;">
-                📞 +33 6 44 68 67 20 &nbsp;·&nbsp;
+                📱 WhatsApp : +33 6 44 68 67 20 &nbsp;·&nbsp;
                 <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;text-decoration:none;">contact@elite-turf.fr</a>
               </p>
               <p style="margin:0 0 6px 0;color:#D1D5DB;font-size:10px;">
