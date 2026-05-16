@@ -26,6 +26,9 @@
 # Coût : Cloudflare Workers Paid plan (5 USD/mois) déjà actif. Les Cron
 # Triggers sont gratuits jusqu'à 100/worker. On en a 32, OK.
 
+# Last redeploy : 2026-05-16 (GitHub Action auto-deploy activée — PR fix/auto-deploy-cron-worker)
+# Cette ligne sert à forcer le premier trigger de la workflow GitHub Action
+# "Deploy Cron Worker" après merge (paths: cron-worker/**).
 name = "elite-turf-crons"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"
