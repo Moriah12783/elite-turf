@@ -78,8 +78,16 @@ export default function ContactPage() {
               Sheridan, WY 82801<br />
               États-Unis
             </p>
-            <p className="text-text-muted text-xs mt-2">
+            <p className="text-text-secondary text-sm mt-3">
+              <span className="text-text-muted text-xs uppercase tracking-wider">Contact administratif :</span><br />
+              <a href="tel:+13073819522" className="text-gold-light hover:text-gold-primary font-semibold">
+                +1 307 381 9522
+              </a>
+            </p>
+            <p className="text-text-muted text-xs mt-3">
               Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC.
+              Pour le support client, privilégier le WhatsApp français ci-dessus
+              (réponse plus rapide).
             </p>
           </div>
         </div>

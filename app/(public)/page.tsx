@@ -153,7 +153,9 @@ export default function HomePage() {
                 <a href="tel:0974751313" className="text-gold-primary hover:underline font-medium">
                   Joueurs Info Service au 09 74 75 13 13
                 </a>{" "}
-                (appel non surtaxé, 7j/7). Elite Turf, 34 boulevard des Italiens, 75009 Paris, France.
+                (appel non surtaxé, 7j/7). Elite Turf est une marque commerciale exploitée par{" "}
+                <strong className="text-text-primary">TSALACH VENTURES LLC</strong>, 30 N Gould St, STE R,
+                Sheridan, WY 82801, États-Unis.
               </p>
             </div>
           </div>

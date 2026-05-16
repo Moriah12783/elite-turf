@@ -94,14 +94,14 @@ export function emailBase(content: string, previewText = ""): string {
                 style="display:block;margin:0 auto 8px auto;width:100px;height:100px;object-fit:contain;"
               />
               <p style="margin:0 0 4px 0;color:#9CA3AF;font-size:11px;">
-                📍 34, boulevard des Italiens, 75009 Paris, France
+                <strong style="color:#D1D5DB;">TSALACH VENTURES LLC</strong> — 30 N Gould St, STE R, Sheridan, WY 82801, États-Unis
               </p>
               <p style="margin:0 0 8px 0;color:#9CA3AF;font-size:11px;">
-                📞 +33 6 44 68 67 20 &nbsp;·&nbsp;
+                📱 WhatsApp : +33 6 44 68 67 20 &nbsp;·&nbsp;
                 <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;">contact@elite-turf.fr</a>
               </p>
               <p style="margin:0 0 8px 0;color:#D1D5DB;font-size:10px;">
-                Pronostics PMU pour les parieurs francophones — Analyses depuis Paris.
+                Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC — Analyses hippiques informatives.
               </p>
               <p style="margin:0;font-size:10px;">
                 <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr")}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Politique de confidentialité</a>

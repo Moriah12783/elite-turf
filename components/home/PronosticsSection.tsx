@@ -545,7 +545,7 @@ function BannerImage({ count }: { count: number }) {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-status-win/20 backdrop-blur-sm border border-status-win/30 rounded-full">
             <Trophy className="w-3.5 h-3.5 text-status-win" />
-            <span className="text-status-win text-xs font-semibold">Experts Paris</span>
+            <span className="text-status-win text-xs font-semibold">Analyses expertes</span>
           </div>
         </div>
       </div>

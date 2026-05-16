@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+﻿import { Metadata } from "next";
 import GeoLandingPage from "@/components/geo/GeoLandingPage";
 import { COUNTRY_BY_SLUG } from "@/lib/geo/countries";
 
@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Pronostics PMU Côte d'Ivoire ${country.drapeau} — Quinté+, Tiercé, Quarté+`,
-  description: "Pronostics PMU France et courses LONACI analysés depuis Paris pour les parieurs de Côte d'Ivoire. Paiement Orange Money, Wave, MTN. Tarifs en FCFA.",
+  description: "Pronostics PMU France et courses LONACI analysés par notre équipe experte pour les parieurs de Côte d'Ivoire. Paiement Orange Money, Wave, MTN. Tarifs en FCFA.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-cote-d-ivoire` },
   openGraph: {

@@ -119,14 +119,32 @@ const organizationJsonLd = {
     postalCode:      "82801",
     addressCountry:  "US",
   },
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone:        "+33644686720",
-    email:            "contact@elite-turf.fr",
-    contactType:      "customer support",
-    availableLanguage: ["French"],
-    areaServed:       ["FR", "CI", "SN", "CM", "MA", "BF", "TG", "BJ", "ML"],
-  },
+  // ── ContactPoint ARRAY (vérification Meta WhatsApp Business API) ─────────
+  // Meta exige que le téléphone administratif de l'entité légale (TSALACH
+  // VENTURES LLC, États-Unis) figure dans le HTML du site pour valider que
+  // le site est bien associé à l'entreprise. On expose 2 contactPoints :
+  //   1. customer support → WhatsApp public FR (déjà utilisé par les visiteurs)
+  //   2. administrative   → ligne TSALACH VENTURES LLC US (vérification Meta)
+  contactPoint: [
+    {
+      "@type":           "ContactPoint",
+      telephone:         "+33644686720",
+      email:             "contact@elite-turf.fr",
+      contactType:       "customer support",
+      availableLanguage: ["French"],
+      areaServed:        ["FR", "CI", "SN", "CM", "MA", "BF", "TG", "BJ", "ML"],
+    },
+    {
+      "@type":           "ContactPoint",
+      telephone:         "+13073819522",
+      contactType:       "administrative",
+      availableLanguage: ["English", "French"],
+      areaServed:        "US",
+    },
+  ],
+  // Numéros téléphoniques de l'entreprise (Schema.org standard, redondance
+  // utile pour la vérification automatique Meta + Google KP)
+  telephone: "+13073819522",
 };
 
 export default function RootLayout({

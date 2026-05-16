@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Landing page géo-ciblée : /pronostics-pmu-[pays].
  *
  * Composant serveur. Affiche :
@@ -343,7 +343,7 @@ export default async function GeoLandingPage({ country }: Props) {
             Rejoignez la communauté Elite Turf {country.drapeau}
           </h3>
           <p className="text-text-secondary text-sm sm:text-base mb-5 max-w-xl mx-auto">
-            Pronostics analysés depuis Paris, paiement en {country.devise === "MAD" ? "DH" : country.devise === "EUR" ? "EUR" : "FCFA"}, support WhatsApp.
+            Pronostics analysés par notre équipe experte, paiement en {country.devise === "MAD" ? "DH" : country.devise === "EUR" ? "EUR" : "FCFA"}, support WhatsApp.
             Tout pour parier malin depuis le {country.nom}.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
