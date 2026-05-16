@@ -60,14 +60,67 @@ Pour ajouter / modifier / retirer un cron :
 
 1. **Édite `wrangler.toml`** : ajoute/retire dans `[triggers].crons`
 2. **Édite `src/index.ts`** : ajoute/retire dans `CRON_MAP`
-3. **Re-deploy** :
-   ```bash
-   npx wrangler deploy --config cron-worker/wrangler.toml
-   ```
+3. **Commit + push sur `main`** : la GitHub Action `Deploy Cron Worker`
+   déploie automatiquement sous 2 minutes (cf. section ci-dessous)
 
 ⚠️ Les deux fichiers DOIVENT rester synchronisés. Un cron déclaré dans
 `wrangler.toml` mais absent de `CRON_MAP` produira un log d'erreur
 `Pattern inconnu`.
+
+## 🤖 Auto-deploy via GitHub Action (depuis 2026-05-16)
+
+### Pourquoi cette automation
+
+Avant le 2026-05-16, le cron-worker devait être déployé **manuellement** via
+`npx wrangler deploy` à chaque modification. Le 2026-05-15, un commit avait
+modifié `wrangler.toml` pour décaler les schedules IA Multi-Agents mais le
+deploy manuel n'a jamais été fait → cron `ia-pronostics-v2` silencieusement
+KO pendant 24h → 0 draft généré.
+
+Maintenant, **toute modification de `cron-worker/**` sur la branche `main`
+déclenche un déploiement automatique** via
+`.github/workflows/deploy-cron-worker.yml`.
+
+### Setup initial des secrets GitHub (à faire UNE FOIS)
+
+L'Action a besoin de 2 secrets dans le repo GitHub :
+
+1. **`CLOUDFLARE_API_TOKEN`** — token API Cloudflare avec scope
+   `Account > Workers Scripts > Edit` + `Account > Account Settings > Read`
+   - Créer : Cloudflare Dashboard → My Profile → API Tokens → Create Token
+   - Template recommandé : "Edit Cloudflare Workers" (préconfiguré)
+   - **Copier la valeur affichée UNE SEULE FOIS** (impossible à revoir
+     après)
+
+2. **`CLOUDFLARE_ACCOUNT_ID`** — Account ID Cloudflare
+   - Visible dans : Cloudflare Dashboard → Workers & Pages (panneau droit)
+   - Format : 32 caractères hex (ex : `bfb7a27738f18d7e642980d343a69ee8`)
+
+Ajout dans GitHub :
+- Repo `Moriah12783/elite-turf` → Settings → Secrets and variables →
+  Actions → New repository secret
+- Nom : `CLOUDFLARE_API_TOKEN` (puis `CLOUDFLARE_ACCOUNT_ID`)
+- Coller la valeur → Add secret
+
+### Déclencher manuellement la GitHub Action
+
+Si tu veux forcer un re-deploy sans modifier de fichier (ex : après avoir
+changé un secret Cloudflare via Dashboard) :
+
+- Repo GitHub → onglet **Actions** → "Deploy Cron Worker" dans la sidebar
+- Bouton **Run workflow** → choisir branche `main` → Run
+
+L'action prend ~1-2 min. Une fois OK, vérifier dans
+Cloudflare Dashboard → `elite-turf-crons` → Triggers.
+
+### Re-deploy manuel (fallback si Action indisponible)
+
+Si tu as Wrangler installé localement et que tu es authentifié
+(`npx wrangler login`) :
+
+```bash
+npx wrangler deploy --config cron-worker/wrangler.toml
+```
 
 ## 🧪 Tester manuellement un cron
 

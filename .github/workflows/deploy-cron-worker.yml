@@ -1,0 +1,75 @@
+name: Deploy Cron Worker
+
+# ─────────────────────────────────────────────────────────────────────────
+# Auto-deploy du Cloudflare Worker dédié aux Cron Triggers d'Elite Turf.
+#
+# Pourquoi cette automation existe :
+# Le cron-worker n'est pas géré par le build Cloudflare Pages (qui ne deploy
+# que l'app Next.js principale). Sans cette Action, chaque modif de
+# `cron-worker/wrangler.toml` ou `cron-worker/src/index.ts` doit être suivie
+# d'un `npx wrangler deploy --config cron-worker/wrangler.toml` manuel.
+#
+# Incident 2026-05-16 : les schedules `30 5 * * *`, `15 6 * * *`, `45 6 * * *`
+# avaient été ajoutés dans `cron-worker/wrangler.toml` le 15/05 (commit
+# 1631f85) mais le worker n'avait jamais été redéployé → cron `ia-pronostics-v2`
+# silencieusement KO → 0 draft généré pendant 24h.
+#
+# Cette Action garantit qu'à chaque merge sur main modifiant cron-worker/**,
+# le worker Cloudflare est mis à jour automatiquement (sous 2 min).
+# ─────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cron-worker/**'
+      - '.github/workflows/deploy-cron-worker.yml'
+
+  # Déclenchement manuel via UI GitHub (Actions > Deploy Cron Worker > Run)
+  # Utile pour forcer un re-deploy après modification d'un secret Cloudflare
+  # ou après un incident, sans devoir modifier un fichier source.
+  workflow_dispatch:
+
+# Annule les runs précédents si un nouveau push arrive — pas de race condition
+# possible (un seul deploy à la fois sur l'environnement de prod cron-worker).
+concurrency:
+  group: deploy-cron-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy elite-turf-crons to Cloudflare Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # cloudflare/wrangler-action gère le `npm install -g wrangler` + auth
+      # via les env vars CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID que
+      # nous passons depuis les GitHub Secrets du repo.
+      - name: Deploy cron-worker to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cron-worker
+          # `wrangler deploy` lit cron-worker/wrangler.toml et applique
+          # automatiquement les [triggers].crons à Cloudflare.
+          command: deploy
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "::notice title=Deploy OK::Cron-worker elite-turf-crons déployé avec succès."
+          echo "Cron Triggers actualisés. Vérifie dans Cloudflare Dashboard → Workers → elite-turf-crons → Triggers."
