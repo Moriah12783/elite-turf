@@ -19,6 +19,7 @@ import { Trophy, Calendar, ChevronLeft, ChevronRight, Filter, AlertTriangle } fr
 import { createServiceClient } from "@/lib/supabase/server";
 import { todayParisISO, parisDateISOPlusDays } from "@/lib/paris-date";
 import ArriveesAdminClient from "./ArriveesAdminClient";
+import BatchPrefillButton from "./BatchPrefillButton";
 
 export const metadata = { title: "Arrivées & Rapports — Admin Elite Turf" };
 export const dynamic   = "force-dynamic"; // toujours frais (admin)
@@ -261,9 +262,14 @@ export default async function AdminArriveesPage({
             <strong className="text-text-primary">{totalAttendus - totalRempli} arrivée(s) restantes à remplir aujourd&apos;hui.</strong>
             <br />
             Clique sur une course → bouton <span className="font-mono text-purple-400">Pré-remplir Geny</span> → vérifie les valeurs → <span className="font-mono text-gold-primary">Enregistrer</span>.
+            <br />
+            <em className="text-text-muted">Ou utilise le bouton magique ci-dessous pour tout faire en 1 clic.</em>
           </div>
         </div>
       )}
+
+      {/* 🪄 Batch prefill — bouton magique pour tout publier d'un coup */}
+      <BatchPrefillButton date={selectedDate} />
 
       {/* ⭐ Section Elite Turf */}
       {eliteTurf.length > 0 && (

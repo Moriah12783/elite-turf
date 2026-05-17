@@ -42,24 +42,33 @@ function extractNums(str: string): number[] {
 }
 
 /**
- * Limite max d'une arrivée scrapée.
+ * Limite max d'une arrivée scrapée (default).
  *
- * Décision PO (2026-05-17) : cap à 6 chevaux pour aligner avec :
- *   - L'éditorial Elite Turf qui publie ses arrivées Top 5 (5 chevaux +
- *     un éventuel 6e pour le Bonus 4 du Quinté+)
- *   - L'UX admin : éviter à l'éditeur de devoir supprimer les chevaux 7-10
- *     pour chaque arrivée avant publication
- *   - Les pages publiques qui slice à 5 ou 6 de toute façon
+ * Décision PO 2026-05-17 (cap dynamique selon type de pari) :
+ *   - 6 chevaux par défaut (Top 5 + 6e pour Quinté+ Bonus 4)
+ *   - 7 chevaux pour les Quinté+ (couvre le Bonus 3 qui exige 7 chevaux)
+ *
+ * La distinction Quinté+/autres est faite côté CALLER (prefill-from-geny
+ * et runGenyArriveesSync) qui passe `maxHorses` au parser via le helper
+ * `maxHorsesForParis(paris_disponibles)`.
+ *
+ * Pourquoi cap aussi bas (vs 10 historique) :
+ *   - L'éditorial Elite Turf publie le Top 5 + 6e
+ *   - L'éditeur ne veut plus supprimer manuellement les chevaux 7-10
+ *   - Les pages publiques slice déjà à 5 ou 6 max
  *
  * Compromis :
- *   - Pour les Quinté+ Bonus 3 (qui nécessitent 7 chevaux pour calcul du
- *     Bonus 3), l'éditeur peut taper manuellement le 7e dans /admin/arrivees
  *   - Les arrivées existantes en BDD (avec 7-10 chevaux) ne sont PAS modifiées
  *     — seul le futur prefill est cappé
  *
  * Historique :
- *   - Avant 2026-05-17 : MAX_HORSES = 10 (stockage large "au cas où")
- *   - Après : MAX_HORSES = 6 (Top 5 + bonus 4)
+ *   - Avant 2026-05-17  : MAX_HORSES = 10 (stockage large "au cas où")
+ *   - PR #112 (mergée)  : MAX_HORSES = 6 (cap simple, sans distinction Quinté+)
+ *   - PR #113 (actuelle): cap dynamique 6/7 via paramètre maxHorses
+ *
+ * NB : MAX_HORSES reste utilisée comme valeur DÉFAUT si le caller ne passe
+ * pas `maxHorses`. Toutes les fonctions internes (extractNumbersInOrder,
+ * parseArriveeTable) prennent maxHorses en paramètre depuis parseArrivee.
  */
 const MAX_HORSES = 6;
 
@@ -133,6 +142,7 @@ function stripArtifacts(text: string): string {
 function extractNumbersInOrder(
   text: string,
   isValid: (n: number) => boolean,
+  maxHorses: number = MAX_HORSES,
 ): number[] {
   const found: number[] = [];
   const seen = new Set<number>();
@@ -144,7 +154,7 @@ function extractNumbersInOrder(
     if (seen.has(n)) continue;
     seen.add(n);
     found.push(n);
-    if (found.length >= MAX_HORSES) break;
+    if (found.length >= maxHorses) break;
   }
   return found;
 }
@@ -168,7 +178,11 @@ function extractNumbersInOrder(
  * la 2ème <td> qui contient le numéro de cheval. C'est bulletproof car
  * indépendant des artefacts HTML alentour (height="18", strong 1er, etc.).
  */
-function parseArriveeTable(html: string, isValid: (n: number) => boolean): number[] | null {
+function parseArriveeTable(
+  html: string,
+  isValid: (n: number) => boolean,
+  maxHorses: number = MAX_HORSES,
+): number[] | null {
   // ⚠️ Pré-traitement : Geny imbrique depuis 2026 des sous-tables
   // <table class="table-oei">…</table> dans la cellule "Cheval" pour afficher
   // les icônes (œillères, attache-langue, etc.). Cette imbrication casse le
@@ -216,7 +230,7 @@ function parseArriveeTable(html: string, isValid: (n: number) => boolean): numbe
 
     seen.add(num);
     horses.push(num);
-    if (horses.length >= MAX_HORSES) break;
+    if (horses.length >= maxHorses) break;
   }
 
   return horses.length >= 3 ? horses : null;
@@ -238,9 +252,15 @@ function parseArriveeTable(html: string, isValid: (n: number) => boolean): numbe
  *  3. data-attribute "data-arrivee" structuré
  *  4. Fallback global : plus longue séquence valide du HTML entier
  */
+/**
+ * @param maxHorses    Nombre max de chevaux à retourner. Default = MAX_HORSES (6).
+ *                     Passer 7 pour les Quinté+ (couvre Bonus 3 qui nécessite
+ *                     7 chevaux). Voir prefill-from-geny + runGenyArriveesSync.
+ */
 export function parseArrivee(
   html: string,
   validNumbers?: number[],
+  maxHorses: number = MAX_HORSES,
 ): number[] | null {
   const isValid = buildIsValidNum(validNumbers);
 
@@ -248,7 +268,7 @@ export function parseArrivee(
   // <table id="arrivees"> avec position en col 1, numéro cheval en col 2.
   // C'est le marqueur Geny stable et le plus fiable. Élimine tous les bruits
   // (attributs HTML height, strong 1er, cotes 15/1, temps 1'39'08).
-  const fromTable = parseArriveeTable(html, isValid);
+  const fromTable = parseArriveeTable(html, isValid, maxHorses);
   if (fromTable) return fromTable;
 
   // ── Stratégie 2 : sections "Arrivée définitive/officielle" ──────────────
@@ -266,9 +286,9 @@ export function parseArrivee(
     if (!sectionMatch) continue;
     const trimmed = trimToArriveeOnly(sectionMatch[0]);
     const cleaned = stripArtifacts(trimmed);
-    const found = extractNumbersInOrder(cleaned, isValid);
+    const found = extractNumbersInOrder(cleaned, isValid, maxHorses);
     if (found.length >= 3) {
-      return found.slice(0, MAX_HORSES);
+      return found.slice(0, maxHorses);
     }
   }
 
@@ -285,17 +305,34 @@ export function parseArrivee(
       seen.add(n);
       return true;
     });
-    if (ordered.length >= 3) return ordered.slice(0, MAX_HORSES);
+    if (ordered.length >= 3) return ordered.slice(0, maxHorses);
   }
 
   // ── Stratégie 4 (fallback global) : recherche dans le HTML entier ───────
   const cleanedHtml = stripArtifacts(html);
-  const fallback = extractNumbersInOrder(cleanedHtml, isValid);
+  const fallback = extractNumbersInOrder(cleanedHtml, isValid, maxHorses);
   if (fallback.length >= 3) {
-    return fallback.slice(0, MAX_HORSES);
+    return fallback.slice(0, maxHorses);
   }
 
   return null;
+}
+
+/**
+ * Helper : détermine le nombre max de chevaux à extraire selon paris_disponibles.
+ *
+ *   - QUINTE_PLUS / QUINTE → 7 (couvre Bonus 3 qui nécessite 7 chevaux)
+ *   - Tous les autres      → 6 (Top 5 + 6e)
+ *
+ * Utilisé par prefill-from-geny et runGenyArriveesSync pour passer maxHorses.
+ */
+export function maxHorsesForParis(parisDisponibles?: string[] | null): number {
+  if (Array.isArray(parisDisponibles)
+      && (parisDisponibles.includes("QUINTE_PLUS")
+          || parisDisponibles.includes("QUINTE"))) {
+    return 7;
+  }
+  return 6;
 }
 
 interface CourseRow {
@@ -310,6 +347,11 @@ interface CourseRow {
    * à un partant.
    */
   validNumbers?: number[];
+  /**
+   * Paris disponibles sur la course. Utilisé pour décider du cap arrivée :
+   * 7 chevaux pour Quinté+ (Bonus 3 nécessite 7), 6 pour les autres.
+   */
+  parisDisponibles?: string[];
 }
 
 interface FetchedArrivee {
@@ -342,7 +384,9 @@ async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee 
     if (!res.ok) return null;
     const html = await res.text();
 
-    const arrivee = parseArrivee(html, course.validNumbers);
+    // Cap dynamique : 7 chevaux pour Quinté+ (Bonus 3), 6 pour le reste.
+    const maxHorses = maxHorsesForParis(course.parisDisponibles);
+    const arrivee = parseArrivee(html, course.validNumbers, maxHorses);
     if (!arrivee) return null;
 
     // Bonus : rapports PMU complets + commentaire d'arrivée (best-effort)
@@ -394,9 +438,10 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
 
   // JOIN partants pour passer leurs numéros au parser → garantit zéro faux
   // positif (sidebar, rapports €, IDs HTML rejetés automatiquement).
+  // paris_disponibles sert au cap dynamique (Quinté+ → 7, sinon → 6).
   const { data: rawCourses } = await supabase
     .from("courses")
-    .select("id, numero_reunion, numero_course, geny_url, partants(numero)")
+    .select("id, numero_reunion, numero_course, geny_url, paris_disponibles, partants(numero)")
     .eq("date_course", date)
     .is("arrivee_officielle", null);
 
@@ -404,12 +449,13 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     return { ok: true, date, scraped: 0, upserted: 0, skipped: 0, not_found: 0 };
   }
 
-  // Mappe chaque course avec sa liste de numéros valides (partants)
+  // Mappe chaque course avec sa liste de numéros valides + paris dispo
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courses: CourseRow[] = (rawCourses as any[]).map((c) => ({
     id:             c.id,
     numero_reunion: c.numero_reunion,
     numero_course:  c.numero_course,
+    parisDisponibles: Array.isArray(c.paris_disponibles) ? c.paris_disponibles : undefined,
     geny_url:       c.geny_url,
     validNumbers:   Array.isArray(c.partants)
       ? c.partants.map((p: { numero: number }) => p.numero).filter((n: number) => Number.isInteger(n))
