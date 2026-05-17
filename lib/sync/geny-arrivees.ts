@@ -42,12 +42,26 @@ function extractNums(str: string): number[] {
 }
 
 /**
- * Limite max d'une arrivée scrapée. PMU utilise jusqu'à 7 chevaux pour le
- * Quinté+ Bonus 4 (5 du Quinté + 6e + 7e bonus). Geny affiche souvent 8
- * chevaux (les Dai exclus). On stocke jusqu'à 10 pour être large, l'affichage
- * front choisira combien afficher selon le type de pari.
+ * Limite max d'une arrivée scrapée.
+ *
+ * Décision PO (2026-05-17) : cap à 6 chevaux pour aligner avec :
+ *   - L'éditorial Elite Turf qui publie ses arrivées Top 5 (5 chevaux +
+ *     un éventuel 6e pour le Bonus 4 du Quinté+)
+ *   - L'UX admin : éviter à l'éditeur de devoir supprimer les chevaux 7-10
+ *     pour chaque arrivée avant publication
+ *   - Les pages publiques qui slice à 5 ou 6 de toute façon
+ *
+ * Compromis :
+ *   - Pour les Quinté+ Bonus 3 (qui nécessitent 7 chevaux pour calcul du
+ *     Bonus 3), l'éditeur peut taper manuellement le 7e dans /admin/arrivees
+ *   - Les arrivées existantes en BDD (avec 7-10 chevaux) ne sont PAS modifiées
+ *     — seul le futur prefill est cappé
+ *
+ * Historique :
+ *   - Avant 2026-05-17 : MAX_HORSES = 10 (stockage large "au cas où")
+ *   - Après : MAX_HORSES = 6 (Top 5 + bonus 4)
  */
-const MAX_HORSES = 10;
+const MAX_HORSES = 6;
 
 /**
  * Construit le predicate de validité d'un numéro de cheval.
