@@ -56,19 +56,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Récupérer geny_url + numéros des partants (filtre validation) ────
+    // ── Récupérer geny_url + heure + date + numéros des partants ─────────
     // Les numéros des partants sont passés au parser pour rejeter tous les
     // numéros HTML qui ne sont PAS des partants (sidebars, rapports €, IDs).
-    // Garantit zéro faux positif dans l'extraction de l'arrivée.
     //
-    // On récupère aussi statut + date_course pour bloquer le prefill sur
-    // courses futures (sinon le parser fallback choppe les numéros de la
-    // sidebar "Dernières arrivées" de Geny → fake arrivée identique pour
-    // toutes les courses futures). Incident 2026-05-16 : 3 courses du
-    // 17/05 enregistrées avec [11,8,17,5,2,1] avant ce fix.
+    // On récupère aussi date_course + heure_depart pour bloquer le prefill
+    // sur courses futures uniquement. Le statut N'EST PLUS un critère :
+    // historiquement 85 % des courses passées restaient en `PROGRAMME` à
+    // cause d'une désync arrivees ↔ courses (résolue le 17/05/2026 via
+    // migration + trigger SQL, mais on garde le code tolérant aux desyncs
+    // résiduels en utilisant heure_depart + 30min comme proxy fiable).
     const { data: course, error: courseErr } = await supabase
       .from("courses")
-      .select("id, geny_url, statut, date_course, partants(numero)")
+      .select("id, geny_url, statut, date_course, heure_depart, partants(numero)")
       .eq("id", body.course_id)
       .single();
 
@@ -89,28 +89,69 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Garde-fou : refuser le prefill pour courses non disputées ───────
-    // Geny retourne une page placeholder pour les courses futures (avec
-    // sidebar "Dernières arrivées" qui pollue notre fallback parser).
-    // On bloque ici pour éviter les faux positifs.
+    // ── Garde-fou : refuser le prefill pour courses pas encore disputées ─
+    // Logique (heure Paris, pas UTC) :
+    //   - date_course > today_paris            → refuser (futur)
+    //   - date_course < today_paris            → autoriser (passé certain)
+    //   - date_course == today_paris :
+    //       - heure_depart + 30min > now_paris → refuser (course pas finie)
+    //       - sinon                             → autoriser (course finie)
     //
-    // Calcul date Paris (pas UTC) pour éviter les bascules à minuit UTC.
-    const todayParis = new Date().toLocaleDateString("fr-CA", {
+    // La marge de 30 min couvre le temps réel d'une course (~10-15 min de
+    // mise en route + arrivée officielle) + le délai de publication Geny
+    // (~5-10 min). Au-delà, on considère que l'arrivée est dispo sur Geny.
+    //
+    // ⚠️ Pourquoi pas le statut : voir migration 20260517_sync_arrivees_to_courses.
+    const now = new Date();
+    const todayParis = now.toLocaleDateString("fr-CA", {
       timeZone: "Europe/Paris",
-    }); // YYYY-MM-DD
-    const isFuture  = course.date_course > todayParis;
-    const notFinished = course.statut !== "TERMINE";
-    if (isFuture || notFinished) {
+    }); // "YYYY-MM-DD"
+
+    const courseDate = course.date_course; // "YYYY-MM-DD"
+
+    if (courseDate > todayParis) {
       return NextResponse.json(
         {
           error:
-            `Course pas encore disputée (statut=${course.statut}, date=${course.date_course}). ` +
-            "Le pré-remplissage Geny n'est disponible qu'après l'arrivée officielle (statut TERMINE). " +
-            "Patientez que la course soit courue, puis réessayez.",
+            `Course dans le futur (${courseDate}). Patientez que la course soit courue.`,
         },
         { status: 422 },
       );
     }
+
+    if (courseDate === todayParis && course.heure_depart) {
+      // "HH:MM:SS" → minutes since midnight
+      const [hh, mm] = course.heure_depart
+        .split(":")
+        .map((s: string) => parseInt(s, 10));
+      const departMins = (hh || 0) * 60 + (mm || 0);
+
+      // Heure Paris actuelle en minutes since midnight
+      const nowParisHHMM = now.toLocaleTimeString("fr-FR", {
+        timeZone: "Europe/Paris",
+        hour:     "2-digit",
+        minute:   "2-digit",
+        hour12:   false,
+      }); // "HH:MM"
+      const [nh, nm] = nowParisHHMM
+        .split(":")
+        .map((s: string) => parseInt(s, 10));
+      const nowMins = (nh || 0) * 60 + (nm || 0);
+
+      const MARGE_FIN_MIN = 30;
+      if (nowMins < departMins + MARGE_FIN_MIN) {
+        const minutesAvant = departMins + MARGE_FIN_MIN - nowMins;
+        return NextResponse.json(
+          {
+            error:
+              `Course pas encore terminée (départ ${course.heure_depart.slice(0, 5)}). ` +
+              `Réessayez dans ~${minutesAvant} min, le temps que Geny publie l'arrivée.`,
+          },
+          { status: 422 },
+        );
+      }
+    }
+    // Courses passées (date < aujourd'hui) ou aujourd'hui + heure+30min écoulée → autoriser
 
     // Liste des numéros de partants pour validation par le parser
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
