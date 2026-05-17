@@ -352,6 +352,17 @@ interface CourseRow {
    * 7 chevaux pour Quinté+ (Bonus 3 nécessite 7), 6 pour les autres.
    */
   parisDisponibles?: string[];
+  /**
+   * Heure de départ (format "HH:MM:SS"). Sert au filtre temporel :
+   * on ne scrape pas Geny pour une course pas encore disputée (heure_depart
+   * + 30 min < now Paris).
+   *
+   * Incident 2026-05-17 : sans ce filtre, le cron scrapait toutes les
+   * courses du jour, y compris celles à 20h alors qu'il était 15h, et
+   * Geny retournait son placeholder dont le parser fallback chopait la
+   * sidebar "Dernières arrivées" → 33 fausses arrivées identiques en BDD.
+   */
+  heureDepart?: string | null;
 }
 
 interface FetchedArrivee {
@@ -439,9 +450,10 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
   // JOIN partants pour passer leurs numéros au parser → garantit zéro faux
   // positif (sidebar, rapports €, IDs HTML rejetés automatiquement).
   // paris_disponibles sert au cap dynamique (Quinté+ → 7, sinon → 6).
+  // heure_depart sert au filtre temporel (refuser courses pas encore courues).
   const { data: rawCourses } = await supabase
     .from("courses")
-    .select("id, numero_reunion, numero_course, geny_url, paris_disponibles, partants(numero)")
+    .select("id, numero_reunion, numero_course, geny_url, heure_depart, paris_disponibles, partants(numero)")
     .eq("date_course", date)
     .is("arrivee_officielle", null);
 
@@ -449,13 +461,14 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     return { ok: true, date, scraped: 0, upserted: 0, skipped: 0, not_found: 0 };
   }
 
-  // Mappe chaque course avec sa liste de numéros valides + paris dispo
+  // Mappe chaque course avec sa liste de numéros valides + paris dispo + heure
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courses: CourseRow[] = (rawCourses as any[]).map((c) => ({
     id:             c.id,
     numero_reunion: c.numero_reunion,
     numero_course:  c.numero_course,
     parisDisponibles: Array.isArray(c.paris_disponibles) ? c.paris_disponibles : undefined,
+    heureDepart:    c.heure_depart ?? null,
     geny_url:       c.geny_url,
     validNumbers:   Array.isArray(c.partants)
       ? c.partants.map((p: { numero: number }) => p.numero).filter((n: number) => Number.isInteger(n))
@@ -475,10 +488,47 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
   const withGeny    = unique.filter((c) => !!c.geny_url);
   const withoutGeny = unique.length - withGeny.length;
 
-  console.log(`[geny-arrivees] ${unique.length} courses (avec geny_url: ${withGeny.length}, sans: ${withoutGeny})`);
+  // ── Filtre temporel CRITIQUE (anti-fake arrivées) ───────────────────────
+  // On ne scrape Geny QUE pour les courses dont heure_depart + 30 min est
+  // passée (= course terminée + Geny a eu le temps de publier l'arrivée).
+  // Sans ce filtre, Geny retourne un placeholder pour les courses futures et
+  // le parser fallback chope la sidebar "Dernières arrivées" → fausses
+  // arrivées identiques sur 30+ courses (incident 17/05/2026, voir
+  // BatchPrefillButton + audit BDD).
+  //
+  // Pour dateISO != today, on autorise tout (rétroactif explicite).
+  const todayParisISOValue = todayParisISO();
+  const isTodaySync = date === todayParisISOValue;
+  let withGenyFiltered = withGeny;
+  let filteredOutByTime = 0;
+  if (isTodaySync) {
+    const now = new Date();
+    const nowParisHHMM = now.toLocaleTimeString("fr-FR", {
+      timeZone: "Europe/Paris",
+      hour:     "2-digit",
+      minute:   "2-digit",
+      hour12:   false,
+    });
+    const [nh, nm] = nowParisHHMM.split(":").map((s) => parseInt(s, 10));
+    const nowMins = (nh || 0) * 60 + (nm || 0);
+    const MARGE_FIN_MIN = 30;
+    withGenyFiltered = withGeny.filter((c) => {
+      if (!c.heureDepart) return false;
+      const [hh, mm] = c.heureDepart.split(":").map((s) => parseInt(s, 10));
+      const departMins = (hh || 0) * 60 + (mm || 0);
+      return nowMins >= departMins + MARGE_FIN_MIN;
+    });
+    filteredOutByTime = withGeny.length - withGenyFiltered.length;
+  }
 
-  // Scraper en parallèle (4 workers)
-  const scraped = await processInPool(withGeny, CONCURRENCY, async (course) => {
+  console.log(
+    `[geny-arrivees] ${unique.length} courses (avec geny_url: ${withGeny.length}, ` +
+    `eligibles temporellement: ${withGenyFiltered.length}, ` +
+    `filtrees temps: ${filteredOutByTime}, sans geny: ${withoutGeny})`,
+  );
+
+  // Scraper en parallèle (4 workers) — uniquement les courses temporellement éligibles
+  const scraped = await processInPool(withGenyFiltered, CONCURRENCY, async (course) => {
     const data = await fetchArriveeForCourse(course);
     return data ? { courseId: course.id, ...data } : null;
   });
