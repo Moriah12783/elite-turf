@@ -6,7 +6,7 @@ import {
   parseCommentaire,
   type RapportsPMU,
 } from "@/lib/sync/geny-rapports-parser";
-import { parseArrivee } from "@/lib/sync/geny-arrivees";
+import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
 
 /**
  * POST /api/admin/arrivees/prefill-from-geny
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     // résiduels en utilisant heure_depart + 30min comme proxy fiable).
     const { data: course, error: courseErr } = await supabase
       .from("courses")
-      .select("id, geny_url, statut, date_course, heure_depart, partants(numero)")
+      .select("id, geny_url, statut, date_course, heure_depart, paris_disponibles, partants(numero)")
       .eq("id", body.course_id)
       .single();
 
@@ -200,9 +200,21 @@ export async function POST(req: NextRequest) {
     // On passe validNumbers (numéros des partants) au parser pour qu'il
     // filtre TOUT numéro qui n'est pas un partant valide → élimine
     // sidebars, rapports €, IDs et autres faux positifs.
+    //
+    // Cap dynamique : 7 chevaux pour Quinté+ (couvre Bonus 3), 6 pour le
+    // reste (Top 5 + 6e Bonus 4). Évite à l'éditeur de supprimer les
+    // chevaux 7-10 manuellement avant publication.
+    const maxHorses = maxHorsesForParis(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (course as any).paris_disponibles,
+    );
     let arrivee: number[] | null = null;
     try {
-      arrivee = parseArrivee(html, validNumbers.length > 0 ? validNumbers : undefined);
+      arrivee = parseArrivee(
+        html,
+        validNumbers.length > 0 ? validNumbers : undefined,
+        maxHorses,
+      );
     } catch (err) {
       console.warn("[prefill-from-geny] parseArrivee failed:", err);
     }
