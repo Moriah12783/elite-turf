@@ -1,10 +1,17 @@
 /**
  * Tableau d'historique des courses pour /chevaux/[slug] /jockeys/[slug]
  * /entraineurs/[slug]. Composant serveur, pas d'interactivité.
+ *
+ * Maillage interne (PR #120, mai 2026) : les colonnes Cheval / Jockey /
+ * Entraîneur / Hippodrome deviennent des <Link> vers leur fiche dédiée
+ * quand le slug existe en BDD (validé via `knownSlugs`). Chaque page
+ * historique distribue ainsi ~150 liens internes vers des fiches voisines
+ * → boost massif du crawl-budget Google sur /chevaux/* /jockeys/*.
  */
 
 import Link from "next/link";
-import type { CourseLine, EntiteType } from "@/lib/seo/acteurs";
+import type { CourseLine, EntiteType, KnownSlugs } from "@/lib/seo/acteurs";
+import { slugify } from "@/lib/seo/slugs";
 
 interface Props {
   type: EntiteType;
@@ -13,6 +20,35 @@ interface Props {
   showJockey?:     boolean;
   showEntraineur?: boolean;
   showCheval?:     boolean;
+  /** Slugs présents en BDD pour le maillage interne (optional, fallback texte). */
+  knownSlugs?:     KnownSlugs;
+}
+
+/**
+ * Cellule "nom d'acteur" : Link si le slug existe en BDD, sinon plain text.
+ * Évite les 404 sur des acteurs qui n'auraient pas encore été syncés.
+ */
+function ActeurCell({
+  nom, slug, type, validSlugs, className = "",
+}: {
+  nom:        string | null;
+  slug:       string;
+  type:       EntiteType;
+  validSlugs: Set<string> | undefined;
+  className?: string;
+}) {
+  if (!nom) return <span className="text-text-muted">—</span>;
+  if (!validSlugs || !validSlugs.has(slug)) {
+    return <span className={className}>{nom}</span>;
+  }
+  return (
+    <Link
+      href={`/${type}/${slug}`}
+      className={`${className} hover:text-gold-primary transition-colors underline-offset-2 hover:underline`}
+    >
+      {nom}
+    </Link>
+  );
 }
 
 function formatDateShort(d: string): string {
@@ -44,7 +80,7 @@ function ArriveeBadge({ pos }: { pos: number | null }) {
   );
 }
 
-export default function HistoriqueCourses({ type, rows, showJockey, showEntraineur, showCheval }: Props) {
+export default function HistoriqueCourses({ type, rows, showJockey, showEntraineur, showCheval, knownSlugs }: Props) {
   if (rows.length === 0) {
     return (
       <div className="card-base p-8 text-center">
@@ -82,15 +118,49 @@ export default function HistoriqueCourses({ type, rows, showJockey, showEntraine
                     {r.course_libelle.length > 35 ? r.course_libelle.slice(0, 35) + "…" : r.course_libelle}
                   </span>
                 </td>
-                <td className="py-2 px-3 text-text-muted text-xs hidden md:table-cell">{r.hippodrome_nom ?? "—"}</td>
+                <td className="py-2 px-3 text-text-muted text-xs hidden md:table-cell">
+                  {r.hippodrome_nom ? (
+                    knownSlugs?.hippodromes.has(slugify(r.hippodrome_nom)) ? (
+                      <Link
+                        href={`/hippodromes/${slugify(r.hippodrome_nom)}`}
+                        className="hover:text-gold-primary transition-colors"
+                      >
+                        {r.hippodrome_nom}
+                      </Link>
+                    ) : (
+                      r.hippodrome_nom
+                    )
+                  ) : "—"}
+                </td>
                 {showCheval && (
-                  <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">{r.nom_cheval ?? "—"}</td>
+                  <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">
+                    <ActeurCell
+                      nom={r.nom_cheval}
+                      slug={slugify(r.nom_cheval ?? "")}
+                      type="chevaux"
+                      validSlugs={knownSlugs?.chevaux}
+                    />
+                  </td>
                 )}
                 {showJockey && (
-                  <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">{r.jockey ?? "—"}</td>
+                  <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">
+                    <ActeurCell
+                      nom={r.jockey}
+                      slug={slugify(r.jockey ?? "")}
+                      type="jockeys"
+                      validSlugs={knownSlugs?.jockeys}
+                    />
+                  </td>
                 )}
                 {showEntraineur && (
-                  <td className="py-2 px-3 text-text-muted text-xs hidden xl:table-cell">{r.entraineur ?? "—"}</td>
+                  <td className="py-2 px-3 text-text-muted text-xs hidden xl:table-cell">
+                    <ActeurCell
+                      nom={r.entraineur}
+                      slug={slugify(r.entraineur ?? "")}
+                      type="entraineurs"
+                      validSlugs={knownSlugs?.entraineurs}
+                    />
+                  </td>
                 )}
                 <td className="py-2 px-3 text-center text-gold-primary font-bold">{r.numero}</td>
                 <td className="py-2 px-3 text-right text-text-secondary font-mono text-xs hidden sm:table-cell">

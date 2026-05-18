@@ -26,9 +26,10 @@ import GraphiqueForme from "./GraphiqueForme";
 import PartenairesFrequents from "./PartenairesFrequents";
 import {
   type Entite, type CourseLine, type EntiteType, type RichStats,
-  ENTITE_LABEL, formatSexeCheval,
+  ENTITE_LABEL, formatSexeCheval, getKnownSlugsForRows,
 } from "@/lib/seo/acteurs";
 import { formatDateLong } from "@/lib/seo/dates";
+import { slugify } from "@/lib/seo/slugs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -184,10 +185,16 @@ function StatCard({
   );
 }
 
-export default function ActeurDetailPage({ type, entite, rows, stats, heroImg }: Props) {
+export default async function ActeurDetailPage({ type, entite, rows, stats, heroImg }: Props) {
   const label = ENTITE_LABEL[type];
   const sousTitre = buildHeroSousTitre(type, entite, stats);
   const { breadcrumb, entityLd, faqLd } = buildJsonLd(type, entite, stats);
+
+  // Maillage interne : récupère les slugs existants en BDD pour les acteurs
+  // mentionnés dans les rows. Permet de générer des <Link> sécurisés vers
+  // /chevaux/<slug>, /jockeys/<slug>, /entraineurs/<slug>, /hippodromes/<slug>
+  // (skip silencieusement si DB absente / erreur réseau → fallback texte).
+  const knownSlugs = await getKnownSlugsForRows(rows).catch(() => undefined);
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -314,7 +321,7 @@ export default function ActeurDetailPage({ type, entite, rows, stats, heroImg }:
           </div>
         )}
 
-        {/* ── Top hippodromes ─────────────────────────────────────── */}
+        {/* ── Top hippodromes (Links pour maillage interne SEO) ─────── */}
         {stats.hippodromes_freq.length > 0 && (
           <section className="card-base p-5 sm:p-6">
             <h2 className="font-serif font-bold text-text-primary text-lg mb-4 flex items-center gap-2">
@@ -325,16 +332,33 @@ export default function ActeurDetailPage({ type, entite, rows, stats, heroImg }:
               </span>
             </h2>
             <div className="flex flex-wrap gap-2">
-              {stats.hippodromes_freq.map(([nom, count]) => (
-                <span
-                  key={nom}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-elevated border border-border text-text-secondary text-xs"
-                >
-                  <span className="font-medium">{nom}</span>
-                  <span className="text-text-muted">·</span>
-                  <span className="text-gold-primary font-mono font-bold">{count}</span>
-                </span>
-              ))}
+              {stats.hippodromes_freq.map(([nom, count]) => {
+                const slug = slugify(nom);
+                const hasPage = knownSlugs?.hippodromes.has(slug);
+                const inner = (
+                  <>
+                    <span className="font-medium">{nom}</span>
+                    <span className="text-text-muted">·</span>
+                    <span className="text-gold-primary font-mono font-bold">{count}</span>
+                  </>
+                );
+                return hasPage ? (
+                  <Link
+                    key={nom}
+                    href={`/hippodromes/${slug}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-elevated hover:bg-bg-hover border border-border hover:border-gold-primary/40 text-text-secondary hover:text-text-primary text-xs transition-colors"
+                  >
+                    {inner}
+                  </Link>
+                ) : (
+                  <span
+                    key={nom}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-elevated border border-border text-text-secondary text-xs"
+                  >
+                    {inner}
+                  </span>
+                );
+              })}
             </div>
           </section>
         )}
@@ -357,6 +381,7 @@ export default function ActeurDetailPage({ type, entite, rows, stats, heroImg }:
             showCheval={type !== "chevaux"}
             showJockey={type !== "jockeys"}
             showEntraineur={type !== "entraineurs"}
+            knownSlugs={knownSlugs}
           />
         </section>
 
