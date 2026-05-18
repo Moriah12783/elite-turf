@@ -70,7 +70,15 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   const ResultatIcon = resultatConf.icon;
 
   return (
-    <article className="card-base relative overflow-hidden group">
+    /* cursor-pointer + active:scale = signal visuel fort que TOUTE la carte est
+       cliquable. Audit Clarity 18/05/2026 : 17 dead-clicks/session sur les
+       "badges" (niveau, type, catégorie, résultat). Cause = pills rondes
+       ressemblent aux filtres (cliquables) → users tentent un clic, le Link
+       overlay navigue mais Clarity log l'événement comme inerte sur le span.
+       Solution : cursor-pointer global + badges rendus visuellement "tag-like"
+       (rounded-md au lieu de rounded-full, pas de border épaisse) pour réduire
+       leur look "boutonnable". */
+    <article className="card-base relative overflow-hidden group cursor-pointer active:scale-[0.995] transition-transform">
       {/* Premium shimmer */}
       {(p.niveau_acces === "STARTER" || p.niveau_acces === "PRO") && (
         <div className="absolute inset-0 shimmer-bg pointer-events-none rounded-xl" />
@@ -85,40 +93,40 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
       <Link
         href={`/pronostics/${p.id}`}
         aria-label={`Voir le pronostic : ${p.course?.libelle || "course à venir"}`}
-        className="absolute inset-0 z-0 rounded-xl"
+        className="absolute inset-0 z-0 rounded-xl focus-visible:ring-2 focus-visible:ring-gold-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary outline-none"
       >
         <span className="sr-only">Voir le détail du pronostic</span>
       </Link>
 
       <div className="relative z-10 p-5 sm:p-6 pointer-events-none">
 
-        {/* ── Top: Badges ── */}
+        {/* ── Top: Badges ── (tag-style, pas button-style pour éviter dead-clicks) */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {/* Niveau */}
-          <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border ${
+          {/* Niveau — rounded-md (style "tag" descriptif, pas "pill boutonnable") */}
+          <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-semibold ${
             p.niveau_acces === "GRATUIT"
-              ? "bg-status-win/10 text-status-win border-status-win/20"
+              ? "bg-status-win/10 text-status-win"
               : p.niveau_acces === "ELITE"
-              ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-              : "bg-gold-faint text-gold-light border-gold-primary/30"
+              ? "bg-purple-500/10 text-purple-400"
+              : "bg-gold-faint text-gold-light"
           }`}>
             {p.niveau_acces === "GRATUIT" ? "✓ La Base Solide" : p.niveau_acces === "ELITE" ? "★ L'Outsider Elite" : "⭐ Le Duo de Choc"}
           </span>
 
           {/* Type de pari */}
-          <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
+          <span className="text-[11px] px-2 py-0.5 rounded-md bg-bg-elevated text-text-secondary font-medium">
             {BET_TYPE_LABELS[p.type_pari]}
           </span>
 
           {/* Catégorie course */}
           {p.course?.categorie && (
-            <span className={`text-xs px-2 py-0.5 rounded-full border ${CATEGORIE_COLORS[p.course.categorie] || ""}`}>
+            <span className={`text-[11px] px-2 py-0.5 rounded-md ${CATEGORIE_COLORS[p.course.categorie] || ""}`}>
               {p.course.categorie}
             </span>
           )}
 
-          {/* Résultat */}
-          <span className={`ml-auto inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border ${resultatConf.classes}`}>
+          {/* Résultat — garde l'aspect pill (statut = info importante visuellement distincte) */}
+          <span className={`ml-auto inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-semibold ${resultatConf.classes}`}>
             <ResultatIcon className="w-3 h-3" />
             {resultatConf.label}
           </span>
