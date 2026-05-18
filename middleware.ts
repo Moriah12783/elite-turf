@@ -48,6 +48,27 @@ async function userHasPhone(userId: string): Promise<boolean> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Redirection non-www → www (308 Permanent) ─────────────────────────
+  // Consolidation du domaine canonique sur https://www.elite-turf.fr.
+  //
+  // Historique : précédemment implémenté via next.config.js `redirects()`
+  // avec `source: "/:path*"` + `destination: "https://www.elite-turf.fr/:path*"`.
+  // Bug détecté 2026-05-18 : sur OpenNext + Next.js 14.2, la substitution
+  // de `:path*` échoue pour la requête RACINE seulement → le header
+  // Location contenait le pattern littéral `https://www.elite-turf.fr/:path*`
+  // (vérifié via `curl -sI https://elite-turf.fr/`). Les paths non-vides
+  // (/abonnements, /pronostics, etc.) étaient correctement substitués.
+  //
+  // Solution : déplacer la redirection ici. Le middleware s'exécute avant
+  // `redirects()` et gère tous les cas sans la friction path-to-regexp.
+  // URL.clone() préserve automatiquement pathname + search + hash.
+  const host = request.headers.get("host");
+  if (host === "elite-turf.fr") {
+    const url = request.nextUrl.clone();
+    url.host = "www.elite-turf.fr";
+    return NextResponse.redirect(url, 308);
+  }
+
   // ── Catch malformed URLs (SEO fix Google Search Console) ──────────────
   // GSC a détecté des URLs comme /https://www.elite-turf.fr/courses (2 cas)
   // probablement issues d'un href cassé ou d'un crawl externe mal formé.
