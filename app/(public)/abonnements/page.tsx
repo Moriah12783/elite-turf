@@ -152,6 +152,39 @@ export default async function AbonnementsPage() {
         sousTitre="1 Tiercé gratuit par jour sans inscription. Accès complet à partir de 65€. Orange Money, MTN MoMo, Wave ou CB."
       />
 
+      {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
+          Audit Clarity 18/05/2026 : sur /abonnements, scroll depth moyen
+          ~60%, beaucoup quittent avant d'atteindre les réassurances qui
+          étaient sous la grille de plans. Trust strip déplacé EN HAUT,
+          immédiatement visible après le hero, pour répondre à la question
+          "ce site est-il sûr ?" AVANT que l'utilisateur ne voit les prix.
+          Impact attendu : +10-15% scroll depth + baisse du bounce rate. */}
+      <div className="border-b border-border bg-bg-card/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-5 text-xs flex-wrap">
+            <div className="flex items-center gap-2 text-status-win">
+              <Shield className="w-4 h-4 flex-shrink-0" />
+              <span className="font-semibold">Paiement 100% Sécurisé</span>
+            </div>
+            <span className="hidden sm:block w-px h-4 bg-border" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-gold-light">
+              <Zap className="w-4 h-4 flex-shrink-0" />
+              <span className="font-semibold">Activation en moins de 2 min</span>
+            </div>
+            <span className="hidden sm:block w-px h-4 bg-border" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-text-secondary">
+              <Clock className="w-4 h-4 flex-shrink-0" />
+              <span className="font-semibold">Sans engagement · Résiliable</span>
+            </div>
+            <span className="hidden sm:block w-px h-4 bg-border" aria-hidden="true" />
+            <div className="flex items-center gap-2 text-text-secondary">
+              <MessageCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="font-semibold">Support WhatsApp · 30 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-16">
 
         {/* ── BANDEAU PROMO LANCEMENT ── */}
@@ -416,21 +449,7 @@ export default async function AbonnementsPage() {
             })}
           </div>
 
-          {/* Réassurance */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-status-win/5 border border-status-win/20 rounded-full text-status-win">
-              <Shield className="w-3.5 h-3.5" />
-              Paiement 100% Sécurisé
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-gold-faint border border-gold-primary/20 rounded-full text-gold-light">
-              <span>⚡</span>
-              Activation instantanée après paiement
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-bg-elevated border border-border rounded-full text-text-secondary">
-              <span>↩️</span>
-              Résiliable à tout moment
-            </div>
-          </div>
+          {/* Réassurance déplacée en haut de page (trust strip above the fold). */}
         </div>
 
         {/* ── MOYENS DE PAIEMENT ── */}
