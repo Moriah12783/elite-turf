@@ -223,9 +223,36 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Filters — Suspense fallback aligned exactly with PronosticsFilters
+            real height to prevent CLS (Web Vitals).
+            Audit Clarity 18/05/2026 : CLS = 0.63 (POOR, seuil "Good" < 0.10) sur
+            /pronostics. Le fallback h-10 (40px) provoquait un saut de ~70px à
+            l'hydratation (réel: header 20px + space-y-3 12px + pills 30-72px).
+            Skeleton ici reproduit la structure exacte avec min-h responsive :
+            mobile (flex-nowrap, 1 ligne) = 64px / desktop (flex-wrap, 2 lignes) = 104px. */}
         <div className="mb-6">
-          <Suspense fallback={<div className="h-10 bg-bg-elevated rounded-xl animate-pulse" />}>
+          <Suspense
+            fallback={
+              <div className="space-y-3" aria-hidden="true">
+                {/* Header row : icon + count text */}
+                <div className="flex items-center gap-2 h-5">
+                  <div className="w-4 h-4 bg-bg-elevated rounded animate-pulse" />
+                  <div className="w-24 h-3.5 bg-bg-elevated rounded animate-pulse" />
+                </div>
+                {/* Pills row — overflow-x sur mobile, wrap sur desktop */}
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                  <div className="flex items-center gap-2 flex-nowrap sm:flex-wrap pb-1 min-h-[32px] sm:min-h-[72px]">
+                    {Array.from({ length: 14 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-7 w-16 bg-bg-elevated rounded-full animate-pulse flex-shrink-0"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            }
+          >
             <PronosticsFilters
               hippodromes={hippodromes || []}
               totalCount={periodeActive ? pronostics.length : pronosticsAujourdhui.length + pronosticsHistorique.length}
