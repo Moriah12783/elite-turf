@@ -15,6 +15,7 @@
  */
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { slugify } from "@/lib/seo/slugs";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -195,6 +196,64 @@ export async function getCoursesForEntite(
   // Tri en mémoire par date_course desc, puis tronquage à `limit`
   lines.sort((a, b) => b.date_course.localeCompare(a.date_course));
   return lines.slice(0, limit);
+}
+
+/**
+ * Maillage interne : pour un set de courses (HistoriqueCourses),
+ * collecte les noms des chevaux/jockeys/entraîneurs/hippodromes mentionnés
+ * et vérifie quels slugs existent réellement dans les tables référentielles.
+ *
+ * Permet de générer des `<Link>` vers /chevaux/<slug>, /jockeys/<slug>, etc.
+ * SEULEMENT pour les acteurs réellement présents en BDD → évite les 404 et
+ * boost le PageRank distribué entre fiches voisines.
+ *
+ * Stratégie : 4 queries `in()` parallèles, batchées par Promise.all. Sur 50
+ * rows d'historique avec ~50 noms uniques de chaque type, ~50ms total.
+ */
+export interface KnownSlugs {
+  chevaux:     Set<string>;
+  jockeys:     Set<string>;
+  entraineurs: Set<string>;
+  hippodromes: Set<string>;
+}
+
+export async function getKnownSlugsForRows(rows: CourseLine[]): Promise<KnownSlugs> {
+  const supabase = createServiceClient();
+
+  const chevauxNames     = new Set<string>();
+  const jockeysNames     = new Set<string>();
+  const entraineursNames = new Set<string>();
+  const hippodromesNames = new Set<string>();
+
+  for (const r of rows) {
+    if (r.nom_cheval)     chevauxNames.add(r.nom_cheval);
+    if (r.jockey)         jockeysNames.add(r.jockey);
+    if (r.entraineur)     entraineursNames.add(r.entraineur);
+    if (r.hippodrome_nom) hippodromesNames.add(r.hippodrome_nom);
+  }
+
+  const [chev, jock, entr, hipp] = await Promise.all([
+    chevauxNames.size > 0
+      ? supabase.from("chevaux").select("slug").in("nom", Array.from(chevauxNames))
+      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
+    jockeysNames.size > 0
+      ? supabase.from("jockeys").select("slug").in("nom", Array.from(jockeysNames))
+      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
+    entraineursNames.size > 0
+      ? supabase.from("entraineurs").select("slug").in("nom", Array.from(entraineursNames))
+      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
+    hippodromesNames.size > 0
+      ? supabase.from("hippodromes").select("nom").in("nom", Array.from(hippodromesNames))
+      : Promise.resolve({ data: [] as Array<{ nom: string }> }),
+  ]);
+
+  return {
+    chevaux:     new Set((chev.data ?? []).map((r: any) => r.slug).filter(Boolean)),
+    jockeys:     new Set((jock.data ?? []).map((r: any) => r.slug).filter(Boolean)),
+    entraineurs: new Set((entr.data ?? []).map((r: any) => r.slug).filter(Boolean)),
+    // Hippodromes : pas de colonne `slug` en BDD, on slugifie le nom
+    hippodromes: new Set((hipp.data ?? []).map((r: any) => slugify(r.nom)).filter(Boolean)),
+  };
 }
 
 /** Top entités par activité (pour pages index). */
