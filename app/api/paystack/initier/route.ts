@@ -69,7 +69,16 @@ export async function POST(req: NextRequest) {
         currency: "XOF",
         reference,
         callback_url: `${APP_URL}/paiement/succes?tx=${reference}&plan=${planId}`,
-        channels: ["card", "mobile_money", "bank_transfer"], // tous les canaux disponibles
+        // Ordre = priorité d'affichage dans la checkout Paystack.
+        // Marché cible Afrique francophone (>25 % du trafic Clarity) → Mobile
+        // Money en PREMIER (Orange Money, MTN, Wave). Carte en fallback pour les
+        // clients européens et africains avec CB. bank_transfer en dernier
+        // (rarement utilisé en XOF).
+        //
+        // Incident 5-7 mai 2026 : 13 tentatives "abandoned" toutes en channel
+        // "card" parce que le compte Paystack en review limitait à card seul.
+        // Compte approuvé le 18/05 → mobile_money réellement disponible.
+        channels: ["mobile_money", "card", "bank_transfer"],
         metadata: {
           plan_id: planId,
           plan_nom: plan.nom,
