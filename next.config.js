@@ -52,19 +52,12 @@ const nextConfig = {
     return sha ? `${sha.slice(0, 7)}-${ts}` : String(ts);
   },
 
-  // ── Redirection non-www → www (permanent 308) ─────────────────────────────
-  // Évite les chaînes de redirections détectées par Google Search Console
-  // et consolide le domaine canonique sur https://www.elite-turf.fr
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "^elite-turf\\.fr$" }],
-        destination: "https://www.elite-turf.fr/:path*",
-        permanent: true, // 308 → Google transfère le PageRank
-      },
-    ];
-  },
+  // ── Redirection non-www → www ─────────────────────────────────────────────
+  // Déplacée dans middleware.ts (commit 2026-05-18) suite à un bug OpenNext +
+  // Next.js 14.2 où `:path*` n'était pas substitué dans la destination pour la
+  // requête racine "/" (Location contenait le pattern littéral). Le middleware
+  // gère tous les cas (root, paths, query strings) sans cette friction.
+  // Voir middleware.ts → "Redirection non-www → www".
 };
 
 // ── Sentry wrapper ──────────────────────────────────────────────────────────
