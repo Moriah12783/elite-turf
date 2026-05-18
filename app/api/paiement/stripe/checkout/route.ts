@@ -63,8 +63,20 @@ export async function POST(req: NextRequest) {
     }
 
     // ── MODE PRODUCTION Stripe ────────────────────────────────────────
+    //
+    // ⚠️ CRITICAL : `httpClient: Stripe.createFetchHttpClient()` est obligatoire
+    // pour que Stripe SDK fonctionne dans Cloudflare Workers. Sans ça, le SDK
+    // utilise par défaut `https.request` du module Node qui n'est pas pleinement
+    // supporté par le runtime Workers → erreur "An error occurred with our
+    // connection to Stripe. Request was retried 2 times." observée le 18/05/2026.
+    //
+    // Le fetch HTTP client utilise l'API `fetch` native (disponible partout :
+    // Workers, Node 18+, browsers). Aucune perte de fonctionnalité.
+    //
+    // Ref : https://github.com/stripe/stripe-node?tab=readme-ov-file#using-stripe-in-cloudflare-workers
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2025-03-31.basil",
+      httpClient: Stripe.createFetchHttpClient(),
     });
 
     const session = await stripe.checkout.sessions.create({
