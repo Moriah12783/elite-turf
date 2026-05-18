@@ -189,20 +189,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     //
     // ⚠️ FILTRAGE : on aligne sur isIndexable() de lib/seo/acteurs.ts pour
     // ne pas créer de mismatch sitemap (URL listée) ↔ page (robots: noindex).
+    //
     // Critères OR (un seul suffit, anti thin-content) :
-    //   - nb_courses >= 2 (au moins 2 apparitions en BDD = historique reel)
+    //   - nb_courses >= 3 (au moins 3 apparitions en BDD = historique reel)
     //   - nb_victoires >= 1 (cheval/jockey/entr gagnant = contenu pertinent)
     //   - nb_places >= 1 (au moins 1 top 3, idem)
     //
-    // Historique (2026-05-15) : avant cette PR le filtre etait `nb_courses>=3`,
-    // ce qui filtrait 99,8% des chevaux car la table partants ne contient que
-    // ~40 jours d'historique. Avec ce critere souple on passe de ~500 a ~1600
-    // URLs acteurs dans le sitemap.
+    // Historique :
+    //   - 2026-05-15 : filtre `nb_courses >= 3` (mais BDD trop pauvre, ~500 URLs)
+    //   - 2026-05-15 (PR souple) : `nb_courses >= 2 OR victoires/places >= 1`
+    //     (passe à ~1600 URLs MAIS créait du mismatch isIndexable() vs sitemap)
+    //   - 2026-05-18 (PR actuelle) : retour à `nb_courses >= 3` car le backfill
+    //     historique a explosé la BDD (22 694 chevaux, 6 567 avec >= 3 courses).
+    //     Cause GSC : 1286 pages "Exclue par balise noindex" car sitemap
+    //     poussait des acteurs nb_courses=2 mais isIndexable() exigeait
+    //     nb_courses_terminees >= 2 (mismatch). Avec >= 3, ~99% des URLs
+    //     listées sont indexables côté page → bruit GSC réduit massivement.
     for (const t of ["chevaux", "jockeys", "entraineurs"] as const) {
       const { data } = await supabase
         .from(t)
         .select("slug, derniere_course_at, nb_courses, nb_victoires, nb_places")
-        .or("nb_courses.gte.2,nb_victoires.gte.1,nb_places.gte.1")
+        .or("nb_courses.gte.3,nb_victoires.gte.1,nb_places.gte.1")
         .order("derniere_course_at", { ascending: false, nullsFirst: false })
         .limit(1000);
       if (data) {
