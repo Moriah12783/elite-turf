@@ -45,6 +45,73 @@ async function userHasPhone(userId: string): Promise<boolean> {
   }
 }
 
+/**
+ * Pattern UUID v4 utilisé par Supabase pour les IDs `courses`.
+ * Ex: `f1d83877-5c85-453a-862d-2f6c6bea7b64`.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Détecte un bot moteur de recherche (User-Agent). Liste non-exhaustive mais
+ * couvre 99% du trafic crawl pertinent pour notre SEO.
+ */
+const BOT_UA_RE = /(googlebot|bingbot|duckduckbot|yandex(bot)?|baiduspider|facebookexternalhit|twitterbot|linkedinbot|applebot|petalbot|semrushbot|ahrefsbot)/i;
+
+/**
+ * Vérifie en BDD si une course existe (juste l'id, requête ultra-rapide via PK).
+ * Utilisé uniquement par le middleware pour les requêtes bot — pas par les users
+ * (qui passent par page.tsx normalement). On `try/catch` agressivement pour ne
+ * jamais bloquer un crawl en cas d'incident DB.
+ */
+async function courseExists(courseId: string): Promise<boolean> {
+  try {
+    const svc = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const { data } = await svc
+      .from("courses")
+      .select("id")
+      .eq("id", courseId)
+      .maybeSingle();
+    return data !== null;
+  } catch {
+    // En cas d'erreur DB : on assume "existe" pour ne pas générer de faux 410
+    return true;
+  }
+}
+
+/**
+ * Construit une réponse HTTP 410 Gone minimale pour les bots.
+ * 410 signale à Google "URL volontairement supprimée, dé-indexe vite" → ~7 jours
+ * de dé-indexation au lieu de ~30 jours pour un 404 standard.
+ */
+function build410Response(courseId: string): NextResponse {
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow">
+<title>Course retirée — Elite Turf</title>
+<link rel="canonical" href="https://www.elite-turf.fr/courses">
+</head>
+<body>
+<h1>Cette course n'est plus disponible (410 Gone)</h1>
+<p>La course <code>${courseId}</code> a été retirée de notre base. Voir le <a href="https://www.elite-turf.fr/courses">programme du jour</a> ou les <a href="https://www.elite-turf.fr/pronostics">pronostics</a>.</p>
+</body>
+</html>`;
+  return new NextResponse(html, {
+    status: 410,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "Cache-Control": "public, max-age=86400, s-maxage=86400",
+    },
+  });
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -67,6 +134,26 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.host = "www.elite-turf.fr";
     return NextResponse.redirect(url, 308);
+  }
+
+  // ── HTTP 410 Gone pour les /courses/<uuid> absents (SEO bot-only) ─────
+  // GSC 18/05/2026 : 123 pages /courses/<uuid> en "Introuvable (404)" malgré
+  // le not-found.tsx avec robots:noindex. Google retient les 404 ~30 jours
+  // avant dé-indexation définitive. Avec un vrai 410 → ~7 jours.
+  //
+  // Stratégie : seulement pour les bots search (Googlebot, Bingbot, etc.)
+  // pour éviter d'ajouter une query Supabase à chaque request utilisateur.
+  // Les real users tombent sur le not-found.tsx existant (404 + noindex),
+  // qui reste l'expérience attendue côté UX.
+  if (pathname.startsWith("/courses/")) {
+    const courseId = pathname.slice("/courses/".length).replace(/\/$/, "");
+    const ua = request.headers.get("user-agent") || "";
+    if (UUID_RE.test(courseId) && BOT_UA_RE.test(ua)) {
+      const exists = await courseExists(courseId);
+      if (!exists) {
+        return build410Response(courseId);
+      }
+    }
   }
 
   // ── Catch malformed URLs (SEO fix Google Search Console) ──────────────
