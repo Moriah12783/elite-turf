@@ -48,12 +48,42 @@ const PRONOSTICS_FAQ = [
   },
 ];
 
-export const metadata: Metadata = {
-  title: "Pronostics du Jour — Elite Turf",
-  description:
-    "Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Analyses hippiques pour la Côte d'Ivoire et les parieurs francophones. Résultats vérifiables sur Geny.",
-  alternates: { canonical: `${APP_URL}/pronostics` },
-};
+// ── Metadata dynamique CTR boost (Sprint A 21/05/2026) ──
+// Avant : title statique "Pronostics du Jour — Elite Turf" (30 chars, OK
+// mais générique). Audit GSC : CTR 3,1% à pos 10,2.
+//
+// Après : title dynamique avec taux de réussite réel + emoji + chiffres.
+// Ex : "🎯 Pronostics PMU — 35% de réussite sur 142 courses | Elite Turf"
+//
+// Les chiffres viennent de la même query que la page (cf bloc principal).
+// Pour éviter une double query, on duplique ici (Next.js dedupe les fetches
+// dans la même request via React cache).
+export async function generateMetadata(): Promise<Metadata> {
+  const supabase = createServiceClient();
+  const { data: statsData } = await supabase
+    .from("pronostics")
+    .select("resultat")
+    .eq("publie", true)
+    .neq("resultat", "EN_ATTENTE");
+
+  const totalTermines = statsData?.length || 0;
+  const totalGagnants = statsData?.filter((p: any) => p.resultat === "GAGNANT").length || 0;
+  const tauxReussite = totalTermines > 0 ? Math.round((totalGagnants / totalTermines) * 100) : 0;
+
+  const title = totalTermines >= 20
+    ? `🎯 Pronostics PMU — ${tauxReussite}% réussite sur ${totalTermines} courses | Elite Turf`
+    : `🎯 Pronostics PMU du Jour — Tiercé, Quarté+, Quinté+ | Elite Turf`;
+
+  const description = totalTermines >= 20
+    ? `🎯 ${tauxReussite}% de pronostics gagnants sur ${totalTermines} courses publiées. Tiercé, Quarté+, Quinté+ analysés. 1 pronostic gratuit/jour. Résultats vérifiables sur Geny.`
+    : `🎯 Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Analyses hippiques pour parieurs francophones (FR + Afrique). Résultats vérifiables sur Geny — 1 pronostic gratuit/jour.`;
+
+  return {
+    title,
+    description: description.slice(0, 160),
+    alternates: { canonical: `${APP_URL}/pronostics` },
+  };
+}
 
 // Force dynamic rendering (user session + search params)
 export const dynamic = "force-dynamic";

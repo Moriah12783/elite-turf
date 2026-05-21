@@ -53,13 +53,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const hippo = await resolveHippo(params.slug);
   if (!hippo) return { title: "Hippodrome introuvable — Elite Turf" };
 
+  // ── CTR boost Sprint A 21/05/2026 ──
+  // Récupère le nombre de courses programmées sur 7j pour enrichir le title
+  // avec un chiffre concret (signal "fraîcheur + matière" pour Google).
+  // Query rapide (count uniquement, index sur hippodrome_id + date_course).
+  const supabase = createServiceClient();
+  const today = todayParis();
+  const plus7 = new Date(new Date(today).getTime() + 7 * 24 * 3600 * 1000)
+    .toISOString().split("T")[0];
+  const { count: nbCoursesFutures } = await supabase
+    .from("courses")
+    .select("id", { count: "exact", head: true })
+    .eq("hippodrome_id", hippo.id)
+    .gte("date_course", today)
+    .lte("date_course", plus7)
+    .neq("statut", "ANNULE");
+
+  // Pattern emoji + lieu + chiffres + brand. Limite 65 chars idéale.
+  const nbStr = nbCoursesFutures && nbCoursesFutures > 0
+    ? ` : ${nbCoursesFutures} course${nbCoursesFutures > 1 ? "s" : ""} à venir`
+    : "";
+  const title = `📍 Hippodrome de ${hippo.nom}${nbStr} — Programme PMU | Elite Turf`;
+
+  const description = nbCoursesFutures && nbCoursesFutures > 0
+    ? `🏇 Hippodrome de ${hippo.nom} (${hippo.ville}, ${hippo.pays}) : ${nbCoursesFutures} course${nbCoursesFutures > 1 ? "s" : ""} programmée${nbCoursesFutures > 1 ? "s" : ""} sur 7j, partants live, arrivées récentes. Pronostics Elite Turf.`
+    : `🏇 Hippodrome de ${hippo.nom} (${hippo.ville}, ${hippo.pays}) — Programme PMU, partants, arrivées et pronostics experts Elite Turf. Découvrez les courses et résultats.`;
+
   return {
-    title: `Hippodrome de ${hippo.nom} | Programme, partants & pronostics — Elite Turf`,
-    description: `Toutes les courses, partants et résultats de l'hippodrome de ${hippo.nom} (${hippo.ville}). Pronostic Quinté+, Tiercé et analyses expertes.`,
+    title,
+    description: description.slice(0, 160),
     alternates: { canonical: `${APP_URL}/hippodromes/${params.slug}` },
     openGraph: {
-      title: `Hippodrome de ${hippo.nom}`,
-      description: `Programme courses & pronostics — ${hippo.ville}, ${hippo.pays}.`,
+      title,
+      description: description.slice(0, 160),
       url: `${APP_URL}/hippodromes/${params.slug}`,
       type: "website",
     },

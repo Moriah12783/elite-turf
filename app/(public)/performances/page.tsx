@@ -18,10 +18,11 @@ import AnimatedCounter from "@/components/performances/AnimatedCounter";
 import PageHero from "@/components/layout/PageHero";
 import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
 
+// CTR boost Sprint A : emoji 📈 (signal data) + brand
 export const metadata: Metadata = {
-  title: "Nos Résultats Prouvés — Elite Turf",
+  title: "📈 Performances Pronostics PMU — Stats vérifiables Tiercé/Quinté+ | Elite Turf",
   description:
-    "Transparence totale : consultez l'historique complet de nos pronostics, notre taux de réussite et nos statistiques par type de pari.",
+    "📈 Historique complet et vérifiable des pronostics Elite Turf : taux de réussite par type de pari (Tiercé, Quarté+, Quinté+), gains cumulés et stats détaillées. Transparence totale.",
   alternates: { canonical: `${APP_URL}/performances` },
 };
 
