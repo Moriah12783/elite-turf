@@ -429,8 +429,15 @@ export function formatSexeCheval(sexe: string | null | undefined): string {
 
 /**
  * Title SEO dynamique enrichi pour les fiches acteurs.
- * Stratégie CTR : emoji visuel + chiffres clés + qualificatif (Hongre, Femelle…).
- * Limite cible : ~65 chars (sinon Google tronque dans SERP).
+ * Stratégie CTR (révisée 21/05/2026 — Sprint A) :
+ *   - Emoji visuel SERP (signal coloré dans résultats Google)
+ *   - Qualificatif PMU (Cheval/Jockey/Entraîneur) → match intent recherche
+ *   - Chiffres concrets ET cas "0 victoires" enrichi avec mot "Analyse"
+ *   - Brand "| Elite Turf" en fin pour reconnaissance + bouton retour
+ * Limite cible : 50-65 chars (Google tronque ~580px ≈ 65 chars desktop).
+ *
+ * Audit GSC 18/05/2026 : CTR site 3,1% à pos 10,2. Objectif : +1pt CTR via
+ * titles plus "cliquables" (chiffres > génériques, "Analyse" > juste nom).
  */
 export function buildActeurTitle(
   type: EntiteType,
@@ -444,30 +451,46 @@ export function buildActeurTitle(
     const sexe = formatSexeCheval(entite.sexe);
     const age = entite.age ? `${entite.age} ans` : "";
     const qualif = [sexe, age].filter(Boolean).join(" ");
-    const stats_str = stats.nb_victoires > 0
-      ? `${stats.nb_courses_terminees} c · ${stats.nb_victoires}V`
-      : `${stats.nb_courses_terminees} courses`;
-    return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} : ${stats_str} | Elite Turf`;
+    // Cas "actif" : on a au moins 1 victoire → afficher les stats marquantes
+    if (stats.nb_victoires > 0) {
+      const winrate = stats.taux_victoire !== null && stats.nb_courses_terminees >= 3
+        ? ` · ${stats.taux_victoire.toFixed(0)}%`
+        : "";
+      return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+    }
+    // Cas "thin" : pas encore de victoire → mot "Analyse" + qualif (CTR boost)
+    return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} — Analyse PMU & musique | Elite Turf`;
   }
 
   if (type === "jockeys") {
-    const stats_str = stats.nb_victoires > 0
-      ? `${stats.nb_courses_terminees} c · ${stats.nb_victoires}V · ${(stats.taux_victoire ?? 0).toFixed(0)}%`
-      : `${stats.nb_courses_terminees} courses`;
-    return `${emoji} ${nomCap} — Jockey PMU : ${stats_str} | Elite Turf`;
+    if (stats.nb_victoires > 0) {
+      const winrate = stats.taux_victoire !== null
+        ? ` · ${stats.taux_victoire.toFixed(0)}%`
+        : "";
+      return `${emoji} ${nomCap} — Jockey PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+    }
+    return `${emoji} ${nomCap} — Jockey PMU : analyse, montes & forme récente | Elite Turf`;
   }
 
   // entraineurs
-  const stats_str = stats.nb_victoires > 0
-    ? `${stats.nb_courses_terminees} c · ${stats.nb_victoires}V · ${(stats.taux_victoire ?? 0).toFixed(0)}%`
-    : `${stats.nb_courses_terminees} courses`;
-  return `${emoji} ${nomCap} — Entraîneur PMU : ${stats_str} | Elite Turf`;
+  if (stats.nb_victoires > 0) {
+    const winrate = stats.taux_victoire !== null
+      ? ` · ${stats.taux_victoire.toFixed(0)}%`
+      : "";
+    return `${emoji} ${nomCap} — Entraîneur PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+  }
+  return `${emoji} ${nomCap} — Entraîneur PMU : analyse, chevaux & forme | Elite Turf`;
 }
 
 /**
- * Description SEO dynamique enrichie.
- * Stratégie : préfixe data + musique + contexte (hippodromes/partenaires).
- * Limite cible : ~155 chars.
+ * Description SEO dynamique enrichie (Sprint A 21/05/2026).
+ * Stratégie CTR :
+ *   - Emoji 📊 en début pour signal visuel SERP
+ *   - Chiffres compacts (Xc · YV · ZP · W%) = signaux de matière
+ *   - Musique = mot-clé high-intent pour parieurs PMU
+ *   - "Stats détaillées" / "Découvrez" = CTA implicite
+ *   - Top hippodrome = local SEO bonus (recherches géo)
+ * Limite cible : 145-160 chars (Google coupe à ~155 chars desktop).
  */
 export function buildActeurDescription(
   type: EntiteType,
@@ -475,19 +498,36 @@ export function buildActeurDescription(
   stats: RichStats,
 ): string {
   const label = ENTITE_LABEL[type].singular;
-  const musique = stats.musique_textuelle || "—";
+  const musique = stats.musique_textuelle || null;
   const topHippo = stats.hippodromes_freq[0]?.[0] || "";
 
   if (type === "chevaux") {
     const sexe = formatSexeCheval(entite.sexe);
     const age = entite.age ? `${entite.age} ans` : "";
     const id = [sexe, age].filter(Boolean).join(", ");
-    const winrate = stats.taux_victoire !== null ? ` · ${stats.taux_victoire.toFixed(0)}% victoire` : "";
-    return `📊 ${entite.nom}${id ? ` (${id})` : ""} : ${stats.nb_courses_terminees} courses · ${stats.nb_victoires}V · ${stats.nb_places}P${winrate}. Musique ${musique}${topHippo ? ` · Fréquent à ${topHippo}` : ""}.`.slice(0, 160);
+    // Cas avec courses terminées : on push les chiffres en avant
+    if (stats.nb_courses_terminees > 0) {
+      const winrate = stats.taux_victoire !== null && stats.nb_courses_terminees >= 3
+        ? ` · ${stats.taux_victoire.toFixed(0)}% victoire`
+        : "";
+      const musiquePart = musique ? ` Musique ${musique}.` : "";
+      const hippoPart = topHippo ? ` Fréquent à ${topHippo}.` : "";
+      return `📊 ${entite.nom}${id ? ` (${id})` : ""} : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V · ${stats.nb_places} top 3${winrate}.${musiquePart}${hippoPart} Stats détaillées Elite Turf.`.slice(0, 160);
+    }
+    // Cas "thin" : pas encore de course terminée → focus sur "À venir" + brand
+    return `📊 ${entite.nom}${id ? ` (${id})` : ""} — Cheval PMU à suivre. Découvrez son historique, ses jockeys habituels et ses prochaines courses sur Elite Turf.`.slice(0, 160);
   }
 
-  const winrate = stats.taux_victoire !== null ? ` · ${stats.taux_victoire.toFixed(0)}% victoire` : "";
-  return `📊 ${label} ${entite.nom} : ${stats.nb_courses_terminees} courses · ${stats.nb_victoires}V · ${stats.nb_places} top 3${winrate}. Forme ${musique}${topHippo ? ` · ${topHippo}` : ""}.`.slice(0, 160);
+  // jockeys + entraineurs
+  if (stats.nb_courses_terminees > 0) {
+    const winrate = stats.taux_victoire !== null
+      ? ` · ${stats.taux_victoire.toFixed(0)}% victoire`
+      : "";
+    const musiquePart = musique ? ` Forme ${musique}.` : "";
+    const hippoPart = topHippo ? ` Hippodrome favori : ${topHippo}.` : "";
+    return `📊 ${label} ${entite.nom} : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V · ${stats.nb_places} top 3${winrate}.${musiquePart}${hippoPart}`.slice(0, 160);
+  }
+  return `📊 ${label} ${entite.nom} — Profil PMU complet. Découvrez ses montes, sa forme récente et les chevaux qu'il fréquente sur Elite Turf.`.slice(0, 160);
 }
 
 /**

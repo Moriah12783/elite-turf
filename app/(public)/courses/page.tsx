@@ -13,12 +13,58 @@ import CourseCard from "@/components/courses/CourseCard";
 import PageHero from "@/components/layout/PageHero";
 import TermineesCollapse from "@/components/courses/TermineesCollapse";
 
-export const metadata: Metadata = {
-  title: "Programme des Courses — Elite Turf",
-  description:
-    "Toutes les courses hippiques du jour : Longchamp, Vincennes, Abidjan et plus. Hippodromes, horaires, partants et pronostics experts.",
-  alternates: { canonical: `${APP_URL}/courses` },
-};
+// ── Metadata dynamique CTR boost (Sprint A 21/05/2026) ──
+// Avant : title statique "Programme des Courses — Elite Turf" (33 chars, OK
+// mais générique). Audit GSC : CTR 3,1% à pos 10,2 → marge sur title plus
+// "cliquable" avec chiffres concrets + emoji.
+//
+// Après : title dynamique avec nb de courses du jour + emoji + date.
+// Ex : "🏇 Programme PMU mercredi 21 mai — 32 courses (Vincennes, Longchamp...) | Elite Turf"
+export async function generateMetadata(): Promise<Metadata> {
+  const supabase = createServiceClient();
+  const today = new Date().toISOString().split("T")[0];
+
+  // Count rapide (head:true → pas de transfert de rows)
+  const { count: nbCoursesJour } = await supabase
+    .from("courses")
+    .select("id", { count: "exact", head: true })
+    .eq("date_course", today)
+    .neq("statut", "ANNULE");
+
+  // Top 2-3 hippodromes du jour pour le title (signal "lieux connus")
+  const { data: hipposJour } = await supabase
+    .from("courses")
+    .select("hippodrome:hippodromes(nom)")
+    .eq("date_course", today)
+    .neq("statut", "ANNULE")
+    .limit(20);
+
+  const hipposSet = new Set<string>();
+  for (const c of hipposJour ?? []) {
+    const nom = (c as any).hippodrome?.nom;
+    if (nom) hipposSet.add(nom);
+  }
+  const topHippos = Array.from(hipposSet).slice(0, 2).join(", ");
+
+  const dateFr = new Date(today + "T12:00:00").toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+
+  // Title : emoji + date + nb courses + hippos. Pattern qui marche déjà sur /courses/[id].
+  const title = nbCoursesJour && nbCoursesJour > 0
+    ? `🏇 Programme PMU ${dateFr} — ${nbCoursesJour} courses${topHippos ? ` (${topHippos})` : ""} | Elite Turf`
+    : `🏇 Programme PMU ${dateFr} — Tiercé, Quarté+, Quinté+ | Elite Turf`;
+
+  const description = nbCoursesJour && nbCoursesJour > 0
+    ? `🏇 ${nbCoursesJour} courses PMU le ${dateFr} : programme complet, partants live, cotes, pronostics Elite Turf. Tiercé, Quarté+, Quinté+ analysés.`
+    : `🏇 Programme PMU du jour : toutes les courses, partants, cotes live, arrivées officielles. Pronostics experts Elite Turf — Tiercé, Quarté+, Quinté+.`;
+
+  return {
+    title,
+    description: description.slice(0, 160),
+    alternates: { canonical: `${APP_URL}/courses` },
+  };
+}
 
 // ISR : page programme régénérée toutes les 60s. Cache edge Cloudflare.
 // Trade-off acceptable : un user qui consulte 2x à <60s d'intervalle peut

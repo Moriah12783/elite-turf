@@ -19,10 +19,11 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 
 export const revalidate = 3600; // index hippo bouge rarement
 
+// CTR boost Sprint A : emoji 📍 (signal "lieu" → local SEO bonus)
 export const metadata: Metadata = {
-  title: "Hippodromes | Programme courses & pronostics — Elite Turf",
+  title: "📍 Hippodromes PMU — Longchamp, Vincennes, Abidjan & + | Elite Turf",
   description:
-    "Tous les hippodromes : Longchamp, Vincennes, Chantilly, Cagnes-sur-Mer, Abidjan… Programme, pronostics et résultats par hippodrome.",
+    "📍 Tous les hippodromes PMU : Longchamp, Vincennes, Chantilly, Cagnes-sur-Mer, Abidjan… Programme du jour, partants, arrivées et pronostics par hippodrome.",
   alternates: { canonical: `${APP_URL}/hippodromes` },
 };
 

@@ -49,10 +49,14 @@ const ABONNEMENTS_FAQ = [
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
+// ── Metadata CTR boost (Sprint A 21/05/2026) ──
+// Avant : "Abonnements — Pronostics PMU | Free, Starter, Pro, Elite" (56c)
+// Après : emoji 💎 en début pour signal visuel SERP + prix concret + brand.
+// Description plus dense avec chiffre de réussite implicite (Mobile Money).
 export const metadata: Metadata = {
-  title: "Abonnements — Pronostics PMU | Free, Starter, Pro, Elite",
+  title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite | Elite Turf",
   description:
-    "Accédez aux meilleurs pronostics PMU pour les parieurs francophones. 1 Tiercé gratuit par jour sans inscription. Plans payants à partir de 65€. Orange Money, MTN MoMo, Wave, CB.",
+    "💎 Accédez aux pronostics PMU Elite Turf : Free (1 Tiercé/jour), Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Mobile Money (Orange, MTN, Wave) ou CB. Activation 2 min.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 

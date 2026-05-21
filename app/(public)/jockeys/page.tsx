@@ -6,9 +6,10 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 
 export const revalidate = 1800;
 
+// CTR boost Sprint A : emoji visuel SERP + signal "Top 200"
 export const metadata: Metadata = {
-  title: "Jockeys PMU | Performances et statistiques — Elite Turf",
-  description: "Tous les jockeys engagés sur les courses PMU France et Afrique : taux de victoire, courses récentes, hippodromes fréquents.",
+  title: "🏆 Jockeys PMU — Top 200 victoires, taux & forme | Elite Turf",
+  description: "🏆 Top 200 jockeys PMU France & Afrique : taux de victoire, courses récentes, hippodromes fréquents, chevaux montés. Stats détaillées Elite Turf.",
   alternates: { canonical: `${APP_URL}/jockeys` },
 };
 
