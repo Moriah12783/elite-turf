@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, UserPlus, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
+import { trackEvent } from "@/lib/analytics/track";
 
 // Source unique : lib/utils/pays.ts. Contient PAYS_OPTIONS (22 pays +
 // indicatifs E.164), INDICATIF_BY_PAYS (map dérivée), et estPrefixSeul().
@@ -139,6 +140,17 @@ function InscriptionForm() {
           pays: form.pays,
         }),
       }).catch(() => {}); // Silencieux si échec
+
+      // ── GA4 funnel event : sign_up ──
+      // Tracké dès que Supabase signUp réussit. Pas d'email/nom dans l'event
+      // (PII forbidden GA4). On track le pays (signal géo utile) et le plan
+      // initialement choisi (signal d'intent commercial).
+      trackEvent("sign_up", {
+        method:        "email_password",
+        country:       form.pays,
+        plan_id:       planSelectionne || undefined,
+        whatsapp_opt:  whatsappOptIn,
+      });
 
       setStep("success");
     } catch {

@@ -10,6 +10,7 @@ import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+import TrackPageView from "@/components/analytics/TrackPageView";
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
@@ -148,6 +149,8 @@ export default async function AbonnementsPage() {
 
   return (
     <div className="min-h-screen bg-bg-primary">
+      {/* Tracking GA4 : view_pricing (funnel acquisition → conversion) */}
+      <TrackPageView event="view_pricing" params={{ source: "abonnements" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <PageHero
