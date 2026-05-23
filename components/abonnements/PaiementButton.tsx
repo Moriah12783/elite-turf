@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, Clock } from "lucide-react";
 import type { Plan } from "@/types";
 import { PAYSTACK_AVAILABLE } from "@/lib/promo";
+import { trackEvent } from "@/lib/analytics/track";
 
 interface Props {
   plan: Plan;
@@ -45,6 +46,28 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
     setLoading(method);
     setOpen(false);
 
+    // ── GA4 funnel event : begin_checkout ──
+    // Tracker AVANT l'appel API pour ne pas perdre l'event si le user abandonne
+    // pendant la redirection (Paystack / Stripe). value = prix dans la devise
+    // pertinente (EUR pour Stripe, XOF pour Paystack).
+    trackEvent("begin_checkout", {
+      plan_id:        plan.id,
+      plan_name:      plan.nom,
+      value:          method === "stripe" ? plan.prix_eur : plan.prix_fcfa,
+      currency:       method === "stripe" ? "EUR" : "XOF",
+      payment_method: method,
+      user_id:        userId,
+      items: [
+        {
+          item_id:       plan.id,
+          item_name:     plan.nom,
+          item_category: "abonnement",
+          price:         method === "stripe" ? plan.prix_eur : plan.prix_fcfa,
+          quantity:      1,
+        },
+      ],
+    });
+
     const endpoint = method === "stripe"
       ? "/api/paiement/stripe/checkout"
       : "/api/paystack/initier";
@@ -71,12 +94,28 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
     }
   }
 
+  // ── GA4 funnel event : select_plan ──
+  // Tracké quand le user ouvre le dropdown des méthodes de paiement
+  // (intent fort = comparaison Mobile Money vs CB)
+  function handleOpenDropdown() {
+    if (!open) {
+      trackEvent("select_plan", {
+        plan_id:   plan.id,
+        plan_name: plan.nom,
+        value:     plan.prix_eur,
+        currency:  "EUR",
+        user_id:   userId,
+      });
+    }
+    setOpen((v) => !v);
+  }
+
   const isLoading = loading !== null;
 
   return (
     <div className="space-y-2">
       <button
-        onClick={() => !isLoading && setOpen((v) => !v)}
+        onClick={() => !isLoading && handleOpenDropdown()}
         disabled={isLoading}
         className={`${VARIANT_MAIN[variant ?? "secondary"]} disabled:opacity-60 disabled:cursor-not-allowed`}
       >

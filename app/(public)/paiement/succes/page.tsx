@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle, Crown, ArrowRight, Star, Zap } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
+import TrackPurchase from "@/components/analytics/TrackPurchase";
 
 export const metadata: Metadata = {
   title: "Paiement réussi — Elite Turf",
@@ -90,8 +91,30 @@ export default async function PaiementSuccesPage({
       })
     : null;
 
+  // ── GA4 funnel event : purchase ──
+  // Inféré méthode de paiement depuis le préfixe transaction_id :
+  //   - ET-PS-* = Paystack (Mobile Money africain, XOF)
+  //   - ET-STRIPE-* = Stripe (CB, EUR)
+  //   - Tout autre = sandbox (free / test)
+  const paymentMethod: "paystack" | "stripe" | "sandbox" =
+    params.tx?.startsWith("ET-PS-")     ? "paystack"
+    : params.tx?.startsWith("ET-STRIPE-") ? "stripe"
+    : "sandbox";
+
   return (
     <div className="min-h-screen bg-bg-primary flex items-center justify-center px-4 py-16">
+      {/* Tracking GA4 : purchase (ecommerce standard) */}
+      {plan && params.tx && (
+        <TrackPurchase
+          transactionId={params.tx}
+          planId={plan.id}
+          planName={plan.nom}
+          amountEur={plan.prix_eur}
+          amountFcfa={plan.prix_fcfa}
+          paymentMethod={paymentMethod}
+          userId={user?.id}
+        />
+      )}
       <div className="max-w-lg w-full text-center">
 
         {/* Icône succès animée */}
