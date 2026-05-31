@@ -159,7 +159,11 @@ function computeRegularityScore(p: PartantEnrichi): { score: number; missing: bo
  */
 function computeJockeyScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const s = p.stats_jockey;
-  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 0, missing: true };
+  // Réglage PO 2026-05-31 (Phase 1.5) : données manquantes ≠ note zéro.
+  // Avant, un jockey sans historique BDD → 0 → plombait le cheval (GOSTAM
+  // invaincu f=75 mais j=1 → g=33). On retourne NEUTRE 50 (le manque reste
+  // tracé via missing=true → pénalité de confiance, mais pas de score nul).
+  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 50, missing: true };
   const tauxV = s.taux_victoire ?? 0;
   const tauxP = s.taux_place    ?? 0;
   const reliability = reliabilityFactor(s.nb_courses);
@@ -173,7 +177,8 @@ function computeJockeyScore(p: PartantEnrichi): { score: number; missing: boolea
  */
 function computeTrainerScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const s = p.stats_entraineur;
-  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 0, missing: true };
+  // Phase 1.5 : neutre 50 si historique manquant (cf computeJockeyScore).
+  if (!s || s.nb_courses < FIELDANALYZER_MIN_COURSES) return { score: 50, missing: true };
   const tauxV = s.taux_victoire ?? 0;
   const tauxP = s.taux_place    ?? 0;
   const reliability = reliabilityFactor(s.nb_courses);
@@ -327,7 +332,7 @@ const ELITE_JOCKEYS: readonly string[] = [
   // Plat
   "soumillon", "buick", "murphy", "moore", "demuro", "guyon", "lemaire",
   "barzalona", "peslier", "boudot", "doyle", "marquand", "pasquier",
-  "cheminaud", "mendizabal",
+  "cheminaud", "mendizabal", "loughnane", "lordan", "lemaitre",
   // Trot (drivers)
   "raffin", "nivard", "bazire", "abrivard", "gelormini", "lebourgeois",
   "lagadeuc", "thomain", "mottier", "duvaldestin",

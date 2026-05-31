@@ -143,14 +143,15 @@ function buildDeterministicSelection(
 
   switch (level) {
     case "ELITE": {
-      // top 3 + 1 outsider (value_score ≥ 50) + 2 derniers solides
-      const top3 = eligible.slice(0, 3);
+      // Réglage PO 2026-05-31 (Phase 1.5) : 5 meilleurs par score + 1 seul
+      // outsider value (longshot Quinté). L'ancienne logique (top3 + 2 fills)
+      // pouvait injecter 2 outsiders à grosse cote en écartant des chevaux
+      // mieux notés (ex. Constitution River écarté au profit de Montreal).
+      const top5 = eligible.slice(0, 5);
       const outsider = eligible
-        .slice(3)
+        .slice(5)
         .find((r) => r.value_score >= 50 && r.risk_score < 65);
-      const remaining = eligible.filter((r) => !top3.includes(r) && r !== outsider);
-      const fill = outsider ? [outsider, ...remaining].slice(0, 3) : remaining.slice(0, 3);
-      return [...top3, ...fill].slice(0, 6);
+      return outsider ? [...top5, outsider] : eligible.slice(0, 6);
     }
     case "PRO":
     case "STARTER": {
