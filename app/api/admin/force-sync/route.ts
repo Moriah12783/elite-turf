@@ -59,7 +59,7 @@ const TARGETS: Record<string, Target> = {
   "lonaci": {
     kind:     "direct",
     cronName: "lonaci-sync",
-    run:      () => runLonaciSync(),
+    run:      () => runLonaciSync({ dryRun: process.env.LONACI_ENRICH_WRITE !== "1" }),
   },
   "arrivees": {
     kind:     "direct",

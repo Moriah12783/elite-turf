@@ -29,10 +29,12 @@ export async function GET(req: NextRequest) {
   const logger = logCronStart("lonaci-sync");
 
   try {
-    // Appel direct à la fonction de sync — aucune requête HTTP self-fetch,
-    // donc plus de risque "Invalid URL" ni de boucle 522.
-    const data = await runLonaciSync();          // { ok: true, total, nationales, inserted, updated, … }
-    await logger.finish("success", { ...data });
+    // Appel direct (pas de self-fetch HTTP → ni "Invalid URL" ni 522).
+    // Rollout : dry-run par défaut tant que LONACI_ENRICH_WRITE != "1"
+    // (on valide d'abord le rapport de matching avant d'autoriser les écritures).
+    const dryRun = process.env.LONACI_ENRICH_WRITE !== "1";
+    const data = await runLonaciSync({ dryRun });
+    await logger.finish("success", { ...data, ...(data.report ?? {}) });
     return NextResponse.json(data);
 
   } catch (err: unknown) {
