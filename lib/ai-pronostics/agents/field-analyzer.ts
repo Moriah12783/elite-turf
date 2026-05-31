@@ -126,7 +126,12 @@ function clamp100(n: number): number {
 function computeFormScore(p: PartantEnrichi): { score: number; missing: boolean } {
   const m = p.forme_musique;
   if (!m || m.courses === 0) return { score: 0, missing: true };
-  const sampleBonus = Math.min(1, m.courses / 5);   // pénalise si < 5 courses
+  // Réglage PO 2026-05-31 (Phase 1) : ne plus écraser les chevaux peu courus.
+  // AVANT : sampleBonus = courses/5 → un invaincu en 1 course tombait à 20/100
+  // ("gagner toutes ses courses" devenait une pénalité). MAINTENANT : plancher
+  // 0.6 dès 1 course, 1.0 à 4+ courses → un invaincu de qualité garde un score
+  // fort (ratio 1.0 sur 1 course = 70 au lieu de 20 ; sur 3 courses = 90).
+  const sampleBonus = 0.6 + 0.4 * Math.min(1, m.courses / 4);
   return { score: clamp100(m.ratio * 100 * sampleBonus), missing: false };
 }
 
@@ -309,6 +314,49 @@ function detectMissingData(args: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+// Réglages scoring 2026-05-31 (Phase 1) : grands jockeys + marché
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Liste curée de drivers/jockeys d'élite (plat · trot · obstacle). Le score
+ * jockey vient des stats BDD, ramenées à ~50 quand l'historique est mince →
+ * la classe réelle des grands noms n'était pas captée. On applique un PLANCHER
+ * de score pour ces noms. Match par sous-chaîne sur le nom (insensible casse).
+ */
+const ELITE_JOCKEYS: readonly string[] = [
+  // Plat
+  "soumillon", "buick", "murphy", "moore", "demuro", "guyon", "lemaire",
+  "barzalona", "peslier", "boudot", "doyle", "marquand", "pasquier",
+  "cheminaud", "mendizabal",
+  // Trot (drivers)
+  "raffin", "nivard", "bazire", "abrivard", "gelormini", "lebourgeois",
+  "lagadeuc", "thomain", "mottier", "duvaldestin",
+  // Obstacle
+  "reveley", "chevillard", "lestrade", "giles", "frost", "lemaitre", "zuliani",
+];
+
+function isEliteJockey(jockey: string | null | undefined): boolean {
+  if (!jockey) return false;
+  const j = jockey.toLowerCase();
+  return ELITE_JOCKEYS.some((name) => j.includes(name));
+}
+
+/**
+ * Score marché basé sur la cote : une cote courte = favori solide. Avant, la
+ * cote ne servait qu'au value_score (récompense des longues cotes) — un favori
+ * solide n'était jamais reconnu. Désormais elle alimente le score global.
+ */
+function computeMarketScore(cote: number | null | undefined): { score: number; has: boolean } {
+  if (!cote || cote <= 0) return { score: 0,   has: false };
+  if (cote <= 2)          return { score: 100, has: true };
+  if (cote <= 4)          return { score: 85,  has: true };
+  if (cote <= 6)          return { score: 70,  has: true };
+  if (cote <= 9)          return { score: 55,  has: true };
+  if (cote <= 14)         return { score: 40,  has: true };
+  return { score: 25, has: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 // Analyse d'un partant
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -322,6 +370,13 @@ function analyzeRunner(p: PartantEnrichi): RunnerAnalysis {
   const value       = computeValueScore(p, form.score);
   const hasOdds     = !!p.cote && p.cote > 0;
 
+  // Réglages PO 2026-05-31 (Phase 1) :
+  //  - plancher "grand jockey" (classe non captée par la BDD jeune)
+  //  - score marché (cote courte = favori solide) injecté dans le global
+  const jockeyScore     = isEliteJockey(p.jockey) ? clamp100(Math.max(jockey.score, 80)) : jockey.score;
+  const market          = computeMarketScore(p.cote);
+  const marketForGlobal = market.has ? market.score : 50;   // neutre si cote absente
+
   // Compteur de champs manquants (hors distance/terrain — toujours absents)
   const missingCount =
     (form.missing       ? 1 : 0) +
@@ -332,13 +387,14 @@ function analyzeRunner(p: PartantEnrichi): RunnerAnalysis {
 
   const risk = computeRiskScore(p, regularity.score, form.score, missingCount);
 
-  // Score global pondéré (cf cahier §10 + getCourseStatsEnrichies)
-  // 30% forme + 25% régularité cheval + 20% jockey + 10% entraîneur + 15% (100 - risque/2)
+  // Score global pondéré (réglage PO 2026-05-31 : ajout composante marché)
+  // 26% forme + 20% régularité + 18% jockey(+élite) + 8% entraîneur + 13% marché + 15% (100-risque/2)
   const global = clamp100(
-    form.score        * 0.30 +
-    regularity.score  * 0.25 +
-    jockey.score      * 0.20 +
-    trainer.score     * 0.10 +
+    form.score        * 0.26 +
+    regularity.score  * 0.20 +
+    jockeyScore       * 0.18 +
+    trainer.score     * 0.08 +
+    marketForGlobal   * 0.13 +
     (100 - risk / 2)  * 0.15,
   );
 
@@ -356,7 +412,7 @@ function analyzeRunner(p: PartantEnrichi): RunnerAnalysis {
   const strengths = detectStrengths(p, {
     form:       form.score,
     regularity: regularity.score,
-    jockey:     jockey.score,
+    jockey:     jockeyScore,
     trainer:    trainer.score,
     value,
   });
@@ -394,7 +450,7 @@ function analyzeRunner(p: PartantEnrichi): RunnerAnalysis {
     form_score:          form.score,
     distance_score:      distance.score,
     terrain_score:       terrain.score,
-    jockey_driver_score: jockey.score,
+    jockey_driver_score: jockeyScore,
     trainer_score:       trainer.score,
     value_score:         value,
     risk_score:          risk,
