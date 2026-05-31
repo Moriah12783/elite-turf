@@ -91,7 +91,8 @@ const CRON_MAP: Record<string, string> = {
   "47 11 * * *":  "/api/cron/enrichir-partants",
   "13 13 * * *":  "/api/cron/enrichir-partants",
   "13 15 * * *":  "/api/cron/enrichir-partants",
-  "43 17 * * *":  "/api/cron/pmu-demain",
+  "0 20 * * *":   "/api/cron/pmu-demain",  // J+1, re-planifié hors fenêtre 522 du 17h43 (fix Cause A)
+  "10 5 * * *":   "/api/cron/pmu-sync",    // programme du JOUR avant le pipeline (fix Cause A)
 
   // ── Sync arrivées (toutes les heures 13h-19h UTC) ─────────────────
   "11 13 * * *":  "/api/cron/geny-arrivees",
