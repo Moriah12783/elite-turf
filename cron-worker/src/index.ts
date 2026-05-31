@@ -82,6 +82,7 @@ const CRON_MAP: Record<string, string> = {
   "45 6 * * *":   "/api/cron/ia-pronostics-v2",
   "0 19 * * *":   "/api/cron/ia-rapport-soir",
   "45 9 * * *":   "/api/cron/pronostic-gratuit",
+  "30 9 * * *":   "/api/cron/ia-auto-publish-v2",  // filet sécurité premium : publie les brouillons du jour SI l'admin est absent (règle "jour entier")
 
   // ── Sync programme + partants ─────────────────────────────────────
   "41 7 * * *":   "/api/cron/lonaci-sync",
