@@ -419,8 +419,75 @@ export async function runSelectionBuilderAgent(
   const eligible = ranked.filter(isEligibleForSelection);
   const expectedSize = SELECTION_SIZES[input.access_level];
 
-  // ── 2. Pas assez d'éligibles → NEEDS_HUMAN_REVIEW ──────────────────────
+  // ── 2. Pas assez d'éligibles → FALLBACK "best-effort" (review humaine) ──
+  //
+  // Décision PO 2026-05-31 (fix régression "1 seul draft ELITE/jour").
+  //
+  // AVANT : on retournait une sélection VIDE → director.ts (l.~367) faisait
+  // `continue` → le niveau était ABANDONNÉ. Conséquence : PRO/STARTER (qui
+  // exigent 8 éligibles) ne sortaient quasiment jamais sur une BDD chevaux
+  // jeune (beaucoup d'INSUFFICIENT_DATA) → seul ELITE (6) survivait.
+  //
+  // MAINTENANT : on remplit la sélection à la taille attendue avec les
+  // meilleurs chevaux disponibles, en n'excluant QUE les A_EVITER (red flags
+  // réels). Les INSUFFICIENT_DATA (chevaux jeunes/peu courus) sont tolérés
+  // ICI uniquement, et on force status=NEEDS_HUMAN_REVIEW : l'admin valide
+  // avant toute publication (le filet auto ne publie que s'il est absent).
+  // Ainsi le QualityValidator (taille exacte R4-R7) passe, et le draft existe.
   if (eligible.length < expectedSize) {
+    // Pool élargi : tout SAUF A_EVITER.
+    const softPool = ranked.filter((r) => r.profile !== "A_EVITER");
+
+    // Field réellement trop court (ex. <8 partants exploitables pour PRO) :
+    // impossible de produire une sélection valide à la bonne taille.
+    if (softPool.length < expectedSize) {
+      return {
+        result: {
+          agent:                "SelectionBuilder",
+          course_id:            input.field.course_id,
+          access_level:         input.access_level,
+          selection_type:       getSelectionType(input.access_level),
+          validation_status:    input.validation_status,
+          mandatory_public_mention: VALIDATION_BADGES[input.validation_status],
+          status:               "NEEDS_HUMAN_REVIEW",
+          expected_runner_count: expectedSize,
+          selected_runners:      [],
+          excluded_runners:      [],
+          selection_confidence_score: 0,
+          self_critique: {
+            main_risk:                          `Field trop court : ${softPool.length} chevaux exploitables pour ${expectedSize} attendus`,
+            why_this_selection_fits_access_level: "Field insuffisant — review obligatoire",
+            needs_admin_attention:               true,
+          },
+        },
+        tokens_input:  0,
+        tokens_output: 0,
+      };
+    }
+
+    const fill       = softPool.slice(0, expectedSize);
+    const confidence = Math.round(
+      fill.reduce((s, r) => s + r.global_selection_score, 0) / fill.length,
+    );
+
+    const selected = fill.map((r, i) => ({
+      rank:             i + 1,
+      runner_id:        r.runner_id,
+      number:           r.number,
+      name:             r.name,
+      role:             assignRole(r, i + 1, input.access_level),
+      confidence_score: r.confidence_score,
+      risk_score:       r.risk_score,
+      reason_codes:     deriveReasonCodes(r),
+    }));
+
+    const excluded = softPool.slice(expectedSize, expectedSize + 5).map((r) => ({
+      runner_id: r.runner_id,
+      number:    r.number,
+      name:      r.name,
+      reason:    r.weaknesses[0] ?? r.profile.toLowerCase(),
+    }));
+
     return {
       result: {
         agent:                "SelectionBuilder",
@@ -431,12 +498,12 @@ export async function runSelectionBuilderAgent(
         mandatory_public_mention: VALIDATION_BADGES[input.validation_status],
         status:               "NEEDS_HUMAN_REVIEW",
         expected_runner_count: expectedSize,
-        selected_runners:      [],
-        excluded_runners:      [],
-        selection_confidence_score: 0,
+        selected_runners:      selected,
+        excluded_runners:      excluded,
+        selection_confidence_score: confidence,
         self_critique: {
-          main_risk:                          `Seulement ${eligible.length} chevaux éligibles pour ${expectedSize} attendus`,
-          why_this_selection_fits_access_level: "Manque de bases solides — review obligatoire",
+          main_risk:                          `Field fragile : seulement ${eligible.length}/${expectedSize} chevaux pleinement éligibles ; complété avec les meilleurs profils disponibles (BDD chevaux jeune). À valider avant publication.`,
+          why_this_selection_fits_access_level: `Best-effort ${expectedSize} chevaux par score §11.4 (confidence ${confidence}/100) — review humaine requise`,
           needs_admin_attention:               true,
         },
       },
