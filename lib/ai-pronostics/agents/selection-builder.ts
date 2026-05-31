@@ -89,17 +89,15 @@ function getSelectionType(level: NiveauAcces): SelectionType {
 // ─────────────────────────────────────────────────────────────────────────
 
 function computeGlobalSelectionScore(r: RunnerAnalysis): number {
-  const raw =
-      0.25 * r.confidence_score
-    + 0.20 * r.regularity_score
-    + 0.15 * r.form_score
-    + 0.10 * r.distance_score
-    + 0.10 * r.terrain_score
-    + 0.10 * r.jockey_driver_score
-    + 0.05 * r.trainer_score
-    + 0.05 * r.value_score
-    - 0.20 * r.risk_score;
-  return Math.max(0, Math.min(100, Math.round(raw)));
+  // Réglage PO 2026-05-31 : on classe la sélection AU MÉRITE, en réutilisant
+  // directement le global_score du FieldAnalyzer (qui pondère déjà forme +
+  // régularité + jockey[+élite] + marché + entraîneur − risque). L'ancienne
+  // formule recombinait avec distance/terrain NEUTRES (bruit ~10 pts fixes) et
+  // sur-pondérait la cote (+0.05 value), ce qui faisait remonter les outsiders
+  // à grosse cote dans le "top 5" et écartait les vrais favoris (Pearled,
+  // Constitution). La place "outsider" reste gérée par un slot dédié dans la
+  // stratégie de sélection (buildDeterministicSelection).
+  return r.global_score;
 }
 
 interface RankedRunner extends RunnerAnalysis {
