@@ -350,7 +350,9 @@ export async function runAnalyseWriterAgent(
     model:        CLAUDE_MODELS.HAIKU,
     systemPrompt: SYSTEM_PROMPT,
     userPrompt,
-    maxTokens:    2500,           // contenu long pour ELITE
+    maxTokens:    3200,           // marge anti-troncature JSON (le contenu ELITE
+                                  // atteignait ~2500 tok → JSON coupé → parse fail.
+                                  // cf fix sous-production 2026-05-31)
     expectJson:   true,
   });
 

@@ -37,6 +37,8 @@ export interface ClaudeCallOptions {
   maxTokens?:    number;
   /** Force le retour à être un JSON parseable (extrait via regex après) */
   expectJson?:   boolean;
+  /** Timeout dur par appel (ms). Défaut 35s. Un appel plus lent est avorté. */
+  timeoutMs?:    number;
 }
 
 export interface ClaudeCallResult<T = string> {
@@ -64,11 +66,24 @@ export async function callClaude<T = unknown>(
   }
 
   const maxTokens = opts.maxTokens ?? 1500;
-  const maxRetries = 3;
-  let attempt = 0;
-  let lastError: unknown;
+  const timeoutMs = opts.timeoutMs ?? 35_000;
 
-  while (attempt < maxRetries) {
+  // On distingue les erreurs TRANSITOIRES (réseau, timeout, 429/503/529 =
+  // surcharge) — qui méritent un retry avec backoff — des erreurs
+  // DÉTERMINISTES (4xx hors 429, JSON non parseable) qui ne se réparent pas en
+  // ré-essayant à l'identique. Avant ce correctif (2026-05-31), un JSON tronqué
+  // par max_tokens déclenchait 3 retries × ~30s = ~90s gaspillées puis échec
+  // (incident "sous-production pipeline"). On limite le retry de parsing à 1
+  // (régénération unique) et on borne chaque appel par un timeout dur.
+  const MAX_TRANSIENT_RETRIES = 3;
+  const MAX_PARSE_RETRIES     = 1;
+  let transientAttempt = 0;
+  let parseAttempt     = 0;
+
+  const backoff = (n: number) =>
+    new Promise((r) => setTimeout(r, Math.min(8_000, Math.pow(2, n) * 1000)));
+
+  while (true) {
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:  "POST",
@@ -83,23 +98,29 @@ export async function callClaude<T = unknown>(
           system:     opts.systemPrompt,
           messages:   [{ role: "user", content: opts.userPrompt }],
         }),
+        // Borne dure par appel : un appel lent/pendu est avorté ici au lieu de
+        // bloquer tout le pipeline jusqu'au kill plateforme (cf claude-client
+        // n'avait AUCUN timeout avant le 2026-05-31).
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
-      // Retry sur 429 (rate limit) ou 503 (overloaded)
-      if (res.status === 429 || res.status === 503) {
-        const wait = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-        await new Promise((r) => setTimeout(r, wait));
-        attempt++;
+      // Transitoire : rate limit (429) / surcharge (503/529) → retry backoff
+      if (res.status === 429 || res.status === 503 || res.status === 529) {
+        if (transientAttempt >= MAX_TRANSIENT_RETRIES) {
+          throw new Error(`Claude API ${res.status} après ${MAX_TRANSIENT_RETRIES} retries`);
+        }
+        await backoff(transientAttempt++);
         continue;
       }
 
+      // Déterministe (400/401/404…) : pas de retry, échec immédiat
       if (!res.ok) {
         const err = await res.text();
         throw new Error(`Claude API ${res.status}: ${err.slice(0, 200)}`);
       }
 
-      const data = await res.json();
-      const text = data?.content?.[0]?.text ?? "";
+      const data  = await res.json();
+      const text  = data?.content?.[0]?.text ?? "";
       const usage = data?.usage ?? {};
 
       const result: ClaudeCallResult<T> = {
@@ -112,30 +133,39 @@ export async function callClaude<T = unknown>(
       if (opts.expectJson) {
         // Extraire le JSON même si Claude ajoute du préambule/markdown
         const match = text.match(/\{[\s\S]*\}/);
-        if (!match) {
-          throw new Error(`Réponse Claude non JSON parseable: ${text.slice(0, 300)}`);
+        let parsed: T | undefined;
+        if (match) {
+          try { parsed = JSON.parse(match[0]) as T; } catch { /* → retry parsing borné */ }
         }
-        try {
-          result.parsed = JSON.parse(match[0]) as T;
-        } catch (err) {
-          throw new Error(`JSON.parse failed: ${err instanceof Error ? err.message : String(err)}`);
+        if (parsed === undefined) {
+          // JSON absent/tronqué (souvent max_tokens atteint). 1 régénération au
+          // plus : au-delà, échec rapide — un retry à l'identique ne répare pas
+          // une troncature et coûte une génération entière (~30s).
+          if (parseAttempt < MAX_PARSE_RETRIES) {
+            parseAttempt++;
+            continue;
+          }
+          throw new Error(`Réponse Claude non JSON parseable (après ${MAX_PARSE_RETRIES} retry): ${text.slice(0, 200)}`);
         }
+        result.parsed = parsed;
       }
 
       return result;
 
     } catch (err) {
-      lastError = err;
-      attempt++;
-      if (attempt >= maxRetries) break;
-      // Wait avant retry (1s, 2s, 4s)
-      await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 1000));
+      // Retry UNIQUEMENT sur erreurs transitoires réseau/timeout.
+      const name = err instanceof Error ? err.name : "";
+      const msg  = err instanceof Error ? err.message : String(err);
+      const isTransient =
+        name === "TimeoutError" || name === "AbortError" ||
+        /fetch failed|network|ECONNRESET|ETIMEDOUT|EAI_AGAIN/i.test(msg);
+      if (isTransient && transientAttempt < MAX_TRANSIENT_RETRIES) {
+        await backoff(transientAttempt++);
+        continue;
+      }
+      throw err instanceof Error ? err : new Error(String(err));
     }
   }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("callClaude: retry exhausted");
 }
 
 // Re-export pour facilité d'usage par les agents
