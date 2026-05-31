@@ -192,6 +192,34 @@ export function getNationaleLabel(paris: string[]): string | null {
   return null;
 }
 
+const NATIONALE_LABELS: Record<number, string> = {
+  1: "Nationale 1 — Quinté+",
+  2: "Nationale 2 — Quarté+",
+  3: "Nationale 3 — Tiercé",
+};
+
+/**
+ * Verdict "jouable Afrique" + label Nationale pour une course.
+ * Priorise l'autoritaire LONACI (colonnes jouable_afrique/nationale), sinon
+ * retombe sur l'heuristique derivee des paris disponibles.
+ * jouable_afrique NULL/absent = non evalue -> fallback heuristique.
+ */
+export function resolveAfrique(course: {
+  jouable_afrique?: boolean | null;
+  nationale?: number | null;
+  paris_disponibles?: string[] | null;
+}): { jouable: boolean; nationaleLabel: string | null } {
+  const paris = course.paris_disponibles ?? [];
+  const jouable = course.jouable_afrique ?? isJouableAfrique(paris);
+  const nationaleLabel =
+    course.nationale != null && NATIONALE_LABELS[course.nationale]
+      ? NATIONALE_LABELS[course.nationale]
+      : jouable
+        ? getNationaleLabel(paris)
+        : null;
+  return { jouable, nationaleLabel };
+}
+
 export interface NormalizedCourse {
   hippodromeName:  string;
   hippodromePays:  string;
