@@ -113,20 +113,56 @@ function classToParisDisponibles(btnClass: string): string[] {
 
 // ── Scraping Geny ──────────────────────────────────────────────────────────
 
+// Timeout + retry sur le fetch upstream Geny.com (defense-in-depth).
+// Sans borne explicite, un fetch qui "pend" (Geny lent/instable certains
+// soirs) bloquait la route jusqu'au timeout d'origine Cloudflare (~100s),
+// renvoyé au caller en "error code: 522". On borne donc chaque tentative et
+// on retente 1 fois sur timeout / 5xx / 429 / erreur réseau (mais pas sur un
+// 4xx déterministe, inutile à retenter).
+const GENY_FETCH_TIMEOUT_MS = 12_000;   // 1 page HTML — large marge
+const GENY_FETCH_ATTEMPTS   = 2;        // 1 retry
+const GENY_RETRY_DELAY_MS   = 1_500;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+async function fetchGenyHtml(url: string): Promise<string> {
+  let lastError = "";
+  for (let attempt = 1; attempt <= GENY_FETCH_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GENY_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":      UA,
+          "Accept":          "text/html,application/xhtml+xml",
+          "Accept-Language": "fr-FR,fr;q=0.9",
+          "Referer":         "https://www.geny.com/",
+        },
+        cache:  "no-store",
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (res.ok) return await res.text();
+
+      // 4xx déterministe (hors 429) → inutile de retenter
+      lastError = `Geny HTTP ${res.status} pour ${url}`;
+      if (res.status < 500 && res.status !== 429) throw new Error(lastError);
+    } catch (err: unknown) {
+      clearTimeout(timer);
+      if (err instanceof Error && err.message.startsWith("Geny HTTP 4")) throw err;
+      lastError = err instanceof Error && err.name === "AbortError"
+        ? `Geny timeout après ${GENY_FETCH_TIMEOUT_MS}ms pour ${url}`
+        : err instanceof Error ? err.message : String(err);
+    }
+    if (attempt < GENY_FETCH_ATTEMPTS) await sleep(GENY_RETRY_DELAY_MS);
+  }
+  throw new Error(`Geny fetch échoué (${GENY_FETCH_ATTEMPTS} tentatives) : ${lastError}`);
+}
+
 export async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]> {
   const url = genyUrl(dateISO);
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":      UA,
-      "Accept":          "text/html,application/xhtml+xml",
-      "Accept-Language": "fr-FR,fr;q=0.9",
-      "Referer":         "https://www.geny.com/",
-    },
-    cache: "no-store",
-  });
-
-  if (!res.ok) throw new Error(`Geny HTTP ${res.status} pour ${url}`);
-  const html = await res.text();
+  const html = await fetchGenyHtml(url);
   const courses: GenyCourse[] = [];
 
   const reunionBlocks = html.split(/<a\s+name="reunion(\d+)"/i);
