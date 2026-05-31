@@ -17,6 +17,8 @@ const KNOWN_CRONS = [
   { cronName: "sync-resultats",       label: "Résultats pronostics",    schedule: "21h Paris" },
   { cronName: "expire-abonnements",   label: "Expiration abonnements",  schedule: "2h Paris" },
   { cronName: "rappel-expiration",    label: "Rappels expiration",      schedule: "10h Paris" },
+  { cronName: "source-evidence-collector", label: "Preuves Afrique (collecte)", schedule: "≈8h15 Paris" },
+  { cronName: "ia-pronostics-v2",          label: "Génération pronostics IA",   schedule: "≈8h45 Paris" },
 ] as const;
 
 export interface CronJobStatus {

@@ -20,6 +20,8 @@ const FORCE_TARGETS: Record<string, string> = {
   "lonaci-sync":   "lonaci",
   "geny-arrivees": "arrivees",
   "sync-resultats":"resultats",
+  "source-evidence-collector": "evidence",
+  "ia-pronostics-v2":          "ia-pronostics",
 };
 
 function relativeTime(iso: string | null): string {
@@ -86,7 +88,7 @@ export default function CronMonitorPanel() {
         cronName,
         ok:  res.ok,
         msg: res.ok
-          ? `✅ Terminé en ${data.duration_ms}ms — ${data.result?.inserted ?? data.result?.traites ?? data.result?.courses ?? "OK"}`
+          ? `✅ Terminé en ${data.duration_ms}ms — ${data.result?.inserted ?? data.result?.evidence_inserted ?? data.result?.drafts_needs_review ?? data.result?.traites ?? data.result?.courses ?? "OK"}`
           : `❌ ${data.error ?? data.result?.error ?? `HTTP ${res.status}`}`,
       });
 

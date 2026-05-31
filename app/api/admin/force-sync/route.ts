@@ -13,8 +13,12 @@ import { runGenyProgrammeSync } from "@/lib/sync/geny-programme";
 import { runLonaciSync }        from "@/lib/sync/lonaci";
 import { runGenyArriveesSync }  from "@/lib/sync/geny-arrivees";
 import { requireAdminAuth }     from "@/lib/auth/checkAdminAuth";
+import { collectSourceEvidenceForDate } from "@/lib/ai-pronostics/source-crawlers";
+import { runDirector }                  from "@/lib/ai-pronostics/director";
+import { todayParisISO }                from "@/lib/paris-date";
 
-export const dynamic = "force-dynamic";
+export const dynamic     = "force-dynamic";
+export const maxDuration = 90;   // runDirector (pipeline IA complet) ~30-45s
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
 const APP_URL     = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
@@ -67,6 +71,18 @@ const TARGETS: Record<string, Target> = {
     cronName: "sync-resultats",
     url:      `${APP_URL}/api/admin/sync-resultats`,
     method:   "POST",
+  },
+  // ── Pipeline génération IA (appel DIRECT des fonctions, comme les autres
+  //    cibles "direct" — évite la boucle self-fetch / 522). ────────────────
+  "evidence": {
+    kind:     "direct",
+    cronName: "source-evidence-collector",
+    run:      () => collectSourceEvidenceForDate({ date: todayParisISO() }),
+  },
+  "ia-pronostics": {
+    kind:     "direct",
+    cronName: "ia-pronostics-v2",
+    run:      () => runDirector({ dryRun: false }),
   },
 };
 
