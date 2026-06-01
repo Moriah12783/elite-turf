@@ -85,12 +85,11 @@ function pickLabel(p: PartantEnrichi, minCote: number | null): SelectionLabel {
 
 /**
  * Règle d'affichage des blocs promo « Notre sélection » (bandeau + encart).
- * On les montre au visiteur NON-abonné quand une sélection existe ; on les
- * masque pour un abonné (bruit) et quand la course n'a pas de partants.
+ * Visible pour TOUS dès qu'une sélection existe : c'est une plus-value (lecture
+ * stats sur les 30-60+ courses du jour) y compris pour les abonnés, dont le
+ * pronostic premium ne couvre que 3 courses/jour. Masqué seulement si la course
+ * n'a pas (encore) de partants.
  */
-export function shouldShowNotreSelectionPromo(
-  isSubscribed: boolean,
-  items: NotreSelectionItem[],
-): boolean {
-  return !isSubscribed && items.length > 0;
+export function shouldShowNotreSelectionPromo(items: NotreSelectionItem[]): boolean {
+  return !!items && items.length > 0;
 }

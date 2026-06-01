@@ -424,7 +424,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {shouldShowNotreSelectionPromo(isSubscribed, notreSelection) && (
+            {shouldShowNotreSelectionPromo(notreSelection) && (
               <NotreSelectionPromo items={notreSelection} variant="banner" />
             )}
 
@@ -546,7 +546,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               Tous les pronostics
             </Link>
 
-            {shouldShowNotreSelectionPromo(isSubscribed, notreSelection) && (
+            {shouldShowNotreSelectionPromo(notreSelection) && (
               <NotreSelectionPromo items={notreSelection} variant="sidebar" />
             )}
           </div>
