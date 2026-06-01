@@ -7,7 +7,7 @@ import {
   CheckCircle2, Zap, ExternalLink
 } from "lucide-react";
 import { buildGenyUrl } from "@/lib/geny";
-import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
+import { resolveAfrique } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 
 // Pool complet des 9 photos PMU locales
@@ -96,6 +96,8 @@ interface Props {
     pronostics?: Array<{ id: string; niveau_acces: string; publie: boolean; type_pari?: string }> | null;
     partants?: Array<{ numero: number; nom_cheval: string }> | null;
     paris_disponibles?: string[] | null;
+    jouable_afrique?: boolean | null;
+    nationale?: number | null;
   };
   userSubscription: string;
 }
@@ -109,8 +111,11 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
   const typeBadge       = typePari ? TYPE_PARI_BADGE[typePari] : null;
 
   const paris           = c.paris_disponibles ?? [];
-  const jouableAfrique  = isJouableAfrique(paris);
-  const nationaleLabel  = getNationaleLabel(paris);
+  const { jouable: jouableAfrique, nationaleLabel } = resolveAfrique({
+    jouable_afrique: c.jouable_afrique,
+    nationale:       c.nationale,
+    paris_disponibles: paris,
+  });
 
   const hasPronosticAccess =
     !pronosticPublie ||

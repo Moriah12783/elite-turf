@@ -18,5 +18,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "cron-worker"]
+  "exclude": ["node_modules", "cron-worker", "**/*.test.ts", "vitest.config.ts"]
 }
