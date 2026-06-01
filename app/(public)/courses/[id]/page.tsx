@@ -15,7 +15,8 @@ import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
-import { buildNotreSelection } from "@/lib/courses/notre-selection";
+import { buildNotreSelection, shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
+import { NotreSelectionPromo } from "@/components/courses/NotreSelectionPromo";
 
 export const dynamic = "force-dynamic";
 
@@ -224,6 +225,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // « Notre sélection » : top 8 stats (favoris + drivers/entraîneurs reconnus
   // + forme), déterministe, calculée serveur depuis les partants enrichis.
   const notreSelection = buildNotreSelection(statsEnrichies.partants);
+  const isSubscribed = ["STARTER", "PRO", "ELITE"].includes(userSubscription);
 
   // Construire le lien Geny : utiliser l'URL réelle stockée si disponible,
   // sinon fallback sur la page programme du jour.
@@ -422,6 +424,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
               </div>
             </div>
 
+            {shouldShowNotreSelectionPromo(isSubscribed, notreSelection) && (
+              <NotreSelectionPromo items={notreSelection} variant="banner" />
+            )}
+
             {/* ── Onglets : Partants / Côtes / Arrivées & Rapports / Statistiques ── */}
             <CourseTabsClient
               courseId={c.id}
@@ -432,7 +438,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               statut={c.statut}
               genyUrl={genyUrl}
               isVedette={!!pronosticPublie}
-              isSubscribed={["STARTER","PRO","ELITE"].includes(userSubscription)}
+              isSubscribed={isSubscribed}
               statsEnrichies={statsEnrichies}
               hasPublishedPronostic={!!pronosticPublie}
               notreSelection={notreSelection}
@@ -539,6 +545,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
               <Star className="w-4 h-4" />
               Tous les pronostics
             </Link>
+
+            {shouldShowNotreSelectionPromo(isSubscribed, notreSelection) && (
+              <NotreSelectionPromo items={notreSelection} variant="sidebar" />
+            )}
           </div>
 
         </div>
