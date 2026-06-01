@@ -7,6 +7,7 @@ export const revalidate = 60;
 import HeroSection from "@/components/home/HeroSection";
 import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 import CoursesSection from "@/components/home/CoursesSection";
+import NotreSelectionSection from "@/components/home/NotreSelectionSection";
 import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
@@ -88,6 +89,9 @@ export default function HomePage() {
 
       {/* 4 — Programme des courses du jour */}
       <CoursesSection />
+
+      {/* 4b — Sélection gratuite sur chaque course (positionnement conseil) */}
+      <NotreSelectionSection />
 
       {/* 5 — Comment ça marche : 4 étapes */}
       <HowItWorksSection />

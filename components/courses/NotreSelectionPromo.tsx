@@ -44,11 +44,11 @@ export function NotreSelectionPromo({
               </h3>
             </div>
             <div className="mb-2">{Pastilles}</div>
-            <p className="text-text-muted text-xs leading-relaxed">
+            <p className="text-gold-light/90 text-xs leading-relaxed">
               Notre lecture statistique pour{" "}
-              <span className="text-text-secondary font-semibold">structurer vos paris</span> et comprendre la
+              <span className="text-gold-light font-semibold">structurer vos paris</span> et comprendre la
               course. Différente de nos{" "}
-              <span className="text-text-secondary font-semibold">pronostics du jour</span> (analyse experte
+              <span className="text-gold-light font-semibold">pronostics du jour</span> (analyse experte
               réservée aux abonnés).
             </p>
           </div>
@@ -74,7 +74,7 @@ export function NotreSelectionPromo({
           </h3>
         </div>
         <div className="mb-3">{Pastilles}</div>
-        <p className="text-text-muted text-xs leading-relaxed mb-3">
+        <p className="text-gold-light/90 text-xs leading-relaxed mb-3">
           Lecture statistique pour structurer vos paris. Différente de nos pronostics du jour, réservés aux
           abonnés.
         </p>
