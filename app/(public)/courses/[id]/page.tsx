@@ -15,6 +15,7 @@ import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
+import { buildNotreSelection } from "@/lib/courses/notre-selection";
 
 export const dynamic = "force-dynamic";
 
@@ -220,6 +221,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // Si une entité n'est pas encore en BDD (course très récente, cron pas passé),
   // la UI handle gracefully avec un fallback "Données en cours de constitution".
   const statsEnrichies = await getCourseStatsEnrichies(partants);
+  // « Notre sélection » : top 8 stats (favoris + drivers/entraîneurs reconnus
+  // + forme), déterministe, calculée serveur depuis les partants enrichis.
+  const notreSelection = buildNotreSelection(statsEnrichies.partants);
 
   // Construire le lien Geny : utiliser l'URL réelle stockée si disponible,
   // sinon fallback sur la page programme du jour.
@@ -431,6 +435,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               isSubscribed={["STARTER","PRO","ELITE"].includes(userSubscription)}
               statsEnrichies={statsEnrichies}
               hasPublishedPronostic={!!pronosticPublie}
+              notreSelection={notreSelection}
             />
 
           </div>

@@ -4,10 +4,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, TrendingUp, Trophy, RefreshCw,
   ExternalLink, Users, Star, CheckCircle2,
-  AlertCircle, ChevronUp, ChevronDown, Lock, Zap,
+  AlertCircle, ChevronUp, ChevronDown, Lock, Zap, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
+import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
 import TabStatsRich from "@/components/courses/TabStatsRich";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ interface Rapport {
   dividendes: Dividende[];
 }
 
-type Tab = "partants" | "cotes" | "arrivees" | "stats";
+type Tab = "partants" | "selection" | "cotes" | "arrivees" | "stats";
 
 interface Props {
   courseId: string;
@@ -64,6 +65,8 @@ interface Props {
    *  pour conserver la rétro-compat ; si absent on retombe sur TabStats simple. */
   statsEnrichies?: CourseStatsEnrichies;
   hasPublishedPronostic?: boolean;
+  /** Sélection stats (≤8 chevaux) calculée serveur — onglet "Notre sélection". */
+  notreSelection?: NotreSelectionItem[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -896,6 +899,85 @@ function TabStats({ partants }: { partants: Partant[] }) {
   );
 }
 
+// ── Tab : Notre sélection (lecture statistique gratuite) ────────────────────
+
+const SELECTION_LABEL_STYLE: Record<string, string> = {
+  "Favori marché":      "bg-status-win/15 text-status-win border-status-win/30",
+  "Driver reconnu":     "bg-gold-faint text-gold-light border-gold-primary/30",
+  "Entraîneur reconnu": "bg-gold-faint text-gold-light border-gold-primary/30",
+  "Bonne forme":        "bg-blue-500/10 text-blue-400 border-blue-500/30",
+  "Outsider value":     "bg-purple-500/10 text-purple-400 border-purple-500/30",
+  "Régulier":           "bg-bg-elevated text-text-muted border-border",
+};
+
+function TabNotreSelection({ items }: { items: NotreSelectionItem[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Sparkles className="w-8 h-8 text-text-muted mx-auto mb-3" />
+        <p className="text-text-secondary text-sm font-medium mb-1">Sélection bientôt disponible</p>
+        <p className="text-text-muted text-xs">Les partants de cette course sont en cours de chargement.</p>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {/* Bandeau : distinction claire avec le pronostic premium */}
+      <div className="m-4 p-3 rounded-xl bg-bg-elevated border border-border flex items-start gap-2">
+        <BarChart3 className="w-4 h-4 text-gold-primary flex-shrink-0 mt-0.5" />
+        <p className="text-text-muted text-xs leading-relaxed">
+          <span className="text-text-secondary font-semibold">Lecture statistique automatique</span>{" "}
+          — ce n&apos;est pas notre pronostic du jour, réservé aux 3 courses analysées par nos experts.
+        </p>
+      </div>
+
+      <div className="divide-y divide-border/20">
+        {items.map((s) => (
+          <div key={s.numero} className="px-4 py-3 flex items-center gap-3">
+            <span className="w-5 text-center text-text-muted text-xs font-mono">{s.rank}</span>
+            <span
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                s.rank === 1
+                  ? "bg-status-win/20 border border-status-win/40 text-status-win"
+                  : s.rank <= 3
+                    ? "bg-gold-faint border border-gold-primary/40 text-gold-light"
+                    : "bg-bg-elevated border border-border text-text-muted"
+              }`}
+            >
+              {s.numero}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-text-primary text-sm font-semibold truncate">{s.nom}</p>
+              {s.jockey && <p className="text-text-muted text-xs truncate">{s.jockey}</p>}
+            </div>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${
+                SELECTION_LABEL_STYLE[s.label] ?? SELECTION_LABEL_STYLE["Régulier"]
+              }`}
+            >
+              {s.label}
+            </span>
+            <span className="text-text-secondary text-xs font-mono w-10 text-right flex-shrink-0">
+              {s.cote ? s.cote.toFixed(1) : "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA premium discret */}
+      <div className="m-4 p-4 rounded-xl bg-gradient-to-br from-gold-faint to-bg-elevated border border-gold-primary/30 flex items-center justify-between gap-3">
+        <p className="text-text-secondary text-xs">Envie de l&apos;analyse experte du jour&nbsp;?</p>
+        <Link
+          href="/pronostics"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-xs rounded-xl transition-all shadow-gold-sm whitespace-nowrap"
+        >
+          <Star className="w-3.5 h-3.5" fill="currentColor" /> Voir le pronostic premium
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // ── Composant principal ────────────────────────────────────────────────────
 
 export default function CourseTabsClient({
@@ -910,12 +992,14 @@ export default function CourseTabsClient({
   isSubscribed = false,
   statsEnrichies,
   hasPublishedPronostic = false,
+  notreSelection = [],
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
 
   const totalPartants = partants.length + nonPartants.length;
   const tabs: { id: Tab; label: string; icon: any; badge?: string }[] = [
     { id: "partants",  label: "Partants",           icon: Users,     badge: totalPartants > 0 ? String(totalPartants) : undefined },
+    { id: "selection", label: "Notre sélection",    icon: Sparkles },
     { id: "cotes",     label: "Côtes en direct",    icon: TrendingUp },
     { id: "arrivees",  label: "Arrivées & Rapports", icon: Trophy },
     { id: "stats",     label: "Statistiques",       icon: BarChart3 },
@@ -950,6 +1034,9 @@ export default function CourseTabsClient({
           isSubscribed={isSubscribed}
           statut={statut}
         />
+      )}
+      {activeTab === "selection" && (
+        <TabNotreSelection items={notreSelection} />
       )}
       {activeTab === "cotes" && (
         <TabCotes courseId={courseId} partants={partants} statut={statut} />
