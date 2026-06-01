@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildNotreSelection } from "./notre-selection";
+import { buildNotreSelection, shouldShowNotreSelectionPromo } from "./notre-selection";
 import type { PartantEnrichi } from "./stats-types";
 
 /** Fabrique un PartantEnrichi complet (tous champs requis) pour les tests. */
@@ -78,5 +78,18 @@ describe("buildNotreSelection", () => {
 
   it("champ vide → []", () => {
     expect(buildNotreSelection([])).toEqual([]);
+  });
+});
+
+describe("shouldShowNotreSelectionPromo", () => {
+  const item = { rank: 1, numero: 6, nom: "X", jockey: null, cote: null, label: "Régulier" as const };
+  it("affiche pour un non-abonné avec sélection", () => {
+    expect(shouldShowNotreSelectionPromo(false, [item])).toBe(true);
+  });
+  it("masque pour un abonné", () => {
+    expect(shouldShowNotreSelectionPromo(true, [item])).toBe(false);
+  });
+  it("masque si la sélection est vide", () => {
+    expect(shouldShowNotreSelectionPromo(false, [])).toBe(false);
   });
 });

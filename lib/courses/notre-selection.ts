@@ -82,3 +82,15 @@ function pickLabel(p: PartantEnrichi, minCote: number | null): SelectionLabel {
   if (p.cote != null && p.cote >= 10 && ratio >= 0.3) return "Outsider value";
   return "Régulier";
 }
+
+/**
+ * Règle d'affichage des blocs promo « Notre sélection » (bandeau + encart).
+ * On les montre au visiteur NON-abonné quand une sélection existe ; on les
+ * masque pour un abonné (bruit) et quand la course n'a pas de partants.
+ */
+export function shouldShowNotreSelectionPromo(
+  isSubscribed: boolean,
+  items: NotreSelectionItem[],
+): boolean {
+  return !isSubscribed && items.length > 0;
+}
