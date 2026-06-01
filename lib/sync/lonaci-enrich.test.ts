@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { computeLonaciEnrichment } from "./lonaci-enrich";
 
 const GENY = [
-  { id: "c1", hippodrome_id: "h1", numero_reunion: 1, numero_course: 1 },
-  { id: "c2", hippodrome_id: "h1", numero_reunion: 1, numero_course: 2 },
-  { id: "c3", hippodrome_id: "h2", numero_reunion: 2, numero_course: 1 },
+  { id: "c1", hippodrome_id: "h1", numero_reunion: 1, numero_course: 1, pays: "France" },
+  { id: "c2", hippodrome_id: "h1", numero_reunion: 1, numero_course: 2, pays: "France" },
+  { id: "c3", hippodrome_id: "h2", numero_reunion: 2, numero_course: 1, pays: "France" },
 ];
 const CANON = new Map<string, string>([
   ["vincennes", "h1"],
@@ -80,5 +80,27 @@ describe("computeLonaciEnrichment", () => {
     );
     expect(r.report.unmatched_hippodrome).toBe(1);
     expect(r.updates).toHaveLength(0);
+  });
+
+  it("ne corrige PAS (false) une course etrangere meme si programme complet", () => {
+    const geny = [
+      { id: "c1",  hippodrome_id: "h1",  numero_reunion: 1, numero_course: 1, pays: "France" },
+      { id: "cUK", hippodrome_id: "hUK", numero_reunion: 9, numero_course: 1, pays: "Grande-Bretagne" },
+    ];
+    const r = computeLonaciEnrichment(
+      {
+        date: "2026-05-31",
+        lonaciCourses: [
+          { hippodrome: "VINCENNES", nReunion: 1, numeroCourse: 1, nationale: 1 },
+        ],
+        genyCourses: geny,
+        hippoCanonMap: CANON,
+      },
+      { guardMinReunions: 1, guardMinCoverage: 0.5 }, // complet
+    );
+    // c1 (France) rapprochee -> true ; cUK (etrangere) non rapprochee -> JAMAIS corrigee
+    expect(r.updates).toContainEqual({ id: "c1", jouable_afrique: true, nationale: 1 });
+    expect(r.updates.find((u) => u.id === "cUK")).toBeUndefined();
+    expect(r.report.corrected_false).toBe(0);
   });
 });

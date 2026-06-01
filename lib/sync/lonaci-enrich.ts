@@ -18,6 +18,7 @@ export interface EnrichInput {
     hippodrome_id: string;
     numero_reunion: number;
     numero_course: number;
+    pays?: string; // pour scoper la correction "false" a France/Maroc
   }>;
   hippoCanonMap: Map<string, string>; // canonique(nom) -> hippodrome_id (existants)
 }
@@ -94,7 +95,11 @@ export function computeLonaciEnrichment(input: EnrichInput, guard: EnrichGuard):
   let correctedFalse = 0;
   if (programComplete) {
     for (const g of input.genyCourses) {
-      if (!matchedIds.has(g.id)) {
+      // Ne corriger (false) QUE les courses France/Maroc — le perimetre couvert
+      // par LONACI. Une course etrangere ne doit jamais etre masquee sur la foi
+      // du programme LONACI France/Maroc.
+      const inScope = g.pays === "France" || g.pays === "Maroc";
+      if (inScope && !matchedIds.has(g.id)) {
         updates.push({ id: g.id, jouable_afrique: false, nationale: null });
         correctedFalse++;
       }

@@ -48,24 +48,26 @@ export async function runLonaciSync(opts: { dryRun?: boolean } = {}): Promise<Lo
   }
   const date = lonaciCourses[0].dateCourse;
 
-  // 2. Map canonique des hippodromes EXISTANTS (aucun INSERT)
-  const { data: hips } = await supabase.from("hippodromes").select("id, nom");
+  // 2. Map canonique des hippodromes EXISTANTS (aucun INSERT) + pays par id
+  const { data: hips } = await supabase.from("hippodromes").select("id, nom, pays");
   const hippoCanonMap = new Map<string, string>();
-  for (const h of (hips ?? []) as Array<{ id: string; nom: string }>) {
+  const hippoPaysById = new Map<string, string>();
+  for (const h of (hips ?? []) as Array<{ id: string; nom: string; pays: string }>) {
     hippoCanonMap.set(canonicalHippodrome(h.nom), h.id);
+    hippoPaysById.set(h.id, h.pays);
   }
 
-  // 3. Courses Geny existantes de la date
+  // 3. Courses Geny existantes de la date (+ pays via l'hippodrome, pour scoper la correction)
   const { data: gcs } = await supabase
     .from("courses")
     .select("id, hippodrome_id, numero_reunion, numero_course")
     .eq("date_course", date);
-  const genyCourses = (gcs ?? []) as Array<{
+  const genyCourses = ((gcs ?? []) as Array<{
     id: string;
     hippodrome_id: string;
     numero_reunion: number;
     numero_course: number;
-  }>;
+  }>).map((g) => ({ ...g, pays: hippoPaysById.get(g.hippodrome_id) }));
 
   // 4. Verdicts (fonction pure, testee)
   const { updates, report } = computeLonaciEnrichment(
