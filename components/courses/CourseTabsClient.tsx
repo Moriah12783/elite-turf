@@ -67,6 +67,9 @@ interface Props {
   hasPublishedPronostic?: boolean;
   /** Sélection stats (≤8 chevaux) calculée serveur — onglet "Notre sélection". */
   notreSelection?: NotreSelectionItem[];
+  /** Masquer entièrement "Notre sélection" (onglet) — ex. sur une course dont
+   *  le visiteur a déjà le pronostic premium (anti-cannibalisation). */
+  hideNotreSelection?: boolean;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -993,17 +996,19 @@ export default function CourseTabsClient({
   statsEnrichies,
   hasPublishedPronostic = false,
   notreSelection = [],
+  hideNotreSelection = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
 
   const totalPartants = partants.length + nonPartants.length;
-  const tabs: { id: Tab; label: string; icon: any; badge?: string }[] = [
+  const allTabs: { id: Tab; label: string; icon: any; badge?: string }[] = [
     { id: "partants",  label: "Partants",           icon: Users,     badge: totalPartants > 0 ? String(totalPartants) : undefined },
     { id: "selection", label: "Notre sélection",    icon: Sparkles },
     { id: "cotes",     label: "Côtes en direct",    icon: TrendingUp },
     { id: "arrivees",  label: "Arrivées & Rapports", icon: Trophy },
     { id: "stats",     label: "Statistiques",       icon: BarChart3 },
   ];
+  const tabs = allTabs.filter((t) => !(t.id === "selection" && hideNotreSelection));
 
   return (
     <div className="card-base overflow-hidden">

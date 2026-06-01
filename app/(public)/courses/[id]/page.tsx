@@ -226,6 +226,13 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // + forme), déterministe, calculée serveur depuis les partants enrichis.
   const notreSelection = buildNotreSelection(statsEnrichies.partants);
   const isSubscribed = ["STARTER", "PRO", "ELITE"].includes(userSubscription);
+  // Anti-cannibalisation : si le visiteur a accès au pronostic premium publié
+  // de cette course, on lui masque la « Notre sélection » gratuite (clone du
+  // produit payé). Visible pour tous ailleurs.
+  const viewerHasAccessiblePremiumPronostic =
+    !!pronosticPublie &&
+    pronosticPublie.niveau_acces !== "GRATUIT" &&
+    canAccess(pronosticPublie.niveau_acces, userSubscription);
 
   // Construire le lien Geny : utiliser l'URL réelle stockée si disponible,
   // sinon fallback sur la page programme du jour.
@@ -424,7 +431,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {shouldShowNotreSelectionPromo(notreSelection) && (
+            {shouldShowNotreSelectionPromo(notreSelection) && !viewerHasAccessiblePremiumPronostic && (
               <NotreSelectionPromo items={notreSelection} variant="banner" />
             )}
 
@@ -442,6 +449,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               statsEnrichies={statsEnrichies}
               hasPublishedPronostic={!!pronosticPublie}
               notreSelection={notreSelection}
+              hideNotreSelection={viewerHasAccessiblePremiumPronostic}
             />
 
           </div>
@@ -546,7 +554,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               Tous les pronostics
             </Link>
 
-            {shouldShowNotreSelectionPromo(notreSelection) && (
+            {shouldShowNotreSelectionPromo(notreSelection) && !viewerHasAccessiblePremiumPronostic && (
               <NotreSelectionPromo items={notreSelection} variant="sidebar" />
             )}
           </div>
