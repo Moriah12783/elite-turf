@@ -83,13 +83,10 @@ describe("buildNotreSelection", () => {
 
 describe("shouldShowNotreSelectionPromo", () => {
   const item = { rank: 1, numero: 6, nom: "X", jockey: null, cote: null, label: "Régulier" as const };
-  it("affiche pour un non-abonné avec sélection", () => {
-    expect(shouldShowNotreSelectionPromo(false, [item])).toBe(true);
-  });
-  it("masque pour un abonné", () => {
-    expect(shouldShowNotreSelectionPromo(true, [item])).toBe(false);
+  it("affiche dès qu'une sélection existe (visible pour tous, abonnés inclus)", () => {
+    expect(shouldShowNotreSelectionPromo([item])).toBe(true);
   });
   it("masque si la sélection est vide", () => {
-    expect(shouldShowNotreSelectionPromo(false, [])).toBe(false);
+    expect(shouldShowNotreSelectionPromo([])).toBe(false);
   });
 });
