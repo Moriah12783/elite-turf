@@ -36,7 +36,7 @@ export default async function PaiementsPage({ searchParams }: Props) {
     supabase
       .from("transactions")
       .select(`
-        id, montant_fcfa, devise, methode, statut, date_transaction, reference_operateur,
+        id, montant_fcfa, devise, methode, statut, date_transaction, reference_operateur, metadata,
         user:user_id(email, nom_complet)
       `)
       .order("date_transaction", { ascending: false })
@@ -199,6 +199,15 @@ export default async function PaiementsPage({ searchParams }: Props) {
                           <Icon className="w-3 h-3" />
                           {cfg.label}
                         </span>
+                        {tx.statut === "ECHEC" && (tx.metadata as any)?.echec_raison && (
+                          <p
+                            className="text-text-muted text-[10px] mt-1 max-w-[170px] truncate"
+                            title={String((tx.metadata as any).echec_raison)}
+                          >
+                            {(tx.metadata as any).paystack_channel ? `${(tx.metadata as any).paystack_channel} · ` : ""}
+                            {String((tx.metadata as any).echec_raison)}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-text-muted text-xs font-mono">
                         {tx.reference_operateur || "—"}

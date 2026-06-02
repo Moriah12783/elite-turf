@@ -20,6 +20,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import {
   fetchPaystackTransaction,
   activateSubscriptionFromPaystack,
+  markPaystackTransactionFailed,
 } from "@/lib/paystack/activate";
 
 export const dynamic    = "force-dynamic";
@@ -91,11 +92,8 @@ export async function GET(req: NextRequest) {
           results.push({ reference, paystack_status: payment.status, action: "error", detail: outcome.reason });
         }
       } else if (payment.status === "failed" || payment.status === "abandoned") {
-        // Marquer la transaction comme échouée pour ne plus la re-poller
-        await supabase
-          .from("transactions")
-          .update({ statut: "ECHEC" })
-          .eq("reference_operateur", reference);
+        // Marquer la transaction comme échouée (+ raison) pour ne plus la re-poller
+        await markPaystackTransactionFailed(payment);
         results.push({ reference, paystack_status: payment.status, action: "marked_failed" });
       } else {
         // pending, ongoing, queued, etc. — on retentera au prochain cron

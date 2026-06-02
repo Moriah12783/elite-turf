@@ -20,6 +20,7 @@ import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import {
   fetchPaystackTransaction,
   activateSubscriptionFromPaystack,
+  markPaystackTransactionFailed,
 } from "@/lib/paystack/activate";
 
 export const dynamic    = "force-dynamic";
@@ -94,10 +95,7 @@ export async function POST(req: NextRequest) {
           detail: outcome.ok ? undefined : outcome.reason,
         });
       } else if (payment.status === "failed" || payment.status === "abandoned") {
-        await adminClient
-          .from("transactions")
-          .update({ statut: "ECHEC" })
-          .eq("reference_operateur", reference);
+        await markPaystackTransactionFailed(payment);
         results.push({ reference, paystack_status: payment.status, action: "marked_failed" });
       } else {
         results.push({ reference, paystack_status: payment.status, action: "still_pending" });
