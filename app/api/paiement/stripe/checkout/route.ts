@@ -82,6 +82,12 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode:                 "payment",
       payment_method_types: ["card"],
+      // 3D Secure : authentification forte (OTP banque) demandée dès que la carte
+      // la supporte → réduit fortement les faux blocages sur cartes étrangères
+      // (Maroc/Afrique) et transfère la responsabilité d'un litige à la banque.
+      payment_method_options: {
+        card: { request_three_d_secure: "any" },
+      },
       customer_email:       userEmail,
       line_items: [
         {
