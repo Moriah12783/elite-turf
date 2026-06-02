@@ -74,7 +74,7 @@ export default function Navbar() {
             >
               📥 Guide
             </Link>
-            <NavLink href="/a-propos">À propos</NavLink>
+            <NavLink href="/performances">Performances</NavLink>
           </div>
 
           {/* Desktop CTA */}
@@ -172,7 +172,7 @@ export default function Navbar() {
               { href: "/arrivees",     label: "Arrivées & Rapports" },
               { href: "/abonnements",  label: "Abonnements"        },
               { href: "/guide-initie", label: "📥 Guide gratuit"   },
-              { href: "/a-propos",     label: "À Propos"           },
+              { href: "/performances", label: "Performances"       },
             ].map(({ href, label }) => (
               <MobileNavLink key={href} href={href} onClick={() => setIsOpen(false)}>
                 {label}
