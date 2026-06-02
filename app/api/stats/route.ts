@@ -14,6 +14,7 @@
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { computeRecentPerf } from "@/lib/stats/recent-perf";
 
 // Pas de force-dynamic : on veut que Cloudflare CDN cache la réponse
 // pendant 30min via le header Cache-Control retourné dans NextResponse.
@@ -69,17 +70,12 @@ export async function GET() {
     const tauxGlobal      = termines > 0 ? Math.round((gagnants / termines) * 100) : 0;
     const meilleurRapport = topRapport?.[0]?.rapport_gagnant ?? null;
 
-    // ROI cumulé 14j : version compacte CPU-friendly (loop simple, pas de
-    // type checks lourds). Si list vide → null (pas d'affichage hero).
-    const list = roiData ?? [];
-    const nb = list.length;
-    let gains = 0;
-    for (const p of list) {
-      const r = (p.gains_theoriques ?? p.rapport_gagnant ?? 0) as number;
-      if (p.resultat === "GAGNANT") gains += r;
-      else if (p.resultat === "PARTIEL") gains += r * 0.3;
-    }
-    const roiCumule = nb > 0 ? Math.round(((gains - nb) / nb) * 100) : null;
+    // Perfs récentes (14j). `roi` = null si AUCUN rapport connu → on ne montre
+    // JAMAIS un ROI faux (ex. −100 % alors que les gagnants existent mais sans
+    // dividende enregistré). `gagnants` + `taux` restent vrais en toutes circonstances.
+    const perf = computeRecentPerf(
+      (roiData ?? []) as { resultat: string; gains_theoriques?: number | null; rapport_gagnant?: number | null }[],
+    );
 
     return NextResponse.json(
       {
@@ -87,9 +83,11 @@ export async function GET() {
         totalPronostics: termines,
         meilleurRapport,
         coursesAnalysees: totalCourses ?? 0,
-        roiCumule30j: roiCumule,
-        gainsCumule30j: Math.round(gains),
-        pronosticsCumule30j: nb,
+        roiCumule30j: perf.roi,
+        gainsCumule30j: perf.gains,
+        pronosticsCumule30j: perf.nb,
+        gagnantsRecents: perf.gagnants,
+        tauxRecent: perf.tauxReussite,
       },
       {
         headers: {
