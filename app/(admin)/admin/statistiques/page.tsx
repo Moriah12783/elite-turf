@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   TrendingUp, Users, CreditCard, BarChart3,
-  Target, Star, Crown, Zap
+  Target, Star, Crown, Zap, Coins, CheckCircle2, AlertTriangle
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Statistiques — Admin Elite Turf" };
@@ -10,7 +10,11 @@ export const dynamic = "force-dynamic";
 
 const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
 
-export default async function StatistiquesPage() {
+interface Props {
+  searchParams: { dividendes?: string; filled?: string; gains?: string };
+}
+
+export default async function StatistiquesPage({ searchParams }: Props) {
   const supabase = createServiceClient();
   const now = new Date();
 
@@ -90,6 +94,30 @@ export default async function StatistiquesPage() {
         <h1 className="font-serif text-2xl font-bold text-text-primary">Statistiques</h1>
         <p className="text-text-secondary text-sm mt-1">Vue d&apos;ensemble de la plateforme Elite Turf</p>
       </div>
+
+      {/* ── Feedback remplissage dividendes ─────────────────────────────── */}
+      {searchParams.dividendes === "ok" && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-win/10 border border-status-win/30">
+          <CheckCircle2 className="w-5 h-5 text-status-win flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="text-status-win font-semibold">
+              Dividendes propagés : {searchParams.filled ?? "0"} pronostic(s) mis à jour
+              {searchParams.gains ? ` · ≈${searchParams.gains}€ de rapports cumulés` : ""}.
+            </p>
+            <p className="text-text-muted text-xs mt-0.5">
+              Le ROI et les gains de la page /performances reflètent maintenant ces dividendes.
+            </p>
+          </div>
+        </div>
+      )}
+      {searchParams.dividendes === "erreur" && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-loss/10 border border-status-loss/30">
+          <AlertTriangle className="w-5 h-5 text-status-loss flex-shrink-0 mt-0.5" />
+          <p className="text-status-loss font-semibold text-sm">
+            Échec du remplissage des dividendes. Réessaie, ou consulte les logs du worker.
+          </p>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -203,6 +231,30 @@ export default async function StatistiquesPage() {
               <div className="text-text-muted text-xs mt-1">{s.label}</div>
             </div>
           ))}
+        </div>
+
+        {/* ── Maintenance : propagation des dividendes ───────────────────── */}
+        <div className="mt-6 pt-5 border-t border-bg-elevated flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm">
+            <p className="text-text-secondary font-medium flex items-center gap-2">
+              <Coins className="w-4 h-4 text-gold-primary" />
+              Dividendes (rapport gagnant)
+            </p>
+            <p className="text-text-muted text-xs mt-1 max-w-md">
+              Remplis automatiquement chaque soir (cron 22:40 UTC). Ce bouton force le
+              remplissage immédiat des 90 derniers jours → ROI et gains à jour tout de
+              suite sur /performances.
+            </p>
+          </div>
+          <form action="/api/admin/dividendes/remplir" method="POST" className="flex-shrink-0">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-primary hover:bg-gold-dark text-bg-primary font-semibold text-sm transition-colors"
+            >
+              <Coins className="w-4 h-4" />
+              Remplir les dividendes maintenant
+            </button>
+          </form>
         </div>
       </div>
     </div>
