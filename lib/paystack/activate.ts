@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import { sendEmail } from "@/lib/email";
 import { templateConfirmationPaiement } from "@/lib/email/templates/confirmation-paiement";
+import { buildFailureMetadata } from "./failure-metadata";
 
 const PAYSTACK_API_BASE = "https://api.paystack.co";
 
@@ -15,6 +16,7 @@ export interface PaystackPayment {
   channel?: string;           // card, bank, mobile_money, bank_transfer, ussd, qr
   amount?: number;            // en kobo/cents (× 100)
   currency?: string;          // XOF, NGN, etc.
+  gateway_response?: string;  // raison lisible Paystack (ex. "Declined", "abandoned")
   paid_at?: string | null;
   authorization?: {
     bank?: string | null;     // mobile money operator parfois
@@ -64,6 +66,28 @@ export async function fetchPaystackTransaction(
     console.error(`[paystack/fetch] Erreur fetch ${reference}:`, err);
     return null;
   }
+}
+
+/**
+ * Marque une transaction Paystack ECHEC en stockant la RAISON dans metadata
+ * (gateway_response, canal, statut) → échecs auto-explicables côté admin.
+ * Utilisé par le cron recovery et l'endpoint recover-stuck.
+ */
+export async function markPaystackTransactionFailed(payment: PaystackPayment): Promise<void> {
+  const supabase = createServiceClient();
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("metadata")
+    .eq("reference_operateur", payment.reference)
+    .single();
+
+  await supabase
+    .from("transactions")
+    .update({
+      statut: "ECHEC",
+      metadata: buildFailureMetadata(tx?.metadata as Record<string, unknown> | null, payment),
+    })
+    .eq("reference_operateur", payment.reference);
 }
 
 /**
