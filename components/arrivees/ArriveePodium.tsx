@@ -49,7 +49,7 @@ export function ArriveePodium({
                 <span className="text-xs leading-none" aria-hidden>{MEDALS[p.rank]}</span>
               )}
               <span className="text-text-muted text-[11px] font-semibold flex-shrink-0">{ordinal(p.rank)}</span>
-              <span className="w-6 h-6 rounded-full bg-bg-card border border-border text-text-secondary text-xs font-bold flex items-center justify-center flex-shrink-0">
+              <span className="w-7 h-7 rounded-full bg-gold-faint border border-gold-primary/40 text-gold-light text-sm font-bold flex items-center justify-center flex-shrink-0">
                 {p.numero}
               </span>
               {p.nom && (
