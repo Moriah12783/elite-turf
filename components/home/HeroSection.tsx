@@ -14,6 +14,8 @@ interface LiveStats {
   roiCumule30j?:    number | null; // ex: 156 (= +156%) ou null si <5 pronostics
   gainsCumule30j?:  number;
   pronosticsCumule30j?: number;
+  gagnantsRecents?: number;   // gagnants des 14 derniers jours (badge "réussite récente")
+  tauxRecent?:      number | null;
 }
 
 export default function HeroSection() {
@@ -157,21 +159,18 @@ export default function HeroSection() {
             </span>
           </div>
 
-          {/* Badge "ROI cumulé 30j" — affiché uniquement si dataset suffisant */}
-          {liveStats?.roiCumule30j !== null && liveStats?.roiCumule30j !== undefined && (liveStats.pronosticsCumule30j ?? 0) >= 5 && (
-            <div className={`inline-flex items-center gap-2 px-4 py-2.5 backdrop-blur-md border rounded-full shadow-lg ${
-              liveStats.roiCumule30j > 0
-                ? "bg-status-win/15 border-status-win/50"
-                : "bg-black/55 border-gold-primary/40"
-            }`}>
-              <TrendingUp className={`w-3.5 h-3.5 ${liveStats.roiCumule30j > 0 ? "text-status-win" : "text-gold-light"}`} />
-              <span className={`text-xs sm:text-sm font-bold tracking-wide ${
-                liveStats.roiCumule30j > 0 ? "text-status-win" : "text-gold-light"
-              }`}>
-                ROI 30j&nbsp;: {liveStats.roiCumule30j > 0 ? "+" : ""}{liveStats.roiCumule30j} %
+          {/* Badge "réussite récente" — VRAI bilan des 14 derniers jours,
+              indépendant des rapports (qui peuvent manquer). Remplace l'ancien
+              badge ROI qui affichait −100 % à tort quand les dividendes des
+              gagnants n'étaient pas encore enregistrés. */}
+          {liveStats && (liveStats.gagnantsRecents ?? 0) > 0 && (liveStats.pronosticsCumule30j ?? 0) >= 5 && (
+            <div className="inline-flex items-center gap-2 px-4 py-2.5 backdrop-blur-md border rounded-full shadow-lg bg-status-win/15 border-status-win/50">
+              <TrendingUp className="w-3.5 h-3.5 text-status-win" />
+              <span className="text-xs sm:text-sm font-bold tracking-wide text-status-win">
+                ✓ {liveStats.gagnantsRecents} pronostics gagnants
               </span>
               <span className="text-white/40 text-[10px] hidden sm:inline">
-                · {liveStats.pronosticsCumule30j} pronostics
+                · 14 derniers jours
               </span>
             </div>
           )}
