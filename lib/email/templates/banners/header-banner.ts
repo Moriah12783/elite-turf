@@ -186,3 +186,9 @@ export const BANNER_MIGRATION_PHONE: BannerConfig = {
   subtitle:      "1 minute pour activer toutes les fonctionnalités",
   photoFilename: "cheval-1-galop-vert.jpg",
 };
+
+export const BANNER_PAIEMENT_ECHOUE: BannerConfig = {
+  title:         "Votre paiement n'a pas abouti",
+  subtitle:      "Reprenez en 1 clic — c'est rapide",
+  photoFilename: "cheval-2-rose.jpg",
+};
