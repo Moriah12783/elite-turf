@@ -112,6 +112,17 @@ const CRON_MAP: Record<string, string> = {
   "17 22 * * *":  "/api/admin/sync-resultats",
   "37 20 * * *":  "/api/admin/rapport-journalier",
 
+  // ── Propagation dividendes (rapport_gagnant) ──────────────────────
+  // Après le dernier sync-resultats du soir (22:17 UTC), ce cron propage
+  // les dividendes PMU (arrivees.rapports_pmu) → pronostics.rapport_gagnant.
+  // Sans lui, le dividende restait null même pour les gagnants → le ROI
+  // et les gains affichés étaient faux (cf. PR #151). La route a une
+  // fenêtre 90j par défaut + skip ceux déjà remplis : le 1er passage
+  // rattrape tout le backlog, les suivants restent à jour. Self-healing
+  // via fenêtre glissante (un gagnant résulté tardivement est rempli au
+  // plus tard le lendemain soir).
+  "40 22 * * *":  "/api/admin/backfill-rapport-gagnant",
+
   // ── Abonnements & paiements ───────────────────────────────────────
   "7 1 * * *":    "/api/cron/expire-abonnements",
   "13 9 * * *":   "/api/cron/rappel-expiration",

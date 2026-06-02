@@ -16,7 +16,7 @@
 #   2. Deploy le worker :
 #      $ npx wrangler deploy --config cron-worker/wrangler.toml
 #   3. Vérifier dans Cloudflare dashboard → elite-turf-crons → Triggers
-#      que les 35 crons sont bien actifs.
+#      que les 36 crons sont bien actifs.
 #
 # Mise à jour des schedules :
 #   - Modifier la liste `[triggers].crons` ci-dessous
@@ -24,7 +24,7 @@
 #   - Re-deploy : `npx wrangler deploy --config cron-worker/wrangler.toml`
 #
 # Coût : Cloudflare Workers Paid plan (5 USD/mois) déjà actif. Les Cron
-# Triggers sont gratuits jusqu'à 100/worker. On en a 35, OK.
+# Triggers sont gratuits jusqu'à 100/worker. On en a 36, OK.
 
 # Last redeploy : 2026-05-16 (GitHub Action auto-deploy activée — PR fix/auto-deploy-cron-worker)
 # Cette ligne sert à forcer le premier trigger de la workflow GitHub Action
@@ -113,6 +113,11 @@ crons = [
   "17 21 * * *",     # admin/sync-resultats soir 3
   "17 22 * * *",     # admin/sync-resultats soir 4
   "37 20 * * *",     # admin/rapport-journalier (recap soir)
+
+  # ── Propagation dividendes (rapport_gagnant) ────────────────────────
+  # Propage arrivees.rapports_pmu → pronostics.rapport_gagnant après le
+  # dernier sync-resultats du soir. Sinon ROI/gains affichés faux (PR #151).
+  "40 22 * * *",     # backfill-rapport-gagnant (dividendes → pronostics, fenêtre 90j self-healing)
 
   # ── Abonnements & paiements ─────────────────────────────────────────
   "7 1 * * *",       # expire-abonnements (1h07 nuit)
