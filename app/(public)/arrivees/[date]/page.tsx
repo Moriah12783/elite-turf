@@ -21,6 +21,7 @@ import {
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 import DateRangeNav from "@/components/ui/DateRangeNav";
+import { ArriveePodium } from "@/components/arrivees/ArriveePodium";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
@@ -287,31 +288,7 @@ export default async function ArriveesPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {quinte.arrivee_officielle.slice(0, 5).map((num: number, idx: number) => {
-                const part = quinte.partants?.find((p: any) => p.numero === num);
-                return (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                      idx === 0
-                        ? "bg-status-win/15 border border-status-win/40"
-                        : "bg-bg-elevated border border-border"
-                    }`}
-                  >
-                    <span className="text-text-muted text-xs font-mono">
-                      {idx + 1}<sup>e</sup>
-                    </span>
-                    <span className="text-gold-primary font-bold text-sm">{num}</span>
-                    {part?.nom_cheval && (
-                      <span className="text-text-primary text-xs font-medium hidden sm:inline">
-                        {part.nom_cheval}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <ArriveePodium arrivee={quinte.arrivee_officielle} partants={quinte.partants} />
 
             {/* Rapports Quinté+ — affichage compact des dividendes principaux */}
             {quinte.rapports_pmu?.quinte_plus && (
@@ -407,26 +384,7 @@ export default async function ArriveesPage({ params }: PageProps) {
                             {c.libelle}
                           </span>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {c.arrivee_officielle.slice(0, 5).map((num: number, idx: number) => (
-                            <span
-                              key={idx}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${
-                                idx === 0
-                                  ? "bg-status-win/15 text-status-win border border-status-win/30"
-                                  : "bg-bg-card text-text-secondary border border-border"
-                              }`}
-                            >
-                              <span className="text-text-muted">{idx + 1}.</span>
-                              <span className="font-bold">{num}</span>
-                            </span>
-                          ))}
-                          {c.arrivee_officielle.length > 5 && (
-                            <span className="text-text-muted text-xs px-2 py-0.5">
-                              + {c.arrivee_officielle.length - 5}
-                            </span>
-                          )}
-                        </div>
+                        <ArriveePodium arrivee={c.arrivee_officielle} partants={c.partants} compact />
 
                         {/* Rapports synthèse */}
                         {top3.length > 0 && (
