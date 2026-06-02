@@ -24,7 +24,7 @@ const METHODE_LABELS: Record<string, string> = {
 };
 
 interface Props {
-  searchParams: { success?: string; error?: string; expire?: string };
+  searchParams: { success?: string; error?: string; expire?: string; relance?: string };
 }
 
 export default async function PaiementsPage({ searchParams }: Props) {
@@ -74,6 +74,8 @@ export default async function PaiementsPage({ searchParams }: Props) {
     transaction_introuvable: "Transaction introuvable en base de données.",
     deja_valide:           "Cette transaction est déjà validée.",
     erreur_transaction:    "Erreur lors de la mise à jour de la transaction.",
+    email_introuvable:     "E-mail du membre introuvable.",
+    erreur_envoi:          "Échec de l'envoi de l'e-mail de relance.",
   };
 
   return (
@@ -105,6 +107,16 @@ export default async function PaiementsPage({ searchParams }: Props) {
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Feedback relance e-mail ─────────────────────────────────────────── */}
+      {searchParams.relance === "ok" && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-win/10 border border-status-win/30">
+          <CheckCircle2 className="w-5 h-5 text-status-win flex-shrink-0 mt-0.5" />
+          <p className="text-status-win font-semibold text-sm">
+            E-mail de relance « paiement échoué » envoyé au membre.
+          </p>
         </div>
       )}
 
@@ -192,17 +204,31 @@ export default async function PaiementsPage({ searchParams }: Props) {
                         {tx.reference_operateur || "—"}
                       </td>
                       <td className="px-4 py-3">
-                        {tx.statut === "EN_ATTENTE" && (
-                          <form action="/api/admin/paiements/valider" method="POST">
-                            <input type="hidden" name="id" value={tx.id} />
-                            <button
-                              type="submit"
-                              className="px-3 py-1.5 bg-status-win/10 hover:bg-status-win/20 border border-status-win/30 text-status-win text-xs font-semibold rounded-lg transition-colors"
-                            >
-                              ✓ Valider
-                            </button>
-                          </form>
-                        )}
+                        <div className="flex flex-col gap-1.5 items-start">
+                          {tx.statut === "EN_ATTENTE" && (
+                            <form action="/api/admin/paiements/valider" method="POST">
+                              <input type="hidden" name="id" value={tx.id} />
+                              <button
+                                type="submit"
+                                className="px-3 py-1.5 bg-status-win/10 hover:bg-status-win/20 border border-status-win/30 text-status-win text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                              >
+                                ✓ Valider
+                              </button>
+                            </form>
+                          )}
+                          {(tx.statut === "EN_ATTENTE" || tx.statut === "ECHEC") && (
+                            <form action="/api/admin/paiements/relance" method="POST">
+                              <input type="hidden" name="id" value={tx.id} />
+                              <button
+                                type="submit"
+                                className="px-3 py-1.5 bg-gold-faint hover:bg-gold-primary/20 border border-gold-primary/30 text-gold-light text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                                title="Envoyer l'e-mail « paiement échoué » pour inviter le membre à réessayer"
+                              >
+                                ✉ Relancer
+                              </button>
+                            </form>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
