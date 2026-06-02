@@ -17,6 +17,8 @@ import MonthlyChart from "@/components/performances/MonthlyChart";
 import AnimatedCounter from "@/components/performances/AnimatedCounter";
 import PageHero from "@/components/layout/PageHero";
 import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
+import { resolveFormule, filterByFormule, summarizeTier, FORMULES } from "@/lib/performances/tier-stats";
+import FormuleTabs from "@/components/performances/FormuleTabs";
 
 // CTR boost Sprint A : emoji 📈 (signal data) + brand
 export const metadata: Metadata = {
@@ -46,8 +48,13 @@ function winRate(items: any[]): number {
   return Math.round(items.filter(p => p.resultat === "GAGNANT").length / done.length * 100);
 }
 
-export default async function PerformancesPage() {
+export default async function PerformancesPage({
+  searchParams,
+}: {
+  searchParams: { formule?: string };
+}) {
   const supabase = createServiceClient();
+  const formule = resolveFormule(searchParams.formule);
 
   // ── Tous les pronostics publiés ──────────────────────────────────
   const { data: allPronostics } = await supabase
@@ -66,13 +73,22 @@ export default async function PerformancesPage() {
     .eq("publie", true)
     .order("date_publication", { ascending: false });
 
-  const pronostics = (allPronostics || []).sort((a: any, b: any) => {
+  const allSorted = (allPronostics || []).sort((a: any, b: any) => {
     const dateA = a.course?.date_course || a.date_publication?.split("T")[0] || "";
     const dateB = b.course?.date_course || b.date_publication?.split("T")[0] || "";
     if (dateB !== dateA) return dateB.localeCompare(dateA);
     const heureA = a.course?.heure_depart || a.date_publication || "";
     const heureB = b.course?.heure_depart || b.date_publication || "";
     return heureB.localeCompare(heureA);
+  });
+
+  // Liste scopée sur la formule active : alimente TOUTES les sections ci-dessous.
+  const pronostics = filterByFormule(allSorted, formule);
+
+  // Pastilles : résumé de CHAQUE formule sur la liste complète (indépendant du filtre).
+  const tabItems = FORMULES.map((f) => {
+    const s = summarizeTier(allSorted, f);
+    return { key: f.key, label: f.label, taux: s.taux, total: s.total };
   });
 
   // ── Stats globales ───────────────────────────────────────────────
@@ -122,6 +138,9 @@ export default async function PerformancesPage() {
   const quartes30j = prono30j.filter(p => (p.type_pari === "QUARTE" || p.type_pari === "QUARTE_PLUS") && p.resultat === "GAGNANT").length;
   const tierces30j = prono30j.filter(p => p.type_pari === "TIERCE" && p.resultat === "GAGNANT").length;
   const gains30j   = prono30j.reduce((acc: number, p: any) => acc + (p.rapport_gagnant || 0), 0);
+  // Vrai tant que des gagnants récents n'ont pas encore leur rapport propagé
+  // (backfill cron du soir). Évite de laisser croire à un sous-total exhaustif.
+  const gainsPartiels = prono30j.some((p: any) => p.resultat === "GAGNANT" && p.rapport_gagnant == null);
 
   // ── Stats par type de pari ───────────────────────────────────────
   const types = Array.from(new Set(pronostics.map((p: any) => p.type_pari))) as BetType[];
@@ -174,6 +193,8 @@ export default async function PerformancesPage() {
         sousTitre="Transparence totale — historique complet et vérifiable de nos pronostics gagnants"
       />
 
+      <FormuleTabs active={formule.key} items={tabItems} />
+
       {/* ── BANDEAU 30 JOURS ─────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-bg-elevated via-gold-faint/40 to-bg-elevated border-y border-gold-primary/20 py-3 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-center gap-6 flex-wrap text-center">
@@ -182,6 +203,7 @@ export default async function PerformancesPage() {
           {quartes30j > 0 && <span className="text-gold-light font-bold text-sm">✓ {quartes30j} Quarté+ gagné{quartes30j > 1 ? "s" : ""}</span>}
           {tierces30j > 0 && <span className="text-text-secondary font-bold text-sm">✓ {tierces30j} Tiercé{tierces30j > 1 ? "s" : ""} gagné{tierces30j > 1 ? "s" : ""}</span>}
           {gains30j > 0 && <span className="text-gold-primary font-bold text-sm">💰 +{gains30j.toFixed(0)}€ de rapports cumulés</span>}
+          {gainsPartiels && <span className="text-text-muted text-xs italic">rapports en cours de consolidation</span>}
           <a href="https://www.geny.com/reunions-courses-pmu" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1 text-gold-primary text-xs underline-offset-2 hover:underline">
             <ExternalLink className="w-3 h-3" />Vérifier sur Geny Courses
