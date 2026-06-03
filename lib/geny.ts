@@ -1,4 +1,5 @@
 import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
+import { detectCotesUniformes, gainsToProbableCote } from "@/lib/geny-cote-previsionnelle";
 
 const GENY_BASE = "https://www.geny.com";
 
@@ -81,6 +82,13 @@ export interface GenyParticipant {
   numPmu:        number;
   nom:           string;
   coteProbable?: number;
+  /**
+   * Gains historiques en € (cumulés en carrière). Lu depuis la colonne Geny
+   * "Gains". Non persisté en BDD : sert UNIQUEMENT au post-traitement interne
+   * du parser pour générer une cote prévisionnelle quand les cotes Geny sont
+   * un placeholder uniforme (cas J+1 — cf. lib/geny-cote-previsionnelle).
+   */
+  gainsHistoriques?: number;
   jockey?:       { nom: string };
   entraineur?:   { nom: string };
   musique?:      string;
@@ -270,14 +278,20 @@ interface GenyHeaderIndex {
   jockey?:       number;  // "Jockey" (Plat) ou "Driver" (Trot) — alias
   entraineur?:   number;
   musique?:      number;
+  gains?:        number;  // colonne "Gains" — utilisée pour cote prévisionnelle J+1
   coteAncienne?: number;  // "Cotes références"
   coteActuelle?: number;  // "Dernières cotes"
 }
 
 /**
  * Mapping libellé Geny normalisé → champ partant.
- * Colonnes ignorées (décision PO 2026-05-14) : Dist./Distance, Déch., Gains,
- * Valeur. Elles ne sont pas reportées en BDD.
+ *
+ * Note (03/06/2026) : la colonne "Gains", auparavant ignorée (décision PO du
+ * 14/05), est désormais lue uniquement pour servir de signal de différenciation
+ * dans le calcul de la cote prévisionnelle J+1 (cf. lib/geny-cote-previsionnelle).
+ * Elle n'est PAS persistée en BDD — seul `partants.cote` reçoit le résultat.
+ *
+ * Colonnes encore ignorées : Dist./Distance, Déch., Valeur.
  */
 const HEADER_TO_FIELD: Record<string, keyof GenyHeaderIndex> = {
   n:               "num",
@@ -289,6 +303,7 @@ const HEADER_TO_FIELD: Record<string, keyof GenyHeaderIndex> = {
   driver:          "jockey",
   entraineur:      "entraineur",
   musique:         "musique",
+  gains:           "gains",
   cotesreferences: "coteAncienne",
   dernierescotes:  "coteActuelle",
 };
@@ -513,6 +528,14 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       ? (parseFloat(coteRaw.replace(",", ".")) || undefined)
       : undefined;
 
+    // Gains historiques (servent au calcul de cote prévisionnelle si Geny
+    // renvoie un placeholder uniforme pour J+1 — post-traitement plus bas).
+    // Format Geny : "16035" ou "16 035" (espaces fines insécables).
+    const gainsRaw = cellAt(cells, idx.gains);
+    const gainsHistoriques = gainsRaw && gainsRaw !== "-"
+      ? (parseFloat(gainsRaw.replace(/[\s ]/g, "").replace(",", ".")) || undefined)
+      : undefined;
+
     // Non-partant : Geny met "Non-partant" dans jockey ou nom du cheval.
     const nonPartant =
       /non[\s-]?partant/i.test(jockeyNom) ||
@@ -528,6 +551,7 @@ function parseGenyPartants(html: string): GenyParticipant[] {
       jockey:      jockeyNom && !nonPartant ? { nom: jockeyNom } : undefined,
       entraineur:  entraineurNom ? { nom: entraineurNom } : undefined,
       musique,
+      gainsHistoriques,
       coteProbable,
       nonPartant,
     });
@@ -535,9 +559,28 @@ function parseGenyPartants(html: string): GenyParticipant[] {
 
   // Trier par numéro et dédupliquer (au cas où une ligne serait capturée deux fois)
   const seen = new Set<number>();
-  return participants
+  const deduped = participants
     .filter((p) => { if (seen.has(p.numPmu)) return false; seen.add(p.numPmu); return true; })
     .sort((a, b) => a.numPmu - b.numPmu);
+
+  // ── Post-traitement : cote prévisionnelle si placeholder Geny détecté ───
+  // Cas typique : courses J+1 où Geny n'a pas encore publié les vraies cotes
+  // → toutes les valeurs sont identiques (placeholder uniforme par course).
+  // On remplace alors par une cote calculée depuis les gains historiques.
+  // Voir lib/geny-cote-previsionnelle.ts pour le détail de l'heuristique.
+  const cotes = deduped.map((p) => p.coteProbable);
+  if (detectCotesUniformes(cotes)) {
+    const gainsTous = deduped.map((p) => p.gainsHistoriques ?? 0);
+    for (const p of deduped) {
+      const cotePrev = gainsToProbableCote(p.gainsHistoriques, gainsTous);
+      // On n'écrase QUE si on a une cote prévisionnelle valide.
+      // Si null (ex: 0 € de gains partout), on laisse la cote placeholder
+      // — moindre mal, l'enrichir-partants J la remplacera le matin J.
+      if (cotePrev !== null) p.coteProbable = cotePrev;
+    }
+  }
+
+  return deduped;
 }
 
 // ── Fetch public ─────────────────────────────────────────────────────────────

@@ -205,14 +205,20 @@ export async function GET(req: NextRequest) {
 
   const cronLog  = logCronStart("enrichir-partants");
   const supabase = createServiceClient();
-  const today    = new Date().toISOString().split("T")[0];
+  // Option `?date=YYYY-MM-DD` pour cibler une date précise (ex: re-scrape J+1
+  // après un fix parser, cf. fix cotes prévisionnelles 03/06/2026). Par défaut
+  // : la date du jour, comportement nominal du cron.
+  const dateParam = new URL(req.url).searchParams.get("date");
+  const targetDate = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+    ? dateParam
+    : new Date().toISOString().split("T")[0];
 
   try {
-    // 1. Sélection courses du jour non enrichies (LONACI Afrique skipped : pas de geny_url)
+    // 1. Sélection courses non enrichies (LONACI Afrique skipped : pas de geny_url)
     const { data: courses, error: coursesErr } = await supabase
       .from("courses")
       .select("id, numero_reunion, numero_course, libelle, statut, geny_url, date_course")
-      .eq("date_course", today)
+      .eq("date_course", targetDate)
       .neq("statut", "ANNULE")
       .not("geny_url", "is", null);
 
@@ -222,8 +228,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (!courses || courses.length === 0) {
-      await cronLog.finish("skip", { reason: "Aucune course du jour avec geny_url", date: today });
-      return NextResponse.json({ ok: true, message: "Aucune course à enrichir", date: today });
+      await cronLog.finish("skip", { reason: "Aucune course du jour avec geny_url", date: targetDate });
+      return NextResponse.json({ ok: true, message: "Aucune course à enrichir", date: targetDate });
     }
 
     // 2. Filtrer celles déjà scrapées récemment (dans les 4 dernières heures)
@@ -246,12 +252,12 @@ export async function GET(req: NextRequest) {
     if (aEnrichir.length === 0) {
       await cronLog.finish("skip", {
         reason: "Toutes les courses sont déjà enrichies",
-        date:   today,
+        date:   targetDate,
         total:  courses.length,
       });
       return NextResponse.json({
         ok: true, message: "Toutes les courses sont déjà enrichies",
-        date: today, total: courses.length,
+        date: targetDate, total: courses.length,
       });
     }
 
@@ -361,7 +367,7 @@ export async function GET(req: NextRequest) {
     }
 
     await cronLog.finish(status, {
-      date:           today,
+      date:           targetDate,
       total_courses:  courses.length,
       remaining:      remainingAll.length,
       processed:      aEnrichir.length,
@@ -380,7 +386,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok:                true,
-      date:              today,
+      date:              targetDate,
       total:             courses.length,
       processed:         aEnrichir.length,
       enriched:          ok,
@@ -402,8 +408,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logger.error("enrichir-partants", err, { date: today });
-    await cronLog.finish("failure", { error: msg, date: today });
+    logger.error("enrichir-partants", err, { date: targetDate });
+    await cronLog.finish("failure", { error: msg, date: targetDate });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
