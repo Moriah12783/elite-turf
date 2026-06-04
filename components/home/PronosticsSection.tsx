@@ -155,7 +155,7 @@ export default async function PronosticsSection() {
           <Globe2 className="w-10 h-10 text-gold-primary mx-auto mb-4 opacity-60" />
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-2">Pronostics du Jour</h2>
           <p className="text-text-secondary text-sm max-w-md mx-auto">
-            Les pronostics du marché africain seront disponibles dès 8h00 (heure de Paris).
+            Les pronostics du marché africain seront disponibles entre 8h30 et 9h30 (heure GMT).
           </p>
           <Link
             href="/pronostics"

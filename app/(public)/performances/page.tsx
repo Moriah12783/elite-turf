@@ -640,7 +640,7 @@ export default async function PerformancesPage({
                 L&apos;historique s&apos;affichera ici après la publication des premiers pronostics
               </p>
               <p className="text-text-muted text-xs mt-2">
-                Rendez-vous demain matin à 8h00 pour nos premières analyses
+                Rendez-vous demain matin entre 8h30 et 9h30 (heure GMT) pour nos premières analyses
               </p>
             </div>
           )}

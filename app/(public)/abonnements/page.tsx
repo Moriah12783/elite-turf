@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   Check, Star, Zap, Crown, Shield, Clock,
-  MessageCircle, ChevronDown, ArrowRight, Gift, Users, Flame
+  MessageCircle, ChevronDown, ArrowRight, Gift, Users, Flame, BellRing
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
@@ -45,6 +45,11 @@ const ABONNEMENTS_FAQ = [
     question: "Quel est le délai de remboursement en cas de problème ?",
     answer:
       "Si vous rencontrez un problème technique majeur dans les 24h suivant votre paiement (compte non activé, accès refusé, etc.), nous procédons à un remboursement intégral sous 48h ouvrées. Pour toute autre demande, contactez notre support à contact@elite-turf.fr.",
+  },
+  {
+    question: "À quelle heure les pronostics du jour sont-ils publiés ?",
+    answer:
+      "Nos pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Dès leur mise en ligne, les abonnés reçoivent une alerte par email et WhatsApp pour ne jamais manquer la sélection du jour.",
   },
 ];
 
@@ -107,7 +112,7 @@ const FAQ = [
   },
   {
     q: "Quand est-ce que j'accède aux pronostics ?",
-    a: "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Notre Quinté+ est publié chaque matin avant 8h heure de Paris.",
+    a: "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
     q: "Puis-je annuler à tout moment ?",
@@ -187,6 +192,38 @@ export default async function AbonnementsPage() {
             <div className="flex items-center gap-2 text-text-secondary">
               <MessageCircle className="w-4 h-4 flex-shrink-0" />
               <span className="font-semibold">Support WhatsApp · 30 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── HORAIRE DE PUBLICATION + ALERTES ─────────────────────────────
+          Pose une attente claire AVANT les prix : "quand vais-je recevoir
+          mon pronostic du jour, et comment le saurai-je ?". L'horaire est
+          donné en GMT (= heure locale d'Abidjan/Dakar, audience principale)
+          et calé sur le créneau réel de publication (cron IA ~9h30 UTC).
+          Bandeau pleine largeur, juste sous le hero = bien visible. */}
+      <div className="border-b border-gold-primary/20 bg-gradient-to-r from-bg-card via-gold-faint/50 to-bg-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-7 text-center sm:text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gold-primary/10 border border-gold-primary/30 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-gold-primary" />
+              </div>
+              <p className="text-sm text-text-primary font-semibold leading-snug">
+                Pronostics du jour publiés{" "}
+                <span className="text-gold-light">chaque jour entre 8h30 et 9h30</span>
+                <span className="text-text-muted font-normal"> (heure GMT · Abidjan / Dakar)</span>
+              </p>
+            </div>
+            <span className="hidden sm:block w-px h-9 bg-border" aria-hidden="true" />
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-status-win/10 border border-status-win/20 flex items-center justify-center">
+                <BellRing className="w-5 h-5 text-status-win" />
+              </div>
+              <p className="text-sm text-text-secondary leading-snug">
+                Abonnés <span className="text-text-primary font-semibold">alertés par email et WhatsApp</span> dès la mise en ligne
+              </p>
             </div>
           </div>
         </div>

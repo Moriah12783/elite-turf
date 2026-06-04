@@ -113,8 +113,8 @@ export default async function PronosticGratuitPage() {
           </h1>
 
           <p className="text-text-secondary text-base leading-relaxed max-w-xl mx-auto mb-6">
-            Notre équipe publie chaque jour <strong className="text-text-primary">avant 8h00</strong>
-            {" "}(heure de Paris) une sélection gratuite de l&apos;une des courses majeures du jour —
+            Notre équipe publie chaque jour <strong className="text-text-primary">entre 8h30 et 9h30</strong>
+            {" "}(heure GMT) une sélection gratuite de l&apos;une des courses majeures du jour —
             Tiercé, Quarté+ ou Quinté+ selon le programme.
           </p>
 

@@ -24,7 +24,7 @@ const PRONOSTICS_FAQ = [
   {
     question: "À quelle heure les pronostics du jour sont-ils publiés ?",
     answer:
-      "Nos pronostics sont publiés chaque matin avant 8h (heure de Paris), soit avant 7h GMT pour les abonnés en Afrique de l'Ouest. Vous pouvez recevoir une notification WhatsApp dès qu'un pronostic est disponible en complétant votre profil avec votre numéro de téléphone.",
+      "Nos pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Vous pouvez recevoir une alerte par email et WhatsApp dès qu'un pronostic est disponible en complétant votre profil avec votre numéro de téléphone.",
   },
   {
     question: "Qu'est-ce qu'un Quinté+ et comment le jouer ?",
@@ -324,7 +324,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
               ) : (
                 <div className="card-base p-8 text-center text-text-muted text-sm">
                   <Star className="w-8 h-8 mx-auto mb-3 text-text-muted/40" />
-                  Nos sélections du jour seront publiées avant 8h00.
+                  Nos sélections du jour seront publiées entre 8h30 et 9h30 (heure GMT).
                 </div>
               )}
             </div>
@@ -401,7 +401,7 @@ function EmptyState({ periode }: { periode?: string }) {
       <p className="text-text-secondary text-sm max-w-xs mx-auto mb-6">
         {periode
           ? "Aucun pronostic ne correspond à vos filtres pour cette période."
-          : "Aucun pronostic sur les 30 derniers jours. Revenez demain matin avant 8h00 pour nos nouvelles analyses."}
+          : "Aucun pronostic sur les 30 derniers jours. Revenez demain matin entre 8h30 et 9h30 (heure GMT) pour nos nouvelles analyses."}
       </p>
       {periode && (
         <a
