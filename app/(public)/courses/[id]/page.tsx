@@ -441,7 +441,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               partants={partants}
               nonPartants={nonPartants}
               arriveeOfficielle={c.arrivee_officielle}
-              pronosticSelection={pronosticPublie?.selection}
+              pronosticSelection={pronosticPublie && canAccess(pronosticPublie.niveau_acces, userSubscription) ? pronosticPublie.selection : null}
               statut={c.statut}
               genyUrl={genyUrl}
               isVedette={!!pronosticPublie}

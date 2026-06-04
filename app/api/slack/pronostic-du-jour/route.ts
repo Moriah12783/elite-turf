@@ -17,7 +17,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET  = process.env.CRON_SECRET ?? "";
-const MAKE_API_KEY = process.env.MAKE_API_KEY ?? "eliteturf-make-2026";
+const MAKE_API_KEY = process.env.MAKE_API_KEY ?? "";
 const APP_URL      = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.elite-turf.fr";
 
 /** Date du jour heure Paris (YYYY-MM-DD) */
@@ -38,11 +38,15 @@ const CONFIANCE_LABEL: Record<number, string> = {
 };
 
 export async function GET(req: NextRequest) {
-  // ── Auth optionnelle ──────────────────────────────────────────────────
-  // Les données retournées sont déjà publiques sur le site.
-  // Si un Bearer token est fourni et incorrect, on bloque quand même.
-  const auth = req.headers.get("authorization");
-  if (auth && CRON_SECRET && auth !== `Bearer ${CRON_SECRET}`) {
+  // ── Auth obligatoire (anti-fuite premium) ─────────────────────────────
+  // Cet endpoint renvoie le pronostic VEDETTE du jour (souvent premium) :
+  // réservé aux automatisations autorisées (serveur à serveur).
+  // Accès : Bearer CRON_SECRET, ou header x-api-key === MAKE_API_KEY (si configuré).
+  const auth      = req.headers.get("authorization");
+  const apiKeyHdr = req.headers.get("x-api-key") ?? "";
+  const bearerOk  = !!CRON_SECRET && auth === `Bearer ${CRON_SECRET}`;
+  const makeOk    = !!MAKE_API_KEY && apiKeyHdr === MAKE_API_KEY;
+  if (!bearerOk && !makeOk) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

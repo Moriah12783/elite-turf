@@ -62,20 +62,22 @@ function formatHeure(raw: string | null | undefined): string | null {
 // ── Route ────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
-  // ── 1. Vérification de la clé API ─────────────────────────────────────────
+  // ── 1. Authentification (anti-fuite premium) ──────────────────────────────
+  // Clé fournie mais incorrecte → rejet explicite. Sinon l'appelant est
+  // considéré NON authentifié → il ne recevra QUE les pronostics GRATUIT.
+  // La sélection/analyse premium (PRO/ELITE) n'est jamais exposée publiquement.
   const apiKey = process.env.PRONOSTIC_API_KEY ?? "";
-  if (apiKey) {
-    const provided =
-      req.headers.get("x-api-key") ??
-      req.nextUrl.searchParams.get("api_key") ??
-      "";
-    if (provided !== apiKey) {
-      return NextResponse.json(
-        { ok: false, error: "Clé API invalide ou manquante." },
-        { status: 401 }
-      );
-    }
+  const provided =
+    req.headers.get("x-api-key") ??
+    req.nextUrl.searchParams.get("api_key") ??
+    "";
+  if (provided && apiKey && provided !== apiKey) {
+    return NextResponse.json(
+      { ok: false, error: "Clé API invalide." },
+      { status: 401 }
+    );
   }
+  const authed = apiKey !== "" && provided === apiKey;
 
   // ── 2. Date du jour (heure Paris) ─────────────────────────────────────────
   const today = new Date()
@@ -133,9 +135,15 @@ export async function GET(req: NextRequest) {
     return (c as CourseRow)?.date_course === targetDate;
   });
 
+  // Anti-fuite : un appelant non authentifié ne voit QUE les pronostics GRATUIT.
+  // Les sélections/analyses premium ne sortent que pour une clé API valide.
+  const visibleToday = authed
+    ? allToday
+    : allToday.filter((p: any) => (p.niveau_acces ?? "GRATUIT") === "GRATUIT");
+
   // ?top=1 → ne retourner que le 1er pronostic (Quinté+ en priorité, pour Make)
   const topParam = req.nextUrl.searchParams.get("top");
-  const todayPronostics = topParam === "1" ? allToday.slice(0, 1) : allToday;
+  const todayPronostics = topParam === "1" ? visibleToday.slice(0, 1) : visibleToday;
 
   // ── 5. Formatter la réponse ───────────────────────────────────────────────
   const dateGeny = targetDate.replace(/-/g, ""); // "20260420"

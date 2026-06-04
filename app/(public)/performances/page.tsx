@@ -8,7 +8,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 import {
   TrendingUp, Award, Flame, CheckCircle2, XCircle,
   Minus, Clock3, Star, Zap, BarChart3, Trophy,
-  ArrowRight, Calendar, ExternalLink, Archive
+  ArrowRight, Calendar, ExternalLink, Archive, Lock
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { BET_TYPE_LABELS } from "@/types";
@@ -506,6 +506,11 @@ export default async function PerformancesPage({
                       ELITE:   { label: "Elite",   classes: "bg-purple-500/10 text-purple-400 border-purple-500/30",     title: "Pronostic du pack Elite (sélection top 6 filtrée)" },
                     };
                     const niveau = niveauConfig[p.niveau_acces as string] || niveauConfig.STARTER;
+                    // Anti-fuite : ne révéler la sélection qu'une fois la course
+                    // courue (résultat connu) — ou si le prono est GRATUIT. Un prono
+                    // premium « En cours » (du jour) reste masqué, sinon il suffirait
+                    // de venir ici pour lire gratuitement le pari du jour.
+                    const revealSelection = p.resultat !== "EN_ATTENTE" || p.niveau_acces === "GRATUIT";
                     return (
                       <tr key={p.id} className="hover:bg-bg-hover transition-colors">
                         <td className="px-4 py-3 whitespace-nowrap text-text-muted text-xs">{dateStr}</td>
@@ -529,7 +534,14 @@ export default async function PerformancesPage({
                         <td className="px-4 py-3">
                           {/* Sélection complète : tous les chevaux + chevaux placés
                               top 5 surlignés en vert pour vérification visuelle directe */}
-                          {selRaw.length > 0 ? (
+                          {!revealSelection ? (
+                            <span
+                              title="Sélection réservée aux abonnés tant que la course n'est pas courue"
+                              className="inline-flex items-center gap-1 text-text-muted text-xs"
+                            >
+                              <Lock className="w-3 h-3 text-gold-primary" /> Réservé
+                            </span>
+                          ) : selRaw.length > 0 ? (
                             <div className="flex items-center gap-1 flex-wrap">
                               {selRaw.map((n: number, idx: number) => {
                                 const isPlace = topArrivee.has(n);

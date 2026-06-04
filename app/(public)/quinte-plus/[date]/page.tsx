@@ -20,7 +20,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Calendar, MapPin, Users, Clock, Star,
-  ArrowLeft, ChevronRight, TrendingUp, Trophy,
+  ArrowLeft, ChevronRight, TrendingUp, Trophy, Lock,
 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
@@ -209,6 +209,12 @@ export default async function QuintePlusPage({ params }: PageProps) {
     ? c.arrivee_officielle
     : null;
   const isFini  = c.statut === "TERMINE" && arrivee;
+  // Anti-fuite : la sélection premium du Quinté+ n'est révélée publiquement que
+  // si la course est courue (preuve a posteriori) ou si le prono est GRATUIT.
+  // Sinon (prono PRO/ELITE d'une course à venir) → teaser verrouillé, sinon le
+  // pari premium du jour serait lisible gratuitement sur cette page SEO publique.
+  const revealPronostic =
+    isFini || params.date < today || pronosticPublie?.niveau_acces === "GRATUIT";
 
   // Top 5 partants par cote (favoris)
   const favoris = [...partants]
@@ -375,20 +381,38 @@ export default async function QuintePlusPage({ params }: PageProps) {
               )}
             </div>
 
-            {Array.isArray(pronosticPublie.selection) && pronosticPublie.selection.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {pronosticPublie.selection.map((num: number, i: number) => (
-                  <span key={i} className="px-3 py-1.5 rounded-lg bg-gold-primary/10 border border-gold-primary/30 text-gold-light text-sm font-bold">
-                    {num}
-                  </span>
-                ))}
-              </div>
-            )}
+            {revealPronostic ? (
+              <>
+                {Array.isArray(pronosticPublie.selection) && pronosticPublie.selection.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {pronosticPublie.selection.map((num: number, i: number) => (
+                      <span key={i} className="px-3 py-1.5 rounded-lg bg-gold-primary/10 border border-gold-primary/30 text-gold-light text-sm font-bold">
+                        {num}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
-            {pronosticPublie.analyse_courte && (
-              <p className="text-text-secondary text-sm leading-relaxed">
-                {pronosticPublie.analyse_courte}
-              </p>
+                {pronosticPublie.analyse_courte && (
+                  <p className="text-text-secondary text-sm leading-relaxed">
+                    {pronosticPublie.analyse_courte}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="mb-1">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {Array.from({ length: Math.min(Array.isArray(pronosticPublie.selection) ? pronosticPublie.selection.length : 5, 6) }).map((_, i) => (
+                    <span key={i} className="px-3 py-1.5 rounded-lg bg-bg-elevated border border-border text-text-muted text-sm font-bold select-none">
+                      ?
+                    </span>
+                  ))}
+                </div>
+                <p className="inline-flex items-center gap-1.5 text-gold-primary text-sm font-semibold">
+                  <Lock className="w-4 h-4" />
+                  Sélection réservée aux abonnés
+                </p>
+              </div>
             )}
 
             <Link
