@@ -24,7 +24,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
     answer:
-      "Le pack Starter donne accès aux pronostics Pro (Tiercé, Quarté+). Le pack Pro ajoute le Quinté+ premium et l'historique 30 jours. Le pack Elite inclut tout cela + l'accès aux analyses Elite Top Selection avec score composite, les notifications WhatsApp prioritaires et le support direct sous 2h. Les tarifs commencent à 65€ pour 30 jours d'accès Starter.",
+      "Le pack Starter donne accès aux pronostics Pro (Tiercé, Quarté+). Le pack Pro ajoute le Quinté+ premium et l'historique 30 jours. Le pack Elite inclut tout cela + l'accès aux analyses Elite Top Selection avec score composite, les notifications WhatsApp prioritaires et le support direct sous 2h. Les tarifs commencent à 65€ pour 7 jours d'accès Starter.",
   },
   {
     question: "Puis-je annuler mon abonnement à tout moment ?",
@@ -57,7 +57,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const metadata: Metadata = {
   title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite | Elite Turf",
   description:
-    "💎 Accédez aux pronostics PMU Elite Turf : Free (1 Tiercé/jour), Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Mobile Money (Orange, MTN, Wave) ou CB. Activation 2 min.",
+    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Mobile Money (Orange, MTN, Wave) ou CB.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -95,7 +95,7 @@ const PLAN_STYLES = {
 const FAQ = [
   {
     q: "Comment fonctionne le plan Free ?",
-    a: "Le plan Free vous donne accès à 1 pronostic Tiercé gratuit par jour, sans abonnement payant. Il vous suffit de créer un compte gratuit. Aucune carte bancaire requise.",
+    a: "Le plan Free vous donne accès à Notre sélection sur chaque course du programme : notre lecture statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour structurer vos paris et comprendre la course. Elle est différente de nos pronostics du jour — l'analyse experte réservée aux abonnés Starter, Pro et Elite. C'est gratuit, sans carte bancaire.",
   },
   {
     q: "Comment fonctionne le paiement Mobile Money depuis l'Afrique ?",
@@ -115,7 +115,7 @@ const FAQ = [
   },
   {
     q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le plan Free : 1 Tiercé gratuit par jour pour tester notre approche. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour découvrir la méthode complète.",
+    a: "Commencez par le plan Free : Notre sélection gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
   },
   {
     q: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
@@ -156,7 +156,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Choisissez votre accès"
-        sousTitre="1 Tiercé gratuit par jour sans inscription. Accès complet à partir de 65€. Orange Money, MTN MoMo, Wave ou CB."
+        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Orange Money, MTN MoMo, Wave ou CB."
       />
 
       {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
@@ -286,20 +286,27 @@ export default async function AbonnementsPage() {
                 <p className="text-text-muted text-xs mt-1">Sans engagement · Permanent</p>
               </div>
 
-              <ul className="space-y-3 mb-8 flex-1">
-                {[
-                  "1 pronostic Tiercé gratuit par jour",
-                  "Accès aux résultats publics",
-                  "Lecture de la page Pronostics",
-                  "Sans carte bancaire",
-                  "Inscription en 30 secondes",
-                ].map((f, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
-                    <span className="text-text-secondary text-sm">{f}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex-1 mb-8">
+                <ul className="space-y-3">
+                  {[
+                    "Notre sélection sur chaque course du jour",
+                    "Lecture statistique pour structurer vos paris",
+                    "Accès aux résultats publics",
+                    "Sans carte bancaire",
+                    "Inscription en 30 secondes",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
+                      <span className="text-text-secondary text-sm">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-text-muted text-[11px] italic leading-snug mt-4 border-t border-border/40 pt-3">
+                  Notre sélection ≠ nos pronostics du jour : c&apos;est notre lecture
+                  statistique pour comprendre la course. L&apos;analyse experte reste
+                  réservée aux abonnés Starter / Pro / Elite.
+                </p>
+              </div>
 
               {currentPlan === "GRATUIT" ? (
                 <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-status-win/10 text-status-win border border-status-win/20">
@@ -508,8 +515,8 @@ export default async function AbonnementsPage() {
               <tbody className="divide-y divide-border/40">
                 {[
                   { label: "Durée",                       values: ["Permanent",      "7 jours",        "30 jours",             "30 jours"]          },
-                  { label: "Tiercé gratuit / jour",       values: ["1 / jour",       "—",              "—",                    "—"]                 },
-                  { label: "Pronostics par jour",         values: ["—",              "3 / semaine",    "1+ quotidien",         "1+ premium"]        },
+                  { label: "Notre sélection (lecture stat.)", values: ["✓ chaque course", "✓",            "✓",                    "✓"]                 },
+                  { label: "Pronostics experts du jour",  values: ["—",              "7 / semaine",    "1+ quotidien",         "1+ premium"]        },
                   { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
                   { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },
                   { label: "Type de sélection",           values: ["Tiercé simple",  "Lecture simple", "8 chevaux",            "6 chevaux (filtrée)"]},
