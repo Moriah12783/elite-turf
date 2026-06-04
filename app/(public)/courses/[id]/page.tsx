@@ -18,6 +18,7 @@ import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 import { buildNotreSelection, shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
 import { NotreSelectionPromo } from "@/components/courses/NotreSelectionPromo";
 import { canAccess } from "@/lib/auth/access";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -88,10 +89,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const { data: { user } } = await supabaseClient.auth.getUser();
   let userSubscription: SubscriptionStatus = "GRATUIT";
   if (user) {
-    const serviceClient = createServiceClient();
-    const { data: profile } = await serviceClient
-      .from("profiles").select("statut_abonnement").eq("id", user.id).single();
-    if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
+    userSubscription = (await resolveUserSubscription(createServiceClient(), user.id)) as SubscriptionStatus;
   }
 
   // ── Données ───────────────────────────────────────────────────────────────

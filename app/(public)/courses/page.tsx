@@ -8,6 +8,7 @@ import {
   ChevronRight, Star, Zap, AlertCircle
 } from "lucide-react";
 import { createServiceClient, createClient } from "@/lib/supabase/server";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 import CoursesDateNav from "@/components/courses/CoursesDateNav";
 import CourseCard from "@/components/courses/CourseCard";
 import PageHero from "@/components/layout/PageHero";
@@ -143,9 +144,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabaseClient.auth.getUser();
   let userSubscription = "GRATUIT";
   if (user) {
-    const { data: profile } = await createServiceClient()
-      .from("profiles").select("statut_abonnement").eq("id", user.id).single();
-    if (profile) userSubscription = profile.statut_abonnement;
+    userSubscription = await resolveUserSubscription(createServiceClient(), user.id);
   }
 
   // ── Requête courses — PAS de filtre statut DB pour aujourd'hui ────
