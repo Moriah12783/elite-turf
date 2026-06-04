@@ -423,7 +423,7 @@ export default async function PerformancesPage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50 bg-bg-elevated">
-                    {["Date", "Course / Hippodrome", "Sélection Elite", "Arrivée Réelle", "Résultat", "Rapport", "Vérifier"].map(h => (
+                    {["Date", "Course / Hippodrome", "Sélection complète", "Arrivée Réelle", "Résultat", "Rapport", "Vérifier"].map(h => (
                       <th key={h} className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                         {h}
                       </th>
@@ -441,11 +441,18 @@ export default async function PerformancesPage({
                       : p.date_publication
                       ? new Date(p.date_publication).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" })
                       : "—";
-                    const MAX_HORSES  = 6;
+
+                    // ── Fix friction silencieuse (signalée par visiteur Maroc 04/06/2026) ──
+                    // Avant : on tronquait à MAX_HORSES=6 → cachait 2 chevaux des
+                    // pronostics Pro/Starter (8 chevaux), créant l'impression que
+                    // notre quinté+ ne contenait pas les chevaux placés (alors qu'ils
+                    // étaient juste en position 7-8 cachés par "…"). Désormais :
+                    //   1. Aucune troncation (sélection complète visible)
+                    //   2. Chevaux placés top 5 surlignés en VERT (✓ visuel direct)
+                    //   3. Idem côté arrivée : chevaux qu'on avait dans notre sélection
+                    //      sont surlignés. Auto-vérification immédiate pour le visiteur.
                     const selRaw      = Array.isArray(p.selection) ? p.selection : [];
-                    const selStr      = selRaw.length > 0
-                      ? selRaw.slice(0, MAX_HORSES).join(" - ") + (selRaw.length > MAX_HORSES ? " …" : "")
-                      : "—";
+
                     // Arrivée à afficher : pronostics.arrivee_reelle d'abord
                     // (snapshot historique), sinon courses.arrivee_officielle
                     // (fallback si la sync n'a pas encore propagé). Les deux
@@ -453,26 +460,93 @@ export default async function PerformancesPage({
                     const arriveeRaw = Array.isArray(p.arrivee_reelle) && p.arrivee_reelle.length > 0
                       ? p.arrivee_reelle
                       : Array.isArray(course?.arrivee_officielle) ? course.arrivee_officielle : [];
-                    const arriveeStr = arriveeRaw.length > 0
-                      ? arriveeRaw.slice(0, MAX_HORSES).join(" - ") + (arriveeRaw.length > MAX_HORSES ? " …" : "")
-                      : "—";
+
+                    // Top 5 de l'arrivée (= zone de validation du Quinté+).
+                    // Les chevaux de notre sélection dans ce top 5 sont les preuves
+                    // visuelles "✓ placé" qui résolvent la friction Nabil.
+                    const topArrivee = new Set<number>(arriveeRaw.slice(0, 5));
+
+                    // Badge niveau d'accès (B1 + Q4 : signal commercial discret).
+                    // Couleur cohérente avec /abonnements : Free vert, Starter neutre,
+                    // Pro doré, Elite violet. Title attribute explique le sens.
+                    const niveauConfig: Record<string, { label: string; classes: string; title: string }> = {
+                      GRATUIT: { label: "Gratuit", classes: "bg-status-win/10 text-status-win border-status-win/20",     title: "Pronostic gratuit accessible à tous" },
+                      STARTER: { label: "Starter", classes: "bg-bg-elevated text-text-secondary border-border",          title: "Pronostic du pack Starter (8 chevaux)" },
+                      PRO:     { label: "Pro",     classes: "bg-gold-faint text-gold-light border-gold-primary/30",      title: "Pronostic du pack Pro (8 chevaux + analyse experte)" },
+                      ELITE:   { label: "Elite",   classes: "bg-purple-500/10 text-purple-400 border-purple-500/30",     title: "Pronostic du pack Elite (sélection top 6 filtrée)" },
+                    };
+                    const niveau = niveauConfig[p.niveau_acces as string] || niveauConfig.STARTER;
                     return (
                       <tr key={p.id} className="hover:bg-bg-hover transition-colors">
                         <td className="px-4 py-3 whitespace-nowrap text-text-muted text-xs">{dateStr}</td>
                         <td className="px-4 py-3 min-w-[160px]">
-                          <Link href={`/pronostics/${p.id}`}
-                            className="text-text-primary text-sm font-medium hover:text-gold-light transition-colors truncate block max-w-[180px]">
-                            {course?.libelle || "—"}
-                          </Link>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <Link href={`/pronostics/${p.id}`}
+                              className="text-text-primary text-sm font-medium hover:text-gold-light transition-colors truncate block max-w-[150px]">
+                              {course?.libelle || "—"}
+                            </Link>
+                            {/* Badge niveau — combo B1 + Q4 : pastille discrète + lien CTA */}
+                            <Link
+                              href="/abonnements"
+                              title={niveau.title}
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border ${niveau.classes} hover:opacity-80 transition-opacity flex-shrink-0`}
+                            >
+                              {niveau.label}
+                            </Link>
+                          </div>
                           <span className="text-text-muted text-xs">{course?.hippodrome?.nom || ""} · {BET_TYPE_LABELS[p.type_pari as BetType] || p.type_pari}</span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-gold-light font-mono text-xs font-bold tracking-wide">{selStr}</span>
+                        <td className="px-4 py-3">
+                          {/* Sélection complète : tous les chevaux + chevaux placés
+                              top 5 surlignés en vert pour vérification visuelle directe */}
+                          {selRaw.length > 0 ? (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {selRaw.map((n: number, idx: number) => {
+                                const isPlace = topArrivee.has(n);
+                                return (
+                                  <span
+                                    key={idx}
+                                    title={isPlace ? `Cheval ${n} — placé top 5 ✓` : `Cheval ${n}`}
+                                    className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded ${
+                                      isPlace
+                                        ? "bg-status-win/15 text-status-win border border-status-win/30"
+                                        : "text-gold-light"
+                                    }`}
+                                  >
+                                    {n}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-text-muted text-xs">—</span>
+                          )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`font-mono text-xs ${arriveeRaw.length > 0 ? "text-text-secondary" : "text-text-muted"}`}>
-                            {arriveeStr}
-                          </span>
+                        <td className="px-4 py-3">
+                          {/* Arrivée : chevaux qui étaient dans notre sélection
+                              surlignés (cohérent avec la page détail /pronostics/[id]) */}
+                          {arriveeRaw.length > 0 ? (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {arriveeRaw.slice(0, Math.max(selRaw.length, 5)).map((n: number, idx: number) => {
+                                const wasSelected = selRaw.includes(n);
+                                return (
+                                  <span
+                                    key={idx}
+                                    title={wasSelected ? `Cheval ${n} — dans notre sélection ✓` : `Cheval ${n}`}
+                                    className={`font-mono text-xs px-1.5 py-0.5 rounded ${
+                                      wasSelected
+                                        ? "bg-status-win/15 text-status-win border border-status-win/30 font-bold"
+                                        : "text-text-secondary"
+                                    }`}
+                                  >
+                                    {n}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-text-muted text-xs">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border ${res.classes}`}>
