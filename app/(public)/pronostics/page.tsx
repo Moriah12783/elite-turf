@@ -9,6 +9,7 @@ import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import { canAccess } from "@/lib/auth/access";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -117,12 +118,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
 
   let userSubscription: SubscriptionStatus = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("statut_abonnement")
-      .eq("id", user.id)
-      .single();
-    if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
+    userSubscription = (await resolveUserSubscription(supabase, user.id)) as SubscriptionStatus;
   }
 
   let query = supabase

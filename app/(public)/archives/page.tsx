@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Lock, Trophy, TrendingUp, ExternalLink, CheckCircle2, XCircle, Minus, Clock3, Calendar, ArrowRight } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { buildGenyUrlAuto } from "@/lib/geny";
 import PageHero from "@/components/layout/PageHero";
 import type { BetType, PronosticResult } from "@/types";
@@ -42,13 +43,8 @@ export default async function ArchivesPage({ searchParams }: PageProps) {
 
   let subscription = "GRATUIT";
   if (user) {
-    // Utiliser createServiceClient pour contourner les éventuels problèmes RLS
-    const { data: profile } = await createServiceClient()
-      .from("profiles")
-      .select("statut_abonnement")
-      .eq("id", user.id)
-      .single();
-    if (profile) subscription = profile.statut_abonnement as string;
+    // Garde-fou date_fin + bypass RLS (service client) via le helper centralisé.
+    subscription = await resolveUserSubscription(createServiceClient(), user.id);
   }
 
   const isPremium = subscription === "STARTER" || subscription === "PRO" || subscription === "ELITE";

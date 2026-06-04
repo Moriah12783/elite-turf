@@ -13,6 +13,7 @@ import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { SubscriptionStatus, PronosticResult } from "@/types";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { canAccess } from "@/lib/auth/access";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 
 interface PageProps {
   params: { id: string };
@@ -92,12 +93,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
 
   let userSubscription: SubscriptionStatus = "GRATUIT";
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("statut_abonnement")
-      .eq("id", user.id)
-      .single();
-    if (profile) userSubscription = profile.statut_abonnement as SubscriptionStatus;
+    userSubscription = (await resolveUserSubscription(supabase, user.id)) as SubscriptionStatus;
   }
   const { data: p } = await supabase
     .from("pronostics")

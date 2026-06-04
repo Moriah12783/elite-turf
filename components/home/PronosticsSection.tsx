@@ -7,6 +7,7 @@ import {
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
 import { canAccess } from "@/lib/auth/access";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 
 /** Retourne 1 si Nationale 1, 2 si Nat2, 3 si Nat3, 0 sinon */
 function getNatNum(paris: string[]): number {
@@ -58,12 +59,7 @@ export default async function PronosticsSection() {
     const supabaseClient = await createClient();
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("statut_abonnement")
-        .eq("id", user.id)
-        .single();
-      if (profile) userSubscription = profile.statut_abonnement as string;
+      userSubscription = await resolveUserSubscription(supabase, user.id);
     }
   } catch {
     // Non authentifié
