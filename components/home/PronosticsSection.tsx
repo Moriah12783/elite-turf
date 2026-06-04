@@ -311,7 +311,9 @@ export default async function PronosticsSection() {
                   <div className="w-16 h-16 flex-shrink-0 rounded-2xl bg-gold-faint border-2 border-gold-primary/60 flex flex-col items-center justify-center shadow-gold">
                     <span className="text-xs text-gold-light/70 uppercase tracking-wider leading-none mb-0.5">N°</span>
                     <span className="text-3xl font-bold font-serif text-gold-primary leading-none">
-                      {Array.isArray(vedette.selection) ? vedette.selection[0] : vedette.selection}
+                      {canAccess(vedette.niveau_acces, userSubscription)
+                        ? (Array.isArray(vedette.selection) ? vedette.selection[0] : vedette.selection)
+                        : "?"}
                     </span>
                   </div>
                 )}
@@ -350,7 +352,9 @@ export default async function PronosticsSection() {
 
                 {vedette.analyse_courte && (
                   <p className="text-text-secondary text-sm leading-relaxed mb-4 italic border-l-2 border-gold-primary/40 pl-3 line-clamp-4">
-                    &ldquo;{vedette.analyse_courte}&rdquo;
+                    &ldquo;{canAccess(vedette.niveau_acces, userSubscription)
+                      ? vedette.analyse_courte
+                      : "Analyse de l'expert réservée aux abonnés — débloquez la sélection complète et le commentaire détaillé."}&rdquo;
                   </p>
                 )}
 

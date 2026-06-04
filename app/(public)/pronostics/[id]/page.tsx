@@ -58,7 +58,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const prefix = nbChevaux > 0
     ? `${niveauEmoji} ${typePari} en ${nbChevaux} chevaux · ${hippoName}${heure ? ` ${heure}` : ""}. `
     : "";
-  const description = `${prefix}${data.analyse_courte || ""}`.slice(0, 160);
+  // Anti-fuite : ne pas exposer l'analyse premium dans la meta description
+  // (lisible dans le <head> et les aperçus). Réservée au niveau GRATUIT.
+  const metaAnalyse = data.niveau_acces === "GRATUIT"
+    ? (data.analyse_courte || "")
+    : "Pronostic réservé aux abonnés — sélection détaillée et analyse de l'expert sur Elite Turf.";
+  const description = `${prefix}${metaAnalyse}`.slice(0, 160);
 
   return {
     title,
@@ -393,9 +398,9 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="paywall-blur select-none space-y-2">
+                  <div className="paywall-blur select-none space-y-2" aria-hidden="true">
                     <p className="text-text-secondary text-sm leading-relaxed">
-                      {p.analyse_courte}
+                      L&apos;analyse complète de l&apos;expert est réservée aux abonnés : base, outsiders à valeur et logique de la sélection y sont détaillés.
                     </p>
                     <p className="text-text-secondary text-sm leading-relaxed">
                       Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.

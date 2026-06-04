@@ -211,8 +211,8 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
           </p>
         ) : (
           <div className="relative mb-5">
-            <p className="text-text-secondary text-sm leading-relaxed italic paywall-blur select-none">
-              {p.analyse_courte}
+            <p className="text-text-secondary text-sm leading-relaxed italic paywall-blur select-none" aria-hidden="true">
+              Analyse réservée aux abonnés — la sélection complète et le commentaire de l&apos;expert sont inclus dans votre pack.
             </p>
           </div>
         )}
