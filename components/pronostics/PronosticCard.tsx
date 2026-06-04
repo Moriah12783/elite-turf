@@ -7,6 +7,7 @@ import {
 import PaywallBanner from "./PaywallBanner";
 import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { PronosticLevel, SubscriptionStatus, BetType, Confidence, PronosticResult } from "@/types";
+import { canAccess } from "@/lib/auth/access";
 
 interface PronosticCardProps {
   pronostic: {
@@ -37,13 +38,7 @@ interface PronosticCardProps {
   userSubscription: SubscriptionStatus;
 }
 
-function canAccess(niveau: PronosticLevel, sub: SubscriptionStatus): boolean {
-  if (niveau === "GRATUIT") return true;
-  if (niveau === "STARTER") return sub === "STARTER" || sub === "PRO" || sub === "ELITE";
-  if (niveau === "PRO") return sub === "PRO" || sub === "ELITE";
-  if (niveau === "ELITE") return sub === "ELITE";
-  return false;
-}
+// canAccess() : source unique dans "@/lib/auth/access" (importée en tête).
 
 const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementType; classes: string }> = {
   GAGNANT:    { label: "Gagnant",   icon: CheckCircle2, classes: "bg-status-win/15 text-status-win border-status-win/20" },

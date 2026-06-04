@@ -8,6 +8,7 @@ import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+import { canAccess } from "@/lib/auth/access";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -381,12 +382,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
 }
 
 // ── Helper ────────────────────────────────────────────────────────────
-function canAccess(niveau: string, sub: SubscriptionStatus): boolean {
-  if (niveau === "GRATUIT") return true;
-  if (niveau === "PRO") return ["STARTER","PRO","ELITE"].includes(sub);
-  if (niveau === "ELITE") return sub === "ELITE";
-  return false;
-}
+// canAccess() : source unique dans "@/lib/auth/access" (importée en tête).
 
 // ── Empty State ───────────────────────────────────────────────────────
 function EmptyState({ periode }: { periode?: string }) {

@@ -12,6 +12,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { SubscriptionStatus, PronosticResult } from "@/types";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
+import { canAccess } from "@/lib/auth/access";
 
 interface PageProps {
   params: { id: string };
@@ -79,12 +80,7 @@ const RESULTAT_CONFIG: Record<PronosticResult, { label: string; icon: ElementTyp
   EN_ATTENTE: { label: "EN COURS",  icon: Clock3,       classes: "text-text-muted",     bg: "bg-bg-elevated border-border" },
 };
 
-function canAccess(niveau: string, sub: SubscriptionStatus): boolean {
-  if (niveau === "GRATUIT") return true;
-  if (niveau === "PRO") return ["STARTER","PRO","ELITE"].includes(sub);
-  if (niveau === "ELITE") return sub === "ELITE";
-  return false;
-}
+// canAccess() : source unique dans "@/lib/auth/access" (importée en tête).
 
 export default async function PronosticDetailPage({ params }: PageProps) {
   // ── Session ──────────────────────────────────────────────────────
