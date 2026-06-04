@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
+import { canAccess } from "@/lib/auth/access";
 
 /** Retourne 1 si Nationale 1, 2 si Nat2, 3 si Nat3, 0 sinon */
 function getNatNum(paris: string[]): number {
@@ -39,13 +40,7 @@ function getTodayParis(): string {
 }
 
 /** Vérifie l'accès selon le niveau et l'abonnement utilisateur */
-function canAccess(niveau: string, sub: string): boolean {
-  if (niveau === "GRATUIT") return true;
-  if (niveau === "STARTER") return ["STARTER","PRO","ELITE"].includes(sub);
-  if (niveau === "PRO")     return ["PRO","ELITE"].includes(sub);
-  if (niveau === "ELITE")   return sub === "ELITE";
-  return false;
-}
+// canAccess() : source unique dans "@/lib/auth/access" (importée en tête).
 
 /** True si la course est terminée (départ > 40 min passé) */
 function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boolean {

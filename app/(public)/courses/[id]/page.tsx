@@ -17,6 +17,7 @@ import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 import { buildNotreSelection, shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
 import { NotreSelectionPromo } from "@/components/courses/NotreSelectionPromo";
+import { canAccess } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
@@ -79,12 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-function canAccess(niveau: string, sub: SubscriptionStatus) {
-  if (niveau === "GRATUIT") return true;
-  if (niveau === "PRO") return sub === "STARTER" || sub === "PRO" || sub === "ELITE";
-  if (niveau === "ELITE")   return sub === "ELITE";
-  return false;
-}
+// canAccess() : source unique dans "@/lib/auth/access" (importée en tête).
 
 export default async function CourseDetailPage({ params }: PageProps) {
   // ── Auth ─────────────────────────────────────────────────────────────────
