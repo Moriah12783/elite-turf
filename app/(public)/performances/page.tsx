@@ -423,9 +423,18 @@ export default async function PerformancesPage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50 bg-bg-elevated">
-                    {["Date", "Course / Hippodrome", "Sélection complète", "Arrivée Réelle", "Résultat", "Rapport", "Vérifier"].map(h => (
-                      <th key={h} className="text-left px-4 py-2.5 text-text-muted text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
-                        {h}
+                    {/* Headers colorés (ajustement UX 04/06/2026) — cohérence brand */}
+                    {[
+                      { label: "Date",                   color: "text-text-secondary" },
+                      { label: "Course / Hippodrome",    color: "text-gold-light"     },
+                      { label: "Pronostic Elite Turf",   color: "text-gold-primary"   },
+                      { label: "Arrivée Réelle",         color: "text-text-primary"   },
+                      { label: "Résultat",               color: "text-text-secondary" },
+                      { label: "Rapport",                color: "text-status-win"     },
+                      { label: "Vérifier",               color: "text-gold-light"     },
+                    ].map(h => (
+                      <th key={h.label} className={`text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap ${h.color}`}>
+                        {h.label}
                       </th>
                     ))}
                   </tr>
@@ -523,26 +532,41 @@ export default async function PerformancesPage({
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          {/* Arrivée : chevaux qui étaient dans notre sélection
-                              surlignés (cohérent avec la page détail /pronostics/[id]) */}
+                          {/* Arrivée Réelle : top 5 dans des cercles dorés style page
+                              /arrivees (cohérence visuelle) — médaille 🥇🥈🥉 pour
+                              top 3 + bordure VERTE renforcée si cheval dans notre
+                              sélection (preuve visuelle directe pour le visiteur). */}
                           {arriveeRaw.length > 0 ? (
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {arriveeRaw.slice(0, Math.max(selRaw.length, 5)).map((n: number, idx: number) => {
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {arriveeRaw.slice(0, 5).map((n: number, idx: number) => {
                                 const wasSelected = selRaw.includes(n);
+                                const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
                                 return (
                                   <span
                                     key={idx}
-                                    title={wasSelected ? `Cheval ${n} — dans notre sélection ✓` : `Cheval ${n}`}
-                                    className={`font-mono text-xs px-1.5 py-0.5 rounded ${
-                                      wasSelected
-                                        ? "bg-status-win/15 text-status-win border border-status-win/30 font-bold"
-                                        : "text-text-secondary"
-                                    }`}
+                                    title={wasSelected
+                                      ? `${idx + 1}ᵉ place — Cheval ${n} (dans notre sélection ✓)`
+                                      : `${idx + 1}ᵉ place — Cheval ${n}`}
+                                    className="inline-flex items-center gap-0.5"
                                   >
-                                    {n}
+                                    {medal && <span className="text-xs leading-none" aria-hidden>{medal}</span>}
+                                    <span
+                                      className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 transition-colors ${
+                                        wasSelected
+                                          ? "bg-status-win/15 border-2 border-status-win/50 text-status-win"
+                                          : "bg-gold-faint border border-gold-primary/40 text-gold-light"
+                                      }`}
+                                    >
+                                      {n}
+                                    </span>
                                   </span>
                                 );
                               })}
+                              {arriveeRaw.length > 5 && (
+                                <span className="text-text-muted text-[10px] px-1.5 py-0.5 rounded-full bg-bg-card border border-border flex-shrink-0">
+                                  +{arriveeRaw.length - 5}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-text-muted text-xs">—</span>
