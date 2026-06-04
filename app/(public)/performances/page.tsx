@@ -19,6 +19,8 @@ import PageHero from "@/components/layout/PageHero";
 import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
 import { resolveFormule, filterByFormule, summarizeTier, FORMULES } from "@/lib/performances/tier-stats";
 import FormuleTabs from "@/components/performances/FormuleTabs";
+import PeriodeTabs from "@/components/performances/PeriodeTabs";
+import { resolvePeriode, buildPeriodeTabs, filterByPeriode, moisLabel } from "@/lib/performances/periode-filter";
 
 // CTR boost Sprint A : emoji 📈 (signal data) + brand
 export const metadata: Metadata = {
@@ -51,10 +53,11 @@ function winRate(items: any[]): number {
 export default async function PerformancesPage({
   searchParams,
 }: {
-  searchParams: { formule?: string };
+  searchParams: { formule?: string; periode?: string };
 }) {
   const supabase = createServiceClient();
   const formule = resolveFormule(searchParams.formule);
+  const periode = resolvePeriode(searchParams.periode);
 
   // ── Tous les pronostics publiés ──────────────────────────────────
   const { data: allPronostics } = await supabase
@@ -170,9 +173,22 @@ export default async function PerformancesPage({
     .sort((a, b) => b.total - a.total)
     .slice(0, 6);
 
-  // ── Historique récent (30 derniers) ──────────────────────────────
-  const recent = pronostics.slice(0, 30);
+  // ── Historique : navigation par période (Récents / mois / Tout) ──────
+  // Avant : slice(0, 30) cachait 83% des pronostics (coupait au 24 mai).
+  // Maintenant : onglets ?periode= débloquent tout l'historique (preuve
+  // sociale). Les counts des onglets sont calculés sur la liste filtrée
+  // par formule courante → cohérence avec FormuleTabs.
+  const periodeTabs = buildPeriodeTabs(pronostics);
+  const recent = filterByPeriode(pronostics, periode);
   const todayStr = now.toISOString().split("T")[0];
+
+  // Titre dynamique du tableau selon la période active.
+  const historiqueTitre =
+    periode === "tout"
+      ? "Tout l'historique des pronostics"
+      : periode === "recents"
+      ? "Pronostics les plus récents"
+      : `Pronostics · ${moisLabel(periode)}`;
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -193,7 +209,7 @@ export default async function PerformancesPage({
         sousTitre="Transparence totale — historique complet et vérifiable de nos pronostics gagnants"
       />
 
-      <FormuleTabs active={formule.key} items={tabItems} />
+      <FormuleTabs active={formule.key} items={tabItems} periode={periode} />
 
       {/* ── BANDEAU 30 JOURS ─────────────────────────────────────── */}
       <div className="bg-gradient-to-r from-bg-elevated via-gold-faint/40 to-bg-elevated border-y border-gold-primary/20 py-3 px-4">
@@ -408,14 +424,19 @@ export default async function PerformancesPage({
           </div>
         )}
 
+        {/* ── NAVIGATION PAR PÉRIODE ──────────────────────────────── */}
+        <div className="mb-4">
+          <PeriodeTabs active={periode} items={periodeTabs} formule={searchParams.formule} />
+        </div>
+
         {/* ── HISTORIQUE TABLE ────────────────────────────────────── */}
         <div className="card-base overflow-hidden">
-          <div className="p-5 border-b border-border flex items-center justify-between">
+          <div className="p-5 border-b border-border flex items-center justify-between gap-3">
             <h2 className="font-serif font-bold text-text-primary text-base flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gold-primary" />
-              Historique des 30 derniers pronostics
+              <Calendar className="w-4 h-4 text-gold-primary flex-shrink-0" />
+              {historiqueTitre}
             </h2>
-            <span className="text-text-muted text-xs">{recent.length} entrées</span>
+            <span className="text-text-muted text-xs whitespace-nowrap">{recent.length} entrée{recent.length > 1 ? "s" : ""}</span>
           </div>
 
           {recent.length > 0 ? (

@@ -17,10 +17,22 @@ export interface FormuleTabItem {
 export default function FormuleTabs({
   active,
   items,
+  periode,
 }: {
   active: FormuleKey;
   items: FormuleTabItem[];
+  /** Période active à préserver dans les liens (undefined/"recents" = défaut). */
+  periode?: string;
 }) {
+  // Construit l'URL en préservant la période courante (navigation historique).
+  const hrefFor = (key: FormuleKey): string => {
+    const params = new URLSearchParams();
+    if (key !== "tous") params.set("formule", key);
+    if (periode && periode !== "recents") params.set("periode", periode);
+    const qs = params.toString();
+    return qs ? `/performances?${qs}` : "/performances";
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-1">
       <p className="text-center text-text-muted text-xs uppercase tracking-wider mb-3">
@@ -29,7 +41,7 @@ export default function FormuleTabs({
       <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
         {items.map((it) => {
           const isActive = it.key === active;
-          const href = it.key === "tous" ? "/performances" : `/performances?formule=${it.key}`;
+          const href = hrefFor(it.key);
           return (
             <Link
               key={it.key}

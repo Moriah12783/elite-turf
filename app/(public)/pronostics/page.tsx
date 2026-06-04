@@ -346,6 +346,20 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
                     <PronosticCard key={p.id} pronostic={p} userSubscription={userSubscription} />
                   ))}
                 </div>
+
+                {/* Lien vers l'historique complet — /pronostics garde le focus
+                    "jouer maintenant", /performances est le hub de preuve sociale
+                    (tout l'historique vérifiable, navigable par mois). */}
+                <a
+                  href="/performances"
+                  className="mt-6 flex items-center justify-center gap-2 p-4 rounded-xl bg-bg-card border border-gold-primary/30 hover:border-gold-primary/60 hover:bg-gold-faint/30 transition-all group"
+                >
+                  <Trophy className="w-4 h-4 text-gold-primary" />
+                  <span className="text-text-secondary text-sm font-medium group-hover:text-text-primary transition-colors">
+                    Voir tout notre historique de résultats vérifiables
+                  </span>
+                  <TrendingUp className="w-4 h-4 text-gold-primary group-hover:translate-x-0.5 transition-transform" />
+                </a>
               </div>
             )}
           </>
