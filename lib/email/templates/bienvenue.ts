@@ -37,7 +37,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
                     letter-spacing:0.5px;text-transform:uppercase;">
             ✦ Ce que vous recevez gratuitement
           </p>
-          ${["Pronostics Quinté+ publiés avant 8h (heure de Paris)",
+          ${["Pronostics du jour publiés entre 8h30 et 9h30 (heure GMT)",
              "Analyse des courses à Vincennes, Longchamp, Chantilly",
              "Statistiques de performance de nos experts",
              "Guide PMU pour maximiser vos gains"

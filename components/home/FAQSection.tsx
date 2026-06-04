@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react";
 const FAQ_ITEMS = [
   {
     q: "À quelle heure les pronostics sont-ils publiés ?",
-    a: "Le Quinté+ est publié chaque matin avant 8h heure de Paris. Le Quarté+ et le Tiercé avant 9h. Si vous êtes abonné, vous recevez une notification email dès la publication.",
+    a: "Les pronostics du jour (Quinté+, Quarté+, Tiercé) sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Si vous êtes abonné, vous recevez une alerte par email et WhatsApp dès la publication.",
   },
   {
     q: "Que contient le guide gratuit ?",

@@ -99,7 +99,7 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
       Commencez dès maintenant 🏇
     </p>
     <p style="margin:0 0 4px 0;color:#6B7280;font-size:13px;text-align:center;">
-      Les pronostics du jour sont publiés avant 8h (heure de Paris)
+      Les pronostics du jour sont publiés entre 8h30 et 9h30 (heure GMT)
     </p>
 
     ${emailButton(`${appUrl}/pronostics`, "Voir les pronostics du jour")}

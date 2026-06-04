@@ -30,7 +30,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
         <li>Le <strong>Quinté+ du jour</strong> avec sélection complète + analyse</li>
         <li>Le <strong>Tiercé / Quarté+</strong> chaque jour</li>
         <li>Accès aux <strong>archives</strong> : 30+ pronostics consultables</li>
-        <li><strong>Notification email</strong> dès publication (avant 8h chaque matin)</li>
+        <li><strong>Notification email</strong> dès publication (entre 8h30 et 9h30 GMT chaque matin)</li>
         <li>Page <strong>"Mon ROI"</strong> : suivez vos gains théoriques cumulés</li>
       </ul>
 
