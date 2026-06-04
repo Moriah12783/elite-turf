@@ -218,7 +218,7 @@ export const PLAN_CONFIG: Plan[] = [
     features: [
       "Accès pendant 7 jours",
       "Lecture simple et structurée",
-      "3 pronostics Tiercé / Quarté par semaine",
+      "7 pronostics Tiercé / Quarté par semaine",
       "Analyse courte incluse",
       "5 alertes SMS / Push",
       "Résiliable à tout moment",
