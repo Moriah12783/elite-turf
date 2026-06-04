@@ -111,7 +111,7 @@ export default function HeroSection() {
       {/* ── Image plein écran — parallax ── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
-          src="/images/heroes/hero-courses.jpg"
+          src="/images/heroes/hero-home.jpg"
           alt=""
           fill
           priority
