@@ -8,19 +8,17 @@ name: enrich-cotes
 # Mêmes horaires que l'ancien cron Cloudflare enrichir-partants (UTC).
 
 on:
+  # 3 passages/jour (rester sous les 2000 min/mois gratuites GitHub).
+  # Matin (cotes de référence) → midi (cotes fermes FR) → après-midi (pré-courses).
   schedule:
     - cron: "30 5 * * *"
     - cron: "47 11 * * *"
-    - cron: "13 13 * * *"
     - cron: "13 15 * * *"
   workflow_dispatch:
     inputs:
       date:
         description: "Date YYYY-MM-DD (défaut : aujourd'hui)"
         required: false
-  # Déclencheur de test sur la branche de dev (retiré avant merge).
-  push:
-    branches: [fix/cotes-via-github-actions]
 
 concurrency:
   group: enrich-cotes
