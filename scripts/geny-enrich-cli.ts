@@ -68,9 +68,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Curation : ne scraper que les hippodromes vedettes (FR + Maroc) avec > 10
-  // partants — ou toute course déjà pronostiquée (garde-fou). Exclut l'étranger
-  // (HK, Chili…) et les petits locaux → moins de pages Geny à scraper.
+  // Curation : on garde tout (France, Europe, Maghreb, DOM-TOM…) SAUF le
+  // lointain étranger (HK, Chili, USA, Australie…) qui n'intéresse pas
+  // l'audience — ou toute course pronostiquée (garde-fou).
   const tous = (courses ?? []) as any[];
   const list = tous.filter((c) => {
     const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
       aPariNational: hasPariNational(c.paris_disponibles),
     });
   }) as CourseRow[];
-  console.log(`Éligibles : ${list.length}/${tous.length} courses (vedettes FR/Maroc + >10 partants)`);
+  console.log(`Gardées : ${list.length}/${tous.length} courses (hors lointain étranger)`);
   if (list.length === 0) {
     console.log(`ℹ️  Aucune course éligible pour ${targetDate}`);
     return;

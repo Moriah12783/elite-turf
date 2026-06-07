@@ -12,7 +12,7 @@
  */
 
 import { Metadata } from "next";
-import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
+import { isCourseEligible, hasPariNational, isHippodromePrioritaire } from "@/lib/turf/course-eligibility";
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -138,6 +138,12 @@ export default async function ProgrammePage({ params }: PageProps) {
     groups[key].courses.push(c);
   }
   const groupsList = Object.values(groups);
+  // Mise en avant : hippodromes vedettes (+ pari national) en tête.
+  groupsList.sort((a, b) => {
+    const va = isHippodromePrioritaire(a.hippodrome?.nom) || a.courses.some((c: any) => hasPariNational(c.paris_disponibles));
+    const vb = isHippodromePrioritaire(b.hippodrome?.nom) || b.courses.some((c: any) => hasPariNational(c.paris_disponibles));
+    return Number(vb) - Number(va);
+  });
 
   // Quinté+ du jour (highlight si présent)
   const quinte = courses.find((c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.includes("QUINTE_PLUS"));

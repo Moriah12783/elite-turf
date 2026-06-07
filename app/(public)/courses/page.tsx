@@ -8,7 +8,7 @@ import {
   ChevronRight, Star, Zap, AlertCircle
 } from "lucide-react";
 import { createServiceClient, createClient } from "@/lib/supabase/server";
-import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
+import { isCourseEligible, hasPariNational, isHippodromePrioritaire } from "@/lib/turf/course-eligibility";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import CoursesDateNav from "@/components/courses/CoursesDateNav";
 import CourseCard from "@/components/courses/CourseCard";
@@ -219,6 +219,12 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
   const groups          = groupByHippodrome(coursesActives);
   const groupsTerminees = groupByHippodrome(coursesTerminees);
+
+  // Mise en avant : hippodromes vedettes (+ pari national du jour) en tête.
+  const estVedetteGroupe = (g: { hippodrome: any; courses: any[] }) =>
+    isHippodromePrioritaire(g.hippodrome?.nom) ||
+    g.courses.some((c: any) => hasPariNational(c.paris_disponibles));
+  groups.sort((a, b) => Number(estVedetteGroupe(b)) - Number(estVedetteGroupe(a)));
 
   // ── Stats rapides ─────────────────────────────────────────────────
   const totalPartants = courses.reduce((s: number, c: any) => s + (c.nb_partants || 0), 0);

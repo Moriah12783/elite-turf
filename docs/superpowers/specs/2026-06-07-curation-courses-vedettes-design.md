@@ -1,44 +1,52 @@
-# Spec — Épuration des courses : hippodromes vedettes (scraping + affichage)
+# Spec — Curation des courses : exclure le lointain étranger + mettre en avant les vedettes
 
-**Date :** 2026-06-07 · **Statut :** approuvé (verbal, « oui pour ta reco »)
+**Date :** 2026-06-07 · **Statut :** approuvé (verbal)
 
 ## Problème
-Le programme du jour ≈ **80 courses**, dont beaucoup d'**étrangères** (Hong Kong, Chili, USA, Irlande…) et de **petits hippodromes locaux FR** qui intéressent peu les visiteurs et alourdissent le scraping de cotes (pages inutiles). Le champ `hippodromes.pays` est **inexploitable** : tout est étiqueté « France » (y compris Sha Tin, Happy Valley, Concepcion, Churchill Downs…).
+Le programme PMU/Geny du jour ≈ 80 courses contient du **lointain étranger**
+(Hong Kong, Chili, USA, Australie, Afrique du Sud…) qui n'intéresse pas
+l'audience (France + un peu Europe + DOM-TOM/Outre-mer + Maghreb + Afrique
+francophone). Le champ `hippodromes.pays` est inexploitable (tout = "France").
+
+**Contrainte SEO (décisive)** : chaque course = une page indexable
+(`app/sitemap.ts` liste ~1000 URLs via requête directe). On NE veut donc PAS
+cacher le provincial français ni l'Europe → perte de long-tail. On exclut
+**uniquement** le lointain étranger. (Première version « vedettes + >10 » trop
+agressive : 6/80 un dimanche → abandonnée.)
 
 ## Objectif
-Ne garder — au **scraping** ET à l'**affichage** — que les courses pertinentes :
-**hippodrome FR vedette (+ Maroc) avec > 10 partants**, **plus** la grande course du
-jour (pari national) où qu'elle soit, en **excluant** l'étranger (HK, Chili, USA…).
+- **Scraping + affichage** : garder tout (France, Europe, Maghreb, DOM-TOM),
+  exclure **uniquement le lointain étranger**.
+- **Mettre en avant** (tri en tête) les hippodromes **vedettes** et les courses
+  à **pari national** — sans cacher le reste.
 
-## Filtre central (source unique)
-`lib/turf/course-eligibility.ts` — `isCourseEligible(c)` décide **dans l'ordre** :
-1. **Pronostic publié** (`aPronostic`) → gardée (garde-fou : jamais zapper une course qu'on a pronostiquée).
-2. **Hippodrome étranger** (denylist `HIPPODROMES_ETRANGERS` : Sha Tin, Happy Valley, Concepcion, Churchill Downs, Curragh…) → **exclue**.
-3. **Pari national** (`aPariNational` : Quinté+/Quarté+/Tiercé) sur piste FR/Maroc → gardée (la grande course du jour, même hors liste vedette — couvre les jours provinciaux).
-4. **Hippodrome vedette** (`HIPPODROMES_PRIORITAIRES`) **ET** nb_partants > 10 → gardée.
-
-Sinon exclue. Matching via `normHippodrome` (minuscule, sans accents/espaces/tirets).
-`hasPariNational(paris_disponibles)` détecte le pari national côté appelants.
-
-**Liste FR** (validée, d'après les hippodromes qui portent des pronostics + grands hippodromes PMU) :
-Vincennes, ParisLongchamp, Auteuil, Chantilly, Saint-Cloud, Deauville, Maisons-Laffitte,
-Cagnes-sur-Mer, Compiègne, Vichy, Lyon-Parilly, Caen, Enghien, Marseille-Borély,
-Marseille-Vivaux, Strasbourg, Nantes, Toulouse, Le Croisé-Laroche, Laval, Pau,
-Bordeaux-Le Bouscat.
-**Maroc** (anticipé — 0 course en base aujourd'hui) : Casablanca-Anfa, Rabat.
+## Filtre central — `lib/turf/course-eligibility.ts`
+- `isHippodromeLointain(nom)` : denylist `HIPPODROMES_LOINTAINS` (Asie / Golfe /
+  Amériques / Océanie / Afrique du Sud). **Garde l'Europe** (UK, Irlande,
+  Pays-Bas, Scandinavie) et le **Maghreb**.
+- `isCourseEligible(c)` = `aPronostic || !isHippodromeLointain(nom)` → on n'exclut
+  QUE le lointain.
+- `isCourseVedette(c)` = `isHippodromePrioritaire(nom) || aPariNational` → MISE EN
+  AVANT (tri), pas un filtre.
+- `hasPariNational(paris_disponibles)` détecte Quinté+/Quarté+/Tiercé.
+- Matching via `normHippodrome` (sans accents/casse/tirets).
 
 ## Application
-1. **Scraping** — `scripts/geny-enrich-cli.ts` : la requête courses joint `nb_partants` + `hippodrome.nom` + présence de pronostic publié, puis filtre via `isCourseEligible`. Effet : ~25-30 courses au lieu de 80 → **moins de jobs matrix / minutes GitHub**. Réduction matrix **12 → 6 lots**.
-2. **Affichage** — appliquer le même `isCourseEligible` aux listes de courses :
-   - `app/(public)/programme/[date]/page.tsx`
-   - `app/(public)/courses/page.tsx`
-   - `components/home/CoursesSection.tsx`
-   (chacune charge déjà `nb_partants` + `hippodrome` ; on ajoute le flag `aPronostic` si pas déjà là.)
+1. **Scraping** — `scripts/geny-enrich-cli.ts` : filtre `isCourseEligible` (hors
+   lointain) → ~50-70 courses → matrix **8 lots**.
+2. **Affichage** — `isCourseEligible` (hors lointain) + **tri vedettes-en-tête**
+   (`isCourseVedette` / `isHippodromePrioritaire`) :
+   `app/(public)/courses/page.tsx`, `app/(public)/programme/[date]/page.tsx`,
+   `components/home/CoursesSection.tsx`.
 
-## Hors scope (séparé)
-- Correction du champ `pays` en base (migration distincte).
-- Cas cotes Sha Tin / HK.
-- Pipeline IA de sélection (déjà curaté côté agent).
+## Hors scope
+- `app/sitemap.ts` : **inchangé** — toutes les courses restent indexées (SEO
+  préservé). Un éventuel `noindex` du lointain serait une étape séparée.
+- Badge visuel « vedette » : tri fait, badge = polish à ajouter ensuite.
+- Correction du champ `pays`.
 
 ## Tests
-`lib/turf/course-eligibility.test.ts` : normalisation (accents/casse/tirets), denylist étranger (Sha Tin, Happy Valley, Curragh…), `hasPariNational`, inclusion FR vedette, seuil 10/11, **filet pari-national** (Bollène + Quinté+ → gardée ; Sha Tin + Quinté+ → exclue), garde-fou `aPronostic`.
+`lib/turf/course-eligibility.test.ts` : `isHippodromeLointain` (exclut
+HK/Chili/USA/Australie/Afrique du Sud, **garde** Irlande/UK/Pays-Bas/Maroc/FR),
+`hasPariNational`, `isCourseEligible` (garde FR/Europe/Maghreb, exclut lointain,
+garde-fou pronostic), `isCourseVedette`.

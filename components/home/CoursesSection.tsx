@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Clock, MapPin, Users, ChevronRight, Calendar, Globe2 } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
-import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
+import { isCourseEligible, hasPariNational, isCourseVedette } from "@/lib/turf/course-eligibility";
 
 const CATEGORIE_COLORS: Record<string, string> = {
   PLAT:     "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -97,7 +97,13 @@ export default async function CoursesSection() {
   const upcoming = allAfrique.filter((c: any) => !isCourseFinished(c.heure_depart, nowMins));
 
   // Si des courses sont encore à venir → on les affiche, sinon → dernières du jour
-  const courses = (upcoming.length > 0 ? upcoming : allAfrique).slice(0, 3);
+  // Mise en avant : vedettes (+ pari national) d'abord, puis ordre horaire.
+  const base = upcoming.length > 0 ? upcoming : allAfrique;
+  const estVedette = (c: any) => isCourseVedette({
+    hippodromeNom: (Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome)?.nom,
+    aPariNational: hasPariNational(c.paris_disponibles),
+  });
+  const courses = [...base].sort((a, b) => Number(estVedette(b)) - Number(estVedette(a))).slice(0, 3);
 
   const header = (
     <div className="flex items-center justify-between mb-10">
