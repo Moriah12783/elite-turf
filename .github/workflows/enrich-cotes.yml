@@ -1,0 +1,62 @@
+name: enrich-cotes
+
+# Remplit les COTES + partants depuis Geny, exécuté sur les runners GitHub
+# (IP Azure → HTTP 200) car Geny renvoie 403 à l'IP du Worker Cloudflare.
+# Gratuit + autonome. En cas d'échec total, le job sort en erreur → GitHub
+# envoie un email au propriétaire du repo (alerte anti-silent-failure).
+#
+# Mêmes horaires que l'ancien cron Cloudflare enrichir-partants (UTC).
+
+on:
+  # 3 passages/jour (rester sous les 2000 min/mois gratuites GitHub).
+  # Matin (cotes de référence) → midi (cotes fermes FR) → après-midi (pré-courses).
+  schedule:
+    - cron: "30 5 * * *"
+    - cron: "47 11 * * *"
+    - cron: "13 15 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date YYYY-MM-DD (défaut : aujourd'hui)"
+        required: false
+
+concurrency:
+  group: enrich-cotes
+  cancel-in-progress: false
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      # 12 lots parallèles = 12 IP Azure distinctes, ~7 courses chacun
+      # (sous le seuil ~10 req/IP que Geny tolère avant HTTP 429).
+      matrix:
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/geny-enrich-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=geny-enrich.mjs
+
+      - name: Enrichir les cotes (lot ${{ matrix.chunk }})
+        run: node geny-enrich.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TARGET_DATE: ${{ github.event.inputs.date }}
+          CHUNK_INDEX: ${{ matrix.chunk }}
+          CHUNK_TOTAL: "12"
