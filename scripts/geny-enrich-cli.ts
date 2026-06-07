@@ -37,7 +37,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 const FETCH_TIMEOUT_MS = 8000;
 // Geny rate-limite (~10 req puis HTTP 429). On scrape donc en SÉQUENTIEL avec
 // un pacing poli + retry/backoff sur les courses vides (souvent un 429 transitoire).
-const PACING_MS = 1500;
+const PACING_MS = 800;
 const MAX_ATTEMPTS = 3;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -73,9 +73,17 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Sharding : chaque job GitHub Actions (matrix) traite 1/CHUNK_TOTAL des
+  // courses depuis SA propre IP Azure. Geny laisse passer ~10 requêtes par IP
+  // fraîche avant un HTTP 429 → on garde chaque lot sous ce seuil.
+  const chunkTotal = Math.max(1, parseInt(process.env.CHUNK_TOTAL || "1", 10));
+  const chunkIndex = Math.max(0, parseInt(process.env.CHUNK_INDEX || "0", 10));
+  const slice = chunkTotal <= 1 ? list : list.filter((_, i) => i % chunkTotal === chunkIndex);
+  console.log(`Chunk ${chunkIndex + 1}/${chunkTotal} → ${slice.length}/${list.length} courses`);
+
   // 1. Scrape Geny SÉQUENTIEL avec pacing + retry (anti rate-limit 429).
   const ok: { c: CourseRow; partants: any[] }[] = [];
-  for (const c of list) {
+  for (const c of slice) {
     let partants: any[] = [];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
@@ -134,19 +142,18 @@ async function main(): Promise<void> {
 
   const summary = {
     targetDate,
-    total: list.length,
+    chunk: `${chunkIndex + 1}/${chunkTotal}`,
+    total: slice.length,
     ok: ok.length,
-    no_data: list.length - ok.length,
+    no_data: slice.length - ok.length,
     partants_inserted: inserted,
   };
   console.log("✅ RESULT", JSON.stringify(summary));
 
-  // 3. Loud failure : 0 course enrichie alors qu'il y en avait → exit 1.
-  //    GitHub Actions envoie alors un email au propriétaire du repo (alerte
-  //    anti-silent-failure gratuite). Signifierait que Geny bloque aussi l'IP
-  //    GitHub → il faudrait basculer sur une autre source.
-  if (ok.length === 0) {
-    console.error(`❌ ÉCHEC : 0/${list.length} course enrichie (Geny bloque-t-il l'IP GitHub ?)`);
+  // 3. Loud failure : ce lot avait des courses mais 0 enrichie → exit 1 (job
+  //    matrix rouge → email GitHub). Signale une IP rate-limitée/bloquée.
+  if (slice.length > 0 && ok.length === 0) {
+    console.error(`❌ ÉCHEC : 0/${slice.length} course enrichie sur ce lot (IP rate-limitée ?)`);
     process.exit(1);
   }
 }

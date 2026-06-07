@@ -29,13 +29,20 @@ concurrency:
 jobs:
   enrich:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      # 12 lots parallèles = 12 IP Azure distinctes, ~7 courses chacun
+      # (sous le seuil ~10 req/IP que Geny tolère avant HTTP 429).
+      matrix:
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install deps
         run: npm ci
@@ -47,9 +54,11 @@ jobs:
           --tsconfig=tsconfig.json --packages=external
           --outfile=geny-enrich.mjs
 
-      - name: Enrichir les cotes
+      - name: Enrichir les cotes (lot ${{ matrix.chunk }})
         run: node geny-enrich.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TARGET_DATE: ${{ github.event.inputs.date }}
+          CHUNK_INDEX: ${{ matrix.chunk }}
+          CHUNK_TOTAL: "12"
