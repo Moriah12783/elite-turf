@@ -12,6 +12,7 @@
  */
 
 import { Metadata } from "next";
+import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -104,6 +105,11 @@ export default async function ProgrammePage({ params }: PageProps) {
   const courses = (rawCourses || []).map((c: any) => ({
     ...c,
     hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
+  })).filter((c: any) => isCourseEligible({
+    hippodromeNom: c.hippodrome?.nom,
+    nbPartants:    c.nb_partants,
+    aPronostic:    c.pronostics?.some((p: any) => p.publie),
+    aPariNational: hasPariNational(c.paris_disponibles),
   }));
 
   // ── Dates avec programme disponible (pour pastilles ✓ de la nav) ────
