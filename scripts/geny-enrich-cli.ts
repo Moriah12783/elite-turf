@@ -34,8 +34,13 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false },
 });
 
-const CONCURRENCY = 4;
 const FETCH_TIMEOUT_MS = 8000;
+// Geny rate-limite (~10 req puis HTTP 429). On scrape donc en SÉQUENTIEL avec
+// un pacing poli + retry/backoff sur les courses vides (souvent un 429 transitoire).
+const PACING_MS = 1500;
+const MAX_ATTEMPTS = 3;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface CourseRow {
   id: string;
@@ -45,21 +50,6 @@ interface CourseRow {
   statut: string;
   geny_url: string | null;
   date_course: string;
-}
-
-/** Pool de N workers concurrents (lecture seule). */
-async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = [];
-  let cur = 0;
-  async function run(): Promise<void> {
-    while (true) {
-      const i = cur++;
-      if (i >= items.length) return;
-      out[i] = await fn(items[i]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, run));
-  return out;
 }
 
 async function main(): Promise<void> {
@@ -83,23 +73,26 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 1. Scrape Geny en parallèle (IP GitHub → 200)
-  const outcomes = await pool(list, CONCURRENCY, async (c) => {
-    try {
-      const { partants } = await fetchGenyPartantsWithMeta(
-        c.date_course,
-        c.numero_reunion,
-        c.numero_course,
-        FETCH_TIMEOUT_MS,
-        c.geny_url,
-      );
-      return { c, partants };
-    } catch {
-      return { c, partants: [] as any[] };
+  // 1. Scrape Geny SÉQUENTIEL avec pacing + retry (anti rate-limit 429).
+  const ok: { c: CourseRow; partants: any[] }[] = [];
+  for (const c of list) {
+    let partants: any[] = [];
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const r = await fetchGenyPartantsWithMeta(
+          c.date_course, c.numero_reunion, c.numero_course, FETCH_TIMEOUT_MS, c.geny_url,
+        );
+        partants = r.partants;
+      } catch {
+        partants = [];
+      }
+      if (partants.length > 0) break;
+      // Vide = souvent un 429 transitoire → backoff croissant avant de réessayer.
+      if (attempt < MAX_ATTEMPTS) await sleep(PACING_MS * 2 * attempt);
     }
-  });
-
-  const ok = outcomes.filter((o) => o.partants.length > 0);
+    if (partants.length > 0) ok.push({ c, partants });
+    await sleep(PACING_MS); // pacing poli entre deux courses
+  }
   const okIds = ok.map((o) => o.c.id);
 
   // 2. Bulk delete des partants des courses OK, puis bulk insert (cotes incluses)
