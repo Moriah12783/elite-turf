@@ -8,6 +8,7 @@ import {
   ChevronRight, Star, Zap, AlertCircle
 } from "lucide-react";
 import { createServiceClient, createClient } from "@/lib/supabase/server";
+import { isCourseEligible, hasPariNational, isHippodromePrioritaire } from "@/lib/turf/course-eligibility";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import CoursesDateNav from "@/components/courses/CoursesDateNav";
 import CourseCard from "@/components/courses/CourseCard";
@@ -184,6 +185,14 @@ export default async function CoursesPage({ searchParams }: PageProps) {
   const courses = allCourses.filter((c: any) => {
     if (searchParams.hippodrome && c.hippodrome?.nom !== searchParams.hippodrome) return false;
     if (searchParams.statut && isToday && c.statut !== searchParams.statut) return false;
+    // Curation : hippodromes vedettes (FR/Maroc) + >10 partants, ou course
+    // pronostiquée (garde-fou). Exclut l'étranger (HK, Chili…) et petits locaux.
+    if (!isCourseEligible({
+      hippodromeNom: c.hippodrome?.nom,
+      nbPartants:    c.nb_partants,
+      aPronostic:    c.pronostics?.some((p: any) => p.publie),
+      aPariNational: hasPariNational(c.paris_disponibles),
+    })) return false;
     return true;
   });
 
@@ -210,6 +219,12 @@ export default async function CoursesPage({ searchParams }: PageProps) {
 
   const groups          = groupByHippodrome(coursesActives);
   const groupsTerminees = groupByHippodrome(coursesTerminees);
+
+  // Mise en avant : hippodromes vedettes (+ pari national du jour) en tête.
+  const estVedetteGroupe = (g: { hippodrome: any; courses: any[] }) =>
+    isHippodromePrioritaire(g.hippodrome?.nom) ||
+    g.courses.some((c: any) => hasPariNational(c.paris_disponibles));
+  groups.sort((a, b) => Number(estVedetteGroupe(b)) - Number(estVedetteGroupe(a)));
 
   // ── Stats rapides ─────────────────────────────────────────────────
   const totalPartants = courses.reduce((s: number, c: any) => s + (c.nb_partants || 0), 0);

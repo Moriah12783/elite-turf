@@ -30,10 +30,11 @@ jobs:
     timeout-minutes: 8
     strategy:
       fail-fast: false
-      # 12 lots parallèles = 12 IP Azure distinctes, ~7 courses chacun
-      # (sous le seuil ~10 req/IP que Geny tolère avant HTTP 429).
+      # 8 lots parallèles = 8 IP Azure distinctes. Après la curation (on n'exclut
+      # que le lointain étranger), il reste ~50-70 courses/jour → ~7-9 par lot,
+      # sous le seuil ~10 req/IP que Geny tolère avant HTTP 429.
       matrix:
-        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v4
 
@@ -59,4 +60,4 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TARGET_DATE: ${{ github.event.inputs.date }}
           CHUNK_INDEX: ${{ matrix.chunk }}
-          CHUNK_TOTAL: "12"
+          CHUNK_TOTAL: "8"

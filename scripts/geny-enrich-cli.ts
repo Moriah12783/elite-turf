@@ -21,6 +21,7 @@ import {
   safePoids,
   safeSmallInt,
 } from "@/lib/geny";
+import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -57,7 +58,7 @@ async function main(): Promise<void> {
 
   const { data: courses, error } = await supabase
     .from("courses")
-    .select("id, numero_reunion, numero_course, libelle, statut, geny_url, date_course")
+    .select("id, numero_reunion, numero_course, libelle, statut, geny_url, date_course, nb_partants, paris_disponibles, hippodrome:hippodromes(nom), pronostics(publie)")
     .eq("date_course", targetDate)
     .neq("statut", "ANNULE")
     .not("geny_url", "is", null);
@@ -67,9 +68,23 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const list = (courses ?? []) as CourseRow[];
+  // Curation : on garde tout (France, Europe, Maghreb, DOM-TOM…) SAUF le
+  // lointain étranger (HK, Chili, USA, Australie…) qui n'intéresse pas
+  // l'audience — ou toute course pronostiquée (garde-fou).
+  const tous = (courses ?? []) as any[];
+  const list = tous.filter((c) => {
+    const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
+    const aPronostic = (c.pronostics ?? []).some((p: any) => p.publie);
+    return isCourseEligible({
+      hippodromeNom: h?.nom,
+      nbPartants: c.nb_partants,
+      aPronostic,
+      aPariNational: hasPariNational(c.paris_disponibles),
+    });
+  }) as CourseRow[];
+  console.log(`Gardées : ${list.length}/${tous.length} courses (hors lointain étranger)`);
   if (list.length === 0) {
-    console.log(`ℹ️  Aucune course avec geny_url pour ${targetDate}`);
+    console.log(`ℹ️  Aucune course éligible pour ${targetDate}`);
     return;
   }
 
