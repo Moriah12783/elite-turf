@@ -8,11 +8,13 @@ name: enrich-cotes
 # Mêmes horaires que l'ancien cron Cloudflare enrichir-partants (UTC).
 
 on:
-  # 3 passages/jour (rester sous les 2000 min/mois gratuites GitHub).
-  # Matin (cotes de référence) → midi (cotes fermes FR) → après-midi (pré-courses).
+  # Matin (05:30) + midi (11:47) = déclenchés À L'HEURE par le cron Cloudflare
+  # (elite-turf-crons) via workflow_dispatch — runs ponctuels, pas de retard.
+  #
+  # On garde UN SEUL `schedule` l'après-midi comme FILET DE SÉCURITÉ : si le
+  # token de dispatch expire/casse un jour, les cotes se remplissent quand même
+  # chaque jour (le retard GitHub ~90 min est sans importance en fin d'aprèm).
   schedule:
-    - cron: "30 5 * * *"
-    - cron: "47 11 * * *"
     - cron: "13 15 * * *"
   workflow_dispatch:
     inputs:

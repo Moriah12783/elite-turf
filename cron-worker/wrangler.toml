@@ -95,13 +95,12 @@ crons = [
   # ── Sync programme + partants ───────────────────────────────────────
   "41 7 * * *",      # lonaci-sync (matin)
   "37 11 * * *",     # lonaci-sync (rappel midi)
-  # enrichir-partants (cotes) → ces 4 crons DÉCLENCHENT le workflow GitHub
-  # enrich-cotes.yml (cf. GH_DISPATCH_MAP dans src/index.ts) : Geny bloque l'IP
-  # du Worker (403), le scraping tourne sur GitHub Actions (IP propre), À L'HEURE.
+  # enrichir-partants (cotes) → ces crons DÉCLENCHENT le workflow GitHub
+  # enrich-cotes.yml (cf. GH_DISPATCH_MAP) : matin + midi À L'HEURE (Geny 403
+  # l'IP du Worker, le scraping tourne sur GitHub Actions = IP propre).
+  # L'après-midi est couvert par le `schedule` GitHub (filet) → pas de cron ici.
   "30 5 * * *",      # → dispatch enrich-cotes.yml (5h30 UTC, AVANT pipeline IA)
   "47 11 * * *",     # → dispatch enrich-cotes.yml (11h47)
-  "13 13 * * *",     # → dispatch enrich-cotes.yml (13h13)
-  "13 15 * * *",     # → dispatch enrich-cotes.yml (15h13)
   "0 20 * * *",      # pmu-demain (programme J+1, re-planifié hors fenêtre 522 du 17h43) — fix Cause A
   "10 5 * * *",      # pmu-sync (programme du JOUR, AVANT enrichir/collecteur/pipeline) — fix Cause A
 
