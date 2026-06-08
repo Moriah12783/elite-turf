@@ -62,7 +62,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const metadata: Metadata = {
   title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite | Elite Turf",
   description:
-    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Mobile Money (Orange, MTN, Wave) ou CB.",
+    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Carte bancaire (Visa/Mastercard) ou Mobile Money (Orange Money, Wave, MTN).",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -161,7 +161,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Choisissez votre accès"
-        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Orange Money, MTN MoMo, Wave ou CB."
+        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte Visa/Mastercard, Orange Money, MTN MoMo ou Wave."
       />
 
       {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
@@ -401,12 +401,12 @@ export default async function AbonnementsPage() {
                     </h2>
                     {plan.nom === "Starter" && (
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted/80 mb-1">
-                        Découvrir la méthode
+                        Le galop d&apos;essai
                       </p>
                     )}
                     {plan.nom === "Pro" && (
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-primary/80 mb-1">
-                        Le pack le plus équilibré
+                        Le choix de la majorité
                       </p>
                     )}
                     {plan.nom === "Elite" && (
@@ -470,7 +470,7 @@ export default async function AbonnementsPage() {
                       </div>
                     )}
                     <p className="text-text-muted text-xs mt-1">
-                      {plan.duree_jours} jours · Orange Money, MTN, Wave acceptés
+                      {plan.duree_jours} jours · Carte, Orange Money, MTN, Wave
                     </p>
                   </div>
 
@@ -510,10 +510,10 @@ export default async function AbonnementsPage() {
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {[
+              { emoji: "💳", label: "Visa / Mastercard" },
               { emoji: "🟠", label: "Orange Money CI" },
               { emoji: "🟡", label: "MTN MoMo" },
               { emoji: "🔵", label: "Wave" },
-              { emoji: "💳", label: "Visa / Mastercard" },
             ].map((p) => (
               <div key={p.label} className="flex items-center gap-2 px-4 py-2.5 bg-bg-card border border-border rounded-xl">
                 <span className="text-lg">{p.emoji}</span>
@@ -556,13 +556,14 @@ export default async function AbonnementsPage() {
                   { label: "Pronostics experts du jour",  values: ["—",              "7 / semaine",    "1+ quotidien",         "1+ premium"]        },
                   { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
                   { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },
-                  { label: "Type de sélection",           values: ["Tiercé simple",  "Lecture simple", "8 chevaux",            "6 chevaux (filtrée)"]},
+                  { label: "Couplé / Trio",               values: ["—",              "—",              "✓",                    "✓"]                 },
+                  { label: "Type de sélection",           values: ["Tiercé simple",  "Base + appuis",  "8 chevaux hiérarchisés", "6 chevaux (filtrée)"]},
                   { label: "Niveau de filtrage",          values: ["Découverte",     "Standard",       "Optimisé",             "Expert"]            },
-                  { label: "Analyse incluse",             values: ["—",              "Courte",         "Claire & structurée",  "Filtrée & exigeante"]},
+                  { label: "Analyse incluse",             values: ["—",              "Argumentée",     "Claire & structurée",  "Filtrée & exigeante"]},
                   { label: "Alerte Dernière Minute",      values: ["—",              "—",              "Email",                "WhatsApp"]          },
-                  { label: "Gestion de mise",             values: ["—",              "—",              "Détaillée",            "Personnalisée"]     },
+                  { label: "Gestion de mise",             values: ["—",              "Suggérée",       "Détaillée",            "Personnalisée"]     },
                   { label: "Alertes SMS / Push",          values: ["—",              "5 / mois",       "20 / mois",            "Illimitées"]        },
-                  { label: "Statistiques",                values: ["—",              "—",              "Complètes",            "Export Excel / PDF"]},
+                  { label: "Statistiques",                values: ["—",              "Bilan hebdo",    "Complètes + ROI",      "Export Excel / PDF"]},
                   { label: "Support WhatsApp",            values: ["—",              "—",              "48h",                  "Prioritaire"]       },
                   { label: "Résiliable à tout moment",    values: ["—",              "✓",              "✓",                    "✓"]                 },
                 ].map((row, i) => (

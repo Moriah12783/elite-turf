@@ -73,7 +73,7 @@ export default function PricingSection() {
             Choisissez Votre Pack
           </h2>
           <p className="text-text-secondary mt-3 max-w-xl mx-auto text-sm">
-            Payez avec Orange Money CI, MTN MoMo, Wave ou carte bancaire.
+            Payez par carte (Visa/Mastercard), Orange Money CI, MTN MoMo ou Wave.
             Accès immédiat après paiement.
           </p>
         </div>
@@ -285,10 +285,10 @@ export default function PricingSection() {
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {[
+              { emoji: "💳", label: "Visa / Mastercard" },
               { emoji: "🟠", label: "Orange Money CI" },
               { emoji: "🟡", label: "MTN MoMo" },
               { emoji: "🔵", label: "Wave" },
-              { emoji: "💳", label: "Visa / Mastercard" },
             ].map((p) => (
               <div key={p.label} className="flex items-center gap-2 px-4 py-2 bg-bg-card border border-border rounded-xl">
                 <span className="text-base">{p.emoji}</span>
