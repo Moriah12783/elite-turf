@@ -43,6 +43,11 @@ APP_URL = "https://www.elite-turf.fr"
 # CRON_SECRET est passé via :
 #   $ wrangler secret put CRON_SECRET --config cron-worker/wrangler.toml
 # (ne PAS commiter ici)
+#
+# GH_DISPATCH_TOKEN (GitHub fine-grained PAT — repo elite-turf, permission
+# "Actions: Read and write") permet à ce Worker de déclencher le workflow
+# enrich-cotes.yml À L'HEURE (les runs planifiés GitHub sont retardés ~90 min).
+#   $ wrangler secret put GH_DISPATCH_TOKEN --config cron-worker/wrangler.toml
 
 # ────────────────────────────────────────────────────────────────────────
 # Cron Triggers — copie 1:1 des schedules de l'ancien vercel.json
@@ -90,10 +95,13 @@ crons = [
   # ── Sync programme + partants ───────────────────────────────────────
   "41 7 * * *",      # lonaci-sync (matin)
   "37 11 * * *",     # lonaci-sync (rappel midi)
-  "30 5 * * *",      # enrichir-partants (5h30 UTC - AVANT pipeline Multi-Agents)
-  "47 11 * * *",     # enrichir-partants (11h47)
-  "13 13 * * *",     # enrichir-partants (13h13)
-  "13 15 * * *",     # enrichir-partants (15h13)
+  # enrichir-partants (cotes) → ces 4 crons DÉCLENCHENT le workflow GitHub
+  # enrich-cotes.yml (cf. GH_DISPATCH_MAP dans src/index.ts) : Geny bloque l'IP
+  # du Worker (403), le scraping tourne sur GitHub Actions (IP propre), À L'HEURE.
+  "30 5 * * *",      # → dispatch enrich-cotes.yml (5h30 UTC, AVANT pipeline IA)
+  "47 11 * * *",     # → dispatch enrich-cotes.yml (11h47)
+  "13 13 * * *",     # → dispatch enrich-cotes.yml (13h13)
+  "13 15 * * *",     # → dispatch enrich-cotes.yml (15h13)
   "0 20 * * *",      # pmu-demain (programme J+1, re-planifié hors fenêtre 522 du 17h43) — fix Cause A
   "10 5 * * *",      # pmu-sync (programme du JOUR, AVANT enrichir/collecteur/pipeline) — fix Cause A
 
