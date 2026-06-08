@@ -353,6 +353,44 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                       </div>
                     </div>
                   )}
+
+                  {/* ── Comment jouer la sélection : base · appuis · outsiders ──
+                       Premium : rendu UNIQUEMENT dans la branche hasAccess (gating
+                       serveur, jamais sérialisé pour un non-abonné). Dérivé de
+                       p.selection (déjà ordonné par confiance) : [0] = base,
+                       [1-2] = appuis, [3+] = outsiders. Aucune donnée nouvelle. */}
+                  {p.selection.length > 1 && (
+                    <div className="mt-3 p-3 bg-bg-elevated rounded-xl border border-border/50">
+                      <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-2.5">
+                        Comment jouer la sélection
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2.5">
+                          <span className="w-6 h-6 rounded-full bg-status-win/20 text-status-win text-xs font-bold flex items-center justify-center flex-shrink-0">★</span>
+                          <p className="text-text-secondary text-xs leading-snug">
+                            <span className="text-text-primary font-semibold">Cheval de base</span>{" — "}
+                            {partants.find((pt: any) => pt.numero === p.selection[0])?.nom_cheval ?? `n°${p.selection[0]}`} (n°{p.selection[0]}) · à associer dans toutes vos combinaisons
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2.5">
+                          <span className="w-6 h-6 rounded-full bg-gold-faint text-gold-light text-xs font-bold flex items-center justify-center flex-shrink-0">+</span>
+                          <p className="text-text-secondary text-xs leading-snug">
+                            <span className="text-text-primary font-semibold">Appuis</span>{" — "}
+                            {p.selection.slice(1, 3).map((n: number) => partants.find((pt: any) => pt.numero === n)?.nom_cheval ?? `n°${n}`).join(" · ")}
+                          </p>
+                        </div>
+                        {p.selection.length > 3 && (
+                          <div className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-center flex-shrink-0">◇</span>
+                            <p className="text-text-secondary text-xs leading-snug">
+                              <span className="text-text-primary font-semibold">Outsiders</span>{" — "}
+                              {p.selection.slice(3).map((n: number) => partants.find((pt: any) => pt.numero === n)?.nom_cheval ?? `n°${n}`).join(" · ")}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex items-center gap-3 flex-wrap">

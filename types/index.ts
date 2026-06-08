@@ -218,7 +218,7 @@ export const PLAN_CONFIG: Plan[] = [
     features: [
       "Accès complet pendant 7 jours — une vraie semaine pour juger la méthode",
       "1 pronostic expert par jour (Tiercé / Quarté+) — pas la sélection gratuite",
-      "Sélection hiérarchisée : votre cheval d'appui (la base) en tête",
+      "Sélection hiérarchisée : cheval de base et appuis identifiés",
       "Analyse argumentée : forme, driver / entraîneur, terrain",
       "Conseil de mise simple suggéré pour chaque pronostic",
       "5 alertes SMS / Push (non-partant, changement de dernière minute)",
@@ -241,7 +241,7 @@ export const PLAN_CONFIG: Plan[] = [
       "30 jours d'accès complet — 1 pronostic expert chaque jour, Quinté+ inclus",
       "Tous les paris couverts : Tiercé, Quarté+, Quinté+, Couplé et Trio",
       "Sélection complète en 8 chevaux : couverture maximale de vos combinaisons",
-      "Chevaux classés par ordre de confiance — votre base en tête",
+      "Base, appuis et outsiders identifiés — vous savez comment jouer",
       "Alertes Dernière Minute (non-partant, changement de piste)",
       "20 alertes / mois + gestion de mise détaillée par pari",
       "Statistiques complètes & bilan ROI transparent du mois",
