@@ -43,7 +43,33 @@ interface Env {
   APP_URL: string;
   /** Secret partagé avec les routes /api/cron/* pour authentification */
   CRON_SECRET: string;
+  /**
+   * GitHub fine-grained PAT (repo elite-turf, permission Actions: Read & write)
+   * pour déclencher les workflows via l'API. Posé une fois via :
+   *   wrangler secret put GH_DISPATCH_TOKEN --config cron-worker/wrangler.toml
+   */
+  GH_DISPATCH_TOKEN: string;
 }
+
+/** Repo GitHub cible pour les workflow_dispatch. */
+const GH_REPO = "Moriah12783/elite-turf";
+
+/**
+ * Crons qui DÉCLENCHENT un workflow GitHub Actions (au lieu d'appeler une route
+ * Next). Pourquoi : Geny bloque l'IP du Worker Cloudflare (HTTP 403) → le
+ * scraping de cotes tourne sur GitHub Actions (IP propre). Mais les runs
+ * *planifiés* GitHub sont retardés (~90 min) → on les fait déclencher ICI par
+ * le cron Cloudflare (ponctuel) via l'API : le run démarre en quelques secondes.
+ *
+ * Ces patterns DOIVENT être dans [triggers].crons (wrangler.toml) et NE PAS
+ * être dans CRON_MAP (sinon double déclenchement).
+ */
+const GH_DISPATCH_MAP: Record<string, string> = {
+  "30 5 * * *":  "enrich-cotes.yml",
+  "47 11 * * *": "enrich-cotes.yml",
+  "13 13 * * *": "enrich-cotes.yml",
+  "13 15 * * *": "enrich-cotes.yml",
+};
 
 /**
  * Mapping cron pattern → path API à déclencher.
@@ -88,10 +114,9 @@ const CRON_MAP: Record<string, string> = {
   // ── Sync programme + partants ─────────────────────────────────────
   "41 7 * * *":   "/api/cron/lonaci-sync",
   "37 11 * * *":  "/api/cron/lonaci-sync",
-  "30 5 * * *":   "/api/cron/enrichir-partants",   // matinal — AVANT pipeline IA
-  "47 11 * * *":  "/api/cron/enrichir-partants",
-  "13 13 * * *":  "/api/cron/enrichir-partants",
-  "13 15 * * *":  "/api/cron/enrichir-partants",
+  // enrichir-partants (cotes) → déplacé vers GH_DISPATCH_MAP : Geny est 403
+  // depuis l'IP du Worker, le scraping tourne sur GitHub Actions (IP propre),
+  // déclenché À L'HEURE par ce Worker (crons "30 5", "47 11", "13 13", "13 15").
   "0 20 * * *":   "/api/cron/pmu-demain",  // J+1, re-planifié hors fenêtre 522 du 17h43 (fix Cause A)
   "10 5 * * *":   "/api/cron/pmu-sync",    // programme du JOUR avant le pipeline (fix Cause A)
 
@@ -152,15 +177,23 @@ export default {
    * wrangler.toml `[triggers].crons`.
    */
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    const start = Date.now();
+
+    // 1. Cron qui déclenche un workflow GitHub (scraping cotes sur IP propre) ?
+    const workflow = GH_DISPATCH_MAP[event.cron];
+    if (workflow) {
+      ctx.waitUntil(dispatchGithubWorkflow(workflow, env, event.cron, start));
+      return;
+    }
+
+    // 2. Sinon, cron classique → fetch de la route Next.
     const path = CRON_MAP[event.cron];
     if (!path) {
-      console.error(`[cron] Pattern inconnu : "${event.cron}". Vérifie CRON_MAP.`);
+      console.error(`[cron] Pattern inconnu : "${event.cron}". Vérifie CRON_MAP / GH_DISPATCH_MAP.`);
       return;
     }
 
     const url = `${env.APP_URL}${path}`;
-    const start = Date.now();
-
     // ctx.waitUntil garantit que la promesse termine même si scheduled()
     // retourne en attendant. Important pour les logs.
     ctx.waitUntil(triggerEndpoint(url, env, event.cron, start));
@@ -180,6 +213,14 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // Test manuel d'un dispatch GitHub : GET /?dispatch=enrich-cotes.yml
+    const dispatch = url.searchParams.get("dispatch");
+    if (dispatch) {
+      const result = await dispatchGithubWorkflow(dispatch, env, "manual", Date.now());
+      return Response.json(result);
+    }
+
     const path = url.searchParams.get("path");
     if (!path) {
       return Response.json({
@@ -236,6 +277,50 @@ async function triggerEndpoint(
     console.error(
       `[cron ERROR] ${cronPattern} → ${url} → ${message} (${duration}ms)`,
     );
+    return { ok: false, status: 0, duration, error: message };
+  }
+}
+
+/**
+ * Déclenche un workflow GitHub Actions via l'API (workflow_dispatch).
+ * api.github.com n'est PAS bloqué par Geny → le scraping de cotes tourne sur
+ * GitHub (IP propre), mais démarre À L'HEURE (déclenché par ce cron ponctuel,
+ * contrairement aux runs planifiés GitHub retardés de ~90 min).
+ * Succès attendu = HTTP 204 No Content.
+ */
+async function dispatchGithubWorkflow(
+  workflow: string,
+  env: Env,
+  cronPattern: string,
+  start: number,
+): Promise<{ ok: boolean; status: number; duration: number; error?: string }> {
+  const url = `https://api.github.com/repos/${GH_REPO}/actions/workflows/${workflow}/dispatches`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization":        `Bearer ${env.GH_DISPATCH_TOKEN}`,
+        "Accept":               "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent":           "elite-turf-crons (Cloudflare Worker)",
+      },
+      body: JSON.stringify({ ref: "main" }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    const duration = Date.now() - start;
+    if (res.status === 204) {
+      console.log(`[gh-dispatch OK] ${cronPattern} → ${workflow} (${duration}ms)`);
+      return { ok: true, status: 204, duration };
+    }
+    const body = await res.text().catch(() => "");
+    console.error(
+      `[gh-dispatch FAIL] ${cronPattern} → ${workflow} → HTTP ${res.status} ${body.slice(0, 200)}`,
+    );
+    return { ok: false, status: res.status, duration, error: body.slice(0, 200) };
+  } catch (err) {
+    const duration = Date.now() - start;
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[gh-dispatch ERROR] ${cronPattern} → ${workflow} → ${message} (${duration}ms)`);
     return { ok: false, status: 0, duration, error: message };
   }
 }
