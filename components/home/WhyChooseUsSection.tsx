@@ -23,7 +23,7 @@ const BLOCS = [
     icon: CreditCard,
     titre: "Accès immédiat",
     texte:
-      "Paiement par Orange Money CI, MTN MoMo, Wave ou carte bancaire. Activation de votre abonnement en moins de 2 minutes.",
+      "Paiement par carte (Visa/Mastercard), Orange Money CI, MTN MoMo ou Wave. Activation de votre abonnement en moins de 2 minutes.",
   },
 ];
 

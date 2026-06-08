@@ -24,7 +24,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const metadata: Metadata = {
   title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",
   description:
-    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement Orange Money, Wave, MTN.",
+    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement carte bancaire, Orange Money, Wave, MTN.",
   alternates: { canonical: APP_URL },
   openGraph: {
     title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",
