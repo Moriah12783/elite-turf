@@ -65,10 +65,10 @@ const GH_REPO = "Moriah12783/elite-turf";
  * être dans CRON_MAP (sinon double déclenchement).
  */
 const GH_DISPATCH_MAP: Record<string, string> = {
-  "30 5 * * *":  "enrich-cotes.yml",
-  "47 11 * * *": "enrich-cotes.yml",
-  "13 13 * * *": "enrich-cotes.yml",
-  "13 15 * * *": "enrich-cotes.yml",
+  "30 5 * * *":  "enrich-cotes.yml",  // matin (À L'HEURE, avant pipeline IA)
+  "47 11 * * *": "enrich-cotes.yml",  // midi  (À L'HEURE)
+  // Après-midi : couvert par le `schedule` GitHub (filet), PAS par dispatch
+  // (cf. enrich-cotes.yml) → évite les runs en double + sert de secours.
 };
 
 /**
