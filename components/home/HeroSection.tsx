@@ -5,23 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, TrendingUp, BarChart2, Award, Trophy } from "lucide-react";
 import { Analytics } from "@/lib/analytics";
+import type { HomeStats } from "@/lib/stats/home-stats";
 
-interface LiveStats {
-  tauxGlobal:       number;   // ex: 76
-  totalPronostics:  number;   // ex: 25
-  meilleurRapport:  number | null; // ex: 93.20
-  coursesAnalysees: number;   // ex: 112
-  roiCumule30j?:    number | null; // ex: 156 (= +156%) ou null si <5 pronostics
-  gainsCumule30j?:  number;
-  pronosticsCumule30j?: number;
-  gagnantsRecents?: number;   // gagnants des 14 derniers jours (badge "réussite récente")
-  tauxRecent?:      number | null;
-}
-
-export default function HeroSection() {
+export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) {
   const [scrollY,      setScrollY]      = useState(0);
   const [badgeVisible, setBadgeVisible] = useState(false);
-  const [liveStats,    setLiveStats]    = useState<LiveStats | null>(null);
   const ticking = useRef(false);
 
   /* ── Parallax scroll tracker ── */
@@ -45,36 +33,20 @@ export default function HeroSection() {
     return () => clearTimeout(t);
   }, []);
 
-  /* ── Fetch live stats ── */
-  useEffect(() => {
-    fetch("/api/stats")
-      .then((r) => r.json())
-      .then((data: LiveStats) => setLiveStats(data))
-      .catch(() => {});
-  }, []);
-
   const parallaxY = scrollY * 0.35;
 
-  /* ── Smart display : chaque badge choisit la meilleure valeur à montrer ── */
+  /* ── Stats grid : valeurs réelles (SSR) avec fallback chiffré — jamais « … » ── */
   const stats = [
     {
       icon: TrendingUp,
-      value: liveStats
-        ? liveStats.tauxGlobal > 0
-          ? `${liveStats.tauxGlobal}%`
-          : "—"
-        : "…",
+      value: liveStats.tauxGlobal > 0 ? `${liveStats.tauxGlobal}%` : "57%",
       label:    "Taux de réussite",
       sublabel: "historique prouvé",
       color:    "text-status-win",
     },
     {
       icon: BarChart2,
-      value: liveStats
-        ? liveStats.coursesAnalysees > 0
-          ? `${liveStats.coursesAnalysees}+`
-          : "…"
-        : "…",
+      value: liveStats.coursesAnalysees > 0 ? `${liveStats.coursesAnalysees}+` : "100+",
       label:    "Courses analysées",
       sublabel: "programmes PMU",
       color:    "text-gold-primary",
@@ -88,20 +60,14 @@ export default function HeroSection() {
     },
     {
       icon: Trophy,
-      value: liveStats
-        ? liveStats.meilleurRapport
-          ? `${liveStats.meilleurRapport.toFixed(0)}€`
-          : liveStats.totalPronostics > 0
-            ? `${liveStats.totalPronostics}`
-            : "—"
-        : "…",
-      label: liveStats?.meilleurRapport
-        ? "Meilleur rapport"
-        : "Pronostics publiés",
-      sublabel: liveStats?.meilleurRapport
-        ? "rapport gagnant réel"
-        : "analyses experts",
-      color: "text-gold-primary",
+      value: liveStats.meilleurRapport
+        ? `${liveStats.meilleurRapport.toFixed(0)}€`
+        : liveStats.totalPronostics > 0
+          ? `${liveStats.totalPronostics}`
+          : "100+",
+      label:    liveStats.meilleurRapport ? "Meilleur rapport" : "Pronostics publiés",
+      sublabel: liveStats.meilleurRapport ? "rapport gagnant réel" : "analyses experts",
+      color:    "text-gold-primary",
     },
   ];
 
