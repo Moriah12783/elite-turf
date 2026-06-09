@@ -29,6 +29,7 @@ function InscriptionForm() {
   });
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [cguAccepted, setCguAccepted] = useState(false);
+  const [smsOptIn, setSmsOptIn] = useState(true); // pré-coché : incitation forte
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,19 +55,20 @@ function InscriptionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ── Validation téléphone obligatoire (souple) ─────────────────────
+    // ── Téléphone OPTIONNEL mais fortement incité ─────────────────────
+    // On ne bloque jamais l'inscription sans numéro (anti-friction). S'il est
+    // saisi, on vérifie qu'il est plausible (≥ 8 chiffres).
     const phoneTrimmed = form.phone.trim();
-    if (!phoneTrimmed || estPrefixSeul(phoneTrimmed)) {
-      toast.error("Le numéro de téléphone est requis");
-      return;
+    const phoneFourni = !!phoneTrimmed && !estPrefixSeul(phoneTrimmed);
+    if (phoneFourni) {
+      const digits = phoneTrimmed.replace(/\D/g, "");
+      if (digits.length < 8) {
+        toast.error("Numéro de téléphone trop court (8 chiffres minimum)");
+        return;
+      }
     }
-    // Vérification minimale : au moins 8 chiffres au total (pour éviter
-    // les saisies dégénérées type "+225" tout court)
-    const digits = phoneTrimmed.replace(/\D/g, "");
-    if (digits.length < 8) {
-      toast.error("Numéro de téléphone trop court (8 chiffres minimum)");
-      return;
-    }
+    // Numéro à stocker : vide si non fourni (évite de stocker l'indicatif seul)
+    const phoneToStore = phoneFourni ? form.phone : "";
 
     if (!ageConfirmed) {
       toast.error("Vous devez confirmer avoir 18 ans ou plus");
@@ -96,9 +98,10 @@ function InscriptionForm() {
         options: {
           data: {
             nom_complet: form.nomComplet,
-            phone: form.phone,
+            phone: phoneToStore,
             pays: form.pays,
             plan_souhaite: planSelectionne,
+            sms_opt_in: smsOptIn,
             whatsapp_opt_in: whatsappOptIn,
             whatsapp_opt_in_date: whatsappOptIn ? new Date().toISOString() : null,
             whatsapp_opt_in_text: whatsappOptIn
@@ -138,6 +141,7 @@ function InscriptionForm() {
           email: form.email,
           nomComplet: form.nomComplet,
           pays: form.pays,
+          smsOptIn: smsOptIn,
         }),
       }).catch(() => {}); // Silencieux si échec
 
@@ -149,6 +153,7 @@ function InscriptionForm() {
         method:        "email_password",
         country:       form.pays,
         plan_id:       planSelectionne || undefined,
+        sms_opt:       smsOptIn,
         whatsapp_opt:  whatsappOptIn,
       });
 
@@ -266,7 +271,8 @@ function InscriptionForm() {
 
         <div>
           <label className="block text-text-secondary text-sm font-medium mb-2">
-            Téléphone (Mobile Money / WhatsApp) <span className="text-status-loss">*</span>
+            Téléphone (Mobile Money / SMS){" "}
+            <span className="text-text-muted/60 italic font-normal">— recommandé</span>
           </label>
           <input
             type="tel"
@@ -275,12 +281,14 @@ function InscriptionForm() {
             placeholder={
               (INDICATIF_BY_PAYS[form.pays] || "+225") + " 07 89 45 67 89"
             }
-            required
             className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
           />
-          <p className="mt-1.5 text-text-muted text-xs leading-relaxed">
-            🔒 Utilisé uniquement pour vos paiements Mobile Money et notre support WhatsApp.
-            Jamais partagé avec des tiers.
+          <p className="mt-1.5 text-gold-light/90 text-xs leading-relaxed">
+            📲 Recevez gratuitement <strong>Notre Sélection du jour</strong> et vos alertes
+            (non-partants) par SMS — et payez en Mobile Money en 2 min.
+          </p>
+          <p className="mt-1 text-text-muted text-xs leading-relaxed">
+            🔒 Jamais partagé. Désinscription par STOP à tout moment.
           </p>
         </div>
 
@@ -363,7 +371,22 @@ function InscriptionForm() {
             </span>
           </label>
 
-          {/* Case 3 — WhatsApp opt-in (facultative) */}
+          {/* Case 3 — SMS / Notre Sélection (pré-cochée, incitation forte) */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={smsOptIn}
+              onChange={(e) => setSmsOptIn(e.target.checked)}
+              className="mt-0.5 accent-[#C9A84C] flex-shrink-0"
+            />
+            <span className="text-text-muted text-xs leading-relaxed">
+              📲 Je veux recevoir <strong className="text-text-secondary">Notre Sélection
+              du jour</strong> et mes alertes par SMS (non-partants, dernière minute).
+              Désinscription par STOP à tout moment.
+            </span>
+          </label>
+
+          {/* Case 4 — WhatsApp opt-in (facultative) */}
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"

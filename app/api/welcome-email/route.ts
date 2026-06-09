@@ -13,10 +13,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { templateBienvenue } from "@/lib/email/templates/bienvenue";
+import { sendWelcomeSms } from "@/lib/sms-welcome";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, nomComplet } = await req.json();
+    const { email, nomComplet, smsOptIn } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: "Email requis" }, { status: 400 });
@@ -28,6 +29,10 @@ export async function POST(req: NextRequest) {
     });
 
     const ok = await sendEmail({ to: email, subject, html });
+
+    // SMS de bienvenue (best-effort, canal indépendant de l'email — ne throw
+    // jamais, n'envoie que si le profil a un numéro + opt-in + Twilio configuré).
+    await sendWelcomeSms({ email, smsOptIn });
 
     if (!ok) {
       return NextResponse.json({ error: "Envoi Resend échoué" }, { status: 500 });
