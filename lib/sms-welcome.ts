@@ -11,40 +11,23 @@
  *   - Idempotence : UNIQUE(user_id, type) sur `sms_log` → 1 SMS de bienvenue max.
  *   - Respecte l'opt-out (`profiles.sms_opted_out`) et l'opt-in du formulaire.
  *   - Best-effort : ne throw jamais (n'impacte pas l'inscription).
+ *
+ * Désinscription : avec un Sender ID alphanumérique le « STOP par réponse » ne
+ * marche plus → le SMS pointe vers le lien 1-clic /stop?t=<token>.
  */
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendSMS } from "@/lib/sms";
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
-
-/** true si Twilio est configuré (SID + token + un expéditeur). */
-function isTwilioConfigured(): boolean {
-  return (
-    !!process.env.TWILIO_ACCOUNT_SID &&
-    !!process.env.TWILIO_AUTH_TOKEN &&
-    (!!process.env.TWILIO_MESSAGING_SERVICE_SID || !!process.env.TWILIO_PHONE_NUMBER)
-  );
-}
-
-/** Normalise un numéro en E.164 sans espaces ("+225 07 00…" → "+2250700…"). */
-function normalizeE164(input: string): string {
-  const s = (input || "").trim().replace(/[\s().\-]/g, "");
-  if (!s) return "";
-  if (s.startsWith("+")) return "+" + s.slice(1).replace(/\D/g, "");
-  const digits = s.replace(/\D/g, "");
-  return digits ? "+" + digits : "";
-}
+import { isTwilioConfigured, normalizeE164, stopLink, SMS_HOST } from "@/lib/sms-helpers";
 
 /**
  * Corps du SMS de bienvenue. GSM-7 strict (PAS d'accents/emoji) pour rester
- * 1 segment. Pousse vers "Notre Sélection" gratuite (hameçon top-of-funnel).
+ * 1 segment. Pousse vers « Notre Sélection » gratuite + lien de désinscription.
  */
-export function welcomeSmsBody(): string {
-  const link = APP_URL.replace(/^https?:\/\//, "").replace(/\/$/, "") + "/programme";
+export function welcomeSmsBody(token: string): string {
   return (
-    `ELITE TURF: bienvenue ! Profitez de NOTRE SELECTION gratuite pour ` +
-    `structurer vos paris du jour: ${link} STOP pour ne plus etre contacte.`
+    `ELITE TURF: bienvenue ! Profitez de NOTRE SELECTION gratuite du jour: ` +
+    `${SMS_HOST}/programme . Stop: ${stopLink(token)}`
   );
 }
 
@@ -59,10 +42,10 @@ export async function sendWelcomeSms(params: {
   try {
     const supabase = createServiceClient();
 
-    // 1. Profil (numéro autoritatif + état opt-out)
+    // 1. Profil (numéro autoritatif + état opt-out + token désinscription)
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, phone, sms_opted_out")
+      .select("id, phone, sms_opted_out, sms_unsub_token")
       .eq("email", params.email)
       .single();
 
@@ -90,7 +73,7 @@ export async function sendWelcomeSms(params: {
     if (logErr || !logRow) return;       // conflit = déjà envoyé → skip
 
     // 4. Envoi + mise à jour du statut
-    const r = await sendSMS(phone, welcomeSmsBody());
+    const r = await sendSMS(phone, welcomeSmsBody(profile.sms_unsub_token || ""));
     await supabase
       .from("sms_log")
       .update({

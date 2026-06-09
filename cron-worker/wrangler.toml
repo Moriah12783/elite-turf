@@ -139,6 +139,7 @@ crons = [
   "23 * * * *",      # welcome-emails (toutes les heures à :23)
   "0 6 * * *",       # daily-push matin
   "0 17 * * *",      # daily-push soir
+  "30 10 * * *",     # sms-sequence (sequence SMS J2 preuve / J5 upgrade)
 ]
 
 # ────────────────────────────────────────────────────────────────────────
