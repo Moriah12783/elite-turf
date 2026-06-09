@@ -95,17 +95,19 @@ JAMAIS de surinterprétation d'une donnée faible.
 ou données partielles. **La confiance reflète la solidité réelle, pas l'optimisme.**
 
 ## Format de sortie
-**(A) Analyse détaillée** (à l'écran), par course : titre, statut de validation,
-hippodrome, heure, discipline, distance, type de pari, partants, sélection
-hiérarchisée (base / appuis / outsiders nommés), cotes indicatives (signalées si
-absentes), indice de confiance, analyse brève argumentée, note de prudence.
+**(A) Analyse détaillée** (à l'écran), par course : **hippodrome + R#C#
+(réunion/course) + Prix (libellé exact)** — OBLIGATOIRE pour que l'abonné
+retrouve la course dans le programme du jour —, statut de validation, heure,
+discipline, distance, type de pari, partants, sélection hiérarchisée (base /
+appuis / outsiders nommés), cotes indicatives (signalées si absentes), indice de
+confiance, analyse brève argumentée, note de prudence.
 
 **(B) Blocs copier-coller par tier** (prêts WhatsApp / email, autonomes) —
 TOUJOURS les fournir, segmentés STARTER / PRO / ELITE. Modèle :
 
 ```
 🏇 ELITE TURF — [DATE]
-[Hippodrome] · [Heure GMT] · [Discipline] · [Type de pari]
+[Hippodrome] · [R#C#] · [Prix / libellé exact] · [Heure] · [Discipline]
 ✅ [Validation LONACI / Afrique corroborée]
 
 [TIER] — [intitulé]
