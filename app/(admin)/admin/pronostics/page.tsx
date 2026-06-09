@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Plus, Star, Eye, Edit2, Download } from "lucide-react";
 import TogglePublieButton from "@/components/admin/TogglePublieButton";
+import NotifierButton from "@/components/admin/NotifierButton";
 
 export const metadata = { title: "Pronostics — Admin" };
 
@@ -129,12 +130,15 @@ export default async function AdminPronosticsPage() {
                     <TogglePublieButton id={p.id} publie={p.publie} />
                   </td>
                   <td className="px-5 py-4">
-                    <Link
-                      href={`/admin/pronostics/${p.id}/modifier`}
-                      className="flex items-center gap-1 text-gold-primary hover:text-gold-light text-xs font-medium transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" /> Modifier
-                    </Link>
+                    <div className="flex items-center gap-4">
+                      <NotifierButton pronosticId={p.id} niveau={p.niveau_acces} publie={p.publie} />
+                      <Link
+                        href={`/admin/pronostics/${p.id}/modifier`}
+                        className="flex items-center gap-1 text-gold-primary hover:text-gold-light text-xs font-medium transition-colors"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Modifier
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
