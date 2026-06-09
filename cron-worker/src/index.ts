@@ -161,6 +161,7 @@ const CRON_MAP: Record<string, string> = {
   "23 * * * *":   "/api/cron/welcome-emails",
   "0 6 * * *":    "/api/cron/daily-push",
   "0 17 * * *":   "/api/cron/daily-push",
+  "30 10 * * *":  "/api/cron/sms-sequence",
 };
 
 /**
