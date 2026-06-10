@@ -68,24 +68,8 @@ export function emailBase(content: string, previewText = ""): string {
           <tr>
             <td style="background:#F3F4F6;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 12px 12px;padding:24px 40px;text-align:center;">
 
-              <!-- Icônes réseaux sociaux -->
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 16px auto;">
-                <tr>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">f</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:12px;color:#FFFFFF;font-weight:700;">▶</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">♪</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">𝕏</a>
-                  </td>
-                </tr>
-              </table>
-
+              <!-- (Bloc réseaux sociaux retiré — liens morts, audit Sprint 1 P4.
+                   À réintroduire quand les comptes existeront.) -->
               <img
                 src="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr")}/images/logo-v2/logo-square-white-1000.png"
                 alt="Elite Turf"
