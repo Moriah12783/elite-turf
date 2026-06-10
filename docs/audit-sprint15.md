@@ -111,3 +111,21 @@ Lot 1 `content:` retrait preuve inventée (témoignages, 180k, 4.8, 80%, harmoni
 Gate par lot : `tsc --noEmit` + `next build` (+ `npm run test` — vitest dispo). Diff + impact avant chaque commit.
 
 **⛔ STOP — en attente des réponses Q1-Q4 et du GO.**
+
+---
+
+# Résultats (Phase 2 + 3 — recette du 2026-06-10)
+
+**Décisions actées (Q1-Q4)** : Q1 = « 5 ans » **supprimé** (ancienneté réelle du fondateur : 20+ ans, affichable plus tard si souhaité) · Q2 = nouvelle garantie **« 1ᵉʳ pronostic expert perdant = 7 jours offerts »** (1×/abonné, via WhatsApp, prolongation manuelle) · Q3 = « 4.8/5 » **supprimé** (aucune source) · Q4 = canal **email + WhatsApp (WABA)**.
+
+| Lot | Statut | Commit | Preuve (recette sur build prod local, `next start`) |
+|---|---|---|---|
+| 1 — Retrait preuve inventée | ✅ | `cf53421` | Greps à 0 sur le HTML rendu : « 180 000 », « 4.8 / 5 », « 80% des parieurs », « 5 ans », montants (+1 850…+4 800), noms des faux témoins, « 20 min/30 minutes » support. TestimonialsSection supprimée (235 l.) ; fallback fictif StatsSection remplacé par un état vide honnête ; plus de % inventé sans rapport connu ; support harmonisé « sous 2h en moyenne » (5 surfaces dont espace-membre, hors audit initial) |
+| 2 — Bloc « La preuve par les résultats » | ✅ | `a9235b0` | Rendu home vérifié : titre présent, garantie « 7 jours offerts » (carte accentuée), méthode 3 piliers, CTA « Partager mon expérience » (plus de « gain ») ; FAQ /abonnements documente les conditions de la garantie ; zéro doublon de KPIs (stats réelles dans StatsSection) |
+| 3 — Mécanisme témoignages réels | ✅ | `8a85bde` | Table `testimonials` créée + **appliquée en base** ; /admin/temoignages (saisie + modération) + API protégée `requireAdminAuth` ; affichage home conditionnel (masqué si 0 approved — vérifié : « Ils témoignent » absent du rendu) avec disclaimer obligatoire |
+| 4 — Séquence réactivation (préparée, NON envoyée) | ✅ | `f2ed3e7` + fix `6c01f36` | 3 templates email R1/R2/R3 (désinscription 1-clic partout ; R2 = chiffres réels en paramètres) **render-testés** (le test a attrapé un bug réel : `[object Object]` dans R3, corrigé) ; migration `email_opted_out` appliquée ; `/stop` désinscrit SMS+email ; export dry-run testé en réel : **58 éligibles email / 53 WABA** ; templates WABA documentés pour soumission Meta (`docs/waba-templates-reactivation.md`). **Aucun envoi, aucun cron créé** |
+| 5 — Hygiène | ✅ | `2ff367d` | `.eslintrc.json` (next/core-web-vitals, 2 règles off documentées) → **`next lint` exit 0** (1 warning hooks non bloquant) ; 8 commentaires eslint-disable morts nettoyés ; **`CLAUDE.md`** créé (stack, 5 sources de vérité, 5 règles non négociables, pièges DB, process) |
+
+**Recette transverse** : `/`, `/abonnements`, `/performances`, `/pronostics-pmu-mali`, `/pronostics-pmu-maroc`, `/stop` → **HTTP 200** · `tsc --noEmit` ✅ et `next build` (989 pages) ✅ à chaque lot · `vitest` 95/95 ✅ · emails transactionnels render-testés (confirmation-pack, welcome-j7 : « sous 2h », plus de 20/30 min) · **aucune logique de paiement touchée** · aucun envoi email/SMS/WABA.
+
+**Critères de succès du sprint : 6/6 atteints.**
