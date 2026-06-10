@@ -15,6 +15,7 @@ import PricingSection from "@/components/home/PricingSection";
 import OperateursANJ from "@/components/home/OperateursANJ";
 import FAQSection from "@/components/home/FAQSection";
 import GuideBlocSection from "@/components/home/GuideBlocSection";
+import PreuveSection from "@/components/home/PreuveSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import Link from "next/link";
 import { ArrowRight, AlertTriangle, Download } from "lucide-react";
@@ -108,8 +109,9 @@ export default async function HomePage() {
       {/* 7b — Opérateurs agréés ANJ (requis certification Google Ads) */}
       <OperateursANJ />
 
-      {/* 8 — (Témoignages inventés retirés — audit S1.5 Lot 1. Le bloc
-            « La preuve par les résultats » les remplace au Lot 2.) */}
+      {/* 8 — La preuve par les résultats (garanties réelles + méthode),
+            remplace les témoignages inventés — audit S1.5 Lot 2 */}
+      <PreuveSection />
 
       {/* 9 — FAQ */}
       <FAQSection />

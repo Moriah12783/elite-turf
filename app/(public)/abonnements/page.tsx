@@ -54,6 +54,11 @@ const ABONNEMENTS_FAQ = [
       "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
+    question: "Que se passe-t-il si mon premier pronostic expert est perdant ?",
+    answer:
+      "Nous prolongeons votre accès de 7 jours, offerts. La garantie s'applique au premier pronostic expert reçu après votre souscription, une fois par abonné : écrivez-nous simplement sur WhatsApp et la prolongation est appliquée après vérification du résultat.",
+  },
+  {
     question: "Puis-je annuler mon abonnement à tout moment ?",
     answer:
       "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite : vous payez pour une période fixe, puis vous décidez activement de renouveler ou non.",
