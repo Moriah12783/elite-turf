@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Star, Quote, TrendingUp, Award, MessageCircle } from "lucide-react";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { getPublicCounters, roundTenPlus } from "@/lib/metrics/public-counters";
 
 const testimonials = [
   {
@@ -101,13 +102,17 @@ const testimonials = [
   },
 ];
 
-const GLOBAL_STATS = [
-  { label: "Gains cumulés abonnés", value: "180 000€+", Icon: TrendingUp },
-  { label: "Note moyenne",          value: "4.8 / 5",   Icon: Star       },
-  { label: "Abonnés satisfaits",    value: "847+",       Icon: Award      },
-];
+export default async function TestimonialsSection() {
+  // Compteur communauté réel (inscrits + lecteurs du guide) — voir audit P5.
+  // « Abonnés satisfaits 847+ » (placeholder) → « Communauté turf » réelle.
+  const { communaute } = await getPublicCounters();
 
-export default function TestimonialsSection() {
+  const GLOBAL_STATS = [
+    { label: "Gains cumulés abonnés", value: "180 000€+",            Icon: TrendingUp },
+    { label: "Note moyenne",          value: "4.8 / 5",              Icon: Star       },
+    { label: "Communauté turf",       value: roundTenPlus(communaute), Icon: Award    },
+  ];
+
   return (
     <section className="relative py-16 sm:py-20 overflow-hidden">
 
