@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const FAQ_ITEMS = [
   {
@@ -82,7 +83,7 @@ export default function FAQSection() {
             contact@elite-turf.fr
           </a>{" "}
           · WhatsApp{" "}
-          <a href="https://wa.me/33644686720" className="text-gold-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href={whatsappUrl()} className="text-gold-primary hover:underline" target="_blank" rel="noopener noreferrer">
             +33 6 44 68 67 20
           </a>
         </p>

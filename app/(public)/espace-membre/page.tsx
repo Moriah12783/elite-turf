@@ -10,6 +10,7 @@ import {
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG, CONFIDENCE_CONFIG, BET_TYPE_LABELS } from "@/types";
 import type { Pronostic } from "@/types";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 import PageHero from "@/components/layout/PageHero";
 import ProfileEditForm from "@/components/membre/ProfileEditForm";
 import TransactionsHistory from "@/components/membre/TransactionsHistory";
@@ -632,7 +633,7 @@ export default async function EspaceMembrePage() {
             <p className="text-text-muted text-xs">Réponse en moins de 30 min sur WhatsApp</p>
           </div>
           <a
-            href="https://wa.me/+33644686720"
+            href={whatsappUrl()}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap flex-shrink-0"

@@ -13,12 +13,12 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
-const WHATSAPP_NUMBER = "33644696806";   // +33 6 44 69 68 06 sans le "+"
 const PREFILL_MESSAGE = "Bonjour Elite Turf, je souhaite plus d'informations sur vos pronostics.";
 
 export default function WhatsAppFloatingButton() {
-  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILL_MESSAGE)}`;
+  const href = whatsappUrl(PREFILL_MESSAGE);
 
   return (
     <a

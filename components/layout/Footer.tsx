@@ -3,13 +3,9 @@ import Image from "next/image";
 import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
+import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
 
-const USE_WABA = process.env.NEXT_PUBLIC_USE_WABA_API_NUMBER === "true";
-const WHATSAPP = (
-  USE_WABA
-    ? process.env.NEXT_PUBLIC_WABA_API_NUMBER || "+33644696806"
-    : process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720"
-).replace(/\s/g, "");
+const WHATSAPP = WHATSAPP_SUPPORT_NUMBER;
 
 export default async function Footer() {
   const supabase = await createClient();

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Star, Quote, TrendingUp, Award, MessageCircle } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const testimonials = [
   {
@@ -213,7 +214,7 @@ export default function TestimonialsSection() {
             reçoivent un mois d&apos;abonnement offert.
           </p>
           <a
-            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720").replace(/\s/g, "")}?text=Bonjour, je voudrais partager mon gain avec Elite Turf !`}
+            href={whatsappUrl("Bonjour, je voudrais partager mon gain avec Elite Turf !")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"

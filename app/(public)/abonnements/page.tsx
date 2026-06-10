@@ -10,6 +10,7 @@ import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 import TrackPageView from "@/components/analytics/TrackPageView";
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
@@ -611,7 +612,7 @@ export default async function AbonnementsPage() {
           <h3 className="font-serif font-semibold text-text-primary text-lg mb-2">Besoin d&apos;aide pour choisir ?</h3>
           <p className="text-text-secondary text-sm mb-4">Notre équipe répond sur WhatsApp en moins de 30 minutes</p>
           <a
-            href="https://wa.me/+33644686720?text=Bonjour, j'aimerais des informations sur les abonnements Elite Turf"
+            href={whatsappUrl("Bonjour, j'aimerais des informations sur les abonnements Elite Turf")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"

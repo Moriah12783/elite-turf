@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import OneSignalInit from "@/components/OneSignalInit";
 import WhatsAppFloatingButton from "@/components/layout/WhatsAppFloatingButton";
+import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
 import Script from "next/script";
 
 // Domaine canonique. Site hébergé sur Cloudflare Workers (pas Vercel).
@@ -128,7 +129,7 @@ const organizationJsonLd = {
   contactPoint: [
     {
       "@type":           "ContactPoint",
-      telephone:         "+33644686720",
+      telephone:         WHATSAPP_SUPPORT_NUMBER,
       email:             "contact@elite-turf.fr",
       contactType:       "customer support",
       availableLanguage: ["French"],
