@@ -165,3 +165,23 @@
 `P1 → P3 → P2 → P5 → P4 → P6 → P7` · 1 commit atomique/correctif · `npm run build` + lint à chaque étape · diff + impact montrés avant chaque commit · **aucun push/merge sans GO**.
 
 **⛔ STOP — En attente de tes réponses (Q1-Q4) et de ton GO pour la Phase 2.**
+
+---
+
+# Résultats (Phase 2 + 3 — recette du 2026-06-10)
+
+**Décisions actées** : P2 = « 1 pronostic expert par jour (Tiercé/Quarté+) » · P3 = +33 6 44 68 67 20 unique · P5 = compteurs branchés au réel · Bonus conformité = sprint séparé.
+
+| Point | Statut | Commit | Preuve (recette sur build prod local, `next start`) |
+|---|---|---|---|
+| P1 — Hero « … » | ✅ | `66ab3ca` | 0 placeholder « … » dans la home rendue ; stats SSR via `lib/stats/home-stats.ts` + fallbacks chiffrés |
+| P3 — WhatsApp | ✅ | `87e125d` | 0 occurrence du WABA `644696806` ; numéro officiel `644686720` servi par `lib/constants/whatsapp.ts` |
+| P2 — Offre Starter | ✅ | `b4acda1` | 0 « 7 pronostics/semaine » (home), 0 « 7 / semaine » (/abonnements) ; « 1 pronostic expert par jour (Tiercé / Quarté+) » rendu ; source `lib/pricing.ts` |
+| P5 — « 847 » | ✅ | `a0e0e22` | « **78** parieurs francophones » / « 🏇 **78** téléchargements » (réel, table `leads`) ; « Communauté turf 130+ » (réel) ; 0 « 847 » rendu |
+| P4 — Liens morts | ✅ | `a6d75fb` | 0 `href="#"` dans la home rendue ; blocs sociaux retirés du footer + 3 templates email |
+| P6 — SEO /abonnements | ✅ | `60d9c70` | `<title>` avec **un seul** « \| Elite Turf » ; **1** bloc FAQ visible ; **1** JSON-LD `FAQPage` (le 2ᵉ match = payload RSC interne, pas un schema) |
+| P7 — Vedette du Jour | ✅ | `3c3899f` | États data-driven + fenêtre **GMT** (8h30-9h30) : « Publication en cours » / « Pas de vedette aujourd'hui » ; plus de « bientôt » après 9h30 GMT |
+
+**Vérifications transverses** : `tsc --noEmit` ✅ à chaque correctif · `next build` ✅ (987 pages) à chaque correctif · `/`, `/abonnements`, `/pronostics` → HTTP 200 sur build prod local · aucune logique de paiement touchée (`app/api/paystack/*`, `stripe/*`, `cinetpay/*` intacts ; 2 liens wa.me des pages paiement laissés volontairement en dur, déjà au bon numéro).
+
+**Note `next lint`** : non configuré dans le repo (prompt interactif ESLint) — gate de qualité = `tsc` + `next build` (inclut le type-check).
