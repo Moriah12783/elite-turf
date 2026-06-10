@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   Check, Star, Zap, Crown, Shield, Clock,
-  MessageCircle, ChevronDown, ArrowRight, Gift, Users, Flame, BellRing
+  MessageCircle, ArrowRight, Gift, Users, Flame, BellRing
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
@@ -17,11 +17,16 @@ import TrackPageView from "@/components/analytics/TrackPageView";
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
 // Page à forte intent commercial → rich snippet = boost CTR critique.
+//
+// SOURCE UNIQUE de la FAQ /abonnements (audit Sprint 1, P6) : fusion des deux
+// anciens blocs (« Questions fréquentes » manuel + « FAQ abonnements ») en un
+// seul array de 10 questions dédupliquées, rendu UNE fois (FaqSection) avec UN
+// seul JSON-LD FAQPage (FaqJsonLd).
 const ABONNEMENTS_FAQ = [
   {
-    question: "Comment payer mon abonnement Elite Turf en Mobile Money ?",
+    question: "Comment fonctionne le plan Free ?",
     answer:
-      "Nous acceptons Orange Money, MTN Mobile Money, Moov Money et Wave depuis 8 pays africains (Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Mali, Bénin, Togo, Maroc). Le paiement Mobile Money est instantané, votre abonnement est activé en moins de 60 secondes après confirmation. Pour les utilisateurs européens, le paiement par carte bancaire (Stripe) est également disponible.",
+      "Le plan Free vous donne accès à Notre sélection sur chaque course du programme : notre lecture statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour structurer vos paris et comprendre la course. Elle est différente de nos pronostics du jour — l'analyse experte réservée aux abonnés Starter, Pro et Elite. C'est gratuit, sans carte bancaire.",
   },
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
@@ -29,14 +34,29 @@ const ABONNEMENTS_FAQ = [
       "Le pack Starter donne accès aux pronostics Pro (Tiercé, Quarté+). Le pack Pro ajoute le Quinté+ premium et l'historique 30 jours. Le pack Elite inclut tout cela + l'accès aux analyses Elite Top Selection avec score composite, les notifications WhatsApp prioritaires et le support direct sous 2h. Les tarifs commencent à 65€ pour 7 jours d'accès Starter.",
   },
   {
-    question: "Puis-je annuler mon abonnement à tout moment ?",
+    question: "Quel plan choisir si je suis débutant ?",
     answer:
-      "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite.",
+      "Commencez par le plan Free : Notre sélection gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
   },
   {
-    question: "Mon abonnement se renouvelle-t-il automatiquement ?",
+    question: "Comment payer mon abonnement Elite Turf en Mobile Money ?",
     answer:
-      "Non. Elite Turf fonctionne uniquement par abonnement ponctuel : vous payez pour une période fixe (30 jours), puis vous décidez activement de renouveler ou non. Aucun prélèvement automatique = aucune surprise sur votre compte ou carte bancaire.",
+      "Nous acceptons Orange Money, MTN Mobile Money, Moov Money et Wave depuis 8 pays africains (Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Mali, Bénin, Togo, Maroc). Le paiement Mobile Money est instantané, votre abonnement est activé en moins de 60 secondes après confirmation. Pour les utilisateurs européens, le paiement par carte bancaire (Stripe) est également disponible.",
+  },
+  {
+    question: "Les prix sont en euros — puis-je payer en francs CFA ?",
+    answer:
+      "Oui. Lors du paiement via Mobile Money (Orange, MTN, Wave), la conversion est effectuée automatiquement. Vous réglez l'équivalent en FCFA selon le cours du jour.",
+  },
+  {
+    question: "Quand est-ce que j'accède aux pronostics ?",
+    answer:
+      "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
+  },
+  {
+    question: "Puis-je annuler mon abonnement à tout moment ?",
+    answer:
+      "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite : vous payez pour une période fixe, puis vous décidez activement de renouveler ou non.",
   },
   {
     question: "Je n'arrive pas à payer en Mobile Money, que faire ?",
@@ -49,9 +69,9 @@ const ABONNEMENTS_FAQ = [
       "Si vous rencontrez un problème technique majeur dans les 24h suivant votre paiement (compte non activé, accès refusé, etc.), nous procédons à un remboursement intégral sous 48h ouvrées. Pour toute autre demande, contactez notre support à contact@elite-turf.fr.",
   },
   {
-    question: "À quelle heure les pronostics du jour sont-ils publiés ?",
+    question: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
     answer:
-      "Nos pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Dès leur mise en ligne, les abonnés reçoivent une alerte par email et WhatsApp pour ne jamais manquer la sélection du jour.",
+      "Oui. Que vous jouiez via le PMU-CI (Côte d'Ivoire), la Lonase (Sénégal), le PMU Maroc ou tout autre opérateur africain, les courses de référence sont les mêmes courses françaises que nous analysons.",
   },
 ];
 
@@ -62,7 +82,9 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 // Après : emoji 💎 en début pour signal visuel SERP + prix concret + brand.
 // Description plus dense avec chiffre de réussite implicite (Mobile Money).
 export const metadata: Metadata = {
-  title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite | Elite Turf",
+  // NB : pas de suffixe « | Elite Turf » ici — le template du root layout
+  // ("%s | Elite Turf") l'ajoute déjà (audit Sprint 1, P6 : title doublé).
+  title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite",
   description:
     "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Carte bancaire (Visa/Mastercard) ou Mobile Money (Orange Money, Wave, MTN).",
   alternates: { canonical: `${APP_URL}/abonnements` },
@@ -98,37 +120,6 @@ const PLAN_STYLES = {
     glow:     "ring-1 ring-purple-500/20",
   },
 };
-
-const FAQ = [
-  {
-    q: "Comment fonctionne le plan Free ?",
-    a: "Le plan Free vous donne accès à Notre sélection sur chaque course du programme : notre lecture statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour structurer vos paris et comprendre la course. Elle est différente de nos pronostics du jour — l'analyse experte réservée aux abonnés Starter, Pro et Elite. C'est gratuit, sans carte bancaire.",
-  },
-  {
-    q: "Comment fonctionne le paiement Mobile Money depuis l'Afrique ?",
-    a: "Cliquez sur votre plan, choisissez Orange Money, MTN MoMo ou Wave. Vous recevez une notification push sur votre téléphone. Validez et votre accès est activé en moins de 2 minutes.",
-  },
-  {
-    q: "Les prix sont en euros — puis-je payer en francs CFA ?",
-    a: "Oui. Lors du paiement via Mobile Money (Orange, MTN, Wave), la conversion est effectuée automatiquement. Vous réglez l'équivalent en FCFA selon le cours du jour.",
-  },
-  {
-    q: "Quand est-ce que j'accède aux pronostics ?",
-    a: "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
-  },
-  {
-    q: "Puis-je annuler à tout moment ?",
-    a: "Oui. L'abonnement est mensuel sans engagement. Vous gardez l'accès jusqu'à la fin de la période payée.",
-  },
-  {
-    q: "Quel plan choisir si je suis débutant ?",
-    a: "Commencez par le plan Free : Notre sélection gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
-  },
-  {
-    q: "Les pronostics couvrent-ils les courses que je joue depuis mon pays ?",
-    a: "Oui. Que vous jouiez via le PMU-CI (Côte d'Ivoire), la Lonase (Sénégal), le PMU Maroc ou tout autre opérateur africain, les courses de référence sont les mêmes courses françaises que nous analysons.",
-  },
-];
 
 export default async function AbonnementsPage() {
   const supabase = await createClient();
@@ -589,24 +580,6 @@ export default async function AbonnementsPage() {
           </div>
         </div>
 
-        {/* ── FAQ ── */}
-        <div className="max-w-2xl mx-auto">
-          <h2 className="font-serif font-bold text-text-primary text-2xl text-center mb-8">Questions fréquentes</h2>
-          <div className="space-y-3">
-            {FAQ.map((item, i) => (
-              <details key={i} className="card-base group">
-                <summary className="p-4 cursor-pointer flex items-start justify-between gap-3 list-none">
-                  <span className="text-text-primary text-sm font-semibold leading-snug">{item.q}</span>
-                  <ChevronDown className="w-4 h-4 text-text-muted flex-shrink-0 mt-0.5 group-open:rotate-180 transition-transform" />
-                </summary>
-                <div className="px-4 pb-4">
-                  <p className="text-text-secondary text-sm leading-relaxed border-t border-border/50 pt-3">{item.a}</p>
-                </div>
-              </details>
-            ))}
-          </div>
-        </div>
-
         {/* ── BESOIN D'AIDE ── */}
         <div className="text-center p-6 rounded-2xl bg-bg-card border border-border">
           <MessageCircle className="w-8 h-8 text-gold-primary mx-auto mb-3" />
@@ -623,9 +596,9 @@ export default async function AbonnementsPage() {
           </a>
         </div>
 
-        {/* FAQ Schema.org — boost CTR via rich snippets en SERP commerciale */}
+        {/* FAQ unique (HTML + JSON-LD FAQPage) — fusion des 2 anciens blocs, audit P6 */}
         <FaqJsonLd items={ABONNEMENTS_FAQ} />
-        <FaqSection items={ABONNEMENTS_FAQ} title="Questions fréquentes sur les abonnements" />
+        <FaqSection items={ABONNEMENTS_FAQ} title="Questions fréquentes" />
 
       </div>
     </div>
