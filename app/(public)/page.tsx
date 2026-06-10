@@ -13,7 +13,6 @@ import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
 import OperateursANJ from "@/components/home/OperateursANJ";
-import TestimonialsSection from "@/components/home/TestimonialsSection";
 import FAQSection from "@/components/home/FAQSection";
 import GuideBlocSection from "@/components/home/GuideBlocSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
@@ -109,8 +108,8 @@ export default async function HomePage() {
       {/* 7b — Opérateurs agréés ANJ (requis certification Google Ads) */}
       <OperateursANJ />
 
-      {/* 8 — Témoignages */}
-      <TestimonialsSection />
+      {/* 8 — (Témoignages inventés retirés — audit S1.5 Lot 1. Le bloc
+            « La preuve par les résultats » les remplace au Lot 2.) */}
 
       {/* 9 — FAQ */}
       <FAQSection />

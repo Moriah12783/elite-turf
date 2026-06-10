@@ -55,7 +55,7 @@ export const revalidate = 86400; // 24h — page statique éditoriale
 export const metadata: Metadata = {
   title: "Notre méthodologie — Comment nous analysons les courses PMU",
   description:
-    "Découvrez la méthodologie Elite Turf : analyse data-driven combinée à 5 ans d'expertise hippique. IA, données PMU officielles, validation experte humaine. Transparence totale.",
+    "Découvrez la méthodologie Elite Turf : analyse data-driven combinée à l'expertise hippique de notre équipe. IA, données PMU officielles, validation experte humaine. Transparence totale.",
   alternates: { canonical: `${APP_URL}/methodologie` },
   openGraph: {
     title: "Notre méthodologie — Elite Turf",
@@ -118,7 +118,7 @@ const STEPS = [
   {
     icon: Award,
     title: "3. Validation par un expert humain",
-    text: "Aucun pronostic n'est publié sans validation humaine. Notre expert hippique, basé à Paris avec 5 ans de couverture quotidienne du turf, relit chaque sélection avant publication. Il intègre les variables que la machine ne capte pas : déclaration de non-partants de dernière minute, conditions de piste live, intuitions sur les acteurs.",
+    text: "Aucun pronostic n'est publié sans validation humaine. Notre expert hippique, basé à Paris, relit chaque sélection avant publication. Il intègre les variables que la machine ne capte pas : déclaration de non-partants de dernière minute, conditions de piste live, intuitions sur les acteurs.",
     bullets: [
       "Tour de relecture systématique avant publication",
       "Intégration des dernières infos (forfait, pénalité, terrain dégradé)",
@@ -314,7 +314,7 @@ export default function MethodologiePage() {
         <div className="text-center pt-8 border-t border-border/50">
           <p className="text-text-muted text-sm mb-4 inline-flex items-center gap-2">
             <MapPin className="w-4 h-4 text-gold-primary" />
-            Nos experts sont basés à Paris depuis 5 ans
+            Nos experts sont basés à Paris
           </p>
           <Link
             href="/a-propos"

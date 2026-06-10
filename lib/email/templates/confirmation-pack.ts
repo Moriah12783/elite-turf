@@ -316,7 +316,7 @@ function templateElite(prenom: string, dateExp: string): string {
     ${emailDivider}
 
     <p style="margin:0;color:#9CA3AF;font-size:12px;text-align:center;line-height:1.6;">
-      Support prioritaire WhatsApp — Réponse sous 30 min ·
+      Support prioritaire WhatsApp — Réponse sous 2h en moyenne ·
       <a href="${whatsappUrl()}" style="color:#C9A84C;">Nous écrire</a><br/>
       <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;text-decoration:none;">contact@elite-turf.fr</a>
     </p>

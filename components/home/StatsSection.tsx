@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { TrendingUp, Award, Flame, CheckCircle2, XCircle, MinusCircle } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -60,17 +61,15 @@ export default async function StatsSection() {
     result: p.resultat || "PERDANT",
     gain:   p.gains_theoriques
       ? (p.resultat === "GAGNANT" ? `+${p.gains_theoriques}%` : p.resultat === "PARTIEL" ? `+${Math.round(p.gains_theoriques * 0.3)}%` : "−")
-      : (p.resultat === "GAGNANT" ? "+156%" : p.resultat === "PARTIEL" ? "+48%" : "−"),
+      // Pas de % inventé quand le rapport n'est pas connu : on n'affiche que
+      // le statut (✓/partiel) — audit S1.5, intégrité de la preuve.
+      : (p.resultat === "GAGNANT" || p.resultat === "PARTIEL" ? "✓" : "−"),
   }));
 
-  // Fallback si aucun résultat en base
-  const displayResults = recentResults.length > 0 ? recentResults : [
-    { date: "29 Mars", course: "Quinté+ Saint-Cloud",  type: "Quinté+", result: "GAGNANT", gain: "+380%" },
-    { date: "28 Mars", course: "Tiercé Vincennes",     type: "Tiercé",  result: "GAGNANT", gain: "+127%" },
-    { date: "27 Mars", course: "Quarté+ Chantilly",    type: "Quarté+", result: "PARTIEL", gain: "+45%"  },
-    { date: "26 Mars", course: "Tiercé Lyon-Parilly",  type: "Tiercé",  result: "GAGNANT", gain: "+210%" },
-    { date: "25 Mars", course: "Tiercé Marrakech",     type: "Tiercé",  result: "GAGNANT", gain: "+89%"  },
-  ];
+  // Plus de fallback FICTIF (anciens résultats inventés datés « mars ») :
+  // si aucun résultat réel en base, le tableau affiche un état vide honnête
+  // (voir rendu plus bas) — audit S1.5 Lot 1.
+  const displayResults = recentResults;
 
   return (
     <section className="relative py-16 sm:py-20 overflow-hidden">
@@ -129,6 +128,16 @@ export default async function StatsSection() {
             <h3 className="font-semibold text-text-primary text-sm">Derniers résultats</h3>
           </div>
           <div className="divide-y divide-border/30">
+            {displayResults.length === 0 && (
+              <div className="px-5 py-8 text-center">
+                <p className="text-text-secondary text-sm">
+                  Les derniers résultats s&apos;affichent ici dès leur publication.
+                </p>
+                <Link href="/performances" className="text-gold-primary hover:text-gold-light text-sm font-medium">
+                  Consulter l&apos;historique complet →
+                </Link>
+              </div>
+            )}
             {displayResults.map((r, i) => {
               const config = RESULT_LABELS[r.result] || RESULT_LABELS.PERDANT;
               const ResultIcon = config.Icon;

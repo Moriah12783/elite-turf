@@ -630,7 +630,7 @@ export default async function EspaceMembrePage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-text-primary font-semibold text-sm">Support prioritaire</p>
-            <p className="text-text-muted text-xs">Réponse en moins de 30 min sur WhatsApp</p>
+            <p className="text-text-muted text-xs">Réponse sous 2h en moyenne sur WhatsApp</p>
           </div>
           <a
             href={whatsappUrl()}
