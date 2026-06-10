@@ -1,5 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
-import { OFFRE_PRONOSTICS_EXPERTS } from "../../pricing";
+import { STARTER_OFFRE_LABEL } from "../../pricing";
 
 /**
  * Réactivation R3 (J+7) — « L'essai sans risque » (audit Sprint 1.5, Lot 4).
@@ -28,7 +28,7 @@ export function templateReactivationR3({
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       La sélection gratuite vous montre <em>qui</em> regarder. Le
       <strong>Pack Starter</strong> vous donne l'analyse experte complète :
-      ${OFFRE_PRONOSTICS_EXPERTS}, la base et les appuis nommés, le conseil de
+      ${STARTER_OFFRE_LABEL}, la base et les appuis nommés, le conseil de
       mise — pendant <strong>7 jours, pour 65€</strong>, sans engagement ni
       reconduction automatique.
     </p>
