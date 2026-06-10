@@ -24,15 +24,21 @@ export default async function StopPage({
     const supabase = createServiceClient();
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, sms_opted_out")
+      .select("id, sms_opted_out, email_opted_out")
       .eq("sms_unsub_token", token)
       .maybeSingle();
 
     if (profile) {
-      if (!profile.sms_opted_out) {
+      // Désinscription des DEUX canaux marketing (SMS + email) en un clic —
+      // audit S1.5 Lot 4. Les emails transactionnels ne sont pas concernés.
+      if (!profile.sms_opted_out || !profile.email_opted_out) {
+        const now = new Date().toISOString();
         await supabase
           .from("profiles")
-          .update({ sms_opted_out: true, sms_opted_out_at: new Date().toISOString() })
+          .update({
+            sms_opted_out: true,    sms_opted_out_at: now,
+            email_opted_out: true,  email_opted_out_at: now,
+          })
           .eq("id", profile.id);
       }
       state = "ok";
@@ -51,7 +57,7 @@ export default async function StopPage({
               Désinscription confirmée
             </h1>
             <p className="text-text-secondary text-sm mb-2">
-              Vous ne recevrez plus de SMS d&apos;Elite Turf.
+              Vous ne recevrez plus de SMS ni d&apos;emails marketing d&apos;Elite Turf.
             </p>
             <p className="text-text-muted text-xs">
               Vous pourrez réactiver les alertes à tout moment depuis votre profil.
