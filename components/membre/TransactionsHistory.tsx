@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CreditCard, CheckCircle2, XCircle, Clock, RefreshCw, Receipt } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 interface Transaction {
   id: string;
@@ -148,7 +149,7 @@ export default function TransactionsHistory() {
       <div className="px-4 py-3 border-t border-border/30 bg-bg-elevated/30">
         <p className="text-text-muted text-xs">
           Pour tout litige ou remboursement, contactez-nous sur{" "}
-          <a href="https://wa.me/+33644686720" className="text-gold-light hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href={whatsappUrl()} className="text-gold-light hover:underline" target="_blank" rel="noopener noreferrer">
             WhatsApp
           </a>
         </p>

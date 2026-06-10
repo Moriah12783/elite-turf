@@ -18,6 +18,7 @@ import AnimatedCounter from "@/components/performances/AnimatedCounter";
 import PageHero from "@/components/layout/PageHero";
 import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
 import { resolveFormule, filterByFormule, summarizeTier, FORMULES } from "@/lib/performances/tier-stats";
+import { getPublicCounters, roundTenPlus } from "@/lib/metrics/public-counters";
 import FormuleTabs from "@/components/performances/FormuleTabs";
 import PeriodeTabs from "@/components/performances/PeriodeTabs";
 import { resolvePeriode, buildPeriodeTabs, filterByPeriode, moisLabel } from "@/lib/performances/periode-filter";
@@ -58,6 +59,8 @@ export default async function PerformancesPage({
   const supabase = createServiceClient();
   const formule = resolveFormule(searchParams.formule);
   const periode = resolvePeriode(searchParams.periode);
+  // Compteur communauté réel (CTA bas de page) — voir audit P5.
+  const compteurs = await getPublicCounters();
 
   // ── Tous les pronostics publiés ──────────────────────────────────
   const { data: allPronostics } = await supabase
@@ -677,7 +680,7 @@ export default async function PerformancesPage({
               Ces résultats pourraient être les vôtres
             </h3>
             <p className="text-text-secondary text-sm max-w-md mx-auto mb-6">
-              Rejoignez les <span className="text-gold-light font-semibold">847+ turfistes</span> qui
+              Rejoignez les <span className="text-gold-light font-semibold">{roundTenPlus(compteurs.communaute)} turfistes</span> qui
               utilisent Elite Turf chaque jour. Accès immédiat, paiement par Orange Money, MTN ou Wave.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

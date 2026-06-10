@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { STARTER_OFFRE_LABEL } from "@/lib/pricing";
 
 const FAQ_ITEMS = [
   {
@@ -25,7 +27,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que contient un abonnement Elite Turf ?",
-    a: "Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Starter donne accès à 7 pronostics/semaine, le Pack Pro à l'intégralité.",
+    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Starter donne accès à ${STARTER_OFFRE_LABEL}, le Pack Pro à l'intégralité, Quinté+ inclus.`,
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
@@ -82,7 +84,7 @@ export default function FAQSection() {
             contact@elite-turf.fr
           </a>{" "}
           · WhatsApp{" "}
-          <a href="https://wa.me/33644686720" className="text-gold-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href={whatsappUrl()} className="text-gold-primary hover:underline" target="_blank" rel="noopener noreferrer">
             +33 6 44 68 67 20
           </a>
         </p>

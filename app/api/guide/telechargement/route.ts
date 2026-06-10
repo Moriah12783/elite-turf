@@ -174,24 +174,7 @@ function buildGuideEmail(prenom: string): string {
             <td style="background:#F3F4F6;border:1px solid #E5E7EB;border-top:0;
                        border-radius:0 0 12px 12px;padding:24px 40px;text-align:center;">
 
-              <!-- Icônes réseaux sociaux -->
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px auto;">
-                <tr>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">f</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:12px;color:#FFFFFF;font-weight:700;">▶</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">♪</a>
-                  </td>
-                  <td style="padding:0 5px;">
-                    <a href="#" style="display:inline-block;width:30px;height:30px;background:#D1D5DB;border-radius:50%;text-align:center;line-height:30px;text-decoration:none;font-size:13px;color:#FFFFFF;font-weight:700;">𝕏</a>
-                  </td>
-                </tr>
-              </table>
-
+              <!-- (Bloc réseaux sociaux retiré — liens morts, audit Sprint 1 P4.) -->
               <p style="margin:0 0 4px 0;color:#6B7280;font-size:11px;font-weight:600;">Elite Turf — TSALACH VENTURES LLC</p>
               <p style="margin:0 0 3px 0;color:#9CA3AF;font-size:11px;">
                 30 N Gould St, STE R, Sheridan, WY 82801, États-Unis

@@ -1,5 +1,6 @@
 import { emailBase, emailButton, emailDivider } from "../base";
 import { renderHeaderBanner, BANNER_WELCOME_J7 } from "./banners/header-banner";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 /** J+7 après inscription — "Étude de cas + offre Starter" */
 export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
@@ -55,7 +56,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
     </p>
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:14px;line-height:1.7;">
       Une question ? Notre support WhatsApp répond en moins de 20 minutes —
-      <a href="https://wa.me/33644686720" style="color:#25D366;text-decoration:none;font-weight:600;">cliquez ici</a>
+      <a href="${whatsappUrl()}" style="color:#25D366;text-decoration:none;font-weight:600;">cliquez ici</a>
       pour démarrer une conversation.
     </p>
   `;

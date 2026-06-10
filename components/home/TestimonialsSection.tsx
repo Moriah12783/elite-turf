@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Star, Quote, TrendingUp, Award, MessageCircle } from "lucide-react";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { getPublicCounters, roundTenPlus } from "@/lib/metrics/public-counters";
 
 const testimonials = [
   {
@@ -100,13 +102,17 @@ const testimonials = [
   },
 ];
 
-const GLOBAL_STATS = [
-  { label: "Gains cumulés abonnés", value: "180 000€+", Icon: TrendingUp },
-  { label: "Note moyenne",          value: "4.8 / 5",   Icon: Star       },
-  { label: "Abonnés satisfaits",    value: "847+",       Icon: Award      },
-];
+export default async function TestimonialsSection() {
+  // Compteur communauté réel (inscrits + lecteurs du guide) — voir audit P5.
+  // « Abonnés satisfaits 847+ » (placeholder) → « Communauté turf » réelle.
+  const { communaute } = await getPublicCounters();
 
-export default function TestimonialsSection() {
+  const GLOBAL_STATS = [
+    { label: "Gains cumulés abonnés", value: "180 000€+",            Icon: TrendingUp },
+    { label: "Note moyenne",          value: "4.8 / 5",              Icon: Star       },
+    { label: "Communauté turf",       value: roundTenPlus(communaute), Icon: Award    },
+  ];
+
   return (
     <section className="relative py-16 sm:py-20 overflow-hidden">
 
@@ -213,7 +219,7 @@ export default function TestimonialsSection() {
             reçoivent un mois d&apos;abonnement offert.
           </p>
           <a
-            href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720").replace(/\s/g, "")}?text=Bonjour, je voudrais partager mon gain avec Elite Turf !`}
+            href={whatsappUrl("Bonjour, je voudrais partager mon gain avec Elite Turf !")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"

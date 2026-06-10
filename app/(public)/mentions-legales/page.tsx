@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
 import OperateursANJ from "@/components/home/OperateursANJ";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -52,7 +53,7 @@ export default function MentionsLegalesPage() {
               </p>
               <p>
                 <strong className="text-text-primary">WhatsApp public (support clients) :</strong>{" "}
-                <a href="https://wa.me/33644686720" target="_blank" rel="noopener noreferrer" className="text-gold-light hover:underline">
+                <a href={whatsappUrl()} target="_blank" rel="noopener noreferrer" className="text-gold-light hover:underline">
                   +33 6 44 68 67 20
                 </a>
               </p>

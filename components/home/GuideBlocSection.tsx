@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, CheckCircle, BookOpen } from "lucide-react";
 import { Analytics } from "@/lib/analytics";
+import { getPublicCounters } from "@/lib/metrics/public-counters";
 
 const WHAT_YOU_LEARN = [
   "Comment identifier les outsiders qui créent les surprises en course",
@@ -10,7 +11,10 @@ const WHAT_YOU_LEARN = [
   "Les erreurs classiques qui font perdre 80% des parieurs",
 ];
 
-export default function GuideBlocSection() {
+export default async function GuideBlocSection() {
+  // Compteur réel de téléchargements (table leads) — voir audit P5.
+  const { guideDownloads } = await getPublicCounters();
+
   return (
     <section
       id="guide-gratuit"
@@ -42,7 +46,7 @@ export default function GuideBlocSection() {
 
             <p className="text-text-secondary text-base leading-relaxed mb-8">
               Le guide que{" "}
-              <span className="text-gold-light font-semibold">847 parieurs francophones</span>{" "}
+              <span className="text-gold-light font-semibold">{guideDownloads} parieurs francophones</span>{" "}
               ont déjà téléchargé. Apprenez les techniques que nos experts utilisent
               chaque jour pour analyser les courses PMU — 100% gratuit, sans engagement.
             </p>
@@ -112,7 +116,7 @@ export default function GuideBlocSection() {
 
               {/* Badge téléchargements */}
               <div className="absolute -bottom-3 -left-3 px-3 py-1.5 bg-bg-card border border-gold-primary/30 rounded-full shadow-lg">
-                <span className="text-gold-light text-xs font-semibold">🏇 847 téléchargements</span>
+                <span className="text-gold-light text-xs font-semibold">🏇 {guideDownloads} téléchargements</span>
               </div>
             </div>
           </div>

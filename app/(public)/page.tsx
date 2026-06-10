@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 // pour la home (stats agrégées + 5 prochaines courses).
 export const revalidate = 60;
 import HeroSection from "@/components/home/HeroSection";
+import { getHomeStats } from "@/lib/stats/home-stats";
 import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 import CoursesSection from "@/components/home/CoursesSection";
 import NotreSelectionSection from "@/components/home/NotreSelectionSection";
@@ -71,15 +72,18 @@ const homeBreadcrumbJsonLd = {
   ],
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Stats SSR (source unique) → passées au hero en prop : plus aucun « … ».
+  const heroStats = await getHomeStats();
+
   return (
     <>
       {/* JSON-LD — FAQ + BreadcrumbList pour Google */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeBreadcrumbJsonLd) }} />
 
-      {/* 1 — Hero : clarté immédiate + 2 CTAs */}
-      <HeroSection />
+      {/* 1 — Hero : clarté immédiate + 2 CTAs (stats en SSR via prop) */}
+      <HeroSection stats={heroStats} />
 
       {/* 2 — Réassurance rapide : 4 piliers (expertise, transparence, paiement, accès) */}
       <WhyChooseUsSection />

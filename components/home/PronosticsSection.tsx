@@ -33,6 +33,18 @@ function getNowParisMins(): number {
        + parseInt(parts.find(p => p.type === "minute")!.value);
 }
 
+/**
+ * Heure GMT/UTC en minutes depuis minuit. La fenêtre de publication ANNONCÉE
+ * (FAQ, JSON-LD) est « entre 8h30 et 9h30 heure GMT » — l'état « en attente de
+ * publication » doit donc se baser sur cette fenêtre GMT, pas sur l'heure de
+ * Paris ni sur des heuristiques de départ de course (audit Sprint 1, P7).
+ */
+function getNowGmtMins(): number {
+  const now = new Date();
+  return now.getUTCHours() * 60 + now.getUTCMinutes();
+}
+const FIN_FENETRE_PUBLICATION_GMT = 9 * 60 + 30; // 9h30 GMT
+
 /** Date du jour en heure Paris */
 function getTodayParis(): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -67,6 +79,8 @@ export default async function PronosticsSection() {
 
   const today     = getTodayParis();
   const nowMins   = getNowParisMins();
+  // Fenêtre de publication annoncée (8h30–9h30 GMT) déjà passée ?
+  const apresFenetrePublication = getNowGmtMins() > FIN_FENETRE_PUBLICATION_GMT;
   const weekAgo   = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
   // ── 1. Pronostics du JOUR publiés
@@ -146,7 +160,9 @@ export default async function PronosticsSection() {
           <Globe2 className="w-10 h-10 text-gold-primary mx-auto mb-4 opacity-60" />
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-2">Pronostics du Jour</h2>
           <p className="text-text-secondary text-sm max-w-md mx-auto">
-            Les pronostics du marché africain seront disponibles entre 8h30 et 9h30 (heure GMT).
+            {apresFenetrePublication
+              ? "Aucun pronostic n'a été publié aujourd'hui. Consultez nos archives et le programme des prochaines courses."
+              : "Les pronostics du jour sont publiés entre 8h30 et 9h30 (heure GMT)."}
           </p>
           <Link
             href="/pronostics"
@@ -183,15 +199,37 @@ export default async function PronosticsSection() {
                 </span>
               </div>
               <p className="font-serif text-xl font-bold text-text-primary mb-1">{nat1Course.libelle}</p>
-              <div className="flex items-center gap-4 text-sm text-text-secondary mb-6">
+              <div className="flex items-center gap-4 text-sm text-text-secondary mb-4">
                 <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gold-primary" />{nat1Course.hippodrome?.nom}</span>
                 <span className="flex items-center gap-1.5 text-gold-light font-semibold"><Clock className="w-3.5 h-3.5" />{(nat1Course.heure_depart || "").substring(0, 5)}</span>
               </div>
-              <Link href="/pronostics" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
-                <Trophy className="w-4 h-4" />
-                Pronostic disponible bientôt — S&apos;abonner
-                <ChevronRight className="w-4 h-4" />
-              </Link>
+              {/* État honnête basé sur la donnée réelle + fenêtre GMT (audit P7) :
+                  avant/pendant la fenêtre → « publication en cours » ; après →
+                  pas de vedette aujourd'hui, on oriente vers la sélection gratuite. */}
+              {apresFenetrePublication ? (
+                <>
+                  <p className="text-text-secondary text-sm mb-4">
+                    Pas de pronostic vedette aujourd&apos;hui — profitez de{" "}
+                    <span className="text-gold-light font-medium">Notre sélection gratuite</span> sur chaque course.
+                  </p>
+                  <Link href="/courses" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+                    <Trophy className="w-4 h-4" />
+                    Voir Notre sélection gratuite
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="text-text-secondary text-sm mb-4">
+                    Publication en cours — le pronostic expert est publié entre 8h30 et 9h30 (heure GMT).
+                  </p>
+                  <Link href="/pronostics" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+                    <Trophy className="w-4 h-4" />
+                    S&apos;abonner pour y accéder
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
           </div>

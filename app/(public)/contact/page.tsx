@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { MessageCircle, Mail, MapPin, AlertTriangle } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -34,7 +35,7 @@ export default function ContactPage() {
               Réponse prioritaire pour nos membres — disponible Lun–Sam, 8h–20h (heure de Paris)
             </p>
             <a
-              href="https://wa.me/+33644686720?text=Bonjour, j'ai une question concernant Elite Turf"
+              href={whatsappUrl("Bonjour, j'ai une question concernant Elite Turf")}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold text-sm rounded-xl transition-colors"

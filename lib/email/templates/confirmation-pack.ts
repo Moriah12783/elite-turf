@@ -1,5 +1,6 @@
 import { emailBase, emailButton, emailDivider } from "../base";
 import { renderHeaderBanner, BANNER_CONFIRMATION_PACK } from "./banners/header-banner";
+import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
@@ -316,7 +317,7 @@ function templateElite(prenom: string, dateExp: string): string {
 
     <p style="margin:0;color:#9CA3AF;font-size:12px;text-align:center;line-height:1.6;">
       Support prioritaire WhatsApp — Réponse sous 30 min ·
-      <a href="https://wa.me/+33644686720" style="color:#C9A84C;">Nous écrire</a><br/>
+      <a href="${whatsappUrl()}" style="color:#C9A84C;">Nous écrire</a><br/>
       <a href="mailto:contact@elite-turf.fr" style="color:#9CA3AF;text-decoration:none;">contact@elite-turf.fr</a>
     </p>
   `;

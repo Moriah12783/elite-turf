@@ -13,15 +13,8 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
+import { WHATSAPP_SUPPORT_NUMBER, whatsappUrl } from "@/lib/constants/whatsapp";
 
-// Bascule WABA — mettre NEXT_PUBLIC_USE_WABA_API_NUMBER=true dans Vercel
-// APRÈS validation complète du compte WhatsApp Business API par Meta.
-const USE_WABA = process.env.NEXT_PUBLIC_USE_WABA_API_NUMBER === "true";
-const WHATSAPP_NUMBER = (
-  USE_WABA
-    ? process.env.NEXT_PUBLIC_WABA_API_NUMBER || "+33644696806"
-    : process.env.NEXT_PUBLIC_WHATSAPP || "+33644686720"
-).replace(/\s/g, "");
 const DEFAULT_MESSAGE = "Bonjour Elite Turf, je souhaite obtenir des informations.";
 
 // Pages où le bouton est masqué pour éviter chevauchement avec d'autres CTAs sticky
@@ -49,9 +42,9 @@ export default function WhatsAppFloatingButton() {
 
   if (!mounted) return null;
   if (HIDDEN_PATHS.some((p) => pathname?.startsWith(p))) return null;
-  if (!WHATSAPP_NUMBER) return null;
+  if (!WHATSAPP_SUPPORT_NUMBER) return null;
 
-  const url = `https://wa.me/${WHATSAPP_NUMBER.replace(/^\+/, "")}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
+  const url = whatsappUrl(DEFAULT_MESSAGE);
 
   const handleClick = () => {
     // Push event GTM pour tracking conversion
