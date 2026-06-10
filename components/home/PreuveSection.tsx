@@ -1,9 +1,10 @@
 import Link from "next/link";
 import {
   ShieldCheck, Gift, Eye, BadgeCheck, Database, UserCheck, FileClock,
-  MessageCircle, ChevronRight, TrendingUp,
+  MessageCircle, ChevronRight, TrendingUp, Quote, Star,
 } from "lucide-react";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { createServiceClient } from "@/lib/supabase/server";
 
 /**
  * PreuveSection — « La preuve par les résultats ».
@@ -70,7 +71,33 @@ const METHODE = [
   },
 ];
 
-export default function PreuveSection() {
+interface TemoignageApprouve {
+  id: string;
+  nom_affiche: string;
+  ville: string | null;
+  pays: string | null;
+  pack: string | null;
+  texte: string;
+  note: number | null;
+}
+
+export default async function PreuveSection() {
+  // Témoignages RÉELS approuvés (table testimonials, modérés via /admin/temoignages).
+  // S'il n'y en a aucun, la grille est entièrement masquée — jamais de placeholder.
+  let temoignages: TemoignageApprouve[] = [];
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("testimonials")
+      .select("id, nom_affiche, ville, pays, pack, texte, note")
+      .eq("statut", "approved")
+      .order("approved_at", { ascending: false })
+      .limit(6);
+    temoignages = (data ?? []) as TemoignageApprouve[];
+  } catch {
+    temoignages = [];
+  }
+
   return (
     <section className="relative py-16 sm:py-20 overflow-hidden bg-bg-card/30 border-y border-border/30">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,6 +173,44 @@ export default function PreuveSection() {
             Découvrir la méthode
           </Link>
         </div>
+
+        {/* ── Témoignages RÉELS (uniquement s'il en existe ≥1 approuvé) ── */}
+        {temoignages.length > 0 && (
+          <div className="mb-14">
+            <div className="text-center mb-8">
+              <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary mb-2">
+                Ils témoignent
+              </h3>
+              {/* Disclaimer obligatoire — résultats individuels, jeu responsable */}
+              <p className="text-text-muted text-xs max-w-xl mx-auto">
+                Témoignages authentiques d&apos;abonnés, vérifiés avant publication. Les résultats
+                sont individuels et ne garantissent pas les vôtres — le jeu comporte des risques.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {temoignages.map((t) => (
+                <div key={t.id} className="card-base p-5">
+                  <Quote className="w-5 h-5 text-gold-primary/60 mb-3" />
+                  <p className="text-text-secondary text-sm leading-relaxed mb-4">{t.texte}</p>
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/50">
+                    <div>
+                      <p className="text-text-primary text-sm font-semibold">{t.nom_affiche}</p>
+                      <p className="text-text-muted text-xs">
+                        {[t.ville, t.pays].filter(Boolean).join(", ")}
+                        {t.pack ? ` · Pack ${t.pack}` : ""}
+                      </p>
+                    </div>
+                    {t.note != null && (
+                      <span className="flex items-center gap-1 text-gold-light text-xs font-semibold flex-shrink-0">
+                        <Star className="w-3.5 h-3.5 fill-current" /> {t.note}/5
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── CTA témoignage réel (expérience — pas « gain ») ── */}
         <div className="text-center p-6 rounded-2xl bg-bg-card border border-border max-w-2xl mx-auto">

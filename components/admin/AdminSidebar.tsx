@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
   CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap, Brain,
-  MessageCircle
+  MessageCircle, Quote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
@@ -23,6 +23,7 @@ const navItems = [
   { href: "/admin/utilisateurs",         icon: Users,           label: "Utilisateurs" },
   { href: "/admin/paiements",            icon: CreditCard,      label: "Paiements" },
   { href: "/admin/notifications",        icon: Bell,            label: "Notifications" },
+  { href: "/admin/temoignages",          icon: Quote,           label: "Témoignages" },
   { href: "/admin/newsletter",           icon: Newspaper,       label: "Newsletter" },
   { href: "/admin/statistiques",         icon: TrendingUp,      label: "Statistiques" },
   { href: "/admin/parametres",           icon: Settings,        label: "Paramètres" },
