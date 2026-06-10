@@ -11,6 +11,7 @@ import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { OFFRE_PRONOSTICS_EXPERTS } from "@/lib/pricing";
 import TrackPageView from "@/components/analytics/TrackPageView";
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
@@ -554,7 +555,7 @@ export default async function AbonnementsPage() {
                 {[
                   { label: "Durée",                       values: ["Permanent",      "7 jours",        "30 jours",             "30 jours"]          },
                   { label: "Notre sélection (lecture stat.)", values: ["✓ chaque course", "✓",            "✓",                    "✓"]                 },
-                  { label: "Pronostics experts du jour",  values: ["—",              "7 / semaine",    "1+ quotidien",         "1+ premium"]        },
+                  { label: "Pronostics experts du jour",  values: [OFFRE_PRONOSTICS_EXPERTS.free, OFFRE_PRONOSTICS_EXPERTS.starter, OFFRE_PRONOSTICS_EXPERTS.pro, OFFRE_PRONOSTICS_EXPERTS.elite] },
                   { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
                   { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },
                   { label: "Couplé / Trio",               values: ["—",              "—",              "✓",                    "✓"]                 },

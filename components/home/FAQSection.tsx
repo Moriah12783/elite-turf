@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { STARTER_OFFRE_LABEL } from "@/lib/pricing";
 
 const FAQ_ITEMS = [
   {
@@ -26,7 +27,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que contient un abonnement Elite Turf ?",
-    a: "Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Starter donne accès à 7 pronostics/semaine, le Pack Pro à l'intégralité.",
+    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Starter donne accès à ${STARTER_OFFRE_LABEL}, le Pack Pro à l'intégralité, Quinté+ inclus.`,
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
