@@ -55,7 +55,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
       Notre Tiercé/Quarté gratuit du jour reste accessible chaque matin.
     </p>
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:14px;line-height:1.7;">
-      Une question ? Notre support WhatsApp répond en moins de 20 minutes —
+      Une question ? Notre support WhatsApp répond sous 2h en moyenne —
       <a href="${whatsappUrl()}" style="color:#25D366;text-decoration:none;font-weight:600;">cliquez ici</a>
       pour démarrer une conversation.
     </p>

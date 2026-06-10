@@ -54,6 +54,11 @@ const ABONNEMENTS_FAQ = [
       "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
+    question: "Que se passe-t-il si mon premier pronostic expert est perdant ?",
+    answer:
+      "Nous prolongeons votre accès de 7 jours, offerts. La garantie s'applique au premier pronostic expert reçu après votre souscription, une fois par abonné : écrivez-nous simplement sur WhatsApp et la prolongation est appliquée après vérification du résultat.",
+  },
+  {
     question: "Puis-je annuler mon abonnement à tout moment ?",
     answer:
       "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite : vous payez pour une période fixe, puis vous décidez activement de renouveler ou non.",
@@ -184,7 +189,7 @@ export default async function AbonnementsPage() {
             <span className="hidden sm:block w-px h-4 bg-border" aria-hidden="true" />
             <div className="flex items-center gap-2 text-text-secondary">
               <MessageCircle className="w-4 h-4 flex-shrink-0" />
-              <span className="font-semibold">Support WhatsApp · 30 min</span>
+              <span className="font-semibold">Support WhatsApp · sous 2h</span>
             </div>
           </div>
         </div>
@@ -584,7 +589,7 @@ export default async function AbonnementsPage() {
         <div className="text-center p-6 rounded-2xl bg-bg-card border border-border">
           <MessageCircle className="w-8 h-8 text-gold-primary mx-auto mb-3" />
           <h3 className="font-serif font-semibold text-text-primary text-lg mb-2">Besoin d&apos;aide pour choisir ?</h3>
-          <p className="text-text-secondary text-sm mb-4">Notre équipe répond sur WhatsApp en moins de 30 minutes</p>
+          <p className="text-text-secondary text-sm mb-4">Notre équipe répond sur WhatsApp sous 2h en moyenne</p>
           <a
             href={whatsappUrl("Bonjour, j'aimerais des informations sur les abonnements Elite Turf")}
             target="_blank"

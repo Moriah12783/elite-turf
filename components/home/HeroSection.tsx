@@ -52,10 +52,12 @@ export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) 
       color:    "text-gold-primary",
     },
     {
+      // Tuile « 5 ans d'expertise » retirée (claim non vérifiable — audit S1.5
+      // Q1) → remplacée par une métrique réelle : gagnants des 14 derniers jours.
       icon: Award,
-      value: "5 ans",
-      label:    "D'expertise",
-      sublabel: "pronostics hippiques",
+      value: liveStats.gagnantsRecents > 0 ? `${liveStats.gagnantsRecents}` : "10+",
+      label:    "Gagnants",
+      sublabel: "14 derniers jours",
       color:    "text-gold-light",
     },
     {

@@ -123,7 +123,6 @@ export default async function EspaceMembrePage() {
 
   const profile = profileRes.data;
   const abonnement = abonnementRes.data;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recentPronostics = ((pronosticsRes.data as any[]) || []) as Pronostic[];
 
   // Calculer les stats personnelles (simplifiées)
@@ -132,7 +131,6 @@ export default async function EspaceMembrePage() {
   const StatusIcon = statusCfg.Icon;
 
   // Plan actif
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const plan = (abonnement?.plan as any) as { nom: string; prix_fcfa: number; duree_jours: number } | null;
   const planConfig = plan ? PLAN_CONFIG.find((p) => p.nom === plan.nom) : null;
 
@@ -630,7 +628,7 @@ export default async function EspaceMembrePage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-text-primary font-semibold text-sm">Support prioritaire</p>
-            <p className="text-text-muted text-xs">Réponse en moins de 30 min sur WhatsApp</p>
+            <p className="text-text-muted text-xs">Réponse sous 2h en moyenne sur WhatsApp</p>
           </div>
           <a
             href={whatsappUrl()}

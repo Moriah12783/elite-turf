@@ -157,7 +157,6 @@ export default async function AdminArriveesPage({
       paris_disponibles:  c.paris_disponibles ?? [],
       arrivee_officielle: c.arrivee_officielle,
       has_arrivee:        !!c.arrivee_officielle,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       rapports_pmu:       (c.arrivees?.[0]?.rapports_pmu as any) ?? null,
       commentaire:        c.arrivees?.[0]?.commentaire ?? null,
       geny_url:           c.geny_url,

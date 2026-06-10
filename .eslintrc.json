@@ -1,0 +1,8 @@
+{
+  "extends": "next/core-web-vitals",
+  "ignorePatterns": ["cron-worker/", "scripts/", ".open-next/", "tmp/"],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "@typescript-eslint/no-explicit-any": "off"
+  }
+}

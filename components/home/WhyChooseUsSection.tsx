@@ -11,7 +11,7 @@ const BLOCS = [
     icon: Users,
     titre: "Expertise confirmée",
     texte:
-      "5 ans d'analyses hippiques PMU. Des spécialistes qui publient leurs résultats — les bons comme les moins bons.",
+      "Des spécialistes du turf qui publient leurs résultats — les bons comme les moins bons, vérifiables sur la page Performances.",
   },
   {
     icon: Eye,

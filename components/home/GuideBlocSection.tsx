@@ -8,7 +8,7 @@ const WHAT_YOU_LEARN = [
   "Les 3 indicateurs que les parieurs experts regardent en premier",
   "La méthode pour lire une fiche de course en moins de 2 minutes",
   "Comment exploiter les côtes PMU à votre avantage",
-  "Les erreurs classiques qui font perdre 80% des parieurs",
+  "Les erreurs classiques qui font perdre la majorité des parieurs",
 ];
 
 export default async function GuideBlocSection() {
