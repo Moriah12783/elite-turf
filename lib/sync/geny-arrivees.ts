@@ -462,7 +462,6 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
   }
 
   // Mappe chaque course avec sa liste de numéros valides + paris dispo + heure
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courses: CourseRow[] = (rawCourses as any[]).map((c) => ({
     id:             c.id,
     numero_reunion: c.numero_reunion,

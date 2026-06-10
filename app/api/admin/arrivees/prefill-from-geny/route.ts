@@ -154,9 +154,7 @@ export async function POST(req: NextRequest) {
     // Courses passées (date < aujourd'hui) ou aujourd'hui + heure+30min écoulée → autoriser
 
     // Liste des numéros de partants pour validation par le parser
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const validNumbers: number[] = Array.isArray((course as any).partants)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? (course as any).partants
           .map((p: { numero: number }) => p.numero)
           .filter((n: number) => Number.isInteger(n))
@@ -205,7 +203,6 @@ export async function POST(req: NextRequest) {
     // reste (Top 5 + 6e Bonus 4). Évite à l'éditeur de supprimer les
     // chevaux 7-10 manuellement avant publication.
     const maxHorses = maxHorsesForParis(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (course as any).paris_disponibles,
     );
     let arrivee: number[] | null = null;

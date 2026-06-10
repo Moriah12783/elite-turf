@@ -250,9 +250,7 @@ export async function POST(req: NextRequest) {
     //   historique — utile pour "remplir les trous" sans toucher au reste).
     // Avec `force=1` : on inclut tout — utilisé pour backfill après bug parser.
     const toProcess: CourseToProcess[] = (rawCourses ?? [])
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((c: any) => force || (Array.isArray(c.partants) && c.partants.length === 0))
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((c: any) => ({
         id:             c.id,
         numero_reunion: c.numero_reunion,

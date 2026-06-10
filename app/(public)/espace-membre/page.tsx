@@ -123,7 +123,6 @@ export default async function EspaceMembrePage() {
 
   const profile = profileRes.data;
   const abonnement = abonnementRes.data;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recentPronostics = ((pronosticsRes.data as any[]) || []) as Pronostic[];
 
   // Calculer les stats personnelles (simplifiées)
@@ -132,7 +131,6 @@ export default async function EspaceMembrePage() {
   const StatusIcon = statusCfg.Icon;
 
   // Plan actif
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const plan = (abonnement?.plan as any) as { nom: string; prix_fcfa: number; duree_jours: number } | null;
   const planConfig = plan ? PLAN_CONFIG.find((p) => p.nom === plan.nom) : null;
 
