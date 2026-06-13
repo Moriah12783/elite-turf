@@ -285,7 +285,7 @@ function InscriptionForm() {
           />
           <p className="mt-1.5 text-gold-light/90 text-xs leading-relaxed">
             📲 Recevez gratuitement <strong>Notre Sélection du jour</strong> et vos alertes
-            (non-partants) par SMS — et payez en Mobile Money en 2 min.
+            (non-partants) par SMS — et payez par carte bancaire en 2 min (toutes cartes, tous pays).
           </p>
           <p className="mt-1 text-text-muted text-xs leading-relaxed">
             🔒 Jamais partagé. Désinscription par STOP à tout moment.

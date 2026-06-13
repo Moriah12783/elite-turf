@@ -25,7 +25,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const metadata: Metadata = {
   title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",
   description:
-    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement carte bancaire, Orange Money, Wave, MTN.",
+    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays. Mobile Money bientôt.",
   alternates: { canonical: APP_URL },
   openGraph: {
     title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",
@@ -48,7 +48,7 @@ const homeFaqJsonLd = {
     { "@type": "Question", name: "Faut-il créer un compte pour consulter les pronostics ?",
       acceptedAnswer: { "@type": "Answer", text: "Non. Un pronostic gratuit (Tiercé) est accessible chaque jour sans inscription. Les pronostics Starter, Pro et Elite nécessitent un abonnement payant à partir de 65€." } },
     { "@type": "Question", name: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
-      acceptedAnswer: { "@type": "Answer", text: "Choisissez votre plan, sélectionnez Orange Money, MTN MoMo ou Wave. Vous recevez une notification sur votre téléphone. Validez et votre accès est actif en moins de 2 minutes. La conversion FCFA est automatique." } },
+      acceptedAnswer: { "@type": "Answer", text: "Choisissez votre plan et payez par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays, y compris prépayées. Votre accès est actif en moins de 2 minutes. Le paiement Mobile Money arrive bientôt (Burkina, Mali, Sénégal…)." } },
     { "@type": "Question", name: "Les pronostics Elite Turf sont-ils fiables ?",
       acceptedAnswer: { "@type": "Answer", text: "Nos résultats sont publics et vérifiables. Vous pouvez consulter l'intégralité de notre historique sur la page Performances. Nous publions les bons comme les moins bons résultats — la transparence est notre engagement." } },
     { "@type": "Question", name: "Puis-je annuler mon abonnement à tout moment ?",

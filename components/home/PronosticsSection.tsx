@@ -597,7 +597,7 @@ function CtaBlock() {
         Voir tous les pronostics du jour
       </Link>
       <p className="mt-3 text-text-muted text-xs">
-        Paiement par carte · Orange Money · MTN MoMo · Wave · Accès immédiat
+        Paiement par carte bancaire (toutes cartes, tous pays) · Mobile Money bientôt · Accès immédiat
       </p>
     </div>
   );

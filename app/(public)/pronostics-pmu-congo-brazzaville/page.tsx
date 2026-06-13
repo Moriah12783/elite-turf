@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Pronostics PMU Congo Brazzaville ${country.drapeau} — Quinté+, Tiercé, Quarté+`,
-  description: "Pronostics PMU France analysés par notre équipe experte pour les parieurs congolais (Brazzaville). Quinté+, Tiercé, Quarté+. Paiement Mobile Money & carte bancaire.",
+  description: "Pronostics PMU France analysés par notre équipe experte pour les parieurs congolais (Brazzaville). Quinté+, Tiercé, Quarté+. Paiement par carte bancaire (toutes cartes). Mobile Money bientôt disponible.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-congo-brazzaville` },
   openGraph: {

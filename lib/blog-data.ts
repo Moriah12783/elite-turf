@@ -429,8 +429,8 @@ export const BLOG_ARTICLES: BlogArticle[] = [
   <li>Le <strong>champ réduit</strong> (pour les joueurs Elite)</li>
 </ul>
 
-<h2>L'accessibilité Mobile Money</h2>
-<p>Nous savons que la majorité de nos membres paient en Mobile Money (Orange Money, MTN MoMo, Wave). Notre tunnel de paiement est conçu pour ce mode, sans friction, depuis un smartphone. Rejoindre Elite Turf ne vous prend pas plus de 3 minutes.</p>
+<h2>Un paiement simple, depuis n'importe quel pays</h2>
+<p>Vous payez par carte bancaire (Visa / Mastercard) : toutes les cartes, de tous les pays, sont acceptées — y compris les cartes prépayées virtuelles Wave / Orange Money que la plupart des wallets permettent de créer. Notre tunnel de paiement est conçu sans friction, depuis un smartphone. Le paiement direct en Mobile Money (Orange Money, MTN, Wave) arrive bientôt pour le Burkina Faso, le Mali, le Sénégal et d'autres pays. Rejoindre Elite Turf ne vous prend pas plus de 3 minutes.</p>
 
 <div class="cta-block">
   <a href="/abonnements" class="cta-btn">🌍 Rejoindre la communauté Elite</a>

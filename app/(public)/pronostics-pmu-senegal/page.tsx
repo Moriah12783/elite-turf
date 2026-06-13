@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Pronostics PMU Sénégal ${country.drapeau} — Quinté+, Tiercé`,
-  description: "Pronostics PMU France pour les parieurs sénégalais. Paiement Wave, Orange Money, Free Money. Tarifs en FCFA.",
+  description: "Pronostics PMU France pour les parieurs sénégalais. Paiement par carte bancaire (toutes cartes). Mobile Money bientôt disponible.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-senegal` },
   openGraph: {
