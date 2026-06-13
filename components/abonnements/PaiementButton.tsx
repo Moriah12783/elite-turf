@@ -42,6 +42,29 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
 
   async function handlePay(method: PaymentMethod) {
     if (!method) return;
+
+    // ── Garde-fou anti-rafale ────────────────────────────────────────────
+    // Relancer un paiement en boucle rapide crée plusieurs sessions / Payment
+    // Intents pour la même carte/email en quelques secondes = signal de
+    // « vélocité » qui pousse les moteurs anti-fraude (Stripe Radar) à BLOQUER
+    // une carte pourtant légitime (échecs « risque Maximal » observés le
+    // 13/06/2026). On impose une courte pause entre deux tentatives.
+    // Fail-open : si localStorage est indisponible, on laisse passer.
+    try {
+      const last = Number(localStorage.getItem("et_last_pay_attempt") || 0);
+      const elapsed = Date.now() - last;
+      if (last && elapsed < 30000) {
+        const wait = Math.ceil((30000 - elapsed) / 1000);
+        setError(
+          `Vous venez de lancer un paiement. Patientez ${wait} s avant de réessayer — cela évite que votre banque bloque la carte par sécurité.`
+        );
+        return;
+      }
+      localStorage.setItem("et_last_pay_attempt", String(Date.now()));
+    } catch {
+      /* localStorage indisponible → on continue normalement */
+    }
+
     setError(null);
     setLoading(method);
     setOpen(false);
@@ -215,8 +238,9 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
           </button>
 
           <p className="text-[10px] text-text-muted px-3 py-2 leading-relaxed border-t border-border/50">
-            📱 Mobile Money disponible en Côte d&apos;Ivoire, Sénégal, Cameroun, Mali,
-            Burkina Faso, Bénin, Togo. 💳 Visa/Mastercard pour tous les autres cas.
+            📱 Mobile Money (Orange Money · MTN · Wave) optimisé pour la Côte d&apos;Ivoire.
+            💳 Partout ailleurs, payez par carte — les cartes prépayées virtuelles
+            Wave / Orange Money sont acceptées.
           </p>
 
           <button
