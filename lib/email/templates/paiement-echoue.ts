@@ -42,9 +42,16 @@ export function templatePaiementEchoue(data: PaiementEchoueData): {
       <strong style="color:#1E3A5F;">aucun montant n'a été débité</strong>.
     </p>
 
-    <p style="margin:0 0 20px 0;color:#4B5563;font-size:14px;line-height:1.6;">
+    <p style="margin:0 0 16px 0;color:#4B5563;font-size:14px;line-height:1.6;">
       Cela arrive parfois (une vérification de sécurité de votre banque, une carte
-      étrangère…), ce n'est pas grave. Il vous suffit de reprendre le paiement — c'est rapide.
+      non autorisée à l'international…), ce n'est pas grave et c'est vite réglé.
+    </p>
+
+    <p style="margin:0 0 20px 0;color:#4B5563;font-size:14px;line-height:1.6;">
+      <strong style="color:#1E3A5F;">Pour finaliser, choisissez le paiement par carte bancaire</strong> :
+      toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit.
+      Astuce : vous pouvez même créer en quelques secondes une <strong>carte Visa virtuelle</strong>
+      depuis votre application Orange Money ou Wave, puis l'utiliser pour payer.
     </p>
 
     ${recap}
