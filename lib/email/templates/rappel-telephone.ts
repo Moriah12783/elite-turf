@@ -75,7 +75,7 @@ export function templateRappelTelephone({
     },
     {
       icon: isAbonne ? "💳" : "🎯",
-      title: isAbonne ? "Suivi paiement Mobile Money" : "Personnalisation",
+      title: isAbonne ? "Futurs paiements Mobile Money" : "Personnalisation",
       desc:  isAbonne
         ? "Confirmation automatique et historique transactions"
         : "Pronostics adaptés à votre pays (LONACI, PMU France, Maroc)",

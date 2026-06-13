@@ -39,7 +39,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
         65 € / mois — sans engagement
       </p>
       <p style="margin:4px 0 0 0;color:#6B7280;font-size:13px;text-align:center;">
-        ≈ 42 500 FCFA · Orange Money, Wave, MTN MoMo acceptés
+        ≈ 42 500 FCFA · Carte bancaire (Visa / Mastercard), toutes cartes tous pays · Mobile Money bientôt
       </p>
     </div>
 

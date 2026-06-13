@@ -130,8 +130,8 @@ export default function CompleterProfilForm({
           Une dernière étape
         </h1>
         <p className="text-text-secondary text-sm leading-relaxed">
-          Pour finaliser votre compte et débloquer le support WhatsApp + les paiements
-          Mobile Money, complétez votre profil ci-dessous.
+          Pour finaliser votre compte et débloquer le support WhatsApp + vos futurs
+          paiements Mobile Money, complétez votre profil ci-dessous.
         </p>
       </div>
 
@@ -200,7 +200,7 @@ export default function CompleterProfilForm({
           />
           <p className="mt-1.5 text-text-muted text-xs leading-relaxed flex items-start gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-status-win flex-shrink-0 mt-0.5" />
-            Utilisé uniquement pour vos paiements Mobile Money et notre support WhatsApp.
+            Utilisé pour notre support WhatsApp et vos futurs paiements Mobile Money.
             Jamais partagé avec des tiers.
           </p>
         </div>

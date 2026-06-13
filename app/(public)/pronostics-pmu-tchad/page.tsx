@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Pronostics PMU Tchad ${country.drapeau} — Quinté+, Tiercé, Quarté+`,
-  description: "Pronostics PMU France analysés par notre équipe experte pour les parieurs tchadiens. Quinté+, Tiercé, Quarté+ avec analyse experte. Paiement Mobile Money & carte bancaire.",
+  description: "Pronostics PMU France analysés par notre équipe experte pour les parieurs tchadiens. Quinté+, Tiercé, Quarté+ avec analyse experte. Paiement par carte bancaire (toutes cartes). Mobile Money bientôt disponible.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-tchad` },
   openGraph: {

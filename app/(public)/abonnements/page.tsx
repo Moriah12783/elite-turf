@@ -39,14 +39,14 @@ const ABONNEMENTS_FAQ = [
       "Commencez par le plan Free : Notre sélection gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
   },
   {
-    question: "Comment payer mon abonnement Elite Turf en Mobile Money ?",
+    question: "Comment payer mon abonnement Elite Turf ?",
     answer:
-      "Nous acceptons Orange Money, MTN Mobile Money, Moov Money et Wave depuis 8 pays africains (Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Mali, Bénin, Togo, Maroc). Le paiement Mobile Money est instantané, votre abonnement est activé en moins de 60 secondes après confirmation. Pour les utilisateurs européens, le paiement par carte bancaire (Stripe) est également disponible.",
+      "Le paiement se fait par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit (y compris les cartes prépayées Wave et Orange Money). Votre accès est activé immédiatement après le paiement. Le paiement Mobile Money (Orange Money, MTN, Wave) sera bientôt disponible pour le Burkina Faso, le Mali, le Sénégal et d'autres pays.",
   },
   {
-    question: "Les prix sont en euros — puis-je payer en francs CFA ?",
+    question: "Les prix sont en euros — puis-je payer depuis l'Afrique ?",
     answer:
-      "Oui. Lors du paiement via Mobile Money (Orange, MTN, Wave), la conversion est effectuée automatiquement. Vous réglez l'équivalent en FCFA selon le cours du jour.",
+      "Oui. Vous payez par carte bancaire en euros — toutes les cartes africaines sont acceptées, y compris les cartes prépayées virtuelles Wave / Orange Money que la plupart des wallets permettent de créer. Le paiement direct en Mobile Money (FCFA) arrive bientôt.",
   },
   {
     question: "Quand est-ce que j'accède aux pronostics ?",
@@ -64,9 +64,9 @@ const ABONNEMENTS_FAQ = [
       "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite : vous payez pour une période fixe, puis vous décidez activement de renouveler ou non.",
   },
   {
-    question: "Je n'arrive pas à payer en Mobile Money, que faire ?",
+    question: "Je n'arrive pas à payer, que faire ?",
     answer:
-      "Vérifiez d'abord que votre solde Mobile Money est suffisant et que votre compte n'est pas bloqué par votre opérateur. Si le problème persiste, contactez-nous sur WhatsApp au +33 6 44 68 67 20 — nous répondons sous 2h en moyenne et pouvons activer manuellement votre abonnement après vérification du paiement.",
+      "Vérifiez que votre carte est autorisée pour les paiements en ligne / internationaux et que le solde est suffisant. Une carte prépayée virtuelle (Wave, Orange Money) fonctionne très bien. Si le problème persiste, contactez-nous sur WhatsApp au +33 6 44 68 67 20 — nous répondons sous 2h en moyenne.",
   },
   {
     question: "Quel est le délai de remboursement en cas de problème ?",
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
   // ("%s | Elite Turf") l'ajoute déjà (audit Sprint 1, P6 : title doublé).
   title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite",
   description:
-    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Carte bancaire (Visa/Mastercard) ou Mobile Money (Orange Money, Wave, MTN).",
+    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -159,7 +159,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Choisissez votre accès"
-        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte Visa/Mastercard, Orange Money, MTN MoMo ou Wave."
+        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt."
       />
 
       {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
@@ -468,7 +468,7 @@ export default async function AbonnementsPage() {
                       </div>
                     )}
                     <p className="text-text-muted text-xs mt-1">
-                      {plan.duree_jours} jours · Carte, Orange Money, MTN, Wave
+                      {plan.duree_jours} jours · Carte bancaire (toutes cartes, tous pays)
                     </p>
                   </div>
 
@@ -509,9 +509,9 @@ export default async function AbonnementsPage() {
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {[
               { emoji: "💳", label: "Visa / Mastercard" },
-              { emoji: "🟠", label: "Orange Money CI" },
-              { emoji: "🟡", label: "MTN MoMo" },
-              { emoji: "🔵", label: "Wave" },
+              { emoji: "🌍", label: "Toutes cartes, tous pays" },
+              { emoji: "🪪", label: "Prépayée · virtuelle · débit" },
+              { emoji: "⏳", label: "Mobile Money bientôt" },
             ].map((p) => (
               <div key={p.label} className="flex items-center gap-2 px-4 py-2.5 bg-bg-card border border-border rounded-xl">
                 <span className="text-lg">{p.emoji}</span>

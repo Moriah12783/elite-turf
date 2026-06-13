@@ -47,8 +47,8 @@ export function templateWelcomeJ3({ nomComplet }: { nomComplet: string }): {
       🇨🇮🇸🇳🇨🇲🇲🇦 Vous nous lisez depuis l'Afrique francophone ?
     </h2>
     <p style="margin:0 0 12px 0;color:#1F2937;font-size:15px;line-height:1.7;">
-      Nous avons des pages dédiées avec tarification en FCFA / Dirhams + paiement Orange Money,
-      Wave, MTN MoMo. Choisissez votre pays :
+      Nous avons des pages dédiées avec tarification en FCFA / Dirhams + paiement par carte bancaire
+      (toutes cartes, tous pays). Le Mobile Money arrive bientôt. Choisissez votre pays :
     </p>
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:14px;line-height:1.8;">
       <a href="${appUrl}/pronostics-pmu-cote-d-ivoire" style="color:#C9A84C;text-decoration:none;">🇨🇮 Côte d'Ivoire</a>

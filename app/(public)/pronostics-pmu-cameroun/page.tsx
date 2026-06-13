@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Pronostics PMU Cameroun ${country.drapeau} — Quinté+, PMUC`,
-  description: "Pronostics PMU France pour les turfistes camerounais. Paiement Orange Money, MTN MoMo, Express Union. Tarifs en FCFA.",
+  description: "Pronostics PMU France pour les turfistes camerounais. Paiement par carte bancaire (toutes cartes). Mobile Money bientôt disponible.",
   keywords: country.motsCles,
   alternates: { canonical: `${APP_URL}/pronostics-pmu-cameroun` },
   openGraph: {

@@ -31,7 +31,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
-    a: "Choisissez votre plan, sélectionnez Orange Money, MTN MoMo ou Wave. Vous recevez une notification sur votre téléphone. Validez et votre accès est actif en moins de 2 minutes. La conversion FCFA est automatique.",
+    a: "Choisissez votre plan et payez par carte bancaire (Visa / Mastercard) — toutes cartes, tous pays, y compris prépayées (Wave, Orange Money). Votre accès est actif en moins de 2 minutes. Le paiement Mobile Money arrive bientôt pour le Burkina, le Mali, le Sénégal…",
   },
   {
     q: "Le site est-il accessible sur mobile ?",

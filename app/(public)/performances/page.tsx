@@ -681,7 +681,7 @@ export default async function PerformancesPage({
             </h3>
             <p className="text-text-secondary text-sm max-w-md mx-auto mb-6">
               Rejoignez les <span className="text-gold-light font-semibold">{roundTenPlus(compteurs.communaute)} turfistes</span> qui
-              utilisent Elite Turf chaque jour. Accès immédiat, paiement par Orange Money, MTN ou Wave.
+              utilisent Elite Turf chaque jour. Accès immédiat, paiement par carte bancaire (toutes cartes, tous pays). Mobile Money bientôt disponible.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link

@@ -326,11 +326,10 @@ n'osent même pas espérer. Et ce n'est pas de la chance — c'est de l'analyse.
                 <tr>
                   <td style="padding:16px 24px;text-align:center;">
                     <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.5);">
-                      Paiement sécurisé via
-                      <strong style="color:#C9A84C;">Orange Money</strong> ·
-                      <strong style="color:#C9A84C;">MTN MoMo</strong> ·
-                      <strong style="color:#C9A84C;">Wave</strong> ·
-                      <strong style="color:#C9A84C;">Carte bancaire</strong>
+                      Paiement sécurisé par
+                      <strong style="color:#C9A84C;">Carte bancaire (Visa / Mastercard)</strong> —
+                      <strong style="color:#C9A84C;">toutes cartes, tous pays</strong> ·
+                      <strong style="color:#C9A84C;">Mobile Money bientôt</strong>
                     </p>
                     <p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.35);">
                       Activation immédiate · Aucun engagement · Résiliable à tout moment

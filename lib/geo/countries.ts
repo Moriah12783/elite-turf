@@ -110,10 +110,11 @@ export const COUNTRIES: Country[] = [
       courte: "Loterie Nationale Sénégalaise — opérateur officiel courses PMU",
     },
     paiements: [
-      { nom: "Wave Sénégal",  description: "Wave Money — leader local",     icon: "🌊" },
-      { nom: "Orange Money",  description: "Orange Money Sénégal",          icon: "🟧" },
-      { nom: "Free Money",    description: "Free Sénégal Mobile Money",     icon: "🟦" },
-      { nom: "Wari",          description: "Solution paiement Wari",         icon: "🟫" },
+      { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
+      { nom: "Wave Sénégal",  description: "Wave Money — leader local",     icon: "🌊", bientot: true },
+      { nom: "Orange Money",  description: "Orange Money Sénégal",          icon: "🟧", bientot: true },
+      { nom: "Free Money",    description: "Free Sénégal Mobile Money",     icon: "🟦", bientot: true },
+      { nom: "Wari",          description: "Solution paiement Wari",         icon: "🟫", bientot: true },
     ],
     motsCles: [
       "pronostic PMU Sénégal",
@@ -141,9 +142,10 @@ export const COUNTRIES: Country[] = [
       courte: "Pari Mutuel Urbain Camerounais — opérateur officiel",
     },
     paiements: [
-      { nom: "Orange Money CM",  description: "Orange Money Cameroun",        icon: "🟧" },
-      { nom: "MTN MoMo CM",      description: "MTN Mobile Money Cameroun",    icon: "🟨" },
-      { nom: "Express Union",    description: "Solution paiement EU",          icon: "🟦" },
+      { nom: "Carte bancaire",   description: "Visa / Mastercard — toutes cartes", icon: "💳" },
+      { nom: "Orange Money CM",  description: "Orange Money Cameroun",        icon: "🟧", bientot: true },
+      { nom: "MTN MoMo CM",      description: "MTN Mobile Money Cameroun",    icon: "🟨", bientot: true },
+      { nom: "Express Union",    description: "Solution paiement EU",          icon: "🟦", bientot: true },
     ],
     motsCles: [
       "pronostic PMU Cameroun",
@@ -201,8 +203,9 @@ export const COUNTRIES: Country[] = [
       courte: "Pas d'opérateur officiel courses au Mali — jeu via LONACI ou agences",
     },
     paiements: [
-      { nom: "Orange Money ML",   description: "Orange Money Mali",     icon: "🟧" },
-      { nom: "Moov Money",        description: "Moov Africa",           icon: "🟥" },
+      { nom: "Carte bancaire",    description: "Visa / Mastercard — toutes cartes", icon: "💳" },
+      { nom: "Orange Money ML",   description: "Orange Money Mali",     icon: "🟧", bientot: true },
+      { nom: "Moov Money",        description: "Moov Africa",           icon: "🟥", bientot: true },
     ],
     motsCles: [
       "pronostic PMU Mali",
