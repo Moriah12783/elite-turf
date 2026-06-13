@@ -17,8 +17,15 @@
  *
  * Stripe reste opérationnel en parallèle pour Visa/Mastercard (cartes africaines
  * acceptées) — utile pour les clients européens et africains avec CB.
+ *
+ *   - 2026-06-13 : repassé à `false` (décision Steph). Stratégie « carte d'abord » :
+ *     tant que la chaîne succès→abonnement Paystack n'est pas prouvée et que le
+ *     Mobile Money ne couvre vraiment que la CI, on met en avant la CARTE (Stripe,
+ *     3DS corrigé en PR #182, universelle via cartes prépayées Wave/OM) et on
+ *     affiche le Mobile Money en « Bientôt disponible ». Remettre `true` une fois
+ *     l'activation Paystack validée par un vrai paiement test.
  */
-export const PAYSTACK_AVAILABLE = true;
+export const PAYSTACK_AVAILABLE = false;
 
 /** Configuration de l'offre de lancement — modifiable ici uniquement.
  *  La promo de lancement -30% (code ELITE30) a expiré le 4 mai 2026.
