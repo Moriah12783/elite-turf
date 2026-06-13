@@ -82,11 +82,15 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode:                 "payment",
       payment_method_types: ["card"],
-      // 3D Secure : authentification forte (OTP banque) demandée dès que la carte
-      // la supporte → réduit fortement les faux blocages sur cartes étrangères
-      // (Maroc/Afrique) et transfère la responsabilité d'un litige à la banque.
+      // 3D Secure : « automatic » → on LAISSE Stripe Radar décider quand imposer
+      // le 3DS, au lieu de le FORCER sur chaque carte. Forcer « any » déclenchait
+      // l'OTP banque même sur les cartes prépayées Wave/Orange Money dont
+      // l'émetteur gère mal le 3DS → échecs en cascade (8 tentatives 3DS →
+      // card_declined observé le 13/06/2026, client Burkina). « automatic »
+      // conserve le transfert de responsabilité quand le 3DS se déclenche
+      // réellement, sans casser les cartes prépayées légitimes. (Inverse PR #146.)
       payment_method_options: {
-        card: { request_three_d_secure: "any" },
+        card: { request_three_d_secure: "automatic" },
       },
       customer_email:       userEmail,
       line_items: [
