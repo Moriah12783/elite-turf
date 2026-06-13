@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
+import { resolvePlanUuid } from "@/lib/plans/resolve";
 import { sendEmail } from "@/lib/email";
 import { templateConfirmationPaiement } from "@/lib/email/templates/confirmation-paiement";
 import { buildFailureMetadata } from "./failure-metadata";
@@ -168,32 +169,9 @@ export async function activateSubscriptionFromPaystack(
 
   const methode = mapPaystackChannelToMethode(payment.channel, payment.authorization?.bank);
 
-  // 1. Désactiver les anciens abonnements actifs
-  await supabase
-    .from("abonnements")
-    .update({ statut: "EXPIRE" })
-    .eq("user_id", userId)
-    .eq("statut", "ACTIF");
-
-  // 2. Créer le nouvel abonnement
-  const { data: newAbonnement, error: abErr } = await supabase
-    .from("abonnements")
-    .insert({
-      user_id: userId,
-      plan_id: plan.id,
-      date_debut: dateDebut,
-      date_fin: dateFin,
-      statut: "ACTIF",
-      auto_renouvellement: false,
-    })
-    .select()
-    .single();
-
-  if (abErr) {
-    return { ok: false, reason: `Insert abonnement: ${abErr.message}` };
-  }
-
-  // 3. Mettre à jour le profil
+  // 1. ACTIVER L'ACCÈS D'ABORD (profil) — l'accès ne doit JAMAIS dépendre de la
+  //    création de la ligne d'audit `abonnements` (qui peut échouer, ex. plans de
+  //    test sans ligne en base). C'est la source de vérité du gating.
   await supabase
     .from("profiles")
     .update({
@@ -204,7 +182,42 @@ export async function activateSubscriptionFromPaystack(
     })
     .eq("id", userId);
 
-  // 4. Marquer la transaction comme réussie + enrichir metadata Paystack
+  // 2. Ligne d'audit `abonnements` — BEST-EFFORT (FK UUID → plans résolue).
+  //    abonnements.plan_id est un UUID ; insérer l'id texte de PLAN_CONFIG ("elite",
+  //    "test-paystack"…) provoquait « invalid input syntax for type uuid » et
+  //    faisait échouer toute l'activation (cause racine de abonnements vide).
+  let abonnementId: string | null = null;
+  const planUuid = await resolvePlanUuid(plan);
+  if (planUuid) {
+    await supabase
+      .from("abonnements")
+      .update({ statut: "EXPIRE" })
+      .eq("user_id", userId)
+      .eq("statut", "ACTIF");
+
+    const { data: newAbonnement, error: abErr } = await supabase
+      .from("abonnements")
+      .insert({
+        user_id: userId,
+        plan_id: planUuid,
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        statut: "ACTIF",
+        auto_renouvellement: false,
+      })
+      .select()
+      .single();
+
+    if (abErr) {
+      console.error(`[paystack/activate] Insert abonnement non bloquant échoué: ${abErr.message}`);
+    } else {
+      abonnementId = newAbonnement?.id ?? null;
+    }
+  } else {
+    console.warn(`[paystack/activate] Pas d'UUID plans pour "${plan.nom}" (plan de test ?) → audit abonnement sauté.`);
+  }
+
+  // 3. Marquer la transaction SUCCES + enrichir metadata Paystack.
   const enrichedMetadata = {
     ...(transaction.metadata as Record<string, unknown> | null),
     paystack_channel:        payment.channel ?? null,
@@ -217,7 +230,7 @@ export async function activateSubscriptionFromPaystack(
     .update({
       statut: "SUCCES",
       methode,
-      abonnement_id: newAbonnement?.id,
+      abonnement_id: abonnementId,
       date_transaction: payment.paid_at ?? now.toISOString(),
       metadata: enrichedMetadata,
     })
@@ -253,5 +266,5 @@ export async function activateSubscriptionFromPaystack(
     console.error("[paystack/activate] Email confirmation échoué (non bloquant):", emailErr);
   }
 
-  return { ok: true, alreadyActivated: false, abonnementId: newAbonnement?.id ?? null };
+  return { ok: true, alreadyActivated: false, abonnementId };
 }

@@ -47,7 +47,10 @@ export async function POST(req: NextRequest) {
         user_id:              userId,
         montant_fcfa:         plan.prix_fcfa,
         devise:               "EUR",
-        methode:              "CARTE_BANCAIRE",
+        // "STRIPE" = valeur enum valide (transactions_methode_check). L'ancienne
+        // valeur "CARTE_BANCAIRE" était rejetée → insert avalé par le try/catch
+        // → paiement Stripe absent de l'admin (audit 2026-06-13).
+        methode:              "STRIPE",
         statut:               "EN_ATTENTE",
         reference_operateur:  transactionId,
         date_transaction:     new Date().toISOString(),

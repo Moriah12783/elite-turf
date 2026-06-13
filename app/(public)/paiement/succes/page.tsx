@@ -4,6 +4,8 @@ import { CheckCircle, Crown, ArrowRight, Star, Zap } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import TrackPurchase from "@/components/analytics/TrackPurchase";
+import { verifyAndActivateStripe } from "@/lib/stripe/activate";
+import { fetchPaystackTransaction, activateSubscriptionFromPaystack } from "@/lib/paystack/activate";
 
 export const metadata: Metadata = {
   title: "Paiement réussi — Elite Turf",
@@ -27,7 +29,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:30
 export default async function PaiementSuccesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tx?: string; plan?: string; sandbox?: string }>;
+  searchParams: Promise<{ tx?: string; plan?: string; sandbox?: string; session_id?: string }>;
 }) {
   const params = await searchParams;
   const planId = params.plan;
@@ -52,6 +54,24 @@ export default async function PaiementSuccesPage({
       });
     } catch {
       // Sandbox non bloquant
+    }
+  }
+
+  // Filet defense-in-depth : si le webhook n'a pas (encore) activé l'abonnement,
+  // on vérifie le paiement côté serveur et on active ici. Idempotent (skip si déjà
+  // activé). Évite que l'accès dépende UNIQUEMENT de la livraison du webhook.
+  if (!isSandbox && user && params.tx) {
+    try {
+      if (params.tx.startsWith("ET-STRIPE-") && params.session_id) {
+        await verifyAndActivateStripe(params.session_id);
+      } else if (params.tx.startsWith("ET-PS-")) {
+        const payment = await fetchPaystackTransaction(params.tx);
+        if (payment && payment.status === "success") {
+          await activateSubscriptionFromPaystack(payment);
+        }
+      }
+    } catch {
+      // Non bloquant : la page s'affiche même si l'activation rencontre un souci.
     }
   }
 
@@ -90,6 +110,13 @@ export default async function PaiementSuccesPage({
         year: "numeric",
       })
     : null;
+
+  // Accès RÉELLEMENT actif (source de vérité = profil) — pour ne plus afficher un
+  // « ACTIF » cosmétique si l'activation n'a pas abouti (audit 2026-06-13).
+  const accesActif = !!(
+    profile?.date_expiration_abonnement &&
+    new Date(profile.date_expiration_abonnement).getTime() > Date.now()
+  );
 
   // ── GA4 funnel event : purchase ──
   // Inféré méthode de paiement depuis le préfixe transaction_id :
@@ -134,7 +161,9 @@ export default async function PaiementSuccesPage({
           Félicitations, {prenom} ! 🎉
         </h1>
         <p className="text-text-secondary text-lg mb-8">
-          Votre paiement a été confirmé et votre accès est maintenant actif.
+          {accesActif
+            ? "Votre paiement a été confirmé et votre accès est maintenant actif."
+            : "Votre paiement a été reçu. Votre accès s'active dans un instant — vous recevrez un email de confirmation."}
         </p>
 
         {/* Carte récap abonnement */}
@@ -148,8 +177,8 @@ export default async function PaiementSuccesPage({
                 <p className="font-bold text-text-primary">Plan {plan.nom}</p>
                 <p className="text-text-muted text-xs">Abonnement mensuel</p>
               </div>
-              <span className="ml-auto px-3 py-1 bg-status-win/10 text-status-win text-xs font-bold rounded-full border border-status-win/20">
-                ✓ ACTIF
+              <span className={`ml-auto px-3 py-1 text-xs font-bold rounded-full border ${accesActif ? "bg-status-win/10 text-status-win border-status-win/20" : "bg-orange-500/10 text-orange-400 border-orange-500/30"}`}>
+                {accesActif ? "✓ ACTIF" : "⏳ Activation…"}
               </span>
             </div>
 
