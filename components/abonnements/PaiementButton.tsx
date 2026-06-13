@@ -227,9 +227,14 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
               <CreditCard className="w-4 h-4 text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-text-primary text-sm font-semibold">Visa / Mastercard</p>
+                <span className="text-[9px] uppercase tracking-wider font-bold text-status-win bg-status-win/15 px-1.5 py-0.5 rounded">
+                  Recommandé
+                </span>
+              </div>
               <p className="text-text-muted text-xs">
-                Toutes cartes (Afrique, Europe, autres) — sécurisé par Stripe
+                Toutes cartes — Afrique, Europe (cartes prépayées Wave / Orange Money acceptées)
               </p>
             </div>
             <span className="text-text-muted text-xs font-mono">
@@ -238,9 +243,8 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
           </button>
 
           <p className="text-[10px] text-text-muted px-3 py-2 leading-relaxed border-t border-border/50">
-            📱 Mobile Money (Orange Money · MTN · Wave) optimisé pour la Côte d&apos;Ivoire.
-            💳 Partout ailleurs, payez par carte — les cartes prépayées virtuelles
-            Wave / Orange Money sont acceptées.
+            📱 Mobile Money de retour très bientôt. 💳 En attendant, payez par carte —
+            Visa / Mastercard et cartes prépayées virtuelles Wave / Orange Money acceptées.
           </p>
 
           <button
