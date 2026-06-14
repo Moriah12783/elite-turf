@@ -38,10 +38,11 @@ export function smsJ5Body(token: string): string {
 export async function sendSequenceSms(params: {
   profileId: string;
   phone: string;
+  pays?: string | null;   // nom du pays du profil → indicatif correct
   type: string;   // 'SEQUENCE_J2' | 'SEQUENCE_J5'
   body: string;
 }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
-  const phone = normalizeE164(params.phone);
+  const phone = normalizeE164(params.phone, params.pays);
   if (!phone) return { ok: false, skipped: true };
 
   const supabase = createServiceClient();

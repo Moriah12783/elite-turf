@@ -45,12 +45,12 @@ export async function sendWelcomeSms(params: {
     // 1. Profil (numéro autoritatif + état opt-out + token désinscription)
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, phone, sms_opted_out, sms_unsub_token")
+      .select("id, phone, pays, sms_opted_out, sms_unsub_token")
       .eq("email", params.email)
       .single();
 
     if (!profile) return;
-    const phone = normalizeE164(profile.phone || "");
+    const phone = normalizeE164(profile.phone || "", profile.pays);
     if (!phone) return;                  // pas de numéro → rien (numéro optionnel)
     if (profile.sms_opted_out) return;   // a déjà fait STOP
 
