@@ -23,6 +23,22 @@ const METHODE_LABELS: Record<string, string> = {
   PAYPAL:       "PayPal",
 };
 
+// Un paiement CARTE (Stripe) est en TEMPS RÉEL : il réussit (→ SUCCES via le
+// webhook/la page de succès) ou il est abandonné. Il n'existe JAMAIS de carte
+// « reçue mais à valider à la main » (ça, c'est uniquement le Mobile Money).
+// Donc un EN_ATTENTE carte = checkout ABANDONNÉ → aucun montant reçu, rien à valider.
+const isCardTx = (tx: { methode?: string; reference_operateur?: string | null }): boolean =>
+  tx.methode === "STRIPE" ||
+  tx.methode === "CARTE_BANCAIRE" ||
+  (typeof tx.reference_operateur === "string" && tx.reference_operateur.startsWith("ET-STRIPE-"));
+
+// Statut d'affichage pour un checkout carte abandonné (neutre, pas alarmant).
+const ABANDONNE_CONFIG = {
+  label: "Non finalisé",
+  classes: "text-text-muted bg-bg-elevated border-border",
+  icon: XCircle,
+};
+
 interface Props {
   searchParams: { success?: string; error?: string; expire?: string; relance?: string };
 }
@@ -53,7 +69,9 @@ export default async function PaiementsPage({ searchParams }: Props) {
 
   // KPIs
   const revenusMois  = monthList.filter((t: any) => t.statut === "SUCCES").reduce((s: number, t: any) => s + (t.montant_fcfa || 0), 0);
-  const enAttente    = txList.filter((t: any) => t.statut === "EN_ATTENTE").length;
+  // « À valider » = SEULEMENT le Mobile Money en attente (l'argent a pu arriver).
+  // Les checkouts carte abandonnés ne comptent PAS (rien n'a été reçu).
+  const enAttente    = txList.filter((t: any) => t.statut === "EN_ATTENTE" && !isCardTx(t)).length;
   const txSucces     = txList.filter((t: any) => t.statut === "SUCCES").length;
   const revenusTotal = txList.filter((t: any) => t.statut === "SUCCES").reduce((s: number, t: any) => s + (t.montant_fcfa || 0), 0);
 
@@ -170,7 +188,10 @@ export default async function PaiementsPage({ searchParams }: Props) {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {txList.map((tx: any) => {
-                  const cfg  = STATUT_CONFIG[tx.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.EN_ATTENTE;
+                  const isAbandon = tx.statut === "EN_ATTENTE" && isCardTx(tx);
+                  const cfg  = isAbandon
+                    ? ABANDONNE_CONFIG
+                    : (STATUT_CONFIG[tx.statut as keyof typeof STATUT_CONFIG] || STATUT_CONFIG.EN_ATTENTE);
                   const Icon = cfg.icon;
                   return (
                     <tr key={tx.id} className="hover:bg-bg-hover transition-colors">
@@ -214,7 +235,7 @@ export default async function PaiementsPage({ searchParams }: Props) {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1.5 items-start">
-                          {tx.statut === "EN_ATTENTE" && (
+                          {tx.statut === "EN_ATTENTE" && !isCardTx(tx) && (
                             <form action="/api/admin/paiements/valider" method="POST">
                               <input type="hidden" name="id" value={tx.id} />
                               <button
@@ -252,9 +273,10 @@ export default async function PaiementsPage({ searchParams }: Props) {
       <div className="p-4 rounded-xl bg-bg-elevated border border-border">
         <p className="text-text-muted text-xs leading-relaxed flex items-start gap-2">
           <TrendingUp className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gold-primary" />
-          Cliquer sur <strong className="text-text-secondary">✓ Valider</strong> met à jour automatiquement :
+          <strong className="text-text-secondary">✓ Valider</strong> (Mobile Money uniquement) met à jour automatiquement :
           la transaction (→ Validé), l&apos;abonnement (→ Actif) et le profil de l&apos;abonné (→ STARTER, PRO ou ELITE)
-          selon le plan souscrit.
+          selon le plan souscrit. Les paiements carte <strong className="text-text-secondary">« Non finalisé »</strong> sont
+          des checkouts <strong className="text-text-secondary">abandonnés</strong> — aucun montant n&apos;a été reçu, il n&apos;y a rien à valider.
         </p>
       </div>
 
