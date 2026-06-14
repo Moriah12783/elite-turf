@@ -36,6 +36,7 @@ type SeqType = "SEQUENCE_J2" | "SEQUENCE_J5";
 interface Prof {
   id:               string;
   phone:            string | null;
+  pays:             string | null;
   sms_unsub_token:  string | null;
   date_inscription: string;
 }
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profiles, error } = await supabase
       .from("profiles")
-      .select("id, phone, sms_unsub_token, date_inscription")
+      .select("id, phone, pays, sms_unsub_token, date_inscription")
       .gte("date_inscription", minDate)
       .lte("date_inscription", maxDate)
       .in("statut_abonnement", ["GRATUIT", "EXPIRE"])
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
         ? smsJ2Body(token, nbGagnants)
         : smsJ5Body(token);
 
-      const res = await sendSequenceSms({ profileId: p.id, phone, type: step.type, body });
+      const res = await sendSequenceSms({ profileId: p.id, phone, pays: p.pays, type: step.type, body });
       if (res.ok) {
         stats.sent++;
       } else if (res.skipped) {
