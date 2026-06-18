@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
+import { recurringFromDuree } from "@/lib/stripe/renewal";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -21,7 +22,7 @@ const isStripeConfigured =
 
 export async function POST(req: NextRequest) {
   try {
-    const { planId, userId, userEmail } = await req.json();
+    const { planId, userId, userEmail, autoRenew } = await req.json();
 
     if (!planId || !userId || !userEmail) {
       return NextResponse.json({ error: "Paramètres manquants." }, { status: 400 });
@@ -31,6 +32,11 @@ export async function POST(req: NextRequest) {
     if (!plan || !plan.actif) {
       return NextResponse.json({ error: "Plan introuvable ou inactif." }, { status: 404 });
     }
+
+    // Renouvellement automatique (opt-in) : carte/Stripe uniquement, et JAMAIS
+    // pour les plans de test (cycle d'1 jour). Case décochée par défaut côté
+    // client → le paiement unique reste le comportement par défaut inchangé.
+    const subscriptionMode = autoRenew === true && plan.nom !== "Test";
 
     const supabase = createServiceClient();
     const { data: profile } = await supabase
@@ -82,8 +88,21 @@ export async function POST(req: NextRequest) {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
+    // Métadonnées communes (lues par lib/stripe/activate à l'activation ET, en
+    // mode abonnement, recopiées sur la Subscription pour les renouvellements).
+    const sharedMeta = {
+      transaction_id: transactionId,
+      plan_id:        planId,
+      user_id:        userId,
+      user_email:     userEmail,
+      plan_nom:       plan.nom,
+      duree_jours:    String(plan.duree_jours),
+    };
+
     const session = await stripe.checkout.sessions.create({
-      mode:                 "payment",
+      // « subscription » = renouvellement automatique opt-in (carte) ;
+      // « payment » = paiement unique (défaut historique, sans engagement).
+      mode:                 subscriptionMode ? "subscription" : "payment",
       payment_method_types: ["card"],
       // 3D Secure : « automatic » → on LAISSE Stripe Radar décider quand imposer
       // le 3DS, au lieu de le FORCER sur chaque carte. Forcer « any » déclenchait
@@ -102,6 +121,8 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency:     "eur",
             unit_amount:  Math.round(plan.prix_eur * 100), // en centimes
+            // En mode abonnement : cycle « day × N » (Starter 7 j, Pro/Elite 30 j).
+            ...(subscriptionMode ? { recurring: recurringFromDuree(plan.duree_jours) } : {}),
             product_data: {
               name:        `Elite Turf — Pack ${plan.nom === "Starter" ? "Découverte" : plan.nom === "Pro" ? "Performance" : plan.nom === "Test" ? "Test (1 €)" : "Elite"}`,
               description: `${plan.description} · Accès ${plan.duree_jours} jours`,
@@ -111,15 +132,14 @@ export async function POST(req: NextRequest) {
           },
         },
       ],
+      // Recopie les métadonnées sur la Subscription → indispensable pour
+      // retrouver user_id/plan/durée lors des webhooks de renouvellement.
+      ...(subscriptionMode ? { subscription_data: { metadata: sharedMeta } } : {}),
       success_url: `${APP_URL}/paiement/succes?tx=${transactionId}&plan=${planId}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${APP_URL}/abonnements?cancelled=1`,
       metadata: {
-        transaction_id: transactionId,
-        plan_id:        planId,
-        user_id:        userId,
-        user_email:     userEmail,
-        plan_nom:       plan.nom,
-        duree_jours:    String(plan.duree_jours),
+        ...sharedMeta,
+        auto_renew: subscriptionMode ? "1" : "0",
       },
       locale: "fr",
     });

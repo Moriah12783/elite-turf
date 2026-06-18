@@ -61,7 +61,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Puis-je annuler mon abonnement à tout moment ?",
     answer:
-      "Oui, vous pouvez annuler à tout moment depuis votre espace membre. L'annulation prend effet à la fin de la période en cours (vous gardez l'accès jusqu'à expiration). Aucun renouvellement automatique n'est appliqué sans votre confirmation explicite : vous payez pour une période fixe, puis vous décidez activement de renouveler ou non.",
+      "Oui. Si vous avez activé le renouvellement automatique (option proposée au paiement), vous l'annulez en un clic depuis votre espace membre : l'accès reste actif jusqu'à la fin de la période en cours, sans nouveau prélèvement. Par défaut, sans cette option, rien n'est reconduit — vous payez une période fixe, puis vous décidez librement de renouveler ou non.",
   },
   {
     question: "Je n'arrive pas à payer, que faire ?",

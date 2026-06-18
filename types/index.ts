@@ -48,6 +48,10 @@ export interface Abonnement {
   date_fin: string;
   statut: "ACTIF" | "EXPIRE" | "SUSPENDU" | "OFFERT";
   auto_renouvellement: boolean;
+  /** ID abonnement Stripe (sub_…) si renouvellement auto ; NULL si paiement unique. */
+  stripe_subscription_id?: string | null;
+  /** ID client Stripe (cus_…) lié à l'abonnement récurrent. */
+  stripe_customer_id?: string | null;
   plan?: Plan;
 }
 

@@ -32,9 +32,9 @@ const GARANTIES = [
   },
   {
     icon: ShieldCheck,
-    titre: "Sans engagement, zéro reconduction",
+    titre: "Sans engagement, vous gardez le contrôle",
     texte:
-      "Vous payez une période fixe. Aucun renouvellement automatique : vous décidez activement de continuer — ou pas.",
+      "Par défaut, aucun renouvellement automatique : vous payez une période fixe, puis vous décidez. Le renouvellement auto est une option, activable et annulable à tout moment.",
     accent: false,
   },
   {

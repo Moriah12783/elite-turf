@@ -39,7 +39,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Puis-je annuler à tout moment ?",
-    a: "Oui. Tous nos abonnements sont mensuels, sans engagement de durée. Vous gardez l'accès jusqu'à la fin de la période payée, puis ça s'arrête automatiquement — sans frais, sans démarche.",
+    a: "Oui. Par défaut, c'est sans engagement : l'accès s'arrête seul à l'échéance, sans frais ni démarche. Si vous choisissez le renouvellement automatique (option à cocher au paiement), vous l'annulez à tout moment depuis votre espace membre — l'accès reste actif jusqu'à la fin de la période déjà payée.",
   },
   {
     q: "Comment contacter le support ?",
