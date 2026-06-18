@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
   CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap, Brain,
-  MessageCircle, Quote
+  MessageCircle, Quote, PlayCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/admin/whatsapp",             icon: MessageCircle,   label: "WhatsApp Business" },
   { href: "/admin/pronostic-gratuit",    icon: Gift,            label: "Pronostic Gratuit" },
   { href: "/admin/arrivees",             icon: Trophy,          label: "Arrivées & Rapports" },
+  { href: "/admin/replays",              icon: PlayCircle,      label: "Replays" },
   { href: "/admin/utilisateurs",         icon: Users,           label: "Utilisateurs" },
   { href: "/admin/paiements",            icon: CreditCard,      label: "Paiements" },
   { href: "/admin/notifications",        icon: Bell,            label: "Notifications" },

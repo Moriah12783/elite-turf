@@ -67,6 +67,16 @@ export default function Navbar() {
             <NavLink href="/courses">Programme</NavLink>
             <NavLink href="/pronostics">Pronostics</NavLink>
             <NavLink href="/arrivees">Arrivées</NavLink>
+            <Link
+              href="/live"
+              className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary text-sm font-medium transition-colors"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              Direct
+            </Link>
             <NavLink href="/abonnements">Abonnements</NavLink>
             <Link
               href="/guide-initie"
@@ -170,6 +180,7 @@ export default function Navbar() {
               { href: "/courses",      label: "Programme"          },
               { href: "/pronostics",   label: "Pronostics"         },
               { href: "/arrivees",     label: "Arrivées & Rapports" },
+              { href: "/live",         label: "🔴 Direct"          },
               { href: "/abonnements",  label: "Abonnements"        },
               { href: "/guide-initie", label: "📥 Guide gratuit"   },
               { href: "/performances", label: "Performances"       },

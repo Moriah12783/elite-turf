@@ -76,3 +76,24 @@ export function tomorrowParisISO(): string {
 export function parisDateISOPlusDays(days: number): string {
   return parisDateISO(new Date(Date.now() + days * 24 * 60 * 60 * 1000));
 }
+
+const PARIS_TIME_FMT = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/**
+ * Minutes écoulées depuis minuit en heure de Paris (0–1439).
+ * Sert au calcul de l'état « live » d'une course (à venir / imminente /
+ * résultat imminent) indépendamment du fuseau du serveur (UTC sur Workers).
+ *
+ * @example  parisMinutesOfDay()  // 870 s'il est 14h30 à Paris
+ */
+export function parisMinutesOfDay(date: Date = new Date()): number {
+  const parts = PARIS_TIME_FMT.formatToParts(date);
+  const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
+  const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  return h * 60 + m;
+}
