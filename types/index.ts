@@ -227,7 +227,7 @@ export const PLAN_CONFIG: Plan[] = [
       "Conseil de mise simple suggéré pour chaque pronostic",
       "5 alertes SMS / Push (non-partant, changement de dernière minute)",
       "Bilan transparent : nos résultats réels de la semaine",
-      "Sans engagement · sans reconduction automatique · résiliable",
+      "Sans engagement par défaut · renouvellement auto optionnel · résiliable",
     ],
     actif: true,
   },
