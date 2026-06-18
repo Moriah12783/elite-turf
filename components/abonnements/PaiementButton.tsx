@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, Clock } from "lucide-react";
+import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, Clock, RefreshCw } from "lucide-react";
 import type { Plan } from "@/types";
 import { PAYSTACK_AVAILABLE } from "@/lib/promo";
 import { trackEvent } from "@/lib/analytics/track";
@@ -26,6 +26,10 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
   const [open, setOpen]       = useState(false);
   const [loading, setLoading] = useState<PaymentMethod>(null);
   const [error, setError]     = useState<string | null>(null);
+  // Renouvellement automatique (opt-in) — décoché par défaut : on préserve le
+  // « sans engagement ». N'est envoyé qu'à Stripe (carte) ; le Mobile Money
+  // reste en paiement unique.
+  const [autoRenew, setAutoRenew] = useState(false);
   const router                = useRouter();
 
   if (!userId || !userEmail) {
@@ -99,7 +103,13 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plan.id, userId, userEmail }),
+        body: JSON.stringify({
+          planId: plan.id,
+          userId,
+          userEmail,
+          // Auto-renew = carte/Stripe uniquement (le Mobile Money ignore ce champ).
+          ...(method === "stripe" ? { autoRenew } : {}),
+        }),
       });
 
       const data = await res.json();
@@ -216,6 +226,28 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
 
               <div className="mx-3 border-t border-border/50" />
             </>
+          )}
+
+          {/* Renouvellement automatique (opt-in) — carte uniquement, jamais pour les plans Test */}
+          {plan.nom !== "Test" && (
+            <label className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-bg-hover transition-colors">
+              <input
+                type="checkbox"
+                checked={autoRenew}
+                onChange={(e) => setAutoRenew(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-gold-primary flex-shrink-0"
+              />
+              <span className="flex-1 min-w-0">
+                <span className="flex items-center gap-1.5 text-text-primary text-sm font-semibold">
+                  <RefreshCw className="w-3.5 h-3.5 text-gold-primary" />
+                  Renouvellement automatique
+                </span>
+                <span className="block text-text-muted text-xs mt-0.5">
+                  Par carte. Reconduit votre accès à l&apos;échéance — annulable à tout moment
+                  depuis votre espace membre.
+                </span>
+              </span>
+            </label>
           )}
 
           {/* Stripe — Visa / Mastercard internationale (toutes cartes) */}

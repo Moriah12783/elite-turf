@@ -52,7 +52,7 @@ const homeFaqJsonLd = {
     { "@type": "Question", name: "Les pronostics Elite Turf sont-ils fiables ?",
       acceptedAnswer: { "@type": "Answer", text: "Nos résultats sont publics et vérifiables. Vous pouvez consulter l'intégralité de notre historique sur la page Performances. Nous publions les bons comme les moins bons résultats — la transparence est notre engagement." } },
     { "@type": "Question", name: "Puis-je annuler mon abonnement à tout moment ?",
-      acceptedAnswer: { "@type": "Answer", text: "Oui. Tous nos abonnements sont mensuels, sans engagement de durée. Vous gardez l'accès jusqu'à la fin de la période payée, puis ça s'arrête automatiquement — sans frais, sans démarche." } },
+      acceptedAnswer: { "@type": "Answer", text: "Oui. Par défaut, c'est sans engagement : l'accès s'arrête seul à l'échéance, sans frais ni démarche. Si vous choisissez le renouvellement automatique (option à cocher au paiement), vous l'annulez à tout moment depuis votre espace membre — l'accès reste actif jusqu'à la fin de la période déjà payée." } },
     { "@type": "Question", name: "Que contient le guide gratuit Elite Turf ?",
       acceptedAnswer: { "@type": "Answer", text: "Le guide PDF 'Les 5 secrets pour détecter les outsiders gagnants' révèle les méthodes utilisées par nos experts : lecture de fiche, exploitation des côtes, identification des outsiders à valeur. 100% gratuit, accessible sans inscription." } },
     { "@type": "Question", name: "Le site est-il accessible depuis un téléphone mobile ?",

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import {
   Crown, Star, Zap, Calendar, Clock, TrendingUp,
   Eye, Heart, Bell, Shield, ChevronRight, ArrowRight,
-  Trophy, Target, BarChart3, User,
+  Trophy, Target, BarChart3, User, RefreshCw,
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG, CONFIDENCE_CONFIG, BET_TYPE_LABELS } from "@/types";
@@ -14,6 +14,7 @@ import { whatsappUrl } from "@/lib/constants/whatsapp";
 import PageHero from "@/components/layout/PageHero";
 import ProfileEditForm from "@/components/membre/ProfileEditForm";
 import TransactionsHistory from "@/components/membre/TransactionsHistory";
+import AnnulerRenouvellement from "@/components/membre/AnnulerRenouvellement";
 
 export const metadata: Metadata = {
   title: "Mon Espace Membre — Elite Turf",
@@ -98,7 +99,7 @@ export default async function EspaceMembrePage() {
     serviceClient
       .from("abonnements")
       .select(`
-        id, date_debut, date_fin, statut, auto_renouvellement,
+        id, date_debut, date_fin, statut, auto_renouvellement, stripe_subscription_id,
         plan:plan_id(id, nom, prix_fcfa, duree_jours, acces_performance, acces_elite)
       `)
       .eq("user_id", user.id)
@@ -123,6 +124,11 @@ export default async function EspaceMembrePage() {
 
   const profile = profileRes.data;
   const abonnement = abonnementRes.data;
+  // Renouvellement automatique : actif uniquement si une subscription Stripe est
+  // rattachée ET le flag auto-renouvellement est vrai (annulable depuis ici).
+  const ab = abonnement as any;
+  const hasStripeSub   = !!ab?.stripe_subscription_id;
+  const autoRenewActif = hasStripeSub && !!ab?.auto_renouvellement;
   const recentPronostics = ((pronosticsRes.data as any[]) || []) as Pronostic[];
 
   // Calculer les stats personnelles (simplifiées)
@@ -345,6 +351,27 @@ export default async function EspaceMembrePage() {
                   </div>
                 </div>
               )}
+
+              {/* ── Renouvellement automatique ─────────────────────────── */}
+              {autoRenewActif ? (
+                <div className="mt-4 p-3 rounded-xl bg-gold-faint border border-gold-primary/20">
+                  <p className="text-text-primary text-sm font-semibold flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-gold-primary" />
+                    Renouvellement automatique activé
+                  </p>
+                  <p className="text-text-muted text-xs mt-0.5 mb-2">
+                    Votre accès sera reconduit à l&apos;échéance. Annulable à tout moment, sans frais.
+                  </p>
+                  <AnnulerRenouvellement dateFin={ab?.date_fin ?? null} />
+                </div>
+              ) : hasStripeSub ? (
+                <div className="mt-4 p-3 rounded-xl bg-bg-elevated border border-border">
+                  <p className="text-text-secondary text-xs">
+                    Renouvellement automatique <span className="font-semibold">désactivé</span>.
+                    Votre accès s&apos;arrêtera à l&apos;échéance.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-4 flex gap-2">
                 <Link

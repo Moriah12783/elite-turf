@@ -148,8 +148,11 @@ export default function CguPage() {
           <section className="card-base p-6">
             <h2 className="font-serif font-bold text-text-primary text-lg mb-4">7. Abonnements et paiements</h2>
             <p>
-              Les abonnements sont sans engagement. L&apos;accès est activé immédiatement après
-              confirmation du paiement et reste valide jusqu&apos;à la date d&apos;expiration indiquée.
+              Les abonnements sont sans engagement par défaut. Un renouvellement automatique
+              optionnel peut être activé au moment du paiement ; il est annulable à tout moment
+              depuis l&apos;espace membre, l&apos;accès restant acquis jusqu&apos;au terme de la
+              période déjà payée. L&apos;accès est activé immédiatement après confirmation du
+              paiement et reste valide jusqu&apos;à la date d&apos;expiration indiquée.
             </p>
             <p className="mt-3">
               Aucun remboursement ne sera effectué pour la période déjà consommée. En cas de
