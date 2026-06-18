@@ -40,7 +40,7 @@ export function NotreSelectionPromo({
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-gold-primary flex-shrink-0" />
               <h3 className="text-text-primary text-sm font-bold">
-                Notre sélection — <span className="text-gold-light">gratuite</span> sur chaque course
+                Sélection stats — <span className="text-gold-light">gratuite</span> sur chaque course
               </h3>
             </div>
             <div className="mb-2">{Pastilles}</div>
@@ -70,7 +70,7 @@ export function NotreSelectionPromo({
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-gold-primary flex-shrink-0" />
           <h3 className="text-text-primary text-sm font-bold">
-            Notre sélection <span className="text-gold-light">gratuite</span>
+            Sélection stats <span className="text-gold-light">gratuite</span>
           </h3>
         </div>
         <div className="mb-3">{Pastilles}</div>

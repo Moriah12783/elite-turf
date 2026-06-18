@@ -26,7 +26,7 @@ import { isTwilioConfigured, normalizeE164, stopLink, SMS_HOST } from "@/lib/sms
  */
 export function welcomeSmsBody(token: string): string {
   return (
-    `ELITE TURF: bienvenue ! Profitez de NOTRE SELECTION gratuite du jour: ` +
+    `ELITE TURF: bienvenue ! Profitez de SELECTION STATS gratuite du jour: ` +
     `${SMS_HOST}/programme . Stop: ${stopLink(token)}`
   );
 }

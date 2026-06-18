@@ -1003,7 +1003,7 @@ export default function CourseTabsClient({
   const totalPartants = partants.length + nonPartants.length;
   const allTabs: { id: Tab; label: string; icon: any; badge?: string }[] = [
     { id: "partants",  label: "Partants",           icon: Users,     badge: totalPartants > 0 ? String(totalPartants) : undefined },
-    { id: "selection", label: "Notre sélection",    icon: Sparkles },
+    { id: "selection", label: "Sélection stats",    icon: Sparkles },
     { id: "cotes",     label: "Côtes en direct",    icon: TrendingUp },
     { id: "arrivees",  label: "Arrivées & Rapports", icon: Trophy },
     { id: "stats",     label: "Statistiques",       icon: BarChart3 },

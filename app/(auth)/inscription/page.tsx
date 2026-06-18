@@ -284,7 +284,7 @@ function InscriptionForm() {
             className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
           />
           <p className="mt-1.5 text-gold-light/90 text-xs leading-relaxed">
-            📲 Recevez gratuitement <strong>Notre Sélection du jour</strong> et vos alertes
+            📲 Recevez gratuitement <strong>la Sélection stats du jour</strong> et vos alertes
             (non-partants) par SMS — et payez par carte bancaire en 2 min (toutes cartes, tous pays).
           </p>
           <p className="mt-1 text-text-muted text-xs leading-relaxed">
@@ -380,7 +380,7 @@ function InscriptionForm() {
               className="mt-0.5 accent-[#C9A84C] flex-shrink-0"
             />
             <span className="text-text-muted text-xs leading-relaxed">
-              📲 Je veux recevoir <strong className="text-text-secondary">Notre Sélection
+              📲 Je veux recevoir <strong className="text-text-secondary">la Sélection stats
               du jour</strong> et mes alertes par SMS (non-partants, dernière minute).
               Désinscription par STOP à tout moment.
             </span>
