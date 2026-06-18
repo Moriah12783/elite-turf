@@ -146,7 +146,7 @@ export default function PricingSection() {
 
             <ul className="space-y-2.5 mb-7 flex-1">
               {[
-                "Notre sélection sur chaque course du jour",
+                "Sélection stats sur chaque course du jour",
                 "Lecture statistique pour structurer vos paris",
                 "Accès aux résultats publics",
                 "Sans carte bancaire",

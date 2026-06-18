@@ -27,7 +27,7 @@ export default function NotreSelectionSection() {
               Nos 3 pronostics experts du jour sont réservés aux abonnés. Mais Elite Turf ne s&apos;arrête
               pas là : sur <span className="text-text-primary font-semibold">chaque course</span> du
               programme, vous trouvez{" "}
-              <span className="text-gold-light font-semibold">notre sélection gratuite</span> — une lecture
+              <span className="text-gold-light font-semibold">la Sélection stats gratuite</span> — une lecture
               statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour{" "}
               <span className="text-text-primary font-semibold">structurer vos paris</span> et comprendre la
               course.

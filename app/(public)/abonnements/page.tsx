@@ -26,7 +26,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Comment fonctionne le plan Free ?",
     answer:
-      "Le plan Free vous donne accès à Notre sélection sur chaque course du programme : notre lecture statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour structurer vos paris et comprendre la course. Elle est différente de nos pronostics du jour — l'analyse experte réservée aux abonnés Starter, Pro et Elite. C'est gratuit, sans carte bancaire.",
+      "Le plan Free vous donne accès à la Sélection stats sur chaque course du programme : notre lecture statistique (favoris au marché, drivers et entraîneurs reconnus, forme) pour structurer vos paris et comprendre la course. Elle est différente de nos pronostics du jour — l'analyse experte réservée aux abonnés Starter, Pro et Elite. C'est gratuit, sans carte bancaire.",
   },
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
@@ -36,7 +36,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quel plan choisir si je suis débutant ?",
     answer:
-      "Commencez par le plan Free : Notre sélection gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
+      "Commencez par le plan Free : la Sélection stats gratuite sur chaque course pour vous familiariser avec notre lecture. Quand vous êtes prêt, passez au Pack Starter (65€/7j) pour accéder à nos pronostics experts du jour.",
   },
   {
     question: "Comment payer mon abonnement Elite Turf ?",
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
   // ("%s | Elite Turf") l'ajoute déjà (audit Sprint 1, P6 : title doublé).
   title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite",
   description:
-    "💎 Pronostics PMU Elite Turf : Free avec Notre sélection sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays.",
+    "💎 Pronostics PMU Elite Turf : Free avec la Sélection stats sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -159,7 +159,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Choisissez votre accès"
-        sousTitre="Notre sélection gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt."
+        sousTitre="Sélection stats gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt."
       />
 
       {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
@@ -324,7 +324,7 @@ export default async function AbonnementsPage() {
               <div className="flex-1 mb-8">
                 <ul className="space-y-3">
                   {[
-                    "Notre sélection sur chaque course du jour",
+                    "Sélection stats sur chaque course du jour",
                     "Lecture statistique pour structurer vos paris",
                     "Accès aux résultats publics",
                     "Sans carte bancaire",
@@ -337,7 +337,7 @@ export default async function AbonnementsPage() {
                   ))}
                 </ul>
                 <p className="text-text-muted text-[11px] italic leading-snug mt-4 border-t border-border/40 pt-3">
-                  Notre sélection ≠ nos pronostics du jour : c&apos;est notre lecture
+                  Sélection stats ≠ nos pronostics du jour : c&apos;est notre lecture
                   statistique pour comprendre la course. L&apos;analyse experte reste
                   réservée aux abonnés Starter / Pro / Elite.
                 </p>
@@ -550,7 +550,7 @@ export default async function AbonnementsPage() {
               <tbody className="divide-y divide-border/40">
                 {[
                   { label: "Durée",                       values: ["Permanent",      "7 jours",        "30 jours",             "30 jours"]          },
-                  { label: "Notre sélection (lecture stat.)", values: ["✓ chaque course", "✓",            "✓",                    "✓"]                 },
+                  { label: "Sélection stats", values: ["✓ chaque course", "✓",            "✓",                    "✓"]                 },
                   { label: "Pronostics experts du jour",  values: [OFFRE_PRONOSTICS_EXPERTS.free, OFFRE_PRONOSTICS_EXPERTS.starter, OFFRE_PRONOSTICS_EXPERTS.pro, OFFRE_PRONOSTICS_EXPERTS.elite] },
                   { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
                   { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },

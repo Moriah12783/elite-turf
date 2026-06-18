@@ -56,7 +56,7 @@ export function templateReactivationR2({
     ${emailDivider}
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:14px;line-height:1.7;">
-      En attendant, <strong>Notre sélection gratuite</strong> reste disponible
+      En attendant, <strong>la Sélection stats gratuite</strong> reste disponible
       chaque matin sur <a href="${appUrl}/courses" style="color:#C9A84C;">toutes les courses du jour</a>.
     </p>
 

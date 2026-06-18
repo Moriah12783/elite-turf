@@ -28,7 +28,7 @@ export function templateReactivationR1({
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Vous avez créé votre compte Elite Turf — mais saviez-vous que
-      <strong>« Notre sélection »</strong> est disponible <strong>gratuitement,
+      <strong>« Sélection stats »</strong> est disponible <strong>gratuitement,
       sur chaque course du programme</strong> ? Une lecture statistique claire
       (favoris au marché, drivers reconnus, forme) pour structurer vos paris.
     </p>
@@ -55,6 +55,6 @@ export function templateReactivationR1({
 
   return {
     subject: "Votre sélection gratuite du jour vous attend 🏇",
-    html: emailBase(content, "Notre sélection est gratuite sur chaque course — et nos résultats sont publics."),
+    html: emailBase(content, "La Sélection stats est gratuite sur chaque course — et nos résultats sont publics."),
   };
 }

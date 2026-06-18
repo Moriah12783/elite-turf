@@ -210,11 +210,11 @@ export default async function PronosticsSection() {
                 <>
                   <p className="text-text-secondary text-sm mb-4">
                     Pas de pronostic vedette aujourd&apos;hui — profitez de{" "}
-                    <span className="text-gold-light font-medium">Notre sélection gratuite</span> sur chaque course.
+                    <span className="text-gold-light font-medium">Sélection stats gratuite</span> sur chaque course.
                   </p>
                   <Link href="/courses" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
                     <Trophy className="w-4 h-4" />
-                    Voir Notre sélection gratuite
+                    Voir la Sélection stats gratuite
                     <ChevronRight className="w-4 h-4" />
                   </Link>
                 </>
