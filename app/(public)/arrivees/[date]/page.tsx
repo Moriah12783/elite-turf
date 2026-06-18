@@ -254,6 +254,28 @@ export default async function ArriveesPage({ params }: PageProps) {
           contentLabel="Arrivées disponibles"
         />
 
+        {/* ── Pont vers « Le Direct » (aujourd'hui uniquement) ──────── */}
+        {today2 && (
+          <Link
+            href="/live"
+            className="flex items-center justify-between gap-3 mb-6 p-3.5 rounded-xl bg-gradient-to-r from-red-500/10 via-bg-card to-bg-card border border-red-500/30 hover:border-red-500/50 transition-all group"
+          >
+            <span className="flex items-center gap-2.5 min-w-0">
+              <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+              </span>
+              <span className="text-text-primary text-sm font-semibold truncate">
+                Suivez les courses en direct + le bilan de nos pronostics
+              </span>
+            </span>
+            <span className="flex items-center gap-1 text-gold-primary text-sm font-semibold whitespace-nowrap">
+              Le Direct
+              <ChevronRight className="w-4 h-4" />
+            </span>
+          </Link>
+        )}
+
         {/* ── Stats ────────────────────────────────────────────────── */}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-border rounded-full">

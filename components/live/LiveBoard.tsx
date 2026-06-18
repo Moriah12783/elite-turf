@@ -149,6 +149,18 @@ export default function LiveBoard({ initial }: { initial: LivePayload }) {
             ))}
           </div>
         )}
+
+        {payload.courses.length > 0 && (
+          <div className="mt-5 text-center">
+            <Link
+              href={`/arrivees/${payload.date}`}
+              className="inline-flex items-center gap-1 text-text-secondary hover:text-gold-primary text-sm font-semibold"
+            >
+              Rapports &amp; gains détaillés (Tiercé, Quinté+…)
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
