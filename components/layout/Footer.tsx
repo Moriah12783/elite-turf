@@ -4,6 +4,7 @@ import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
 import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
+import { COUNTRIES } from "@/lib/geo/countries";
 
 const WHATSAPP = WHATSAPP_SUPPORT_NUMBER;
 
@@ -108,19 +109,13 @@ export default async function Footer() {
                   qu'une liste verticale, et ne déborde pas hors de la colonne. */}
               <h3 className="font-serif font-semibold text-text-primary mt-6 mb-3 text-sm">PMU par pays</h3>
               <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: "🇨🇮 Côte d'Ivoire", href: "/pronostics-pmu-cote-d-ivoire" },
-                  { label: "🇸🇳 Sénégal",       href: "/pronostics-pmu-senegal"        },
-                  { label: "🇨🇲 Cameroun",      href: "/pronostics-pmu-cameroun"       },
-                  { label: "🇲🇦 Maroc",         href: "/pronostics-pmu-maroc"          },
-                  { label: "🇲🇱 Mali",          href: "/pronostics-pmu-mali"           },
-                ].map((link) => (
+                {COUNTRIES.map((c) => (
                   <Link
-                    key={link.href}
-                    href={link.href}
+                    key={c.slug}
+                    href={`/pronostics-pmu-${c.slug}`}
                     className="inline-flex items-center px-2 py-1 rounded-md bg-bg-elevated/60 border border-border/50 text-text-muted hover:text-gold-light hover:border-gold-primary/40 text-xs transition-colors"
                   >
-                    {link.label}
+                    {c.drapeau} {c.nom}
                   </Link>
                 ))}
               </div>
