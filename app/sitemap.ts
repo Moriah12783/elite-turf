@@ -35,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${APP_URL}/methodologie`,           lastModified: now, changeFrequency: "yearly",  priority: 0.7  },
+    { url: `${APP_URL}/arnaques-pronostics`,    lastModified: now, changeFrequency: "monthly", priority: 0.7  },
     // ── Pages géo Afrique francophone + DOM-TOM (différenciation océan bleu) ──
     { url: `${APP_URL}/pronostics-pmu-cote-d-ivoire`,     lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     { url: `${APP_URL}/pronostics-pmu-senegal`,           lastModified: now, changeFrequency: "weekly", priority: 0.8  },
