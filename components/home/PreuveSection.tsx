@@ -172,6 +172,13 @@ export default async function PreuveSection() {
           >
             Découvrir la méthode
           </Link>
+          <Link
+            href="/arnaques-pronostics"
+            className="flex items-center gap-2 px-7 py-3.5 border border-border hover:border-gold-primary/40 text-text-primary font-semibold text-sm rounded-xl transition-all w-full sm:w-auto justify-center"
+          >
+            <ShieldCheck className="w-4 h-4 text-gold-primary" />
+            Repérer une arnaque
+          </Link>
         </div>
 
         {/* ── Témoignages RÉELS (uniquement s'il en existe ≥1 approuvé) ── */}

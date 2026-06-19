@@ -21,9 +21,9 @@ const BLOCS = [
   },
   {
     icon: CreditCard,
-    titre: "Accès immédiat",
+    titre: "Paiement sécurisé",
     texte:
-      "Paiement par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt disponible. Activation de votre abonnement en moins de 2 minutes.",
+      "Paiement par carte bancaire sécurisé et traçable (Visa/Mastercard) — toutes cartes, tous pays, jamais de transfert vers un numéro personnel. Accès activé en moins de 2 minutes. Mobile Money bientôt.",
   },
 ];
 
