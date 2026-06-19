@@ -108,10 +108,10 @@ export default async function StatsSection() {
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
           {[
-            { label: "Taux de réussite",   value: total > 0 ? `${taux}%`        : "68%",   Icon: Award,       color: "text-gold-primary" },
-            { label: "Avec partiels",       value: total > 0 ? `${tauxPartiel}%` : "79%",   Icon: TrendingUp,  color: "text-status-win"  },
-            { label: "Pronostics publiés",  value: total > 0 ? `${total}`        : "120+",  Icon: Flame,       color: "text-text-primary" },
-            { label: "Gagnants",            value: total > 0 ? `${gagnants}`     : "82+",   Icon: CheckCircle2, color: "text-status-win" },
+            { label: "Taux de réussite",   value: total > 0 ? `${taux}%`        : "—", Icon: Award,       color: "text-gold-primary" },
+            { label: "Avec partiels",       value: total > 0 ? `${tauxPartiel}%` : "—", Icon: TrendingUp,  color: "text-status-win"  },
+            { label: "Pronostics publiés",  value: total > 0 ? `${total}`        : "—", Icon: Flame,       color: "text-text-primary" },
+            { label: "Gagnants",            value: total > 0 ? `${gagnants}`     : "—", Icon: CheckCircle2, color: "text-status-win" },
           ].map(({ label, value, Icon, color }) => (
             <div key={label} className="card-base p-5 text-center">
               <Icon className={`w-6 h-6 mx-auto mb-2 ${color}`} />
@@ -159,6 +159,16 @@ export default async function StatsSection() {
               );
             })}
           </div>
+          {displayResults.length > 0 && (
+            <div className="p-4 border-t border-border/50 text-center">
+              <Link
+                href="/performances"
+                className="inline-flex items-center gap-1 text-gold-primary hover:text-gold-light text-sm font-medium"
+              >
+                Voir tout l&apos;historique vérifiable →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </section>
