@@ -132,6 +132,7 @@ export default async function Footer() {
                   { label: "Mon espace membre",           href: "/espace-membre"       },
                   { label: "Blog PMU & Conseils",         href: "/blog"                },
                   { label: "Notre méthodologie",          href: "/methodologie"        },
+                  { label: "🛡️ Repérer une arnaque",       href: "/arnaques-pronostics" },
                   { label: "À Propos",                    href: "/a-propos"            },
                   { label: "Contact",                     href: "/contact"             },
                 ].map((link) => (
