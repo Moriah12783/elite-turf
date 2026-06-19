@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import { createServiceClient } from "@/lib/supabase/server";
-import { type Country, formatPrice } from "@/lib/geo/countries";
+import { type Country, formatPrice, COUNTRIES } from "@/lib/geo/countries";
+import { GEO_INTRO, buildGeoFaq } from "@/lib/geo/content";
 import PriceDualCurrency from "@/components/geo/PriceDualCurrency";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
@@ -68,6 +69,17 @@ export default async function GeoLandingPage({ country }: Props) {
     },
   };
 
+  const faq = buildGeoFaq(country);
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
       <script
@@ -77,6 +89,10 @@ export default async function GeoLandingPage({ country }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(placeLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <PageHero
@@ -98,8 +114,13 @@ export default async function GeoLandingPage({ country }: Props) {
         {/* ── Intro éditoriale ───────────────────────────────────── */}
         <section className="mb-12">
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
-            Pronostics PMU pour les parieurs de {country.nom} {country.drapeau}
+            Pronostic PMU {country.nom} {country.drapeau}
           </h1>
+          {GEO_INTRO[country.code] && (
+            <p className="text-text-secondary text-base sm:text-lg leading-relaxed mb-4">
+              {GEO_INTRO[country.code]}
+            </p>
+          )}
           <p className="text-text-secondary text-base sm:text-lg leading-relaxed mb-4">
             Elite Turf publie chaque jour des analyses détaillées des courses PMU France
             jouables depuis le {country.nom} via{" "}
@@ -286,53 +307,35 @@ export default async function GeoLandingPage({ country }: Props) {
             Questions fréquentes — {country.nom}
           </h2>
           <div className="space-y-3">
-            <details className="card-base p-5 group cursor-pointer">
-              <summary className="font-semibold text-text-primary text-base list-none flex items-start justify-between gap-3">
-                Comment jouer le Quinté+ depuis le {country.nom} ?
-                <ChevronRight className="w-4 h-4 text-gold-primary flex-shrink-0 mt-1 transition-transform group-open:rotate-90" />
-              </summary>
-              <p className="text-text-secondary text-sm leading-relaxed mt-3 pt-3 border-t border-border/50">
-                {country.operateurOfficiel
-                  ? `Connectez-vous sur ${country.operateurOfficiel.site} ou rendez-vous dans un point relais ${country.operateurOfficiel.nom}. Sélectionnez la course du jour, validez votre Quinté+ avec votre sélection. Vous pouvez aussi suivre nos pronostics avant de jouer.`
-                  : `Vous pouvez jouer via les agences locales agréées ou les sites de paris en ligne autorisés dans le ${country.nom}. Suivez nos pronostics PMU France quotidiens pour optimiser vos sélections.`}
-              </p>
-            </details>
-            <details className="card-base p-5 group cursor-pointer">
-              <summary className="font-semibold text-text-primary text-base list-none flex items-start justify-between gap-3">
-                Comment se passe le paiement depuis le {country.nom} ?
-                <ChevronRight className="w-4 h-4 text-gold-primary flex-shrink-0 mt-1 transition-transform group-open:rotate-90" />
-              </summary>
-              <p className="text-text-secondary text-sm leading-relaxed mt-3 pt-3 border-t border-border/50">
-                {country.paiements.some((p) => !p.bientot && (p.nom.includes("Money") || p.nom.includes("Wave") || p.nom.includes("MoMo") || p.nom.includes("Mvola") || p.nom.includes("Flooz") || p.nom.includes("TMoney")))
-                  ? <>
-                      Quand vous choisissez <strong>{country.paiements.find((p) => !p.bientot && (p.nom.includes("Money") || p.nom.includes("Wave") || p.nom.includes("MoMo")))?.nom || "Mobile Money"}</strong> comme
-                      méthode de paiement, le montant est converti automatiquement
-                      en {country.devise === "MAD" ? "Dirhams" : country.devise === "EUR" ? "Euros" : "Francs CFA"} et
-                      vous payez directement dans votre devise locale. Aucune carte
-                      bancaire internationale n&apos;est nécessaire.
-                    </>
-                  : <>
-                      Nos abonnements sont actuellement tarifés en <strong>Euros (€)</strong>.
-                      Le paiement se fait par <strong>carte bancaire (Visa/Mastercard)</strong>,
-                      acceptées partout au {country.nom}.
-                      {country.paiements.some((p) => p.bientot) && <> Les options <strong>Mobile Money</strong> (
-                        {country.paiements.filter((p) => p.bientot).map((p) => p.nom).join(", ")})
-                        seront activées très prochainement.</>}
-                    </>
-                }
-              </p>
-            </details>
-            <details className="card-base p-5 group cursor-pointer">
-              <summary className="font-semibold text-text-primary text-base list-none flex items-start justify-between gap-3">
-                Les pronostics sont-ils localisés au {country.nom} ?
-                <ChevronRight className="w-4 h-4 text-gold-primary flex-shrink-0 mt-1 transition-transform group-open:rotate-90" />
-              </summary>
-              <p className="text-text-secondary text-sm leading-relaxed mt-3 pt-3 border-t border-border/50">
-                Nos pronostics couvrent principalement les courses PMU France
-                {country.code === "CI" || country.code === "MA" ? " ainsi que les courses locales (LONACI / SOREC)" : ""}.
-                Les courses françaises restent les plus jouées en Afrique francophone — c&apos;est notre cœur d&apos;expertise.
-              </p>
-            </details>
+            {faq.map((f) => (
+              <details key={f.q} className="card-base p-5 group cursor-pointer">
+                <summary className="font-semibold text-text-primary text-base list-none flex items-start justify-between gap-3">
+                  {f.q}
+                  <ChevronRight className="w-4 h-4 text-gold-primary flex-shrink-0 mt-1 transition-transform group-open:rotate-90" />
+                </summary>
+                <p className="text-text-secondary text-sm leading-relaxed mt-3 pt-3 border-t border-border/50">
+                  {f.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Maillage : pronostics PMU autres pays ──────────────── */}
+        <section className="mb-12">
+          <h2 className="font-serif text-2xl font-bold text-text-primary mb-4">
+            Pronostics PMU dans d&apos;autres pays
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {COUNTRIES.filter((c) => c.code !== country.code).map((c) => (
+              <Link
+                key={c.code}
+                href={`/pronostics-pmu-${c.slug}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-elevated border border-border rounded-full text-text-secondary hover:text-gold-light hover:border-gold-primary/40 text-sm transition-colors"
+              >
+                <span aria-hidden>{c.drapeau}</span> {c.nom}
+              </Link>
+            ))}
           </div>
         </section>
 
