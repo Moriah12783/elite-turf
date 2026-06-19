@@ -22,13 +22,13 @@ import {
   PALMARES,
 } from "@/lib/courses-seo";
 
-/* Brand tokens (valeurs arbitraires — remplacer par tes tokens si tu en as). */
-const NAVY = "#1B3A5F";
-const NAVY_DEEP = "#0F2942";
-const NAVY_CARD = "#22426B";
-const GOLD = "#C9A84C";
-const GOLD_SOFT = "#E2C878";
-const CREAM = "#F5F1E6";
+/* Couleurs = tokens du thème (cf. tailwind.config.ts) : fond sombre + or, pas de bleu. */
+const BG_PAGE = "#1C1C1C";    // bg-primary — fond de page
+const BG_DEEP = "#161622";    // bg-card    — fond profond (CTA) + texte foncé sur or
+const BG_CARD = "#1E1E2E";    // bg-hover   — cartes surélevées
+const GOLD = "#C9A84C";       // gold-primary
+const GOLD_LIGHT = "#E8D5A3"; // gold-light
+const CREAM = "#F5F1E6";      // off-white chaud (texte sur fond sombre)
 
 /* SSG : génère les 38 pages au build, et 404 pour tout slug inconnu. */
 export const dynamicParams = false;
@@ -90,9 +90,9 @@ function StatusBadge({
     "a-venir": {
       label: daysUntil === 1 ? "Demain" : `Dans ${daysUntil} jours`,
       bg: GOLD,
-      fg: NAVY_DEEP,
+      fg: BG_DEEP,
     },
-    "aujourd-hui": { label: "Aujourd'hui", bg: "#2E7D52", fg: "#fff" },
+    "aujourd-hui": { label: "Aujourd'hui", bg: "#2E7D32", fg: "#fff" },
     passe: { label: "Édition disputée", bg: "rgba(255,255,255,0.12)", fg: CREAM },
   } as const;
   const s = map[status];
@@ -129,7 +129,7 @@ export default async function Page({
   ];
 
   return (
-    <main style={{ background: NAVY, color: CREAM }}>
+    <main style={{ background: BG_PAGE, color: CREAM }}>
       {/* JSON-LD : Event + BreadcrumbList + FAQPage */}
       {jsonLd.map((block, i) => (
         <script
@@ -146,7 +146,7 @@ export default async function Page({
           <span className="mx-2" style={{ color: "rgba(201,168,76,0.5)" }}>/</span>
           <Link href="/calendrier" className="hover:underline">Calendrier 2026</Link>
           <span className="mx-2" style={{ color: "rgba(201,168,76,0.5)" }}>/</span>
-          <span style={{ color: GOLD_SOFT }}>{nom}</span>
+          <span style={{ color: GOLD_LIGHT }}>{nom}</span>
         </nav>
 
         {/* Hero */}
@@ -154,7 +154,7 @@ export default async function Page({
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <span
               className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
-              style={{ background: "rgba(255,255,255,0.08)", color: GOLD_SOFT }}
+              style={{ background: "rgba(255,255,255,0.08)", color: GOLD_LIGHT }}
             >
               {DISCIPLINE_LABEL[evt.discipline]}
             </span>
@@ -163,7 +163,7 @@ export default async function Page({
           </div>
 
           <h1 className="font-serif text-3xl font-bold leading-tight text-white sm:text-4xl">
-            {nom} <span style={{ color: GOLD_SOFT }}>2026</span>
+            {nom} <span style={{ color: GOLD_LIGHT }}>2026</span>
           </h1>
 
           <p className="mt-3 text-base" style={{ color: "rgba(245,241,230,0.75)" }}>
@@ -191,9 +191,9 @@ export default async function Page({
         {/* Infos pratiques */}
         <section
           className="mb-10 rounded-2xl border p-6"
-          style={{ borderColor: "rgba(255,255,255,0.08)", background: NAVY_CARD }}
+          style={{ borderColor: "rgba(255,255,255,0.08)", background: BG_CARD }}
         >
-          <h2 className="mb-4 font-serif text-xl font-semibold" style={{ color: GOLD_SOFT }}>
+          <h2 className="mb-4 font-serif text-xl font-semibold" style={{ color: GOLD_LIGHT }}>
             Infos pratiques
           </h2>
           <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
@@ -207,7 +207,7 @@ export default async function Page({
         {/* Palmarès (affiché uniquement si renseigné dans PALMARES) */}
         {palmares && palmares.length > 0 && (
           <section className="mb-10">
-            <h2 className="mb-4 font-serif text-xl font-semibold" style={{ color: GOLD_SOFT }}>
+            <h2 className="mb-4 font-serif text-xl font-semibold" style={{ color: GOLD_LIGHT }}>
               Palmarès des dernières éditions
             </h2>
             <div className="overflow-hidden rounded-xl border" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
@@ -215,9 +215,9 @@ export default async function Page({
                 <div
                   key={p.annee}
                   className="flex items-center justify-between px-4 py-3 text-sm"
-                  style={{ background: i % 2 ? NAVY_CARD : NAVY_DEEP }}
+                  style={{ background: i % 2 ? BG_CARD : BG_DEEP }}
                 >
-                  <span className="font-semibold" style={{ color: GOLD_SOFT }}>{p.annee}</span>
+                  <span className="font-semibold" style={{ color: GOLD_LIGHT }}>{p.annee}</span>
                   <span className="text-white">{p.vainqueur}</span>
                   <span style={{ color: "rgba(245,241,230,0.6)" }}>{p.driver ?? ""}</span>
                 </div>
@@ -229,7 +229,7 @@ export default async function Page({
         {/* CTA Analyse Elite Turf */}
         <section
           className="mb-12 rounded-2xl border p-7 text-center"
-          style={{ borderColor: "rgba(201,168,76,0.3)", background: NAVY_DEEP }}
+          style={{ borderColor: "rgba(201,168,76,0.3)", background: BG_DEEP }}
         >
           <h2 className="font-serif text-2xl font-bold text-white">
             L'analyse Elite Turf du {nom}
@@ -242,14 +242,14 @@ export default async function Page({
             <Link
               href="/pronostics"
               className="rounded-lg px-6 py-3 text-sm font-bold"
-              style={{ background: GOLD, color: NAVY_DEEP }}
+              style={{ background: GOLD, color: BG_DEEP }}
             >
               Voir les pronostics du jour →
             </Link>
             <Link
               href="/abonnements"
               className="rounded-lg px-6 py-3 text-sm font-bold"
-              style={{ border: `1px solid ${GOLD}`, color: GOLD_SOFT }}
+              style={{ border: `1px solid ${GOLD}`, color: GOLD_LIGHT }}
             >
               Découvrir les abonnements
             </Link>
@@ -258,7 +258,7 @@ export default async function Page({
 
         {/* FAQ */}
         <section className="mb-12">
-          <h2 className="mb-5 font-serif text-xl font-semibold" style={{ color: GOLD_SOFT }}>
+          <h2 className="mb-5 font-serif text-xl font-semibold" style={{ color: GOLD_LIGHT }}>
             Questions fréquentes
           </h2>
           <div className="space-y-3">
@@ -266,7 +266,7 @@ export default async function Page({
               <details
                 key={f.q}
                 className="group rounded-xl border p-4"
-                style={{ borderColor: "rgba(255,255,255,0.08)", background: NAVY_CARD }}
+                style={{ borderColor: "rgba(255,255,255,0.08)", background: BG_CARD }}
               >
                 <summary
                   className="cursor-pointer list-none font-semibold text-white marker:hidden"
@@ -285,7 +285,7 @@ export default async function Page({
         {/* Maillage interne */}
         {related.length > 0 && (
           <section>
-            <h2 className="mb-5 font-serif text-xl font-semibold" style={{ color: GOLD_SOFT }}>
+            <h2 className="mb-5 font-serif text-xl font-semibold" style={{ color: GOLD_LIGHT }}>
               Autres grands rendez-vous
             </h2>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -294,9 +294,9 @@ export default async function Page({
                   key={r.id}
                   href={`/calendrier/${r.slug}`}
                   className="rounded-xl border p-4 transition-transform hover:-translate-y-0.5"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", background: NAVY_CARD }}
+                  style={{ borderColor: "rgba(255,255,255,0.08)", background: BG_CARD }}
                 >
-                  <p className="text-xs uppercase tracking-wider" style={{ color: GOLD_SOFT }}>
+                  <p className="text-xs uppercase tracking-wider" style={{ color: GOLD_LIGHT }}>
                     {formatDateFr(r)}
                   </p>
                   <p className="mt-1 font-serif font-semibold text-white">{cleanName(r)}</p>
