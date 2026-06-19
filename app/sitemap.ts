@@ -5,6 +5,7 @@ import { slugify } from "@/lib/seo/slugs";
 import {
   generateRecentWeekParams, generateRecentMonthParams,
 } from "@/lib/blog-auto/dates";
+import { GRANDS_RENDEZ_VOUS_2026 } from "@/data/grands-rendez-vous-2026";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -30,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: APP_URL,                             lastModified: now, changeFrequency: "daily",   priority: 1.0  },
     { url: `${APP_URL}/pronostics`,             lastModified: now, changeFrequency: "daily",   priority: 0.95 },
     { url: `${APP_URL}/courses`,                lastModified: now, changeFrequency: "daily",   priority: 0.9  },
+    { url: `${APP_URL}/calendrier`,             lastModified: now, changeFrequency: "weekly",  priority: 0.75 },
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${APP_URL}/methodologie`,           lastModified: now, changeFrequency: "yearly",  priority: 0.7  },
@@ -251,8 +253,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
 
+  // ── Calendrier des grands rendez-vous 2026 (38 épreuves /calendrier/[slug]) ──
+  const calendrierUrls: MetadataRoute.Sitemap = GRANDS_RENDEZ_VOUS_2026.map((evt) => ({
+    url: `${APP_URL}/calendrier/${evt.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: evt.prestige === "mythique" ? 0.8 : 0.6,
+  }));
+
   return [
     ...staticPages,
+    ...calendrierUrls,
     ...blogArticleUrls,
     ...autoBlogUrls,        // ~60 articles blog auto-générés (top-semaine + bilan-mensuel + decouvrir-hippodrome)
     ...temporalUrls,

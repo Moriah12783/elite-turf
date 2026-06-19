@@ -65,6 +65,7 @@ export default function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 lg:gap-7">
             <NavLink href="/courses">Programme</NavLink>
+            <NavLink href="/calendrier">Calendrier</NavLink>
             <NavLink href="/pronostics">Pronostics</NavLink>
             <NavLink href="/arrivees">Arrivées</NavLink>
             <Link
@@ -178,6 +179,7 @@ export default function Navbar() {
           <div className="px-4 py-4 space-y-1">
             {[
               { href: "/courses",      label: "Programme"          },
+              { href: "/calendrier",   label: "Calendrier"         },
               { href: "/pronostics",   label: "Pronostics"         },
               { href: "/arrivees",     label: "Arrivées & Rapports" },
               { href: "/live",         label: "🔴 Direct"          },
