@@ -60,17 +60,9 @@ const homeFaqJsonLd = {
   ],
 };
 
-const homeBreadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil",     item: APP_URL },
-    { "@type": "ListItem", position: 2, name: "Pronostics",  item: `${APP_URL}/pronostics` },
-    { "@type": "ListItem", position: 3, name: "Abonnements", item: `${APP_URL}/abonnements` },
-    { "@type": "ListItem", position: 4, name: "Blog",        item: `${APP_URL}/blog` },
-    { "@type": "ListItem", position: 5, name: "Performances",item: `${APP_URL}/performances` },
-  ],
-};
+// Pas de BreadcrumbList sur la home (page racine) : une liste de liens de nav
+// typée BreadcrumbList faisait afficher à Google un fil d'Ariane erroné
+// (« Accueil › … › Blog › Performances ») sur le résultat d'accueil. Retiré 2026-06-20.
 
 export default async function HomePage() {
   // Stats SSR (source unique) → passées au hero en prop : plus aucun « … ».
@@ -78,9 +70,8 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* JSON-LD — FAQ + BreadcrumbList pour Google */}
+      {/* JSON-LD — FAQPage uniquement (pas de breadcrumb sur la page racine) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeBreadcrumbJsonLd) }} />
 
       {/* 1 — Hero : clarté immédiate + 2 CTAs (stats en SSR via prop) */}
       <HeroSection stats={heroStats} />
