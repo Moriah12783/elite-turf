@@ -514,12 +514,22 @@ export function getNextEvent(from: Date = new Date()): GrandRendezVous | null {
  * pour le SEO « rich results » Google. Voir note d'intégration.
  */
 export function generateEventJsonLd(evt: GrandRendezVous) {
+  // URL canonique du site (pas d'env dans ce data file ; cf. lib/courses-seo.ts).
+  const SITE = "https://www.elite-turf.fr";
+  // Organisateur dérivé de la discipline (FACTUEL) — aligné sur
+  // lib/seo/sportsevent-jsonld.ts : Le Trot pour le trot, France Galop sinon.
+  const organizer =
+    evt.discipline === "trot"
+      ? { "@type": "Organization", name: "LeTROT", url: "https://www.letrot.com" }
+      : { "@type": "Organization", name: "France Galop", url: "https://www.france-galop.com" };
   return {
     "@context": "https://schema.org",
     "@type": "Event",
     name: evt.courses[0],
     startDate: evt.date,
-    ...(evt.dateEnd ? { endDate: evt.dateEnd } : {}),
+    // endDate TOUJOURS présent (= dateEnd si multi-jours, sinon le jour même) :
+    // résout le warning GSC "Champ endDate manquant".
+    endDate: evt.dateEnd ?? evt.date,
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
     location: {
@@ -527,7 +537,14 @@ export function generateEventJsonLd(evt: GrandRendezVous) {
       name: `Hippodrome de ${evt.hippodrome}`,
       address: { "@type": "PostalAddress", addressCountry: "FR" },
     },
+    image: [`${SITE}/images/heroes/hero-courses.jpg`],
     sport: DISCIPLINE_LABEL[evt.discipline],
     description: `${evt.courses.join(", ")} — ${evt.hippodrome}. Analyse et pronostics Elite Turf.`,
+    // Champs recommandés Google (alignés sur le helper SportsEvent /arrivees) :
+    performer: { "@type": "SportsTeam", name: "Chevaux engagés" },
+    organizer,
+    url: `${SITE}/calendrier/${evt.slug}`,
+    // Course gratuite à suivre → signal correct à la place d'un faux "offers".
+    isAccessibleForFree: true,
   };
 }
