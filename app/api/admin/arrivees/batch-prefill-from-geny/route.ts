@@ -38,7 +38,7 @@ import {
  * éligibles publiées automatiquement.
  */
 
-const FETCH_TIMEOUT_MS = 8000;
+const FETCH_TIMEOUT_MS = 12000; // 8s→12s : marge si Geny repond lentement au worker
 const CONCURRENCY = 4;
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36";
@@ -87,38 +87,64 @@ async function processInPool<T, R>(
   return results;
 }
 
-/**
- * Fetch + parse une seule course. Retourne null si pas de HTML ou arrivée
- * non parsable. Le caller décide quoi en faire.
- */
-async function fetchAndParseOne(course: CourseEligible): Promise<{
-  arrivee:     number[];
-  rapports:    RapportsPMU | null;
-  commentaire: string | null;
-} | null> {
-  const url = buildGenyUrlFromStored(course.geny_url, "resultats");
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+type ParseOutcome =
+  | { ok: true; arrivee: number[]; rapports: RapportsPMU | null; commentaire: string | null }
+  | { ok: false; reason: string };
 
-  let html: string;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":      USER_AGENT,
-        Accept:            "text/html,application/xhtml+xml",
-        "Accept-Language": "fr-FR,fr;q=0.9",
-        Referer:           "https://www.geny.com/",
-      },
-      cache:  "no-store",
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    html = await res.text();
-  } catch {
-    clearTimeout(timer);
-    return null;
+/**
+ * Fetch HTML Geny avec retry sur erreur transitoire (429/5xx/timeout/réseau).
+ * Renvoie le HTML, ou une RAISON D'ÉCHEC précise (statut HTTP, timeout…).
+ *
+ * ⚠️ Diagnostic (incident 2026-06-21) : l'ancien code renvoyait null et noyait
+ * la cause → 35 échecs « Geny indisponible » muets, impossible de savoir si
+ * c'était un 403 (blocage IP datacenter), un timeout, ou une page interstitielle.
+ * On remonte désormais la vraie raison jusqu'au « Voir le détail » admin.
+ */
+async function fetchGenyHtml(
+  url: string,
+): Promise<{ ok: true; html: string } | { ok: false; reason: string }> {
+  const ATTEMPTS = 2;
+  let lastReason = "inconnu";
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":      USER_AGENT,
+          Accept:            "text/html,application/xhtml+xml",
+          "Accept-Language": "fr-FR,fr;q=0.9",
+          Referer:           "https://www.geny.com/",
+        },
+        cache:  "no-store",
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) return { ok: true, html: await res.text() };
+      lastReason = `Geny HTTP ${res.status}`;
+      // 4xx hors 429 ne changera pas au retry → on arrête tout de suite.
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (e) {
+      clearTimeout(timer);
+      lastReason =
+        (e as Error)?.name === "AbortError"
+          ? `timeout >${FETCH_TIMEOUT_MS}ms`
+          : `fetch: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 800 * attempt));
   }
+  return { ok: false, reason: lastReason };
+}
+
+/**
+ * Fetch + parse une seule course. Renvoie l'arrivée, ou une RAISON d'échec
+ * précise (affichée dans « Voir le détail » côté admin).
+ */
+async function fetchAndParseOne(course: CourseEligible): Promise<ParseOutcome> {
+  const url = buildGenyUrlFromStored(course.geny_url, "resultats");
+  const fetched = await fetchGenyHtml(url);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
+  const html = fetched.html;
 
   const validNumbers = Array.isArray(course.partants)
     ? course.partants.map((p) => p.numero).filter((n) => Number.isInteger(n))
@@ -130,7 +156,12 @@ async function fetchAndParseOne(course: CourseEligible): Promise<{
     validNumbers.length > 0 ? validNumbers : undefined,
     maxHorses,
   );
-  if (!arrivee) return null;
+  if (!arrivee) {
+    // HTTP 200 mais pas d'arrivée : soit la course n'a pas encore son arrivée,
+    // soit Geny a servi une page interstitielle (consentement / anti-bot). La
+    // TAILLE du HTML départage (une vraie page résultat fait des dizaines de Ko).
+    return { ok: false, reason: `HTTP 200 mais 0 arrivee parsee (${html.length} o)` };
+  }
 
   let rapports: RapportsPMU | null = null;
   try {
@@ -143,7 +174,7 @@ async function fetchAndParseOne(course: CourseEligible): Promise<{
     commentaire = parseCommentaire(html);
   } catch { /* defensive */ }
 
-  return { arrivee, rapports, commentaire };
+  return { ok: true, arrivee, rapports, commentaire };
 }
 
 export async function POST(req: NextRequest) {
@@ -233,12 +264,12 @@ export async function POST(req: NextRequest) {
       const ref = `R${course.numero_reunion}C${course.numero_course}`;
       try {
         const parsed = await fetchAndParseOne(course);
-        if (!parsed) {
+        if (!parsed.ok) {
           return {
             course_id: course.id,
             reference: ref,
             status:    "failed" as const,
-            error:     "Geny indisponible ou arrivée non parsable",
+            error:     parsed.reason,
           };
         }
         return {
