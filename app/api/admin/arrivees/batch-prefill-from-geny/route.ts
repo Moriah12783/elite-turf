@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
-import { buildGenyUrlFromStored } from "@/lib/geny";
+import { buildGenyUrlFromStored, safeRapport } from "@/lib/geny";
 import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
 import {
   parseRapportsPMU,
@@ -309,9 +309,9 @@ export async function POST(req: NextRequest) {
       const arriveeRows = toSave.map((r) => ({
         course_id:       r.course_id,
         ordre_arrivee:   r.arrivee,
-        rapport_quinte:  r.rapports?.quinte_plus?.ordre ?? null,
-        rapport_quarte:  r.rapports?.quarte_plus?.ordre ?? null,
-        rapport_tierce:  r.rapports?.tierce?.ordre ?? null,
+        rapport_quinte:  safeRapport(r.rapports?.quinte_plus?.ordre),
+        rapport_quarte:  safeRapport(r.rapports?.quarte_plus?.ordre),
+        rapport_tierce:  safeRapport(r.rapports?.tierce?.ordre),
         rapports_pmu:    r.rapports,
         commentaire:     r.commentaire?.trim() || null,
         horodatage:      new Date().toISOString(),
@@ -323,17 +323,7 @@ export async function POST(req: NextRequest) {
         .from("arrivees")
         .upsert(arriveeRows, { onConflict: "course_id" });
 
-      if (upsertErr) {
-        // Échec global : on marque toutes les "pending" comme failed
-        for (const r of toSave) {
-          results.push({
-            course_id: r.course_id,
-            reference: r.reference,
-            status:    "failed",
-            error:     `DB upsert failed: ${upsertErr.message}`,
-          });
-        }
-      } else {
+      if (!upsertErr) {
         for (const r of toSave) {
           results.push({
             course_id: r.course_id,
@@ -341,6 +331,32 @@ export async function POST(req: NextRequest) {
             status:    "saved",
             arrivee:   r.arrivee,
           });
+        }
+      } else {
+        // Bulk échoué (souvent : 1 ligne fautive fait tout planter, ex overflow).
+        // On retombe en upsert LIGNE PAR LIGNE pour sauver les bonnes et isoler
+        // la/les fautive(s) — incident 2026-06-21 : 1 rapport en overflow tuait
+        // les 35 d'un coup.
+        for (let i = 0; i < arriveeRows.length; i++) {
+          const meta = toSave[i];
+          const { error: rowErr } = await supabase
+            .from("arrivees")
+            .upsert([arriveeRows[i]], { onConflict: "course_id" });
+          if (rowErr) {
+            results.push({
+              course_id: meta.course_id,
+              reference: meta.reference,
+              status:    "failed",
+              error:     `DB upsert: ${rowErr.message}`,
+            });
+          } else {
+            results.push({
+              course_id: meta.course_id,
+              reference: meta.reference,
+              status:    "saved",
+              arrivee:   meta.arrivee,
+            });
+          }
         }
       }
     }

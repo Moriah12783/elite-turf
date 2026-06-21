@@ -124,6 +124,23 @@ export function safePoids(n: number | undefined | null): number | null {
   return Number(n.toFixed(1));
 }
 
+/**
+ * Renvoie un rapport € DB-safe pour les colonnes `arrivees.rapport_*`
+ * (DECIMAL(8,2) → max 999 999,99). Hors plage → null.
+ *
+ * ⚠️ Incident 2026-06-21 : un rapport Quinté+ « dans l'ordre » dépassant
+ * 999 999,99 € (ou un nombre parasité au parsing) faisait planter TOUT l'upsert
+ * groupé des arrivées en `numeric field overflow`. La valeur complète reste
+ * dans la colonne jsonb `rapports_pmu` ; seule la colonne DECIMAL passe à null
+ * si elle déborde. (Pour stocker les très gros rapports en clair : élargir la
+ * colonne en DECIMAL(12,2) — migration séparée.)
+ */
+export function safeRapport(n: number | undefined | null): number | null {
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  if (n <= 0 || n > 999999.99) return null;
+  return Number(n.toFixed(2));
+}
+
 /** Renvoie un entier DB-safe (integer). null si invalide ou hors plage. */
 export function safeSmallInt(n: number | undefined | null, min = 1, max = 99): number | null {
   if (typeof n !== "number" || !Number.isFinite(n)) return null;
