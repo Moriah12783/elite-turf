@@ -1,0 +1,43 @@
+name: geny-arrivees
+
+# Sync des ARRIVÉES Geny → Supabase, exécuté sur runner GitHub (IP Azure →
+# HTTP 200) car Geny renvoie 403 à l'IP du Worker Cloudflare.
+# Déclenché À L'HEURE par le cron Cloudflare (elite-turf-crons) via
+# workflow_dispatch (11h13..19h13 UTC) ; le schedule du soir est un filet.
+
+on:
+  schedule:
+    - cron: "41 19 * * *"   # filet de sécurité (après la dernière course du jour)
+  workflow_dispatch:
+
+concurrency:
+  group: geny-arrivees
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/geny-arrivees-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=geny-arrivees.mjs
+
+      - name: Sync arrivées
+        run: node geny-arrivees.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

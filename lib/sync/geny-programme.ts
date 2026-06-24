@@ -11,7 +11,9 @@
  * via fetch ; ils doivent appeler runGenyProgrammeSync() directement.
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
+// ⚠️ Import depuis le module PUR (sans next/headers) pour que ce sync soit
+// bundlable en Node sur GitHub Actions (scripts/geny-programme-cli.ts).
+import { createServiceClient } from "@/lib/supabase/service-client";
 import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
 
 // ── Types ──────────────────────────────────────────────────────────────────
