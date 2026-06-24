@@ -69,6 +69,19 @@ const GH_DISPATCH_MAP: Record<string, string> = {
   "47 11 * * *": "enrich-cotes.yml",  // midi  (À L'HEURE)
   // Après-midi : couvert par le `schedule` GitHub (filet), PAS par dispatch
   // (cf. enrich-cotes.yml) → évite les runs en double + sert de secours.
+
+  // ── Sync programme + arrivées (déplacés ici le 2026-06-23) ──────────
+  // Geny renvoie 403 à l'IP du Worker Cloudflare → ces syncs tournent sur
+  // GitHub Actions (IP Azure propre), déclenchés À L'HEURE par ce Worker.
+  "10 5 * * *":   "pmu-sync.yml",     // programme du JOUR (avant pipeline IA)
+  "0 20 * * *":   "pmu-demain.yml",   // programme J+1 (veille au soir)
+  "11 13 * * *":  "geny-arrivees.yml",
+  "11 14 * * *":  "geny-arrivees.yml",
+  "11 15 * * *":  "geny-arrivees.yml",
+  "11 16 * * *":  "geny-arrivees.yml",
+  "11 17 * * *":  "geny-arrivees.yml",
+  "11 18 * * *":  "geny-arrivees.yml",
+  "11 19 * * *":  "geny-arrivees.yml",
 };
 
 /**
@@ -117,17 +130,10 @@ const CRON_MAP: Record<string, string> = {
   // enrichir-partants (cotes) → déplacé vers GH_DISPATCH_MAP : Geny est 403
   // depuis l'IP du Worker, le scraping tourne sur GitHub Actions (IP propre),
   // déclenché À L'HEURE par ce Worker (crons "30 5", "47 11", "13 13", "13 15").
-  "0 20 * * *":   "/api/cron/pmu-demain",  // J+1, re-planifié hors fenêtre 522 du 17h43 (fix Cause A)
-  "10 5 * * *":   "/api/cron/pmu-sync",    // programme du JOUR avant le pipeline (fix Cause A)
-
-  // ── Sync arrivées (toutes les heures 13h-19h UTC) ─────────────────
-  "11 13 * * *":  "/api/cron/geny-arrivees",
-  "11 14 * * *":  "/api/cron/geny-arrivees",
-  "11 15 * * *":  "/api/cron/geny-arrivees",
-  "11 16 * * *":  "/api/cron/geny-arrivees",
-  "11 17 * * *":  "/api/cron/geny-arrivees",
-  "11 18 * * *":  "/api/cron/geny-arrivees",
-  "11 19 * * *":  "/api/cron/geny-arrivees",
+  // pmu-sync (programme jour), pmu-demain (programme J+1) et geny-arrivees
+  // (×7, 13h-19h) → DÉPLACÉS vers GH_DISPATCH_MAP le 2026-06-23 : Geny renvoie
+  // 403 à l'IP du Worker → ces syncs tournent désormais sur GitHub Actions
+  // (IP propre), déclenchés À L'HEURE par ce Worker.
 
   // ── Sync résultats (post-courses) ─────────────────────────────────
   "23 6 * * *":   "/api/admin/sync-resultats",

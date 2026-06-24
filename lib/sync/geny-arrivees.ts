@@ -15,7 +15,9 @@
  *    galop/trot/obstacle).
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
+// ⚠️ Import depuis le module PUR (sans next/headers) pour que ce sync soit
+// bundlable en Node sur GitHub Actions (scripts/geny-arrivees-cli.ts).
+import { createServiceClient } from "@/lib/supabase/service-client";
 import { buildGenyUrlFromStored } from "@/lib/geny";
 import { todayParisISO } from "@/lib/paris-date";
 import {

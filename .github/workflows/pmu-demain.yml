@@ -1,0 +1,44 @@
+name: pmu-demain
+
+# Sync du PROGRAMME J+1 Geny → Supabase, sur runner GitHub (IP Azure →
+# HTTP 200) car Geny renvoie 403 à l'IP du Worker Cloudflare.
+# Déclenché À L'HEURE par le cron Cloudflare (20h00 UTC = veille au soir) via
+# workflow_dispatch ; le schedule est un filet.
+
+on:
+  schedule:
+    - cron: "30 20 * * *"   # filet de sécurité (le dispatch on-time est à 0 20)
+  workflow_dispatch:
+
+concurrency:
+  group: pmu-demain
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/geny-programme-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=geny-programme.mjs
+
+      - name: Sync programme J+1
+        run: node geny-programme.mjs
+        env:
+          PROG_DAY: demain
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
