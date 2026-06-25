@@ -348,8 +348,8 @@ export default async function AbonnementsPage() {
                   ✓ Votre plan actuel
                 </div>
               ) : user ? (
-                <Link href="/pronostics" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-status-win/30 text-status-win hover:bg-status-win/10 transition-all">
-                  Voir les pronostics gratuits
+                <Link href="/courses" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-status-win/30 text-status-win hover:bg-status-win/10 transition-all">
+                  Voir la Sélection stats du jour
                 </Link>
               ) : (
                 <Link href="/inscription" className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border border-status-win/30 text-status-win hover:bg-status-win/10 transition-all">
