@@ -395,6 +395,22 @@ export type DraftStatus = "DRAFT_READY" | "NEEDS_HUMAN_REVIEW";
 
 export type ConfidenceLevel = "LOW" | "MEDIUM" | "HIGH";
 
+/**
+ * Plan de jeu ELITE (déterministe) — la différence de NATURE vs Pro.
+ * Mises exprimées en UNITÉS (jamais en €) — jeu responsable.
+ * Construit par lib/ai-pronostics/elite-plan.ts (cf. spec 2026-06-26).
+ */
+export interface ElitePlanDeJeu {
+  banker: { number: number; name: string; justification: string };
+  bet_strategy: {
+    type_pari: string;                 // ex: "Quinté+ (ordre/désordre)", "Quarté+", "Tiercé"
+    champ_reduit: number[];            // numéros du champ conseillé
+    mise_unites: Array<{ libelle: string; unites: number }>;
+  };
+  value_picks: Array<{ number: number; name: string; raison: string }>;
+  quinte_plan: { base: number[]; champ: number[]; strategie: string } | null;
+}
+
 /** Schéma conforme cahier des charges §12.3 */
 export interface AnalyseWriterResult {
   agent:               "AnalyseWriter";
@@ -438,6 +454,8 @@ export interface AnalyseWriterResult {
     suggested_ticket: string;
     confidence_level: ConfidenceLevel;
     responsible_note: string;
+    /** Présent UNIQUEMENT pour les drafts ELITE (cf. elite-plan.ts). */
+    plan_de_jeu?: ElitePlanDeJeu;
   };
   admin_notes: {
     why_this_pronostic:               string;
