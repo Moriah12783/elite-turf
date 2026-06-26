@@ -197,6 +197,13 @@ interface ScoredCandidate {
  * Calcule africa_course_score selon la formule §9.3.
  * Retourne aussi le validation_status déterministe.
  */
+// Pays d'audience actuel = Burkina (abonnés PMUB). Refonte 2026-06-26 : les
+// grandes courses PMU France (palier PMU_INTERNATIONAL) sont redistribuées par
+// PMUB → on ne les pénalise pas vs LONACI-direct (CI). Bonus borné appliqué sur
+// la composante "africa availability".
+const AUDIENCE_COUNTRY: string = "BF";
+const AUDIENCE_PMU_INTL_BONUS = AUDIENCE_COUNTRY === "BF" ? 15 : 0;
+
 function computeAfricaCourseScore(
   candidate: CourseCandidate,
   evidence:  SourceEvidence[],
@@ -236,6 +243,9 @@ function computeAfricaCourseScore(
     // Confidence basée sur le max des critères remplis (65-80) — déjà calculée
     // côté collector dans ev.confidence. On la transpose ici sur l'échelle 0-100.
     africaAvailability = Math.max(...africaValidators.map((ev) => ev.confidence));
+    // Audience Burkina (PMUB) : ces courses France SONT jouables au Burkina →
+    // bonus pour ne pas les sous-classer face aux courses LONACI-direct (CI).
+    africaAvailability = Math.min(100, africaAvailability + AUDIENCE_PMU_INTL_BONUS);
   } else {
     // Au moins un vrai opérateur africain (LONASE/LONAB/PMUC/PMUG/PMU Mali/
     // PMUB/SOREC...) a corroboré → palier intermédiaire.
