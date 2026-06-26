@@ -15,6 +15,7 @@ import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
+import { ProSelectionBlock, countNonEmptyProSections, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
 
 interface PageProps {
@@ -101,7 +102,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     .from("pronostics")
     .select(`
       id, niveau_acces, type_pari, selection, confiance,
-      analyse_courte, analyse_texte, plan_de_jeu, resultat, nb_vues, nb_likes,
+      analyse_courte, analyse_texte, plan_de_jeu, selection_detail, suggested_ticket, resultat, nb_vues, nb_likes,
       publie, date_publication,
       course:courses(
         id, libelle, date_course, heure_depart,
@@ -123,6 +124,11 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const ResultatIcon = resultatConf.icon;
   const course = p.course as any;
   const plan = ((p as { plan_de_jeu?: unknown }).plan_de_jeu ?? null) as ElitePlanDeJeu | null;
+  const isPro = p.niveau_acces === "PRO";
+  const selectionDetail = (((p as { selection_detail?: unknown }).selection_detail ?? []) as SelectionDetailItem[]);
+  // Hiérarchie PRO seulement si ≥ 2 tiers réels (sinon liste par mérite : évite
+  // un bloc dégénéré à une section + le mislabel du favori sur BDD jeune).
+  const useProHierarchy = isPro && selectionDetail.length > 0 && countNonEmptyProSections(selectionDetail) >= 2;
   const partants: any[] = (course?.partants || [])
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
@@ -272,7 +278,15 @@ export default async function PronosticDetailPage({ params }: PageProps) {
               </h2>
               {hasAccess ? (
                 <div className="space-y-2">
-                  {/* Chevaux sélectionnés avec noms */}
+                  {/* Chevaux sélectionnés — PRO : groupés par rôle (Base /
+                      Chances / Outsiders) + ticket ; sinon liste par mérite. */}
+                  {useProHierarchy ? (
+                    <ProSelectionBlock
+                      items={selectionDetail}
+                      ticket={(p as { suggested_ticket?: string | null }).suggested_ticket ?? null}
+                      partants={partants}
+                    />
+                  ) : (
                   <div className="space-y-1.5">
                     {p.selection.map((n: number, idx: number) => {
                       const horse = partants.find((pt: any) => pt.numero === n);
@@ -322,6 +336,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                       );
                     })}
                   </div>
+                  )}
 
                   {/* Arrivée officielle comparée */}
                   {p.resultat !== "EN_ATTENTE" && course?.arrivee_officielle?.length > 0 && (
