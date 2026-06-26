@@ -14,6 +14,8 @@ export interface EliteRunnerInput {
   role: "BASE" | "APPUI" | "OUTSIDER" | "COMPLEMENT";
   confidence_score: number;
   value_score: number;
+  /** Optionnel — défaut 0 (sûr). Un value pick exige un risque maîtrisé (< 65). */
+  risk_score?: number;
 }
 
 export interface EliteSelectionInput {
@@ -22,6 +24,7 @@ export interface EliteSelectionInput {
 }
 
 const VALUE_THRESHOLD = 50;
+const MAX_VALUE_RISK = 65;
 
 /** Choisit le meilleur type de pari disponible (du plus prestigieux au moins). */
 function pickBetType(paris: string[]): { type_pari: string; isQuinte: boolean } {
@@ -32,22 +35,39 @@ function pickBetType(paris: string[]): { type_pari: string; isQuinte: boolean } 
 }
 
 export function buildElitePlanDeJeu(input: EliteSelectionInput): ElitePlanDeJeu {
-  // Tri par confidence décroissante (le banker = plus haute confiance).
-  const byConfidence = [...input.runners].sort((a, b) => b.confidence_score - a.confidence_score);
-  const banker = byConfidence[0];
+  if (input.runners.length === 0) {
+    // Défense en profondeur : ce module est le seul rempart déterministe du bloc
+    // Elite. En prod le Director écarte les sélections vides en amont, mais un
+    // appelant direct (backfill, script admin) doit échouer clairement.
+    throw new Error("buildElitePlanDeJeu : sélection vide (aucun cheval)");
+  }
+
+  // Clé de tri UNIQUE = l'ordre de MÉRITE d'entrée (selected_runners, trié par
+  // global_score). banker = tête de sélection (cohérent avec le « 1er choix »
+  // affiché) ; base Quinté+ = les 2 têtes. (Avant : tri par confidence => banker
+  // et base pouvaient diverger de la tête de sélection — incohérence d'audit.)
+  const runners = input.runners;
+  const banker = runners[0];
 
   const { type_pari, isQuinte } = pickBetType(input.paris_disponibles);
 
-  // Champ réduit = les numéros de la sélection, dans l'ordre du mérite d'origine.
-  const champ_reduit = input.runners.map((r) => r.number);
+  // Champ réduit = les numéros de la sélection, dans l'ordre du mérite.
+  const champ_reduit = runners.map((r) => r.number);
 
-  // value_picks = chevaux sous-cotés (value_score élevé) = le "edge" Elite.
-  const value_picks = input.runners
-    .filter((r) => r.value_score >= VALUE_THRESHOLD)
+  // value_picks = chevaux sous-cotés (indice value élevé), HORS banker et à
+  // risque maîtrisé — MÊME définition d'edge que le SelectionBuilder
+  // (value ≥ 50 & risk < 65). On ne présente jamais le banker comme un outsider.
+  const value_picks = runners
+    .filter(
+      (r) =>
+        r.number !== banker.number &&
+        r.value_score >= VALUE_THRESHOLD &&
+        (r.risk_score ?? 0) < MAX_VALUE_RISK,
+    )
     .map((r) => ({
       number: r.number,
       name: r.name,
-      raison: `Cote supérieure à sa probabilité estimée (value ${r.value_score}/100)`,
+      raison: `Cote attractive au regard de sa forme récente (indice value ${r.value_score}/100)`,
     }));
 
   // Mise en UNITÉS — template responsable, jamais d'euros.
@@ -56,11 +76,11 @@ export function buildElitePlanDeJeu(input: EliteSelectionInput): ElitePlanDeJeu 
     { libelle: `Champ réduit ${champ_reduit.join("-")}`, unites: 2 },
   ];
 
-  // Quinté+ travaillé : base = 2 meilleurs confidence, champ = le reste (par confidence).
+  // Quinté+ travaillé : base = 2 têtes de sélection (mérite), champ = le reste.
   const quinte_plan = isQuinte
     ? {
-        base: byConfidence.slice(0, 2).map((r) => r.number),
-        champ: byConfidence.slice(2).map((r) => r.number),
+        base: runners.slice(0, 2).map((r) => r.number),
+        champ: runners.slice(2).map((r) => r.number),
         strategie:
           "Jouer la base en couverture ordre + désordre, compléter par le champ. " +
           "Privilégier le désordre si le field est ouvert.",
@@ -71,7 +91,7 @@ export function buildElitePlanDeJeu(input: EliteSelectionInput): ElitePlanDeJeu 
     banker: {
       number: banker.number,
       name: banker.name,
-      justification: `Plus haute confiance de la sélection (${banker.confidence_score}/100) — pivot du jeu.`,
+      justification: `Tête de la sélection (confiance ${banker.confidence_score}/100) — pivot du jeu.`,
     },
     bet_strategy: { type_pari, champ_reduit, mise_unites },
     value_picks,

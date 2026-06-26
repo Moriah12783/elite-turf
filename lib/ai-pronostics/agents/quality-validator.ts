@@ -157,6 +157,22 @@ function extractFullText(writer: AnalyseWriterResult, draft: AiPronosticDraft): 
     if (Array.isArray(sub.selection)) {
       for (const s of sub.selection) parts.push(s.text ?? "");
     }
+    // Plan de jeu ELITE (déterministe) : inclure ses textes au scan d'expressions
+    // interdites (R11/R12/R16) — ferme l'angle mort si un libellé évolue.
+    const plan = sub.plan_de_jeu;
+    if (plan) {
+      if (plan.banker?.justification) parts.push(plan.banker.justification);
+      if (Array.isArray(plan.value_picks)) {
+        for (const v of plan.value_picks) parts.push(v.raison ?? "");
+      }
+      if (plan.quinte_plan?.strategie) parts.push(plan.quinte_plan.strategie);
+      if (plan.bet_strategy) {
+        parts.push(plan.bet_strategy.type_pari ?? "");
+        if (Array.isArray(plan.bet_strategy.mise_unites)) {
+          for (const m of plan.bet_strategy.mise_unites) parts.push(m.libelle ?? "");
+        }
+      }
+    }
   }
   return parts.join(" \n ").trim();
 }

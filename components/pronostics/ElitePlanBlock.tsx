@@ -55,7 +55,7 @@ export function ElitePlanBlock({ plan }: { plan: ElitePlanDeJeu }) {
       {plan.value_picks.length > 0 && (
         <div>
           <p className="text-text-muted text-xs uppercase tracking-wider mb-1">
-            ⭐ Value (cote supérieure à la probabilité)
+            ⭐ Value (cote attractive vs forme récente)
           </p>
           <ul className="space-y-1">
             {plan.value_picks.map((v, i) => (
