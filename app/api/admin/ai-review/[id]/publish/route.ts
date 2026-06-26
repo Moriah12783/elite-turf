@@ -34,7 +34,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
-import type { AnalyseWriterResult, NiveauAcces } from "@/lib/ai-pronostics/types";
+import type { AnalyseWriterResult, ElitePlanDeJeu, NiveauAcces } from "@/lib/ai-pronostics/types";
 import { sanitizeForPublic } from "@/lib/ai-pronostics/public-tone";
 
 export const dynamic     = "force-dynamic";
@@ -121,6 +121,42 @@ function mapTypePari(level: NiveauAcces, runnerCount: number): "TIERCE" | "QUART
   return "QUINTE_PLUS";
 }
 
+/**
+ * Met en forme le plan de jeu ELITE (refonte 2026-06-26) en texte multi-ligne
+ * destiné au champ `pronostics.analyse_texte` — rendu dans son propre encadré
+ * (whitespace-pre-line) sur la fiche pronostic, réservé aux abonnés ayant accès.
+ * Texte déterministe et propre (mises en UNITÉS, jamais en €).
+ */
+function formatPlanDeJeuText(plan: ElitePlanDeJeu): string {
+  const lines: string[] = [];
+  lines.push("👑 PLAN DE JEU ELITE");
+  lines.push("");
+  lines.push(`🔑 Banker : n°${plan.banker.number} ${plan.banker.name} — ${plan.banker.justification}`);
+  lines.push("");
+  lines.push(`🎯 Stratégie : ${plan.bet_strategy.type_pari} — champ réduit ${plan.bet_strategy.champ_reduit.join("-")}.`);
+  if (plan.bet_strategy.mise_unites.length > 0) {
+    lines.push("");
+    lines.push("💰 Mise (en unités) :");
+    for (const m of plan.bet_strategy.mise_unites) {
+      lines.push(`• ${m.libelle} — ${m.unites} u`);
+    }
+  }
+  if (plan.value_picks.length > 0) {
+    lines.push("");
+    lines.push("⭐ Value (cote supérieure à la probabilité estimée) :");
+    for (const v of plan.value_picks) {
+      lines.push(`• n°${v.number} ${v.name} — ${v.raison}`);
+    }
+  }
+  if (plan.quinte_plan) {
+    lines.push("");
+    lines.push(`🏆 Quinté+ travaillé : base ${plan.quinte_plan.base.join("-")} / champ ${plan.quinte_plan.champ.join("-")}. ${plan.quinte_plan.strategie}`);
+  }
+  lines.push("");
+  lines.push("⚠️ Jeu responsable : les mises sont indicatives (en unités), à adapter à votre budget. Pariez avec modération.");
+  return lines.join("\n");
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Handler
 // ─────────────────────────────────────────────────────────────────────────
@@ -174,6 +210,13 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
   const confiance  = mapConfiance(subscriber?.confidence_level, niveauLegacy);
   const nowISO     = new Date().toISOString();
 
+  // Plan de jeu ELITE → champ analyse_texte (rendu dans son propre encadré sur
+  // la fiche, gated hasAccess). null pour les autres niveaux (pas de plan).
+  const planDeJeuText =
+    niveauIA === "ELITE" && subscriber?.plan_de_jeu
+      ? formatPlanDeJeuText(subscriber.plan_de_jeu)
+      : null;
+
   // 3. UPSERT dans `pronostics`
   // On cherche un pronostic existant sur (course_id, niveau_acces) — pas
   // de FK formel sur ces 2 colonnes mais c'est le pattern attendu.
@@ -191,6 +234,7 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     selection:        selectionNumbers,
     confiance,
     analyse_courte:   analyseCourte,
+    analyse_texte:    planDeJeuText,
     publie:           true,
     date_publication: nowISO,
     source:           "AI-MULTI-AGENT",

@@ -141,15 +141,16 @@ function buildDeterministicSelection(
 
   switch (level) {
     case "ELITE": {
-      // Réglage PO 2026-05-31 (Phase 1.5) : 5 meilleurs par score + 1 seul
-      // outsider value (longshot Quinté). L'ancienne logique (top3 + 2 fills)
-      // pouvait injecter 2 outsiders à grosse cote en écartant des chevaux
-      // mieux notés (ex. Constitution River écarté au profit de Montreal).
-      const top5 = eligible.slice(0, 5);
-      const outsider = eligible
-        .slice(5)
-        .find((r) => r.value_score >= 50 && r.risk_score < 65);
-      return outsider ? [...top5, outsider] : eligible.slice(0, 6);
+      // Refonte « plan de jeu » 2026-06-26 (cf. elite-plan.ts) : cœur resserré
+      // = le banker (meilleur score) en tête + les 4 suivants, en GARANTISSANT
+      // le MEILLEUR cheval « value » (cote > proba) disponible hors du cœur —
+      // c'est le edge Elite. (Avant : `.slice(5).find()` prenait le 1er value
+      // dans l'ordre du mérite, pas forcément la plus grosse value.)
+      const core = eligible.slice(0, 5);
+      const valuePick = [...eligible]
+        .sort((a, b) => b.value_score - a.value_score)
+        .find((r) => r.value_score >= 50 && !core.includes(r) && r.risk_score < 65);
+      return valuePick ? [...core, valuePick] : eligible.slice(0, 6);
     }
     case "PRO":
     case "STARTER": {

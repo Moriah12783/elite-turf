@@ -36,6 +36,7 @@ import type {
   AnalyseWriterResult,
   ConfidenceLevel,
   DraftStatus,
+  ElitePlanDeJeu,
   FieldAnalyzerResult,
   NiveauAcces,
   RunnerRole,
@@ -44,6 +45,7 @@ import type {
 } from "../types";
 import { VALIDATION_BADGES } from "../types";
 import { RESPONSIBLE_NOTE_LONG } from "../forbidden-expressions";
+import { buildElitePlanDeJeu, type EliteRunnerInput } from "../elite-plan";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Input / Output
@@ -60,6 +62,12 @@ export interface AnalyseWriterInput {
   course_race_number: string;        // "C3"
   start_time_paris:   string;        // "16:50"
   start_time_abidjan: string;        // "15:50"
+  /**
+   * Paris disponibles sur la course (ex: ["QUINTE_PLUS","QUARTE_PLUS","TIERCE"]).
+   * Utilisé pour le plan de jeu ELITE. Optionnel — défaut Quinté+ (les courses
+   * ELITE sont les grands coups Quinté+ du jour ; l'admin affine en review).
+   */
+  paris_disponibles?: string[];
   /** ID du draft (pour audit) — accepté optionnel et propagé tel quel */
   draft_id?:          string;
 }
@@ -268,6 +276,27 @@ function buildResult(
     decision.risks = [input.field.main_risks[0]?.description ?? "Incertitude liée à l'ouverture de la course"];
   }
 
+  // Plan de jeu ELITE (déterministe, cf. elite-plan.ts) — la différence de
+  // NATURE vs Pro. Le value_score vient du FieldAnalyzer ; paris_disponibles
+  // défaut Quinté+ (course ELITE = grand coup du jour ; l'admin affine en review).
+  let plan_de_jeu: ElitePlanDeJeu | undefined;
+  if (input.access_level === "ELITE") {
+    const eliteRunners: EliteRunnerInput[] = input.selection.selected_runners.map((r) => {
+      const fa = input.field.runners_analysis.find((a) => a.runner_id === r.runner_id);
+      return {
+        number:           r.number,
+        name:             r.name,
+        role:             r.role,
+        confidence_score: r.confidence_score,
+        value_score:      fa?.value_score ?? 0,
+      };
+    });
+    plan_de_jeu = buildElitePlanDeJeu({
+      runners:           eliteRunners,
+      paris_disponibles: input.paris_disponibles ?? ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE"],
+    });
+  }
+
   return {
     agent:        "AnalyseWriter",
     draft_id:     input.draft_id ?? "",
@@ -288,6 +317,7 @@ function buildResult(
       suggested_ticket: decision.suggested_ticket,
       confidence_level: decision.confidence_level,
       responsible_note: RESPONSIBLE_NOTE_LONG,
+      ...(plan_de_jeu ? { plan_de_jeu } : {}),
     },
     admin_notes: {
       why_this_pronostic:               decision.why_this_pronostic,
