@@ -223,6 +223,14 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
   const planDeJeuJson =
     niveauIA === "ELITE" ? (subscriber?.plan_de_jeu ?? null) : null;
 
+  // Sélection détaillée (rôles) + ticket → affichage PRO hiérarchisé (Base /
+  // Chances / Outsiders). Écrit pour tous les niveaux ; consommé surtout par PRO.
+  // Cf migration docs/migrations/2026-06-26-pronostics-selection-detail.sql.
+  const selectionDetail = Array.isArray(subscriber?.selection)
+    ? subscriber.selection.map((s) => ({ number: s.number, name: s.name, role: s.role }))
+    : null;
+  const suggestedTicket = subscriber?.suggested_ticket?.trim() || null;
+
   // 3. UPSERT dans `pronostics`
   // On cherche un pronostic existant sur (course_id, niveau_acces) — pas
   // de FK formel sur ces 2 colonnes mais c'est le pattern attendu.
@@ -242,6 +250,8 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     analyse_courte:   analyseCourte,
     analyse_texte:    planDeJeuText,
     plan_de_jeu:      planDeJeuJson,
+    selection_detail: selectionDetail,
+    suggested_ticket: suggestedTicket,
     publie:           true,
     date_publication: nowISO,
     source:           "AI-MULTI-AGENT",
