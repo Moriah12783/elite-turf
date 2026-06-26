@@ -180,9 +180,9 @@ function PushTab() {
 
 // ─── Onglet SMS ───────────────────────────────────────────────────────────────
 
-const SMS_PREFIX   = "EliteTurf : ";
 const SMS_SUFFIX   = " elite-turf.fr";
-const SMS_MAX_BODY = 160 - SMS_PREFIX.length - SMS_SUFFIX.length; // 134 chars
+// Sender ID Twilio = "EliteTurf" → pas de préfixe "EliteTurf : " dans le corps (redondant).
+const SMS_MAX_BODY = 160 - SMS_SUFFIX.length; // 146 chars
 
 type SmsSegment = "tous" | "premium" | "vip";
 
@@ -210,7 +210,7 @@ function SMSTab() {
 
   const currentCount = counts[segment];
   const preview = message.trim()
-    ? `${SMS_PREFIX}${message.trim().slice(0, SMS_MAX_BODY)}${SMS_SUFFIX}`
+    ? `${message.trim().slice(0, SMS_MAX_BODY)}${SMS_SUFFIX}`
     : "";
 
   async function handleSend(e: React.FormEvent) {
