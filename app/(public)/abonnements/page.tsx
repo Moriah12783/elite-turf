@@ -131,14 +131,16 @@ export default async function AbonnementsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let currentPlan: string | null = null;
+  let isAdmin = false;
   if (user) {
     const serviceClient = createServiceClient();
     const { data: profile } = await serviceClient
       .from("profiles")
-      .select("statut_abonnement")
+      .select("statut_abonnement, role")
       .eq("id", user.id)
       .single();
     currentPlan = profile?.statut_abonnement || null;
+    isAdmin = profile?.role === "ADMIN";
   }
 
   const breadcrumbJsonLd = {
@@ -364,8 +366,10 @@ export default async function AbonnementsPage() {
               )}
             </div>
 
-            {/* ── Plans payants (Starter / Pro / Elite) — le plan "Test" est masqué ici ── */}
-            {PLAN_CONFIG.filter((p) => p.nom !== "Test").map((plan) => {
+            {/* ── Plans payants (Starter / Pro / Elite) — "Test" masqué au public, SAUF
+                le plan test 1€ révélé à l'ADMIN pour valider le tunnel Stripe en live
+                (TEMPORAIRE — à retirer après validation de la bascule compte Tsalach). ── */}
+            {PLAN_CONFIG.filter((p) => p.nom !== "Test" || (isAdmin && p.id === "test")).map((plan) => {
               const Icon   = PLAN_ICONS[plan.nom as keyof typeof PLAN_ICONS];
               const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES];
               const isCurrentPlan =
