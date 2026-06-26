@@ -14,10 +14,48 @@ interface PartantLite {
 }
 
 /**
+ * Découpe la sélection PRO en tiers jouables.
+ * - COMPLEMENT (couverture) est rangé avec les « Chances » — JAMAIS présenté
+ *   comme outsider/value (anti-mislabel du favori, cf revue 2026-06-26).
+ * - Le 3e tier est un catch-all (OUTSIDER + rôle inattendu) → aucun cheval perdu.
+ * L'ordre de mérite est préservé (items est déjà rank-ordonné).
+ */
+export function buildProSections(items: SelectionDetailItem[]) {
+  return [
+    {
+      label: "🎯 Base",
+      hint: "Chevaux de confiance — le socle du jeu",
+      horses: items.filter((it) => it.role === "BASE"),
+    },
+    {
+      label: "💪 Chances régulières",
+      hint: "Le cœur de la sélection à associer à la base",
+      horses: items.filter((it) => it.role === "APPUI" || it.role === "COMPLEMENT"),
+    },
+    {
+      label: "🎲 Outsiders & value",
+      hint: "Cotes intéressantes pour élargir le jeu",
+      horses: items.filter(
+        (it) => it.role !== "BASE" && it.role !== "APPUI" && it.role !== "COMPLEMENT",
+      ),
+    },
+  ];
+}
+
+/**
+ * Nombre de tiers non vides. L'appelant n'affiche la hiérarchie que si ≥ 2 tiers
+ * existent ; sinon il retombe sur la liste par mérite (évite un bloc « hiérarchisé »
+ * dégénéré à une seule section + le mislabel du favori sur BDD jeune).
+ */
+export function countNonEmptyProSections(items: SelectionDetailItem[]): number {
+  return buildProSections(items).filter((s) => s.horses.length > 0).length;
+}
+
+/**
  * Affichage PRO hiérarchisé — la sélection groupée par RÔLE (Base / Chances /
  * Outsiders) + le ticket jouable conseillé. C'est ce qui distingue le « pronostic
  * jouable » Pro de la simple liste. Rendu pour un abonné ayant accès (gating géré
- * par l'appelant). Source : pronostics.selection_detail (jsonb).
+ * par l'appelant). Source : pronostics.selection_detail (jsonb, rôles déterministes).
  */
 export function ProSelectionBlock({
   items,
@@ -29,26 +67,7 @@ export function ProSelectionBlock({
   partants: PartantLite[];
 }) {
   const byNumber = new Map(partants.map((p) => [p.numero, p]));
-
-  // Groupes robustes : tout cheval atterrit dans un groupe (le 3e est un
-  // catch-all → aucun cheval n'est perdu, même si un rôle inattendu apparaît).
-  const sections = [
-    {
-      label: "🎯 Base",
-      hint: "Chevaux de confiance — le socle du jeu",
-      horses: items.filter((it) => it.role === "BASE"),
-    },
-    {
-      label: "💪 Chances régulières",
-      hint: "Profils réguliers à associer à la base",
-      horses: items.filter((it) => it.role === "APPUI"),
-    },
-    {
-      label: "🎲 Outsiders & value",
-      hint: "Cotes intéressantes pour élargir le jeu",
-      horses: items.filter((it) => it.role !== "BASE" && it.role !== "APPUI"),
-    },
-  ];
+  const sections = buildProSections(items);
 
   return (
     <div className="space-y-3">

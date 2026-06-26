@@ -15,7 +15,7 @@ import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
-import { ProSelectionBlock, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
+import { ProSelectionBlock, countNonEmptyProSections, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
 
 interface PageProps {
@@ -126,6 +126,9 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const plan = ((p as { plan_de_jeu?: unknown }).plan_de_jeu ?? null) as ElitePlanDeJeu | null;
   const isPro = p.niveau_acces === "PRO";
   const selectionDetail = (((p as { selection_detail?: unknown }).selection_detail ?? []) as SelectionDetailItem[]);
+  // Hiérarchie PRO seulement si ≥ 2 tiers réels (sinon liste par mérite : évite
+  // un bloc dégénéré à une section + le mislabel du favori sur BDD jeune).
+  const useProHierarchy = isPro && selectionDetail.length > 0 && countNonEmptyProSections(selectionDetail) >= 2;
   const partants: any[] = (course?.partants || [])
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
@@ -277,7 +280,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                 <div className="space-y-2">
                   {/* Chevaux sélectionnés — PRO : groupés par rôle (Base /
                       Chances / Outsiders) + ticket ; sinon liste par mérite. */}
-                  {isPro && selectionDetail.length > 0 ? (
+                  {useProHierarchy ? (
                     <ProSelectionBlock
                       items={selectionDetail}
                       ticket={(p as { suggested_ticket?: string | null }).suggested_ticket ?? null}
