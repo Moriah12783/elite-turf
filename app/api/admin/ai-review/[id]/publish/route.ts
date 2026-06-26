@@ -217,6 +217,12 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
       ? formatPlanDeJeuText(subscriber.plan_de_jeu)
       : null;
 
+  // Plan de jeu STRUCTURÉ (jsonb) → bloc dédié sur la fiche (cf migration
+  // docs/migrations/2026-06-26-pronostics-plan-de-jeu.sql + ElitePlanBlock).
+  // analyse_texte ci-dessus reste un fallback texte (autres consommateurs).
+  const planDeJeuJson =
+    niveauIA === "ELITE" ? (subscriber?.plan_de_jeu ?? null) : null;
+
   // 3. UPSERT dans `pronostics`
   // On cherche un pronostic existant sur (course_id, niveau_acces) — pas
   // de FK formel sur ces 2 colonnes mais c'est le pattern attendu.
@@ -235,6 +241,7 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     confiance,
     analyse_courte:   analyseCourte,
     analyse_texte:    planDeJeuText,
+    plan_de_jeu:      planDeJeuJson,
     publie:           true,
     date_publication: nowISO,
     source:           "AI-MULTI-AGENT",

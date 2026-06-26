@@ -14,6 +14,8 @@ import type { SubscriptionStatus, PronosticResult } from "@/types";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
+import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
+import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
 
 interface PageProps {
   params: { id: string };
@@ -99,7 +101,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     .from("pronostics")
     .select(`
       id, niveau_acces, type_pari, selection, confiance,
-      analyse_courte, analyse_texte, resultat, nb_vues, nb_likes,
+      analyse_courte, analyse_texte, plan_de_jeu, resultat, nb_vues, nb_likes,
       publie, date_publication,
       course:courses(
         id, libelle, date_course, heure_depart,
@@ -120,6 +122,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const resultatConf = RESULTAT_CONFIG[p.resultat as PronosticResult];
   const ResultatIcon = resultatConf.icon;
   const course = p.course as any;
+  const plan = ((p as { plan_de_jeu?: unknown }).plan_de_jeu ?? null) as ElitePlanDeJeu | null;
   const partants: any[] = (course?.partants || [])
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
@@ -380,13 +383,15 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                   <p className="text-text-secondary text-sm leading-relaxed italic border-l-2 border-gold-primary/40 pl-4 py-1">
                     &ldquo;{p.analyse_courte}&rdquo;
                   </p>
-                  {p.analyse_texte && (
+                  {plan ? (
+                    <ElitePlanBlock plan={plan} />
+                  ) : p.analyse_texte ? (
                     <div className="mt-4 p-4 bg-bg-elevated rounded-xl border border-border/50">
                       <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
                         {p.analyse_texte}
                       </p>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <div className="relative">
