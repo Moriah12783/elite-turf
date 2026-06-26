@@ -119,6 +119,8 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   if (!p) notFound();
 
   const hasAccess = canAccess(p.niveau_acces, userSubscription);
+  // CTA « S'abonner » réservé aux visiteurs GRATUIT — redondant pour un abonné.
+  const isSubscriber = userSubscription !== "GRATUIT";
   const conf = CONFIDENCE_CONFIG[p.confiance as keyof typeof CONFIDENCE_CONFIG];
   const resultatConf = RESULTAT_CONFIG[p.resultat as PronosticResult];
   const ResultatIcon = resultatConf.icon;
@@ -438,14 +440,16 @@ export default async function PronosticDetailPage({ params }: PageProps) {
             <ArrowLeft className="w-4 h-4" />
             Tous les pronostics
           </Link>
-          <Link
-            href="/abonnements"
-            className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold-sm"
-          >
-            <Zap className="w-4 h-4" fill="currentColor" />
-            S&apos;abonner
-            <ChevronRight className="w-4 h-4" />
-          </Link>
+          {!isSubscriber && (
+            <Link
+              href="/abonnements"
+              className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold-sm"
+            >
+              <Zap className="w-4 h-4" fill="currentColor" />
+              S&apos;abonner
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       </div>
     </div>
