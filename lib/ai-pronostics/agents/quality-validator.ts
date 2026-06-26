@@ -517,6 +517,28 @@ function checkReadability(
   return true;
 }
 
+/**
+ * Plan de jeu ELITE — structure obligatoire (refonte 2026-06-26, cf. elite-plan.ts).
+ * Non bloquant (warning HIGH → NEEDS_HUMAN_REVIEW) : l'admin affine le coup du
+ * jour Elite avant publication.
+ */
+function checkElitePlanDeJeu(
+  draft:  AiPronosticDraft,
+  writer: AnalyseWriterResult,
+  acc:    ChecksAccumulator,
+): boolean {
+  if (draft.access_level !== "ELITE") return true;
+  const plan = writer.subscriber_content?.plan_de_jeu;
+  if (!plan || !plan.banker || !plan.bet_strategy) {
+    warn(acc, "ELITE_PLAN_MISSING",
+      "Draft ELITE sans plan de jeu complet (banker + stratégie de mise) — à compléter avant publication (refonte 2026-06-26)",
+      "HIGH",
+      "Renseigner le plan de jeu Elite (banker, type de pari, mise en unités, Quinté+)");
+    return false;
+  }
+  return true;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Détermination du statut final
 // ─────────────────────────────────────────────────────────────────────────
@@ -611,6 +633,9 @@ export function runQualityValidatorAgent(
 
   // ── Lisibilité ─────────────────────────────────────────────────────────
   const readable = checkReadability(writer, acc);
+
+  // ── Plan de jeu ELITE (refonte 2026-06-26) ─────────────────────────────
+  checkElitePlanDeJeu(draft, writer, acc);
 
   // ── Score qualité + statut final ───────────────────────────────────────
   const quality_score = computeQualityScore(acc);
