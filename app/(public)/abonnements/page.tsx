@@ -371,7 +371,10 @@ export default async function AbonnementsPage() {
                 (TEMPORAIRE — à retirer après validation de la bascule compte Tsalach). ── */}
             {PLAN_CONFIG.filter((p) => p.nom !== "Test" || (isAdmin && p.id === "test")).map((plan) => {
               const Icon   = PLAN_ICONS[plan.nom as keyof typeof PLAN_ICONS];
-              const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES];
+              // Le plan "Test" (révélé à l'admin) n'a pas d'entrée dédiée dans
+              // PLAN_STYLES → fallback Starter pour éviter `styles.border` undefined
+              // (sinon TypeError = crash de la page). Cf bascule Stripe Tsalach.
+              const styles = PLAN_STYLES[plan.nom as keyof typeof PLAN_STYLES] ?? PLAN_STYLES.Starter;
               const isCurrentPlan =
                 (plan.nom === "Starter" && currentPlan === "STARTER") ||
                 (plan.nom === "Pro"     && currentPlan === "PRO")     ||
