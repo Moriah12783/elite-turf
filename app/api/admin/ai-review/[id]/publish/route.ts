@@ -143,7 +143,7 @@ function formatPlanDeJeuText(plan: ElitePlanDeJeu): string {
   }
   if (plan.value_picks.length > 0) {
     lines.push("");
-    lines.push("⭐ Value (cote supérieure à la probabilité estimée) :");
+    lines.push("⭐ Value (cote attractive vs forme récente) :");
     for (const v of plan.value_picks) {
       lines.push(`• n°${v.number} ${v.name} — ${v.raison}`);
     }

@@ -280,7 +280,7 @@ function buildResult(
   // NATURE vs Pro. Le value_score vient du FieldAnalyzer ; paris_disponibles
   // défaut Quinté+ (course ELITE = grand coup du jour ; l'admin affine en review).
   let plan_de_jeu: ElitePlanDeJeu | undefined;
-  if (input.access_level === "ELITE") {
+  if (input.access_level === "ELITE" && input.selection.selected_runners.length > 0) {
     const eliteRunners: EliteRunnerInput[] = input.selection.selected_runners.map((r) => {
       const fa = input.field.runners_analysis.find((a) => a.runner_id === r.runner_id);
       return {
@@ -289,6 +289,7 @@ function buildResult(
         role:             r.role,
         confidence_score: r.confidence_score,
         value_score:      fa?.value_score ?? 0,
+        risk_score:       r.risk_score ?? fa?.risk_score ?? 0,
       };
     });
     plan_de_jeu = buildElitePlanDeJeu({
