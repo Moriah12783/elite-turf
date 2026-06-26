@@ -62,10 +62,13 @@ export async function sendSMS(to: string, body: string): Promise<SMSResult> {
   }
 }
 
-/** Formate le message final (préfixe + corps + lien). Max 160 chars. */
+/**
+ * Formate le message final (corps + lien). Max 160 chars.
+ * Pas de préfixe « EliteTurf : » : le Sender ID Twilio est déjà "EliteTurf",
+ * donc le répéter dans le corps est redondant (et coûte des caractères).
+ */
 export function formatSMSMessage(corps: string): string {
-  const prefix = "EliteTurf : ";
   const suffix = " elite-turf.fr";
-  const truncated = corps.slice(0, 160 - prefix.length - suffix.length);
-  return `${prefix}${truncated}${suffix}`;
+  const truncated = corps.slice(0, 160 - suffix.length);
+  return `${truncated}${suffix}`;
 }

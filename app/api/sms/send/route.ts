@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
   let query = adminClient
     .from("profiles")
     .select("id, nom_complet, phone, statut_abonnement")
+    .neq("id", user.id)            // ne pas s'auto-envoyer le SMS (admin émetteur = staff → économie crédit Twilio)
     .not("phone", "is", null)
     .neq("phone", "");
 
@@ -110,12 +111,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Compter par segment en parallèle
+  // .neq("id", user.id) → exclut l'admin émetteur des compteurs (cohérent avec l'envoi)
   const [{ count: countTous }, { count: countPremium }, { count: countVip }] = await Promise.all([
-    adminClient.from("profiles").select("id", { count: "exact", head: true })
+    adminClient.from("profiles").select("id", { count: "exact", head: true }).neq("id", user.id)
       .in("statut_abonnement", ["STARTER", "PRO", "ELITE"]).not("phone", "is", null).neq("phone", ""),
-    adminClient.from("profiles").select("id", { count: "exact", head: true })
+    adminClient.from("profiles").select("id", { count: "exact", head: true }).neq("id", user.id)
       .in("statut_abonnement", ["STARTER", "PRO"]).not("phone", "is", null).neq("phone", ""),
-    adminClient.from("profiles").select("id", { count: "exact", head: true })
+    adminClient.from("profiles").select("id", { count: "exact", head: true }).neq("id", user.id)
       .eq("statut_abonnement", "ELITE").not("phone", "is", null).neq("phone", ""),
   ]);
 
