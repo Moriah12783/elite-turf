@@ -15,7 +15,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Finance",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-abonnements.jpg",
+    image: "/images/blog/payer-paris-pmu-mobile-money.jpg",
     keywords: [
       "payer pari pmu mobile money",
       "wave pmu",
@@ -37,7 +37,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Débutants",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-pronostics.jpg",
+    image: "/images/blog/parier-pmu-senegal-guide.jpg",
     keywords: [
       "pmu sénégal",
       "parier pmu sénégal",
@@ -103,7 +103,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Technique",
     date: "2026-06-27",
     readTime: 7,
-    image: "/images/heroes/hero-courses.jpg",
+    image: "/images/blog/quinte-plus-ordre-desordre.jpg",
     keywords: [
       "quinté+ ordre désordre",
       "rapport quinté désordre",
@@ -165,7 +165,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Stratégie",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-performances.jpg",
+    image: "/images/blog/champ-reduit-quinte-strategie.jpg",
     keywords: [
       "champ réduit quinté",
       "jouer quinté champ réduit",
@@ -244,7 +244,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Technique",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-home.jpg",
+    image: "/images/blog/parier-selon-discipline-trot-plat-obstacle.jpg",
     keywords: [
       "trot attelé monté différence",
       "comment parier au trot",
@@ -334,7 +334,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Expertise",
     date: "2026-06-27",
     readTime: 7,
-    image: "/images/heroes/hero-a-propos.jpg",
+    image: "/images/blog/reconnaitre-faux-pronostiqueur-pmu.jpg",
     keywords: [
       "faux pronostiqueur pmu",
       "arnaque pronostics",
@@ -401,7 +401,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Débutants",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-guide.jpg",
+    image: "/images/blog/debuter-pmu-afrique-guide.jpg",
     keywords: [
       "débuter pmu",
       "comment parier pmu débutant",
@@ -509,7 +509,7 @@ export const BLOG_ARTICLES_2026_06: BlogArticle[] = [
     categorie: "Stratégie",
     date: "2026-06-27",
     readTime: 8,
-    image: "/images/heroes/hero-blog.jpg",
+    image: "/images/blog/hippodromes-meilleurs-rapports-quinte.jpg",
     keywords: [
       "hippodrome quinté rapport",
       "meilleurs hippodromes quinté+",
