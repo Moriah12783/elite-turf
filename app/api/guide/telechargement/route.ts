@@ -207,16 +207,20 @@ function buildGuideEmail(prenom: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, nom } = await req.json();
+    const { email, nom, source } = await req.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     }
 
     const prenom = nom?.split(" ")[0] || "Turfiste";
+    const leadSource =
+      typeof source === "string" && source.trim()
+        ? source.trim().slice(0, 40)
+        : "guide-gratuit";
 
     const supabase = createServiceClient();
-    await supabase.from("leads").insert({ prenom, email, source: "guide-gratuit" });
+    await supabase.from("leads").insert({ prenom, email, source: leadSource });
 
     await sendEmail({
       to: email,
