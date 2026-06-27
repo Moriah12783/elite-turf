@@ -6,9 +6,14 @@ import { X, Gift, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 /**
  * Exit-intent popup — se déclenche quand la souris quitte la fenêtre
  * vers le haut (direction barre navigateur = intention de fermer).
- * S'affiche une seule fois par session.
+ * Cap de fréquence localStorage : pas re-montré 7 j après affichage,
+ * jamais après une capture. `source` sert au suivi CRM (origine du lead).
  */
-export default function ExitIntentPopup() {
+const DISMISS_KEY = "lead-popup-dismissed";
+const CAPTURE_KEY = "lead-popup-captured";
+const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+export default function ExitIntentPopup({ source = "guide-gratuit" }: { source?: string }) {
   const [open, setOpen]       = useState(false);
   const [email, setEmail]     = useState("");
   const [status, setStatus]   = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -16,8 +21,14 @@ export default function ExitIntentPopup() {
   const triggered             = useRef(false);
 
   useEffect(() => {
-    // Ne pas réafficher si déjà vu dans cette session
-    if (sessionStorage.getItem("exit-intent-shown") === "1") return;
+    // Cap de fréquence : jamais après capture, pas avant 7 j après affichage
+    try {
+      if (localStorage.getItem(CAPTURE_KEY) === "1") return;
+      const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
+      if (dismissedAt && Date.now() - dismissedAt < COOLDOWN_MS) return;
+    } catch {
+      /* localStorage indisponible (mode privé strict) — on laisse passer */
+    }
 
     // Sur mobile : détecter scroll vers le haut rapide (simuler exit-intent)
     let lastY = window.scrollY;
@@ -51,7 +62,7 @@ export default function ExitIntentPopup() {
 
   function trigger() {
     triggered.current = true;
-    sessionStorage.setItem("exit-intent-shown", "1");
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
     setOpen(true);
   }
 
@@ -66,10 +77,10 @@ export default function ExitIntentPopup() {
     setStatus("loading");
 
     try {
-      const res = await fetch("/api/newsletter/subscribe", {
+      const res = await fetch("/api/guide/telechargement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), source: "exit-intent" }),
+        body: JSON.stringify({ email: email.trim(), source }),
       });
 
       const data = await res.json();
@@ -78,6 +89,7 @@ export default function ExitIntentPopup() {
         setError(data.error || "Une erreur s'est produite.");
         setStatus("error");
       } else {
+        try { localStorage.setItem(CAPTURE_KEY, "1"); } catch {}
         setStatus("success");
       }
     } catch {
