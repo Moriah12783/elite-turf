@@ -87,6 +87,9 @@ export function emailBase(content: string, previewText = ""): string {
               <p style="margin:0 0 8px 0;color:#D1D5DB;font-size:10px;">
                 Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC — Analyses hippiques informatives.
               </p>
+              <p style="margin:0 0 8px 0;color:#D1D5DB;font-size:10px;">
+                Le jeu comporte des risques : endettement, isolement, dépendance. Appelez le 09 74 75 13 13 (appel non surtaxé). Interdit aux mineurs.
+              </p>
               <p style="margin:0;font-size:10px;">
                 <a href="${(process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://elite-turf.fr")}/confidentialite" style="color:#D1D5DB;text-decoration:none;">Politique de confidentialité</a>
                 &nbsp;·&nbsp;
