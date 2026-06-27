@@ -168,8 +168,10 @@ const CRON_MAP: Record<string, string> = {
   "0 6 * * *":    "/api/cron/daily-push",
   "0 17 * * *":   "/api/cron/daily-push",
   "30 10 * * *":  "/api/cron/sms-sequence",
-  "33 9 * * *":   "/api/cron/lead-sequence",   // drip email leads J2/J5 (matin)
-  "33 16 * * *":  "/api/cron/lead-sequence",   // drip email leads J2/J5 (apres-midi)
+  // lead-sequence (drip email leads J2/J5) : DESACTIVE volontairement (voir wrangler.toml).
+  // Reactivation = decommenter ici + dans [triggers].crons, apres migrations 003+004 + go explicite.
+  //   "33 9 * * *":   "/api/cron/lead-sequence",
+  //   "33 16 * * *":  "/api/cron/lead-sequence",
 };
 
 /**
