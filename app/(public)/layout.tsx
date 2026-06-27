@@ -7,6 +7,7 @@ import StickyMobileCTA from "@/components/layout/StickyMobileCTA";
 import ScrollDepthTracker from "@/components/layout/ScrollDepthTracker";
 import WhatsAppFloatingButton from "@/components/public/WhatsAppFloatingButton";
 import SiteLeadPopup from "@/components/marketing/SiteLeadPopup";
+import UpgradePromoBanner from "@/components/layout/UpgradePromoBanner";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +26,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <ScrollDepthTracker />
         <WhatsAppFloatingButton />
         <SiteLeadPopup />
+        <UpgradePromoBanner />
       </div>
     </div>
   );
