@@ -207,12 +207,13 @@ function buildGuideEmail(prenom: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, nom, source } = await req.json();
+    const { email: rawEmail, nom, source } = await req.json();
 
-    if (!email || !email.includes("@")) {
+    if (!rawEmail || !String(rawEmail).includes("@")) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     }
 
+    const email = String(rawEmail).trim().toLowerCase();
     const prenom = nom?.split(" ")[0] || "Turfiste";
     const leadSource =
       typeof source === "string" && source.trim()
@@ -220,7 +221,14 @@ export async function POST(req: NextRequest) {
         : "guide-gratuit";
 
     const supabase = createServiceClient();
-    await supabase.from("leads").insert({ prenom, email, source: leadSource });
+    // Anti-doublon : si le lead existe déjà (contrainte unique sur email),
+    // on ignore l'erreur 23505 et on (re)envoie quand même le guide demandé.
+    const { error: insertError } = await supabase
+      .from("leads")
+      .insert({ prenom, email, source: leadSource });
+    if (insertError && insertError.code !== "23505") {
+      console.error("[Guide API] insert lead", insertError);
+    }
 
     await sendEmail({
       to: email,
