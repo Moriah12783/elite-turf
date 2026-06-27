@@ -187,8 +187,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    // Acteurs : chevaux/jockeys/entraineurs (top 1000 chacun par activité récente)
-    // Volume cumulé ≈ 3000 URLs SEO. Cap pour ne pas exploser sitemap.xml.
+    // Acteurs : chevaux/jockeys/entraineurs — TOUS les acteurs "riches".
+    // Cap relevé 1000 → 8000 par type (2026-06-27) pour exposer les ~6,5k chevaux
+    // ≥3 courses (gros gisement long-tail jusque-là bridé). Le FILTRE
+    // (nb_courses>=3 OR victoires/places>=1) est INCHANGÉ → ~99% des URLs restent
+    // indexables côté page (pas de mismatch isIndexable). Total sitemap ~13k URLs
+    // (< 50k → sitemap.xml unique OK).
     //
     // ⚠️ FILTRAGE : on aligne sur isIndexable() de lib/seo/acteurs.ts pour
     // ne pas créer de mismatch sitemap (URL listée) ↔ page (robots: noindex).
@@ -214,7 +218,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("slug, derniere_course_at, nb_courses, nb_victoires, nb_places")
         .or("nb_courses.gte.3,nb_victoires.gte.1,nb_places.gte.1")
         .order("derniere_course_at", { ascending: false, nullsFirst: false })
-        .limit(1000);
+        .limit(8000);
       if (data) {
         for (const e of data as any[]) {
           acteurUrls.push({
