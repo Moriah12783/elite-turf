@@ -140,8 +140,11 @@ crons = [
   "0 6 * * *",       # daily-push matin
   "0 17 * * *",      # daily-push soir
   "30 10 * * *",     # sms-sequence (sequence SMS J2 preuve / J5 upgrade)
-  "33 9 * * *",      # lead-sequence (drip email leads J2/J5 — passe matin)
-  "33 16 * * *",     # lead-sequence (drip email leads J2/J5 — passe apres-midi)
+  # lead-sequence (drip email leads J2/J5) : DESACTIVE volontairement.
+  # Reactivation = decommenter ces 2 lignes + les entrees CRON_MAP correspondantes,
+  # APRES migrations 003+004 appliquees et validation explicite (cf. memoire).
+  #   "33 9 * * *",
+  #   "33 16 * * *",
 ]
 
 # ────────────────────────────────────────────────────────────────────────
