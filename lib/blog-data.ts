@@ -1,5 +1,7 @@
 // lib/blog-data.ts
-// ELITE TURF — 10 articles SEO optimisés
+// ELITE TURF — articles SEO (base + lot juin 2026)
+
+import { BLOG_ARTICLES_2026_06 } from "./blog-data-batch-2026-06";
 
 export interface BlogArticle {
   slug: string;
@@ -15,7 +17,7 @@ export interface BlogArticle {
   contenu: string;
 }
 
-export const BLOG_ARTICLES: BlogArticle[] = [
+const BLOG_ARTICLES_BASE: BlogArticle[] = [
   {
     slug: "comment-gagner-au-quinte-plus",
     titre: "Comment analyser le Quinté+ ? Les 5 méthodes de nos experts hippiques",
@@ -492,6 +494,9 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     `,
   },
 ];
+
+// Base (articles historiques) + lot SEO juin 2026 (relance blog).
+export const BLOG_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES_BASE, ...BLOG_ARTICLES_2026_06];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return BLOG_ARTICLES.find((a) => a.slug === slug);
