@@ -34,16 +34,17 @@ export function templateLeadUpgradeJ2(
       Commencez sans vous engager
     </h2>
     <p style="margin:0 0 4px 0;color:#1F2937;font-size:15px;line-height:1.7;">
-      Un <strong>pronostic gratuit</strong> est publié chaque jour pour tester nos
-      analyses en conditions réelles. Et si vous voulez l'accès complet, les formules
-      restent flexibles, sans engagement.
+      Sur <strong>chaque course</strong>, notre <strong>Sélection stats</strong> (gratuite)
+      met en avant les chevaux qui ressortent statistiquement — de quoi vous faire l'œil et
+      tester notre approche en conditions réelles. Et pour l'analyse complète de nos experts,
+      les formules restent flexibles, sans engagement.
     </p>
 
     ${emailButton(`${appUrl}/abonnements`, "Découvrir les formules")}
 
     <p style="margin:20px 0 0 0;color:#6B7280;font-size:13px;line-height:1.6;">
       Vous préférez d'abord observer ?
-      <a href="${appUrl}/pronostics?niveau=GRATUIT" style="color:#C9A84C;font-weight:600;">Voir le pronostic gratuit du jour</a>.
+      <a href="${appUrl}/courses" style="color:#C9A84C;font-weight:600;">Découvrir la Sélection stats du jour</a>.
     </p>
 
     <p style="margin:24px 0 0 0;color:#9CA3AF;font-size:11px;line-height:1.5;text-align:center;">
