@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
       .gte("date_inscription", minDate)
       .lte("date_inscription", maxDate)
       .in("statut_abonnement", ["GRATUIT", "EXPIRE"])
+      .neq("role", "ADMIN")        // le staff/admin n'est jamais ciblé par les SMS clients
       .eq("sms_opt_in", true)
       .eq("sms_opted_out", false)
       .not("phone", "is", null);
