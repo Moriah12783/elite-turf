@@ -131,7 +131,7 @@ const BLOG_ARTICLES_BASE: BlogArticle[] = [
   },
 
   {
-    slug: "chevaux-deferrés-4-pieds-d4",
+    slug: "chevaux-deferres-4-pieds-d4",
     titre: "Le secret du Déferrage (D4) : Comprendre le \"Turbo\" technologique du Trot",
     titreSeo: "Pourquoi parier sur un cheval déferré des 4 pieds ?",
     description:
@@ -468,7 +468,7 @@ const BLOG_ARTICLES_BASE: BlogArticle[] = [
 <p>Surveillez de très près l'association entre un entraîneur de renom et un top-jockey (comme <strong>Eric Raffin</strong>) qui se retrouvent après une période de préparation discrète. C'est précisément ce que nous détaillons dans notre guide sur <a href="/blog/analyse-professionnelle-paris-hippiques">le coefficient de réussite du duo Jockey-Entraîneur</a> : quand l'élite se réunit pour un objectif ciblé, le résultat est souvent au rendez-vous. Ce duo affiche historiquement un taux de réussite <strong>30 % supérieur à la moyenne</strong> du peloton.</p>
 
 <h2>2. L'alerte Déferrage (D4)</h2>
-<p>Plusieurs outsiders sont annoncés <strong>déferrés des quatre pieds</strong> pour la première fois de la saison. Comme nous l'expliquons dans notre analyse complète sur <a href="/blog/chevaux-deferrés-4-pieds-d4">le signal secret du déferrage D4</a>, ce "turbo" légal peut faire gagner jusqu'à 1 seconde au kilomètre — transformant un cheval moyen en gagnant potentiel. Les statistiques sont formelles : un cheval D4 pour la première fois de sa saison augmente ses chances de victoire de 40 %. Ne sous-estimez jamais ce signal.</p>
+<p>Plusieurs outsiders sont annoncés <strong>déferrés des quatre pieds</strong> pour la première fois de la saison. Comme nous l'expliquons dans notre analyse complète sur <a href="/blog/chevaux-deferres-4-pieds-d4">le signal secret du déferrage D4</a>, ce "turbo" légal peut faire gagner jusqu'à 1 seconde au kilomètre — transformant un cheval moyen en gagnant potentiel. Les statistiques sont formelles : un cheval D4 pour la première fois de sa saison augmente ses chances de victoire de 40 %. Ne sous-estimez jamais ce signal.</p>
 
 <h2>3. La température du Marché</h2>
 <p>Restez connectés <strong>15 minutes avant le départ</strong>. Si vous voyez une chute de cote brutale — par exemple, de 25/1 à 10/1 — c'est que l'argent intelligent vient de se positionner. Ne suivez jamais ce mouvement à l'aveugle : l'indice de confiance Elite Turf vous indique si ce mouvement est fiable ou s'il s'agit d'un leurre. Nos membres reçoivent cette alerte par SMS en temps réel.</p>
