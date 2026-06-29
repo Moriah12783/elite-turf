@@ -13,13 +13,12 @@ Tu es **les yeux** de l'équipe : tu lis ce qui est public, tu **comptes**, tu t
 
 ---
 
-## ⏰ Chronogramme (créneau de livraison)
+## ⏰ Chronogramme & livraison
 
-Le pronostic premium d'Elite est **généré à 06 h 45 UTC** et **publié vers 09 h 30 UTC** (UTC = heure d'Abidjan ; Paris = +2 h l'été).
+Le pronostic premium d'Elite est publié vers **09 h 30 UTC** (= 09 h 30 Abidjan / 11 h 30 Paris l'été). Les sélections de la presse pour le Quinté+ du jour sont **déjà publiées la veille au soir** → la donnée est prête dès le matin.
 
-- **Compilation : la veille au soir (J-1), 21 h–23 h Paris** — c'est là que *toutes* les sélections du Quinté+ du lendemain sont sorties (les partants sont déclarés la veille).
-- **Livraison : avant 06 h 30 UTC** (06 h 30 Abidjan / 08 h 30 Paris) — soit ~15 min avant la génération du prono. **Idéalement dès la veille au soir.**
-- *Pourquoi :* pour que le consensus soit prêt **avant** la génération et la publication du prono.
+- **Quand (déclenchement manuel)** : Steph demande à Cowork **chaque matin, le plus tôt possible**. L'objectif est d'avoir le consensus **saisi dans Elite avant 09 h 30 UTC**, pour qu'il s'affiche quand les abonnés consultent le prono.
+- **Livraison : par EMAIL.** Dès que Cowork a fini, il **envoie le bloc complet (infos course + tableau) à `manuel.conti2008@gmail.com`** — objet : `Consensus presse — [date] — [hippodrome]`.
 
 ---
 
@@ -118,8 +117,8 @@ Chevaux triés du plus cité au moins cité. Exemple :
 
 ## 🔁 Récap du workflow
 
-1. **J-1 au soir** → identifier le Quinté+ du lendemain + lire les grilles presse.
+1. **Chaque matin, tôt** → identifier le Quinté+ du jour + lire les grilles presse (sorties la veille au soir).
 2. **Compter** citations + bases (+ cotes) par cheval.
-3. **Renvoyer** le bloc infos course + le tableau, **avant 06 h 30 UTC**.
+3. **Envoyer** le bloc (infos course + tableau) **par email à `manuel.conti2008@gmail.com`** dès que c'est prêt (avant 09 h 30 UTC).
 
 > Côté Elite (Steph) : ouvrir `Admin → Consensus presse` (la course vedette est déjà détectée + liée) → régler `Nb sources` → **coller le tableau** → **Analyser** → **Enregistrer**.
