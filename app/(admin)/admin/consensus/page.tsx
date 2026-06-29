@@ -123,6 +123,13 @@ export default function ConsensusPage() {
     return () => { cancelled = true; };
   }, [courseId]);
 
+  // Auto-détecte « Nb sources : N » dans le texte collé → renseigne le champ
+  // (permet de coller l'email Cowork entier sans régler la main).
+  useEffect(() => {
+    const { nbSources: ns } = parseConsensus(raw);
+    if (ns && ns > 0) setNbSources(ns);
+  }, [raw]);
+
   // Une analyse devient périmée si la course liée (donc ses cotes) ou le nombre
   // de sources change → on force une nouvelle Analyse (cohérence + anti-fabrication).
   useEffect(() => { setResult(null); }, [coursePartants, nbSources]);

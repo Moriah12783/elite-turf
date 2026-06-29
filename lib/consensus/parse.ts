@@ -3,6 +3,8 @@ import type { PartantConsensus } from "./engine";
 export interface ParseResult {
   partants: PartantConsensus[];
   errors: string[];
+  /** "Nb sources : N" détecté dans le texte collé (si présent) */
+  nbSources?: number;
 }
 
 /**
@@ -18,7 +20,9 @@ export interface ParseResult {
  *     ⚠️ Limite connue : une ancienne cote ENTIÈRE en 3e champ (ex. "11 28 4 8")
  *     est indistinguable d'un `bases` → lue comme bases. Sans impact en pratique :
  *     le nouveau format n'émet plus jamais de cote (Elite l'enrichit en aval).
- *   - lignes vides, commentaires (#…) et lignes d'en-tête (1er token non numérique) ignorés
+ *   - "Nb sources : N" (ou "nombre de sources presse") est détecté → renvoyé dans `nbSources`
+ *   - lignes vides, commentaires (#…), prose, en-têtes et **nombres seuls** (bruit de
+ *     tableau/liste collé) ignorés SILENCIEUSEMENT (aucun avertissement)
  *   - doublons de numéro ignorés (1ère occurrence gardée)
  *
  * Module PUR : aucune dépendance serveur, testable, réutilisable côté client.
@@ -26,6 +30,7 @@ export interface ParseResult {
 export function parseConsensus(text: string): ParseResult {
   const partants: PartantConsensus[] = [];
   const errors: string[] = [];
+  let nbSources: number | undefined;
   const seen: Record<number, boolean> = {};
   const lines = (text || "").split(/\r?\n/);
 
@@ -33,14 +38,16 @@ export function parseConsensus(text: string): ParseResult {
     const raw = lines[i].trim();
     if (!raw || raw.charAt(0) === "#") continue;
 
+    // Méta "Nb sources : N" (ou "nombre de sources presse") → captée, pas un partant.
+    const ns = raw.match(/(?:nb|nombre)\.?\s*(?:de\s*)?sources?(?:\s*presse)?\s*[:=]?\s*(\d+)/i);
+    if (ns) { const v = parseInt(ns[1], 10); if (isFinite(v) && v > 0) nbSources = v; continue; }
+
     const tokens = raw.split(/[\s;]+/).filter((t) => t.length > 0);
     if (tokens.length === 0) continue;
-    if (!/^\d+$/.test(tokens[0])) continue; // ligne d'en-tête (ex. "Cheval Citations Cote")
+    if (!/^\d+$/.test(tokens[0])) continue; // ligne d'en-tête / prose / tableau (silencieux)
 
-    if (tokens.length < 2) {
-      errors.push(`Ligne ${i + 1} ignorée (citations manquantes) : "${raw}"`);
-      continue;
-    }
+    // Un nombre seul = bruit (cellule de tableau / liste collée) → ignoré SILENCIEUSEMENT.
+    if (tokens.length < 2) continue;
 
     const numero = parseInt(tokens[0], 10);
     const citations = parseInt(tokens[1], 10);
@@ -70,5 +77,5 @@ export function parseConsensus(text: string): ParseResult {
     partants.push(p);
   }
 
-  return { partants, errors };
+  return { partants, errors, nbSources };
 }
