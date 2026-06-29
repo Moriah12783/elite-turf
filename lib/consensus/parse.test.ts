@@ -2,24 +2,40 @@ import { describe, it, expect } from "vitest";
 import { parseConsensus } from "./parse";
 
 describe("parseConsensus", () => {
-  it("parse le format complet numero citations cote bases", () => {
-    const { partants, errors } = parseConsensus("11 28 3.2 12\n10 25 4.0 8");
+  it("parse le nouveau format numero citations bases (sans cote)", () => {
+    const { partants, errors } = parseConsensus("11 28 12\n10 25 8");
     expect(errors).toEqual([]);
     expect(partants).toEqual([
-      { numero: 11, citations: 28, cote: 3.2, bases: 12 },
-      { numero: 10, citations: 25, cote: 4.0, bases: 8 },
+      { numero: 11, citations: 28, bases: 12 },
+      { numero: 10, citations: 25, bases: 8 },
     ]);
   });
 
-  it("accepte le point-virgule comme séparateur et la virgule décimale", () => {
-    const { partants } = parseConsensus("5;18;6;0\n7 15 8,5 2");
-    expect(partants[0]).toEqual({ numero: 5, citations: 18, cote: 6, bases: 0 });
-    expect(partants[1]).toEqual({ numero: 7, citations: 15, cote: 8.5, bases: 2 });
+  it("tolère l'ancien format avec cote en 3e champ : cote ignorée, bases en 4e", () => {
+    const { partants } = parseConsensus("11 28 3.2 12\n7 15 8,5 2");
+    expect(partants[0]).toEqual({ numero: 11, citations: 28, bases: 12 });
+    expect(partants[1]).toEqual({ numero: 7, citations: 15, bases: 2 });
+  });
+
+  it("cote seule (sans bases) → ignorée, aucun champ parasite", () => {
+    const { partants } = parseConsensus("11 28 3.2");
+    expect(partants).toEqual([{ numero: 11, citations: 28 }]);
+  });
+
+  it("accepte le point-virgule comme séparateur", () => {
+    const { partants } = parseConsensus("5;18;3\n8 22");
+    expect(partants[0]).toEqual({ numero: 5, citations: 18, bases: 3 });
+    expect(partants[1]).toEqual({ numero: 8, citations: 22 });
   });
 
   it("ignore l'en-tête, les lignes vides et les commentaires", () => {
-    const { partants } = parseConsensus("Cheval Citations Cote\n# AUTEUIL\n\n11 28 3.2\n");
-    expect(partants).toEqual([{ numero: 11, citations: 28, cote: 3.2 }]);
+    const { partants } = parseConsensus("Cheval Citations Bases\n# AUTEUIL\n\n11 28 5\n");
+    expect(partants).toEqual([{ numero: 11, citations: 28, bases: 5 }]);
+  });
+
+  it("3e champ ENTIER = bases (jamais interprété comme une cote)", () => {
+    expect(parseConsensus("11 28 4").partants).toEqual([{ numero: 11, citations: 28, bases: 4 }]);
+    expect(parseConsensus("12 8 0").partants).toEqual([{ numero: 12, citations: 8, bases: 0 }]);
   });
 
   it("gère le format minimal numero citations", () => {

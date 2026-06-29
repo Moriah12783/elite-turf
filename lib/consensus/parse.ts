@@ -8,9 +8,16 @@ export interface ParseResult {
 /**
  * Parse une table de consensus collée (1 ligne par cheval).
  *
- * Format attendu : `numero  citations  [cote]  [bases]`
- *   - séparateurs de champs : espace, point-virgule, tabulation (PAS la virgule)
- *   - cote décimale : "3.2" ou "3,2" (la virgule = décimale, jamais séparateur)
+ * Format attendu : `numero  citations  [bases]`
+ *   - séparateurs de champs : espace, point-virgule, tabulation
+ *   - `bases` (optionnel, entier) = nb de sources qui en font leur base / N°1
+ *   - la COTE n'est PAS saisie ici : elle est enrichie automatiquement depuis la
+ *     course liée (table `partants`). Cowork ne fournit que citations + bases.
+ *   - tolérance : si le 3e champ ressemble à une cote (décimale, ex. "3.2"), il
+ *     est ignoré (ancien format) et `bases` est lu en 4e champ.
+ *     ⚠️ Limite connue : une ancienne cote ENTIÈRE en 3e champ (ex. "11 28 4 8")
+ *     est indistinguable d'un `bases` → lue comme bases. Sans impact en pratique :
+ *     le nouveau format n'émet plus jamais de cote (Elite l'enrichit en aval).
  *   - lignes vides, commentaires (#…) et lignes d'en-tête (1er token non numérique) ignorés
  *   - doublons de numéro ignorés (1ère occurrence gardée)
  *
@@ -47,12 +54,15 @@ export function parseConsensus(text: string): ParseResult {
     }
 
     const p: PartantConsensus = { numero, citations };
-    if (tokens[2] != null) {
-      const cote = parseFloat(tokens[2].replace(",", "."));
-      if (isFinite(cote)) p.cote = cote;
+    // 3e champ = bases (entier). Tolère l'ancien format où le 3e champ était la
+    // cote (décimale, ex. "3.2") → ignorée (la cote vient de la course liée),
+    // et bases lu au 4e champ.
+    let basesTok: string | undefined = tokens[2];
+    if (basesTok != null && (basesTok.indexOf(".") !== -1 || basesTok.indexOf(",") !== -1)) {
+      basesTok = tokens[3];
     }
-    if (tokens[3] != null) {
-      const bases = parseInt(tokens[3], 10);
+    if (basesTok != null) {
+      const bases = parseInt(basesTok, 10);
       if (isFinite(bases)) p.bases = bases;
     }
 

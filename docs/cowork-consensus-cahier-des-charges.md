@@ -58,7 +58,8 @@ Pour **chaque cheval cité** par au moins un journal, compte :
 
 1. **citations** = combien de journaux le citent (dans leur sélection).
 2. **bases** = combien de journaux le donnent en **base / cheval n°1 / pilier** *(facultatif mais précieux)*.
-3. **cote** = sa cote du matin *(facultatif ; sert à classer favori / outsider / tocard)*.
+
+> 🚫 **NE PAS chercher les cotes ni les noms des chevaux.** Elite les ajoute automatiquement depuis sa base (cotes PMU/Geny). Tu ne fournis **que** des numéros + comptages.
 
 > ⚠️ Si plusieurs journaux publient **la même sélection syndiquée** (même dépêche), compte-la **une seule fois** — on veut des avis **indépendants**, pas des doublons.
 
@@ -79,29 +80,28 @@ Nb sources : 24
 **Puis le tableau de citations — 1 ligne par cheval**, format :
 
 ```
-numéro  citations  [cote]  [bases]
+numéro  citations  [bases]
 ```
 
 Chevaux triés du plus cité au moins cité. Exemple :
 
 ```
-11 22 3.2 9
-8 19 4.8 5
-5 16 6.0 3
-7 13 8.5 2
-3 9 12 1
-14 6 19 0
-2 4 25 0
+11 22 9
+8 19 5
+5 16 3
+7 13 2
+3 9 1
+14 6 0
+2 4 0
 ```
 
-> La **cote** et les **bases** sont optionnelles : si tu ne les as pas, donne juste `numéro citations`. Décimale en virgule ou point, peu importe. Les lignes vides ou commençant par `#` sont ignorées.
+> Les **bases** sont optionnelles : si tu ne les as pas, donne juste `numéro citations`. **Pas de cote** (Elite l'ajoute). Les lignes vides ou commençant par `#` sont ignorées.
 
-### Comment lire une ligne (exemple `11 22 3.2 9`)
+### Comment lire une ligne (exemple `11 22 9`)
 | Valeur | Signifie |
 |---|---|
 | **11** | le cheval n°11 (dossard) |
 | **22** | cité par **22 journaux** |
-| **3.2** | sa **cote** (3.2 = gros favori) |
 | **9** | **9 journaux** le donnent en base (cheval pilier) |
 
 ---
@@ -118,7 +118,7 @@ Chevaux triés du plus cité au moins cité. Exemple :
 ## 🔁 Récap du workflow
 
 1. **Chaque matin, tôt** → identifier le Quinté+ du jour + lire les grilles presse (sorties la veille au soir).
-2. **Compter** citations + bases (+ cotes) par cheval.
+2. **Compter** citations + bases par cheval (PAS de cote — Elite l'ajoute).
 3. **Envoyer** le bloc (infos course + tableau) **par email à `manuel.conti2008@gmail.com`** dès que c'est prêt (avant 09 h 30 UTC).
 
 > Côté Elite (Steph) : ouvrir `Admin → Consensus presse` (la course vedette est déjà détectée + liée) → régler `Nb sources` → **coller le tableau** → **Analyser** → **Enregistrer**.
