@@ -16,12 +16,32 @@ async function requireAdmin(req: NextRequest) {
 }
 
 /**
- * GET /api/admin/consensus?date=YYYY-MM-DD
- * Liste les courses du jour (pour rattacher le consensus à une course).
+ * GET /api/admin/consensus
+ *   ?date=YYYY-MM-DD   → liste les courses du jour (pour rattacher le consensus)
+ *   ?courseId=<uuid>   → partants (numéro + cote + nom) de la course liée, pour
+ *                        enrichir le consensus à NOTRE niveau (cote = PMU/Geny
+ *                        déjà en base, jamais saisie par Cowork).
  */
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth.error) return auth.error;
+
+  const courseId = req.nextUrl.searchParams.get("courseId");
+  if (courseId) {
+    const { data, error } = await auth.adminClient
+      .from("partants")
+      .select("numero, cote, nom_cheval, non_partant")
+      .eq("course_id", courseId);
+    if (error) { console.error("[consensus] partants", error); return NextResponse.json({ partants: [] }); }
+    const partants = (data ?? [])
+      .filter((p: any) => !p.non_partant)
+      .map((p: any) => ({
+        numero: p.numero,
+        cote: p.cote != null && Number.isFinite(Number(p.cote)) ? Number(p.cote) : null,
+        nom: p.nom_cheval ?? null,
+      }));
+    return NextResponse.json({ partants });
+  }
 
   const date = req.nextUrl.searchParams.get("date");
   if (!date) return NextResponse.json({ courses: [] });
@@ -93,11 +113,12 @@ export async function POST(req: NextRequest) {
       const numero = Number(p?.numero);
       const citations = Number(p?.citations);
       if (!Number.isFinite(numero) || !Number.isFinite(citations)) return null;
-      const out: { numero: number; citations: number; bases?: number; cote?: number } = { numero, citations };
+      const out: { numero: number; citations: number; bases?: number; cote?: number; nom?: string } = { numero, citations };
       const bases = Number(p?.bases);
       if (Number.isFinite(bases) && p?.bases != null) out.bases = bases;
       const cote = Number(p?.cote);
       if (Number.isFinite(cote) && p?.cote != null) out.cote = cote;
+      if (typeof p?.nom === "string" && p.nom.trim()) out.nom = p.nom.trim().slice(0, 60);
       return out;
     })
     .filter(Boolean)

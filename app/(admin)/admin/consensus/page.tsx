@@ -12,16 +12,16 @@ import { pickCoursesVedettes, type CourseForVedette, type CourseVedette } from "
 type AdminCourse = CourseLite & CourseForVedette;
 
 const PLACEHOLDER = `# Colle la table : 1 ligne par cheval
-# Format : numero  citations  [cote]  [bases]
-11 28 3.2 12
-10 25 4.0 8
-8 22 4.8 5
-5 18 6.0 3
-7 15 8.0 2
-4 12 9.5 1
-6 10 11 1
-12 8 18 0
-2 6 22 0`;
+# Format : numero  citations  [bases]   (cote + nom ajoutés auto par Elite)
+11 28 12
+10 25 8
+8 22 5
+5 18 3
+7 15 2
+4 12 1
+6 10 1
+12 8 0
+2 6 0`;
 
 const CAT_STYLE: Record<string, string> = {
   FAVORI: "text-gold-primary",
@@ -65,6 +65,7 @@ export default function ConsensusPage() {
   const [courseId, setCourseId] = useState("");
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [manualPick, setManualPick] = useState(false);
+  const [coursePartants, setCoursePartants] = useState<Record<number, { cote: number | null; nom: string | null }>>({});
 
   // Défaut = date du jour (effet client-only → pas de mismatch d'hydratation)
   useEffect(() => {
@@ -102,6 +103,40 @@ export default function ConsensusPage() {
     setCourseId(best ? best.courseId : "");
   }, [courses, hippodrome, course, manualPick, vedette]);
 
+  // Cote + nom des partants de la course liée → enrichissement « à notre niveau »
+  // (la cote vient de PMU/Geny déjà en base, jamais saisie par Cowork).
+  useEffect(() => {
+    if (!courseId) { setCoursePartants({}); return; }
+    let cancelled = false;
+    setCoursePartants({}); // neutre pendant le fetch → jamais la cote d'une autre course
+    fetch(`/api/admin/consensus?courseId=${courseId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const map: Record<number, { cote: number | null; nom: string | null }> = {};
+        (Array.isArray(d.partants) ? d.partants : []).forEach((p: any) => {
+          if (p && p.numero != null) map[p.numero] = { cote: p.cote ?? null, nom: p.nom ?? null };
+        });
+        setCoursePartants(map);
+      })
+      .catch(() => { if (!cancelled) setCoursePartants({}); });
+    return () => { cancelled = true; };
+  }, [courseId]);
+
+  // Une analyse devient périmée si la course liée (donc ses cotes) ou le nombre
+  // de sources change → on force une nouvelle Analyse (cohérence + anti-fabrication).
+  useEffect(() => { setResult(null); }, [coursePartants, nbSources]);
+
+  // Fusionne cote + nom (depuis la course liée) dans les partants parsés.
+  function enrichedPartants() {
+    const { partants, errors } = parseConsensus(raw);
+    const merged = partants.map((p) => {
+      const cp = coursePartants[p.numero];
+      return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
+    });
+    return { partants: merged, errors };
+  }
+
   function utiliserVedette(v: CourseVedette) {
     setCourseId(v.id);
     setManualPick(true);
@@ -118,7 +153,7 @@ export default function ConsensusPage() {
   }
 
   function analyser() {
-    const { partants, errors } = parseConsensus(raw);
+    const { partants, errors } = enrichedPartants();
     setParseErrors(errors);
     setSaveStatus("idle");
     setSaveMsg("");
@@ -139,7 +174,7 @@ export default function ConsensusPage() {
             type_pari: typePari, nb_partants: nbPartants || null, nb_sources: nbSources,
             course_id: courseId || null,
           },
-          partants: parseConsensus(raw).partants,
+          partants: result.partants, // même source que `resultat` → jamais de divergence
           resultat: { elite: result.elite, pro: result.pro, topCites: result.topCites.map((p) => p.numero) },
         }),
       });
@@ -252,7 +287,13 @@ export default function ConsensusPage() {
             <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Table de citations</label>
             <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={12} placeholder={PLACEHOLDER}
               className="w-full mt-2 px-3 py-2.5 bg-bg-elevated border border-border text-text-primary text-sm font-mono rounded-xl focus:border-gold-primary/50 focus:outline-none placeholder:text-text-muted resize-none" />
-            <p className="text-text-muted text-xs mt-1">Format : <code>numero citations [cote] [bases]</code> — 1 cheval/ligne.</p>
+            <p className="text-text-muted text-xs mt-1">Format : <code>numero citations [bases]</code> — 1 cheval/ligne. La <span className="text-text-secondary">cote + le nom</span> sont ajoutés auto depuis la course liée.</p>
+            {courseId && Object.keys(coursePartants).length > 0 && (
+              <p className="text-status-win text-[11px] mt-0.5">✓ {Object.keys(coursePartants).length} cotes + noms chargés depuis la course liée.</p>
+            )}
+            {courseId && Object.keys(coursePartants).length === 0 && (
+              <p className="text-gold-light/80 text-[11px] mt-0.5">Pas de cote en base pour cette course → clique « Enrichir PMU » sur la fiche course (sinon analyse sans cote).</p>
+            )}
             <button onClick={analyser} disabled={!raw.trim()}
               className="w-full mt-3 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               <Calculator className="w-4 h-4" /> Analyser
