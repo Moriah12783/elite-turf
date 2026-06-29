@@ -53,18 +53,28 @@ export async function GET(req: NextRequest) {
   if (courseIds.length > 0) {
     const { data: arrs } = await adminClient
       .from("arrivees")
-      .select("course_id, rapport_quinte, rapport_quarte, rapport_tierce")
+      .select("course_id, rapports_pmu")
       .in("course_id", courseIds);
     (arrs ?? []).forEach((a: any) => { rapportByCourse[a.course_id] = a; });
   }
 
+  /**
+   * Rapport DÉSORDRE (champ réduit en désordre) lu depuis le jsonb `rapports_pmu`
+   * — c'est le bon outcome pour un champ réduit. On NE lit PAS les colonnes
+   * `rapport_*` (qui stockent l'« ordre », servant l'affichage public).
+   */
   function rapportFor(typePari: string | null, courseId: string | null): number | null {
-    const a = courseId ? rapportByCourse[courseId] : null;
-    if (!a) return null;
-    if (typePari === "QUINTE_PLUS") return a.rapport_quinte ?? null;
-    if (typePari === "QUARTE") return a.rapport_quarte ?? null;
-    if (typePari === "TIERCE") return a.rapport_tierce ?? null;
-    return null;
+    const rp = courseId ? rapportByCourse[courseId]?.rapports_pmu : null;
+    if (!rp) return null;
+    const key =
+      typePari === "QUINTE_PLUS" ? "quinte_plus"
+        : typePari === "QUARTE" ? "quarte_plus"
+        : typePari === "TIERCE" ? "tierce"
+        : null;
+    if (!key) return null;
+    const d = rp[key]?.desordre;
+    const n = typeof d === "number" ? d : Number(d);
+    return Number.isFinite(n) && n > 0 ? n : null;
   }
 
   const bySource: Record<string, AggregateInput[]> = {};
