@@ -43,6 +43,24 @@ describe("parseConsensus", () => {
     expect(partants).toEqual([{ numero: 8, citations: 22 }]);
   });
 
+  it("détecte « Nb sources : N » et l'expose", () => {
+    const r = parseConsensus("Nb sources : 29\n7 30 11\n8 27");
+    expect(r.nbSources).toBe(29);
+    expect(r.partants).toEqual([
+      { numero: 7, citations: 30, bases: 11 },
+      { numero: 8, citations: 27 },
+    ]);
+  });
+
+  it("ignore SILENCIEUSEMENT la prose et les nombres seuls (collage du fichier entier)", () => {
+    const r = parseConsensus("Date : 2026-06-29\n7\n29\n11\n7 30\n8 27");
+    expect(r.partants).toEqual([
+      { numero: 7, citations: 30 },
+      { numero: 8, citations: 27 },
+    ]);
+    expect(r.errors).toEqual([]); // aucun avertissement sur le bruit
+  });
+
   it("signale les doublons et les garde une seule fois", () => {
     const { partants, errors } = parseConsensus("11 28\n11 10");
     expect(partants).toEqual([{ numero: 11, citations: 28 }]);
