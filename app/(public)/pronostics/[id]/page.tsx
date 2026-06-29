@@ -16,6 +16,8 @@ import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
 import { ProSelectionBlock, countNonEmptyProSections, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
+import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
+import type { PartantConsensus } from "@/lib/consensus/engine";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
 
 interface PageProps {
@@ -134,6 +136,26 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const partants: any[] = (course?.partants || [])
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
+
+  // Consensus presse lié à cette course (RLS service-role → lu côté serveur).
+  // Gaté sur l'abonnement réel (isSubscriber) ET l'accès au pronostic (hasAccess) :
+  // un visiteur GRATUIT ne reçoit jamais le consensus, même dans le HTML.
+  let consensusData: { partants: PartantConsensus[]; nbSources: number } | null = null;
+  if (hasAccess && isSubscriber && course?.id) {
+    const { data: cons } = await supabase
+      .from("consensus_presse")
+      .select("partants, nb_sources, created_at")
+      .eq("course_id", course.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const n = Number(cons?.nb_sources);
+    if (cons && Array.isArray(cons.partants) && cons.partants.length > 0 && n > 0) {
+      consensusData = { partants: cons.partants as PartantConsensus[], nbSources: n };
+    }
+  }
+  const nomsParNumero: Record<number, string> = {};
+  partants.forEach((pt: any) => { if (pt?.numero != null) nomsParNumero[pt.numero] = pt.nom_cheval; });
 
   // Incrémenter les vues (best effort)
   supabase
@@ -423,6 +445,16 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                 </div>
               )}
             </div>
+
+            {/* ── CONSENSUS PRESSE (premium, si la course est liée à un consensus) ── */}
+            {consensusData && (
+              <ConsensusPresseSection
+                partants={consensusData.partants}
+                nbSources={consensusData.nbSources}
+                selection={p.selection || []}
+                noms={nomsParNumero}
+              />
+            )}
 
             {/* Paywall full banner si pas d'accès */}
             {!hasAccess && (

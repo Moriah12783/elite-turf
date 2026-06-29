@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame,
+  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame, Link2,
 } from "lucide-react";
 import { parseConsensus } from "@/lib/consensus/parse";
 import { buildConsensus, type ConsensusResult, type PartantScored } from "@/lib/consensus/engine";
+import { findBestCourseMatch, parseReunionCourse, type CourseLite } from "@/lib/consensus/matcher";
 
 const PLACEHOLDER = `# Colle la table : 1 ligne par cheval
 # Format : numero  citations  [cote]  [bases]
@@ -57,6 +58,32 @@ export default function ConsensusPage() {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [saveMsg, setSaveMsg] = useState("");
+  const [courses, setCourses] = useState<CourseLite[]>([]);
+  const [courseId, setCourseId] = useState("");
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [manualPick, setManualPick] = useState(false);
+
+  // Charge les courses du jour quand la date change
+  useEffect(() => {
+    if (!dateCourse) { setCourses([]); setCourseId(""); setManualPick(false); return; }
+    let cancelled = false;
+    setCoursesLoading(true);
+    setManualPick(false);
+    fetch(`/api/admin/consensus?date=${dateCourse}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setCourses(Array.isArray(d.courses) ? d.courses : []); })
+      .catch(() => { if (!cancelled) setCourses([]); })
+      .finally(() => { if (!cancelled) setCoursesLoading(false); });
+    return () => { cancelled = true; };
+  }, [dateCourse]);
+
+  // Auto-rattachement (tant que l'admin n'a pas choisi manuellement)
+  useEffect(() => {
+    if (courses.length === 0 || manualPick) return;
+    const rc = parseReunionCourse(course);
+    const best = findBestCourseMatch({ hippodrome, reunion: rc.reunion, course: rc.course }, courses);
+    setCourseId(best ? best.courseId : "");
+  }, [courses, hippodrome, course, manualPick]);
 
   function analyser() {
     const { partants, errors } = parseConsensus(raw);
@@ -78,6 +105,7 @@ export default function ConsensusPage() {
           meta: {
             date_course: dateCourse || null, hippodrome, course,
             type_pari: typePari, nb_partants: nbPartants || null, nb_sources: nbSources,
+            course_id: courseId || null,
           },
           partants: parseConsensus(raw).partants,
           resultat: { elite: result.elite, pro: result.pro, topCites: result.topCites.map((p) => p.numero) },
@@ -133,6 +161,28 @@ export default function ConsensusPage() {
               <label className="text-text-muted text-xs font-semibold">Course</label>
               <input value={course} onChange={(e) => setCourse(e.target.value)} placeholder="Prix… / R1C1"
                 className="w-full mt-1 px-2 py-1.5 bg-bg-elevated border border-border text-text-primary text-sm rounded-lg focus:border-gold-primary/50 focus:outline-none placeholder:text-text-muted" />
+            </div>
+            {/* Rattachement à une course du programme (pour l'affichage abonné) */}
+            <div>
+              <label className="text-text-muted text-xs font-semibold flex items-center gap-1.5">
+                <Link2 className="w-3 h-3" /> Course liée {coursesLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+              </label>
+              <select value={courseId} onChange={(e) => { setCourseId(e.target.value); setManualPick(true); }}
+                disabled={!dateCourse || courses.length === 0}
+                className="w-full mt-1 px-2 py-1.5 bg-bg-elevated border border-border text-text-primary text-sm rounded-lg focus:border-gold-primary/50 focus:outline-none disabled:opacity-50">
+                <option value="">{!dateCourse ? "Choisis une date d'abord" : courses.length === 0 ? "Aucune course ce jour" : "— Non liée —"}</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {(c.hippodrome ?? "?")} R{c.numero_reunion}C{c.numero_course}{c.libelle ? ` — ${c.libelle}` : ""}
+                  </option>
+                ))}
+              </select>
+              {courseId && !manualPick && (
+                <p className="text-status-win text-[11px] mt-1">✓ Rattachée automatiquement — vérifie</p>
+              )}
+              {!courseId && dateCourse && courses.length > 0 && (
+                <p className="text-gold-light/80 text-[11px] mt-1">Non liée → le consensus ne s'affichera pas sur la fiche course.</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
