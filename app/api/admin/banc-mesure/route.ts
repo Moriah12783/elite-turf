@@ -74,7 +74,12 @@ export async function GET(req: NextRequest) {
     if (!key) return null;
     const d = rp[key]?.desordre;
     const n = typeof d === "number" ? d : Number(d);
-    return Number.isFinite(n) && n > 0 ? n : null;
+    if (!Number.isFinite(n) || n <= 0) return null;
+    // Geny rapporte le Quinté+ « pour 2€ » (Tiercé/Quarté+ « pour 1€ ») → on
+    // ramène à un multiplicateur « pour 1€ », cohérent avec metrics.ts (unité=1,
+    // gain = rapport × unité). Sans ça le ROI Quinté+ serait 2× trop élevé.
+    const baseMise = typePari === "QUINTE_PLUS" ? 2 : 1;
+    return n / baseMise;
   }
 
   const bySource: Record<string, AggregateInput[]> = {};
