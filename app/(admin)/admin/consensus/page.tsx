@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame, Link2,
+  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame, Link2, Sparkles,
 } from "lucide-react";
 import { parseConsensus } from "@/lib/consensus/parse";
 import { buildConsensus, type ConsensusResult, type PartantScored } from "@/lib/consensus/engine";
 import { findBestCourseMatch, parseReunionCourse, type CourseLite } from "@/lib/consensus/matcher";
+import { pickCoursesVedettes, type CourseForVedette, type CourseVedette } from "@/lib/turf/course-vedette";
+
+type AdminCourse = CourseLite & CourseForVedette;
 
 const PLACEHOLDER = `# Colle la table : 1 ligne par cheval
 # Format : numero  citations  [cote]  [bases]
@@ -58,10 +61,15 @@ export default function ConsensusPage() {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [saveMsg, setSaveMsg] = useState("");
-  const [courses, setCourses] = useState<CourseLite[]>([]);
+  const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [courseId, setCourseId] = useState("");
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [manualPick, setManualPick] = useState(false);
+
+  // Défaut = date du jour (effet client-only → pas de mismatch d'hydratation)
+  useEffect(() => {
+    setDateCourse(new Date().toISOString().slice(0, 10));
+  }, []);
 
   // Charge les courses du jour quand la date change
   useEffect(() => {
@@ -77,13 +85,37 @@ export default function ConsensusPage() {
     return () => { cancelled = true; };
   }, [dateCourse]);
 
-  // Auto-rattachement (tant que l'admin n'a pas choisi manuellement)
+  // Course(s) vedette(s) du jour (déterministe, depuis les paris dispo)
+  const vedettes = useMemo(() => pickCoursesVedettes(courses, 2), [courses]);
+  const vedette = vedettes.length > 0 ? vedettes[0] : null;
+
+  // Auto-rattachement (tant que l'admin n'a pas choisi manuellement) :
+  // sans hippodrome saisi → on propose la vedette du jour ; sinon → match hippodrome.
   useEffect(() => {
     if (courses.length === 0 || manualPick) return;
+    if (!hippodrome.trim()) {
+      setCourseId(vedette ? vedette.id : "");
+      return;
+    }
     const rc = parseReunionCourse(course);
     const best = findBestCourseMatch({ hippodrome, reunion: rc.reunion, course: rc.course }, courses);
     setCourseId(best ? best.courseId : "");
-  }, [courses, hippodrome, course, manualPick]);
+  }, [courses, hippodrome, course, manualPick, vedette]);
+
+  function utiliserVedette(v: CourseVedette) {
+    setCourseId(v.id);
+    setManualPick(true);
+    if (v.hippodrome) setHippodrome(v.hippodrome);
+    if (v.numero_reunion != null && v.numero_course != null) setCourse(`R${v.numero_reunion}C${v.numero_course}`);
+    if (v.nb_partants) setNbPartants(v.nb_partants);
+    // Le <select> typePari n'a que QUINTE_PLUS/QUARTE/TIERCE → on aplatit
+    // QUARTE_PLUS sur QUARTE (intentionnel, vocabulaire du select).
+    setTypePari(
+      v.pari_principal === "TIERCE" ? "TIERCE"
+        : (v.pari_principal === "QUARTE" || v.pari_principal === "QUARTE_PLUS") ? "QUARTE"
+        : "QUINTE_PLUS",
+    );
+  }
 
   function analyser() {
     const { partants, errors } = parseConsensus(raw);
@@ -135,6 +167,24 @@ export default function ConsensusPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ── Saisie ── */}
         <div className="lg:col-span-1 space-y-5">
+          {/* Course vedette du jour (auto) → ferme la boucle : on sait quoi remplir */}
+          {vedette && (
+            <div className="card-base p-4 border border-gold-primary/30 bg-gold-faint/40">
+              <p className="text-xs font-bold uppercase tracking-wider text-gold-light flex items-center gap-1.5 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Course vedette du jour
+              </p>
+              <p className="text-text-primary text-sm font-semibold">
+                {vedette.hippodrome ?? "?"}{vedette.numero_reunion != null ? ` R${vedette.numero_reunion}` : ""}{vedette.numero_course != null ? `C${vedette.numero_course}` : ""}
+              </p>
+              <p className="text-text-muted text-xs mt-0.5">{vedette.raison}</p>
+              <button
+                onClick={() => utiliserVedette(vedette)}
+                className="mt-2.5 w-full px-3 py-1.5 rounded-lg bg-gold-primary text-bg-primary text-xs font-bold hover:bg-gold-dark transition-colors"
+              >
+                Utiliser cette course
+              </button>
+            </div>
+          )}
           <div className="card-base p-5 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>

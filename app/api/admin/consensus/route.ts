@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await auth.adminClient
     .from("courses")
-    .select("id, libelle, numero_reunion, numero_course, hippodrome:hippodromes(nom)")
+    .select("id, libelle, numero_reunion, numero_course, nb_partants, paris_disponibles, heure_depart, hippodrome:hippodromes(nom)")
     .eq("date_course", date)
     .order("numero_reunion", { ascending: true })
     .order("numero_course", { ascending: true });
@@ -39,6 +39,9 @@ export async function GET(req: NextRequest) {
     libelle: c.libelle,
     numero_reunion: c.numero_reunion,
     numero_course: c.numero_course,
+    nb_partants: c.nb_partants ?? null,
+    paris_disponibles: Array.isArray(c.paris_disponibles) ? c.paris_disponibles : [],
+    heure_depart: c.heure_depart ?? null,
     hippodrome: c.hippodrome?.nom ?? null,
   }));
   return NextResponse.json({ courses });
