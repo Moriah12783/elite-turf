@@ -1,0 +1,71 @@
+name: backfill-rapports
+
+# Backfill ONE-SHOT des rapports PMU : re-fetch des pages arrivée Geny + re-parse
+# avec le parser corrigé (lib/sync/geny-rapports-parser.ts) + UPDATE de
+# arrivees.rapports_pmu. Manuel uniquement (workflow_dispatch).
+#
+# Sur runner GitHub (IP Azure → HTTP 200) car Geny renvoie 403 à l'IP du Worker
+# Cloudflare. Ne touche jamais ordre_arrivee — seulement rapports_pmu + commentaire.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Portée : quinte (vrais Quinté+, défaut) ou all (toutes les courses terminées)"
+        type: choice
+        required: true
+        default: quinte
+        options:
+          - quinte
+          - all
+      since:
+        description: "Borne basse date_course (YYYY-MM-DD, optionnel)"
+        type: string
+        required: false
+        default: ""
+      limit:
+        description: "Plafond du nombre de courses (optionnel, ex: 50 pour un test)"
+        type: string
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry-run (ne rien écrire, rapport seulement)"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: backfill-rapports
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # 'all' peut re-fetch plusieurs centaines de pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/geny-rapports-backfill-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=geny-rapports-backfill.mjs
+
+      - name: Backfill rapports PMU
+        run: node geny-rapports-backfill.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKFILL_SCOPE: ${{ inputs.scope }}
+          BACKFILL_SINCE: ${{ inputs.since }}
+          BACKFILL_LIMIT: ${{ inputs.limit }}
+          BACKFILL_DRY_RUN: ${{ inputs.dry_run }}
