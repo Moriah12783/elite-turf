@@ -126,7 +126,10 @@ export default function BancMesurePage() {
                       <td className="py-2 px-2 text-right text-status-win font-semibold">{m.pctGagnant}%</td>
                       <td className="py-2 px-2 text-right text-gold-light">{m.pctPartiel}%</td>
                       <td className="py-2 px-2 text-right text-status-loss">{m.pctPerdant}%</td>
-                      <td className="py-2 px-2 text-right"><Roi roi={m.roiGlobal} /></td>
+                      <td className="py-2 px-2 text-right">
+                        <Roi roi={m.roiGlobal} />
+                        <span className={`block text-[10px] ${m.nAvecRapport < 10 ? "text-status-loss" : "text-text-muted"}`}>n={m.nAvecRapport}</span>
+                      </td>
                       <td className="py-2 px-2 text-right text-text-muted">{m.tailleSelMoy}</td>
                     </tr>
                   );
@@ -141,6 +144,8 @@ export default function BancMesurePage() {
               <span><span className="font-semibold">Vainqueur ✓</span> = le 1er de l'arrivée est dans la sélection. <span className="font-semibold">Couverture</span> = combien des N premiers (5/4/3) sont couverts, en moyenne.</span></p>
             <p className="flex items-start gap-2"><TrendingUp className="w-3.5 h-3.5 text-gold-primary flex-shrink-0 mt-0.5" />
               <span><span className="font-semibold">ROI désordre</span> = rendement d'un champ réduit (coût = C(taille, N) combinaisons ; gain = rapport si couverture complète). <span className="text-text-muted">Hors Bonus 4/3 → conservateur. C'est le vrai juge : couvrir des favoris peut être une perte nette.</span></span></p>
+            <p className="flex items-start gap-2 text-status-loss"><TrendingDown className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+              <span><span className="font-semibold">⚠️ ROI peu fiable pour l'instant</span> : le <span className="font-semibold">rapport désordre du Quinté+ n'est pas encore collecté</span> (le scraper ne stocke que l'« ordre »). Le ROI n'est donc calculé que sur les rares courses avec rapport (voir <span className="font-mono">n=</span>, en rouge si &lt; 10). À fiabiliser en capturant le rapport désordre. En attendant, fie-toi surtout à <span className="font-semibold">% Vainqueur / Couverture / Gagnant</span>.</span></p>
             <p className="text-text-muted">Échantillons par méthode parfois petits → lire les tendances, pas une course isolée. La ligne <span className="text-purple-400 font-semibold">Pipeline IA</span> est à comparer aux méthodes humaines.</p>
           </div>
         </>
