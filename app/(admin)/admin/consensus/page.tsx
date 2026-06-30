@@ -29,6 +29,13 @@ const CAT_STYLE: Record<string, string> = {
   TOCARD: "text-purple-400",
 };
 
+// Divergence consensus presse × sélection stats (2×2).
+const DIV_FLAG: Record<string, { label: string; cls: string }> = {
+  BASE:  { label: "🟢 Base",  cls: "text-status-win" },     // cité ET stats fortes
+  VALUE: { label: "🔵 Value", cls: "text-blue-400" },       // stats fortes, peu cité (data voit ce que la presse rate)
+  PIEGE: { label: "🟡 Piège", cls: "text-gold-light" },     // cité mais stats faibles (surcote/hype)
+};
+
 function Chip({ p, nb }: { p: PartantScored; nb: number }) {
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-bg-elevated border border-border text-sm">
@@ -65,7 +72,7 @@ export default function ConsensusPage() {
   const [courseId, setCourseId] = useState("");
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [manualPick, setManualPick] = useState(false);
-  const [coursePartants, setCoursePartants] = useState<Record<number, { cote: number | null; nom: string | null }>>({});
+  const [coursePartants, setCoursePartants] = useState<Record<number, { cote: number | null; nom: string | null; statRank: number | null; statLabel: string | null }>>({});
 
   // Défaut = date du jour (effet client-only → pas de mismatch d'hydratation)
   useEffect(() => {
@@ -113,9 +120,9 @@ export default function ConsensusPage() {
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
-        const map: Record<number, { cote: number | null; nom: string | null }> = {};
+        const map: Record<number, { cote: number | null; nom: string | null; statRank: number | null; statLabel: string | null }> = {};
         (Array.isArray(d.partants) ? d.partants : []).forEach((p: any) => {
-          if (p && p.numero != null) map[p.numero] = { cote: p.cote ?? null, nom: p.nom ?? null };
+          if (p && p.numero != null) map[p.numero] = { cote: p.cote ?? null, nom: p.nom ?? null, statRank: p.statRank ?? null, statLabel: p.statLabel ?? null };
         });
         setCoursePartants(map);
       })
@@ -142,6 +149,31 @@ export default function ConsensusPage() {
       return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
     });
     return { partants: merged, errors };
+  }
+
+  // Divergence presse × stats : "fort presse" = top 8 du consensus ; "fort stats"
+  // = présent dans la sélection stats (top 8 déterministe).
+  const pressTop8 = useMemo(() => {
+    const s: Record<number, boolean> = {};
+    if (result) result.partants.slice(0, 8).forEach((p) => { s[p.numero] = true; });
+    return s;
+  }, [result]);
+
+  // La divergence n'a de sens que si la sélection stats est chargée (course liée +
+  // forme/cotes en base) — sinon on n'affiche aucun flag (évite un faux « Piège »).
+  const statsAvailable = useMemo(
+    () => Object.keys(coursePartants).some((k) => coursePartants[Number(k)]?.statRank != null),
+    [coursePartants],
+  );
+
+  function divergenceCode(numero: number): "BASE" | "VALUE" | "PIEGE" | null {
+    if (!statsAvailable) return null;
+    const inPress = !!pressTop8[numero];
+    const inStats = coursePartants[numero]?.statRank != null;
+    if (inPress && inStats) return "BASE";
+    if (inStats) return "VALUE";
+    if (inPress) return "PIEGE";
+    return null;
   }
 
   function utiliserVedette(v: CourseVedette) {
@@ -369,6 +401,8 @@ export default function ConsensusPage() {
                         <th className="text-right py-1.5 px-2">Cote</th>
                         <th className="text-left py-1.5 px-2">Catégorie</th>
                         <th className="text-right py-1.5 px-2">Score</th>
+                        <th className="text-left py-1.5 px-2">Stats</th>
+                        <th className="text-left py-1.5 px-2">Signal</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -381,11 +415,23 @@ export default function ConsensusPage() {
                           <td className="py-1.5 px-2 text-right text-text-muted">{p.cote == null ? "—" : p.cote}</td>
                           <td className={`py-1.5 px-2 font-semibold ${CAT_STYLE[p.categorie] || ""}`}>{p.categorie}</td>
                           <td className="py-1.5 px-2 text-right text-text-secondary">{p.scoreConsensus}</td>
+                          <td className="py-1.5 px-2 text-text-muted text-xs">{coursePartants[p.numero]?.statLabel ?? "—"}</td>
+                          <td className="py-1.5 px-2 text-xs">
+                            {(() => {
+                              const d = divergenceCode(p.numero);
+                              return d
+                                ? <span className={`font-semibold ${DIV_FLAG[d].cls}`}>{DIV_FLAG[d].label}</span>
+                                : <span className="text-text-muted">—</span>;
+                            })()}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+                <p className="text-text-muted text-[11px] mt-3 leading-relaxed">
+                  <span className="font-semibold text-text-secondary">Signal (presse × stats)</span> — <span className="text-status-win font-semibold">🟢 Base</span> : cité ET stats fortes (consensus solide). <span className="text-blue-400 font-semibold">🔵 Value</span> : stats fortes mais peu cité (la data voit ce que la presse rate). <span className="text-gold-light font-semibold">🟡 Piège</span> : très cité mais stats faibles (surcote/hype). Colonne <span className="text-text-secondary">Stats</span> = sélection stats déterministe. Aide à la décision — c'est toi qui tranches l'Elite-6 / Pro-8.
+                </p>
               </div>
 
               {/* Enregistrer */}
