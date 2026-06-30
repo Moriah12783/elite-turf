@@ -17,20 +17,26 @@ type CourseOption = {
 
 interface Props {
   courses: CourseOption[];
+  initialData?: {
+    course_id?: string;
+    niveau_acces?: string;
+    type_pari?: string;
+    selection?: number[];
+  };
 }
 
-export default function NouveauPronosticClient({ courses }: Props) {
+export default function NouveauPronosticClient({ courses, initialData }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    course_id: "",
-    niveau_acces: "GRATUIT",
-    type_pari: "TIERCE",
+    course_id: initialData?.course_id || "",
+    niveau_acces: initialData?.niveau_acces || "GRATUIT",
+    type_pari: initialData?.type_pari || "TIERCE",
     confiance: "ELEVE",
     analyse_courte: "",
     analyse_texte: "",
   });
-  const [selection, setSelection] = useState<number[]>([]);
+  const [selection, setSelection] = useState<number[]>(initialData?.selection || []);
   const [newNumero, setNewNumero] = useState("");
 
   const addNumero = () => {
