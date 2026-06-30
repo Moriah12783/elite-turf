@@ -176,6 +176,20 @@ export default function ConsensusPage() {
     return null;
   }
 
+  // Transformer le consensus en pronostic : deep-link vers le formulaire existant
+  // « Nouveau pronostic », pré-rempli + éditable. L'admin ajuste et publie lui-même.
+  function creerPronostic(niveau: "ELITE" | "PRO") {
+    if (!result || !courseId) return;
+    const sel = niveau === "ELITE" ? result.elite.selection : result.pro.selection;
+    const params = new URLSearchParams({
+      courseId,
+      niveau_acces: niveau,
+      type_pari: typePari,
+      selection: sel.join(","),
+    });
+    window.location.href = `/admin/pronostics/nouveau?${params.toString()}`;
+  }
+
   function utiliserVedette(v: CourseVedette) {
     setCourseId(v.id);
     setManualPick(true);
@@ -443,6 +457,24 @@ export default function ConsensusPage() {
                 </button>
                 {saveStatus === "success" && <span className="flex items-center gap-1.5 text-status-win text-sm"><CheckCircle2 className="w-4 h-4" />{saveMsg}</span>}
                 {saveStatus === "error" && <span className="flex items-center gap-1.5 text-status-loss text-sm"><XCircle className="w-4 h-4" />{saveMsg}</span>}
+              </div>
+
+              {/* Transformer en pronostic — sélection pré-remplie + éditable, tu publies toi-même */}
+              <div className="card-base p-4 space-y-2">
+                <p className="text-text-secondary text-xs">
+                  Transformer en pronostic : la sélection est <span className="text-text-primary font-semibold">pré-remplie et éditable</span> dans le formulaire — tu l'ajustes (ton coup d'œil d'expert), tu écris l'analyse, puis tu publies toi-même (Brouillon ou Publier).
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button onClick={() => creerPronostic("ELITE")} disabled={!courseId}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 font-bold text-sm rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Crown className="w-4 h-4" /> Créer pronostic Elite ({result.elite.selection.length})
+                  </button>
+                  <button onClick={() => creerPronostic("PRO")} disabled={!courseId}
+                    className="flex items-center gap-2 px-4 py-2 bg-gold-faint border border-gold-primary/30 text-gold-light hover:border-gold-primary/60 font-bold text-sm rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Star className="w-4 h-4" /> Créer pronostic Pro ({result.pro.selection.length})
+                  </button>
+                  {!courseId && <span className="text-gold-light/80 text-[11px]">Lie d'abord une course (« Course liée ») pour créer le pronostic.</span>}
+                </div>
               </div>
 
               <div className="flex items-start gap-2 text-text-muted text-xs">
