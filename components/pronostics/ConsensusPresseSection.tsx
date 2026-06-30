@@ -36,7 +36,7 @@ export function ConsensusPresseSection({ partants, nbSources, selection, noms }:
 
   return (
     <div className="mb-6">
-      <h2 className="text-text-muted text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+      <h2 className="text-gold-light text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
         <Newspaper className="w-4 h-4 text-gold-primary" />
         Consensus de la presse
       </h2>
@@ -50,12 +50,14 @@ export function ConsensusPresseSection({ partants, nbSources, selection, noms }:
             const cit = p ? p.citations : 0;
             const taux = p ? Math.round(p.tauxCitation * 100) : 0;
             return (
-              <span key={numero} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bg-card border border-border text-sm">
+              <span key={numero} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-bg-card border border-border text-sm">
                 <span className="font-bold text-gold-light">{numero}</span>
-                {noms?.[numero] && <span className="text-text-secondary text-xs max-w-[90px] truncate">{noms[numero]}</span>}
-                <span className={`text-xs ${p ? "text-text-muted" : "text-text-muted/60"}`}>
-                  {p ? `cité ${cit}/${nb} · ${taux}%` : "non cité"}
-                </span>
+                {noms?.[numero] && <span className="text-text-primary text-xs font-medium">{noms[numero]}</span>}
+                {p ? (
+                  <span className="text-xs text-text-secondary">cité <span className="text-text-primary font-semibold">{cit}/{nb}</span> · <span className="text-gold-light font-semibold">{taux}%</span></span>
+                ) : (
+                  <span className="text-xs text-text-muted">non cité</span>
+                )}
               </span>
             );
           })}
