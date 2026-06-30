@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
+import { buildNotreSelection } from "@/lib/courses/notre-selection";
 
 export const dynamic = "force-dynamic";
 
@@ -30,16 +32,40 @@ export async function GET(req: NextRequest) {
   if (courseId) {
     const { data, error } = await auth.adminClient
       .from("partants")
-      .select("numero, cote, nom_cheval, non_partant")
+      .select("id, numero, cote, nom_cheval, jockey, entraineur, musique, non_partant")
       .eq("course_id", courseId);
     if (error) { console.error("[consensus] partants", error); return NextResponse.json({ partants: [] }); }
-    const partants = (data ?? [])
-      .filter((p: any) => !p.non_partant)
-      .map((p: any) => ({
-        numero: p.numero,
-        cote: p.cote != null && Number.isFinite(Number(p.cote)) ? Number(p.cote) : null,
-        nom: p.nom_cheval ?? null,
+
+    const runners = (data ?? []).filter((p: any) => !p.non_partant);
+
+    // Sélection stats (réutilise le moteur public : score composite + réputation
+    // driver/entraîneur). Deuxième couche de signal, à côté du consensus presse.
+    const statByNumero: Record<number, { rank: number; label: string }> = {};
+    try {
+      const input = runners.map((p: any) => ({
+        id:         p.id,
+        numero:     p.numero,
+        nom_cheval: p.nom_cheval ?? "",
+        jockey:     p.jockey ?? null,
+        entraineur: p.entraineur ?? null,
+        cote:       p.cote != null ? Number(p.cote) : null,
+        musique:    p.musique ?? null,
       }));
+      const enrichies = await getCourseStatsEnrichies(input);
+      buildNotreSelection(enrichies.partants).forEach((s) => {
+        statByNumero[s.numero] = { rank: s.rank, label: s.label };
+      });
+    } catch (e) {
+      console.error("[consensus] stats", e);
+    }
+
+    const partants = runners.map((p: any) => ({
+      numero:    p.numero,
+      cote:      p.cote != null && Number.isFinite(Number(p.cote)) ? Number(p.cote) : null,
+      nom:       p.nom_cheval ?? null,
+      statRank:  statByNumero[p.numero]?.rank ?? null,
+      statLabel: statByNumero[p.numero]?.label ?? null,
+    }));
     return NextResponse.json({ partants });
   }
 
