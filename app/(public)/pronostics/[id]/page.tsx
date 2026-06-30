@@ -413,20 +413,20 @@ export default async function PronosticDetailPage({ params }: PageProps) {
 
             {/* ── ANALYSE ── */}
             <div className="mb-6">
-              <h2 className="text-text-muted text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+              <h2 className="text-gold-light text-xs uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
                 <Star className="w-4 h-4 text-gold-primary" />
                 Analyse de l&apos;expert
               </h2>
               {hasAccess ? (
                 <div className="space-y-3">
-                  <p className="text-text-secondary text-sm leading-relaxed italic border-l-2 border-gold-primary/40 pl-4 py-1">
+                  <p className="text-text-primary text-sm leading-relaxed italic border-l-2 border-gold-primary/60 pl-4 py-1">
                     &ldquo;{p.analyse_courte}&rdquo;
                   </p>
                   {plan ? (
                     <ElitePlanBlock plan={plan} />
                   ) : p.analyse_texte ? (
                     <div className="mt-4 p-4 bg-bg-elevated rounded-xl border border-border/50">
-                      <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-line">
+                      <p className="text-text-primary text-sm leading-relaxed whitespace-pre-line">
                         {p.analyse_texte}
                       </p>
                     </div>
