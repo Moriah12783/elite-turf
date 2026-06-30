@@ -15,9 +15,10 @@ Tu es **les yeux** de l'équipe : tu lis ce qui est public, tu **comptes**, tu t
 
 ## ⏰ Chronogramme & livraison
 
-Le pronostic premium d'Elite est publié vers **09 h 30 UTC** (= 09 h 30 Abidjan / 11 h 30 Paris l'été). Les sélections de la presse pour le Quinté+ du jour sont **déjà publiées la veille au soir** → la donnée est prête dès le matin.
+Le pronostic premium d'Elite est publié vers **09 h 30 UTC** (= 09 h 30 Abidjan / 11 h 30 Paris l'été).
 
-- **Quand (déclenchement manuel)** : Steph demande à Cowork **chaque matin, le plus tôt possible**. L'objectif est d'avoir le consensus **saisi dans Elite avant 09 h 30 UTC**, pour qu'il s'affiche quand les abonnés consultent le prono.
+- **Quand (déclenchement manuel) : vers 08 h–08 h 30 GMT/UTC.** Inutile de lire à 6 h : les grilles « synthèse de la presse » se mettent souvent à jour **tard le matin** (lire trop tôt = risque de tomber sur la course de la **veille**). Lire à 08 h–08 h 30 laisse les grilles se rafraîchir **et** reste avant la publication (09 h 30).
+- **À calibrer** : noter sur quelques jours l'heure à laquelle chaque grille affiche réellement la course du jour → on ajustera l'heure de lecture si besoin.
 - **Livraison : par EMAIL.** Dès que Cowork a fini, il **envoie le bloc complet (infos course + tableau) à `manuel.conti2008@gmail.com`** — objet : `Consensus presse — [date] — [hippodrome]`.
 
 ---
@@ -44,6 +45,9 @@ La course à traiter = **le Quinté+ du jour** (la grande course PMU France, cel
 > Paris-Turf, Stato, Spécial Dernière, Week-End, Tiercé Magazine, Bilto, Le Parisien, Le Figaro, Équidia (expert + rédaction), Europe 1, RTL, RMC, Geny, Canal Turf, Turfoo, Turfomania, Zone-Turf, Zeturf, Ouest-France, La Dépêche du Midi, L'Indépendant, Le Télégramme, Sud Ouest, La Voix du Nord, Le Progrès, Le Dauphiné Libéré, La Montagne, La Nouvelle République, L'Est Républicain, Nice-Matin, La Provence, Midi Libre.
 
 **Recoupement Afrique :** le **dos du programme LONACI** / lonacionline.ci (sélections grand public).
+
+### ⚠️ Contrôle de fraîcheur (OBLIGATOIRE, avant de compter)
+**Vérifie que la grille affiche bien la course du jour** : bon **hippodrome** + bon **nombre de partants**. Les grilles sont parfois **périmées le matin** (elles montrent encore la course de la **veille**). Si une grille est périmée → **croise 2-3 grilles** et compte sur celle(s) à jour ; **n'utilise JAMAIS une grille périmée**. Dans ton rapport, indique quelle(s) grille(s) étai(en)t périmée(s) et combien de sources réellement comptées.
 
 ### 🚫 Interdits (ne JAMAIS utiliser ni compter)
 - Le **« prono maison »** des sites agrégateurs eux-mêmes (on ne compte QUE les journaux de la grille).
@@ -117,7 +121,7 @@ Chevaux triés du plus cité au moins cité. Exemple :
 
 ## 🔁 Récap du workflow
 
-1. **Chaque matin, tôt** → identifier le Quinté+ du jour + lire les grilles presse (sorties la veille au soir).
+1. **Chaque matin vers 08 h–08 h 30 GMT** → identifier le Quinté+ du jour + lire les grilles presse (vérifier qu'elles affichent bien la course du jour).
 2. **Compter** citations + bases par cheval (PAS de cote — Elite l'ajoute).
 3. **Envoyer** le bloc (infos course + tableau) **par email à `manuel.conti2008@gmail.com`** dès que c'est prêt (avant 09 h 30 UTC).
 
