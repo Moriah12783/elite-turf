@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { parseConsensus } from "@/lib/consensus/parse";
 import { buildConsensus, type ConsensusResult, type PartantScored } from "@/lib/consensus/engine";
+import { buildAnalyseDraft } from "@/lib/consensus/analyse-draft";
 import { findBestCourseMatch, parseReunionCourse, type CourseLite } from "@/lib/consensus/matcher";
 import { pickCoursesVedettes, type CourseForVedette, type CourseVedette } from "@/lib/turf/course-vedette";
 
@@ -181,11 +182,26 @@ export default function ConsensusPage() {
   function creerPronostic(niveau: "ELITE" | "PRO") {
     if (!result || !courseId) return;
     const sel = niveau === "ELITE" ? result.elite.selection : result.pro.selection;
+
+    // Brouillon d'analyse auto (factuel) à partir du consensus + stats + divergence.
+    const noms: Record<number, string | null> = {};
+    const statLabel: Record<number, string | null> = {};
+    const divergence: Record<number, "BASE" | "VALUE" | "PIEGE" | null> = {};
+    result.partants.forEach((p) => {
+      noms[p.numero] = coursePartants[p.numero]?.nom ?? null;
+      statLabel[p.numero] = coursePartants[p.numero]?.statLabel ?? null;
+      divergence[p.numero] = divergenceCode(p.numero);
+    });
+    const pariLabel = typePari === "QUINTE_PLUS" ? "Quinté+" : typePari === "QUARTE" ? "Quarté+" : "Tiercé";
+    const draft = buildAnalyseDraft({ result, selection: sel, noms, statLabel, divergence, hippodrome, typePariLabel: pariLabel });
+
     const params = new URLSearchParams({
       courseId,
       niveau_acces: niveau,
       type_pari: typePari,
       selection: sel.join(","),
+      analyse_courte: draft.analyseCourte,
+      analyse_texte: draft.analyseTexte,
     });
     window.location.href = `/admin/pronostics/nouveau?${params.toString()}`;
   }

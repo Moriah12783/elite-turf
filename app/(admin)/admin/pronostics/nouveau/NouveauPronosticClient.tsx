@@ -22,6 +22,8 @@ interface Props {
     niveau_acces?: string;
     type_pari?: string;
     selection?: number[];
+    analyse_courte?: string;
+    analyse_texte?: string;
   };
 }
 
@@ -33,8 +35,8 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
     niveau_acces: initialData?.niveau_acces || "GRATUIT",
     type_pari: initialData?.type_pari || "TIERCE",
     confiance: "ELEVE",
-    analyse_courte: "",
-    analyse_texte: "",
+    analyse_courte: initialData?.analyse_courte || "",
+    analyse_texte: initialData?.analyse_texte || "",
   });
   const [selection, setSelection] = useState<number[]>(initialData?.selection || []);
   const [newNumero, setNewNumero] = useState("");
