@@ -1,6 +1,31 @@
 import { describe, it, expect } from "vitest";
 import { buildConsensus, type ConsensusInput } from "./engine";
 
+// R01 — test 3 du Lot 1 : un cheval cité 2/33 ne peut JAMAIS être tagué
+// « Base » automatiquement, même avec un score gonflé (défense en profondeur,
+// indépendante de la validation E01/E04 — reproduit l'incident du 01/07).
+describe("R01 anti-fausse-base (incident 01/07)", () => {
+  it("cheval cité 2/33 avec score gonflé (144 bases) → jamais en slot base", () => {
+    const r = buildConsensus({
+      nbSources: 33,
+      partants: [
+        { numero: 3, citations: 2, bases: 144 }, // score 74 — top du tri
+        { numero: 7, citations: 33, bases: 12 },
+        { numero: 8, citations: 33, bases: 10 },
+        { numero: 4, citations: 32, bases: 10 },
+        { numero: 11, citations: 29, bases: 1 },
+        { numero: 13, citations: 27 },
+        { numero: 6, citations: 26 },
+      ],
+    });
+    expect(r.seuilBase).toBe(10);
+    expect(r.elite.base).not.toContain(3);
+    expect(r.pro.base).not.toContain(3);
+    // les slots base restent remplis par des chevaux légitimes (≥ seuil)
+    expect(r.elite.base).toEqual([7, 8, 4]);
+  });
+});
+
 /**
  * Exemple réaliste : une course de 16 partants, consensus agrégé sur 30 sources.
  * Chiffres choisis pour des assertions claires (favoris très cités, outsiders et
