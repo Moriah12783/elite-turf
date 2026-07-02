@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame, Link2, Sparkles,
+  ListChecks, Calculator, Save, Loader2, CheckCircle2, XCircle, Crown, Star, Flame, Link2, Sparkles, Inbox,
 } from "lucide-react";
 import { parseConsensus } from "@/lib/consensus/parse";
 import { buildConsensus, type ConsensusResult, type PartantScored } from "@/lib/consensus/engine";
@@ -76,6 +76,12 @@ export default function ConsensusPage() {
   const [courseId, setCourseId] = useState("");
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [manualPick, setManualPick] = useState(false);
+  const [fromDraft, setFromDraft] = useState(false);
+  // Course liée d'un brouillon en cours de chargement : le changement de date du
+  // brouillon re-déclenche l'effet « courses du jour » qui réinitialiserait
+  // manualPick/courseId — ce ref (consommé une seule fois, pour SA date) préserve
+  // le rattachement exact déposé par le pipeline.
+  const draftPickRef = useRef<{ date: string; courseId: string } | null>(null);
   const [coursePartants, setCoursePartants] = useState<Record<number, { cote: number | null; nom: string | null; statRank: number | null; statLabel: string | null }>>({});
 
   // Défaut = date du jour (effet client-only → pas de mismatch d'hydratation)
@@ -83,15 +89,63 @@ export default function ConsensusPage() {
     setDateCourse(new Date().toISOString().slice(0, 10));
   }, []);
 
+  // Pré-remplissage depuis un brouillon du pipeline (/admin/consensus?draft=<id>).
+  // Reconstruit le bloc de citations + fixe la course liée ; passe le brouillon
+  // en « reviewed ». L'admin garde la main : il relit, ajuste, puis publie.
+  useEffect(() => {
+    const draftId = new URLSearchParams(window.location.search).get("draft");
+    if (!draftId) return;
+    let cancelled = false;
+    fetch(`/api/admin/consensus/drafts?id=${draftId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d?.draft) return;
+        const dr = d.draft;
+        setFromDraft(true);
+        // AVANT le changement de date : arme la préservation du rattachement
+        // (sinon l'effet « courses du jour » écraserait courseId/manualPick).
+        if (dr.course_id) draftPickRef.current = { date: dr.date_course || "", courseId: dr.course_id };
+        setDateCourse(dr.date_course || "");
+        setHippodrome(dr.hippodrome || "");
+        setCourse(dr.reunion_course || "");
+        setTypePari(dr.type_pari || "QUINTE_PLUS");
+        if (dr.nb_partants) setNbPartants(dr.nb_partants);
+        setNbSources(dr.nb_sources || 30);
+        const lignes = (Array.isArray(dr.citations) ? dr.citations : [])
+          .map((c: any) => `${c.numero} ${c.citations} ${c.bases}`)
+          .join("\n");
+        setRaw(lignes);
+        if (dr.course_id) { setManualPick(true); setCourseId(dr.course_id); }
+        // Marque le brouillon relu (best-effort).
+        fetch("/api/admin/consensus/drafts", {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: draftId, status: "reviewed" }),
+        }).catch(() => {});
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Charge les courses du jour quand la date change
   useEffect(() => {
     if (!dateCourse) { setCourses([]); setCourseId(""); setManualPick(false); return; }
     let cancelled = false;
     setCoursesLoading(true);
-    setManualPick(false);
+    // Consomme (une seule fois) le rattachement d'un brouillon : si ce changement
+    // de date vient du chargement d'un brouillon, on PRÉSERVE sa course liée au
+    // lieu de la réinitialiser puis re-matcher approximativement.
+    const draftPick = draftPickRef.current && draftPickRef.current.date === dateCourse
+      ? draftPickRef.current.courseId
+      : null;
+    draftPickRef.current = null;
+    if (!draftPick) setManualPick(false);
     fetch(`/api/admin/consensus?date=${dateCourse}`)
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setCourses(Array.isArray(d.courses) ? d.courses : []); })
+      .then((d) => {
+        if (cancelled) return;
+        setCourses(Array.isArray(d.courses) ? d.courses : []);
+        if (draftPick) { setManualPick(true); setCourseId(draftPick); }
+      })
       .catch(() => { if (!cancelled) setCourses([]); })
       .finally(() => { if (!cancelled) setCoursesLoading(false); });
     return () => { cancelled = true; };
@@ -303,6 +357,14 @@ export default function ConsensusPage() {
         <p className="text-text-secondary text-sm mt-1">
           Colle la table de citations (Cowork) → synthèse instantanée : tops favoris / outsiders / tocards + sélection Elite-6 & Pro-8. Usage interne, jamais republié.
         </p>
+        <a href="/admin/consensus/brouillons" className="inline-flex items-center gap-1.5 mt-2 text-xs text-gold-light hover:text-gold-primary">
+          <Inbox className="w-3.5 h-3.5" /> Brouillons du pipeline en attente →
+        </a>
+        {fromDraft && (
+          <div className="mt-3 p-3 rounded-xl bg-gold-primary/10 border border-gold-primary/30 text-xs text-gold-light">
+            📥 Chargé depuis un brouillon du pipeline. Clique <b>Analyser</b>, relis, ajuste si besoin, puis crée &amp; publie le pronostic. <span className="text-text-secondary">Rien n&apos;est publié sans toi.</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
