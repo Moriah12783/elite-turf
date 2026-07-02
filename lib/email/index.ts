@@ -1,7 +1,8 @@
 import { Resend } from "resend";
 
 export const FROM_EMAIL = "Elite Turf <noreply@elite-turf.fr>";
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
+// .trim() : la variable Cloudflare a déjà contenu un espace final (liens email cassés).
+export const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr").trim();
 
 /**
  * Rate-limit Resend par défaut pour les envois en bulk.
