@@ -61,6 +61,8 @@ export interface ConsensusResult {
   topTocards: PartantScored[];
   elite: PlanConsensus; // sélection à 6
   pro: PlanConsensus; // sélection à 8
+  /** R01 — citations minimales pour être éligible aux slots « base » auto */
+  seuilBase: number;
 }
 
 export interface CompositionPlan {
@@ -83,6 +85,14 @@ const DEF_FAVORI_MAX = 5;
 const DEF_OUTSIDER_MAX = 12;
 const DEF_ELITE: CompositionPlan = { base: 3, value: 2, coup: 1, total: 6 };
 const DEF_PRO: CompositionPlan = { base: 4, value: 3, coup: 1, total: 8 };
+
+/**
+ * R01 (contrat v2.4) — seuil de citations pour être éligible « base » auto :
+ * relatif (30 % des sources) avec plancher absolu 3. 33 sources → 10 ; 7 → 3.
+ */
+export function seuilBase(nbSources: number): number {
+  return Math.max(3, Math.ceil(0.3 * nbSources));
+}
 
 function classifyCote(cote: number | null, favMax: number, outMax: number): CategorieCote {
   if (cote == null || !isFinite(cote)) return "OUTSIDER"; // neutre si cote inconnue
@@ -120,8 +130,15 @@ function buildPlan(
   topOutsiders: PartantScored[],
   topTocards: PartantScored[],
   comp: CompositionPlan,
+  seuilBaseVal: number,
 ): PlanConsensus {
-  const base = sortedAll.slice(0, comp.base).map((p) => p.numero);
+  // R01 (anti-fausse-base, incident du 01/07) : un cheval sous le seuil de
+  // citations ne peut JAMAIS occuper un slot « base » automatiquement, quel
+  // que soit son score (il reste éligible value/coup/complétion).
+  const base = sortedAll
+    .filter((p) => p.citations >= seuilBaseVal)
+    .slice(0, comp.base)
+    .map((p) => p.numero);
   const value = topOutsiders
     .map((p) => p.numero)
     .filter((n) => base.indexOf(n) === -1)
@@ -174,6 +191,7 @@ export function buildConsensus(input: ConsensusInput, options?: ConsensusOptions
 
   const topOutsiders = scored.filter((p) => p.categorie === "OUTSIDER").slice(0, topN);
   const topTocards = scored.filter((p) => p.categorie === "TOCARD").slice(0, topN);
+  const seuil = seuilBase(nbSources);
 
   return {
     nbSources,
@@ -182,7 +200,8 @@ export function buildConsensus(input: ConsensusInput, options?: ConsensusOptions
     topFavoris: scored.filter((p) => p.categorie === "FAVORI").slice(0, topN),
     topOutsiders,
     topTocards,
-    elite: buildPlan(scored, topOutsiders, topTocards, compElite),
-    pro: buildPlan(scored, topOutsiders, topTocards, compPro),
+    elite: buildPlan(scored, topOutsiders, topTocards, compElite, seuil),
+    pro: buildPlan(scored, topOutsiders, topTocards, compPro, seuil),
+    seuilBase: seuil,
   };
 }

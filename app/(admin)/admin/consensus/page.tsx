@@ -7,13 +7,14 @@ import {
 import { parseConsensus } from "@/lib/consensus/parse";
 import { buildConsensus, type ConsensusResult, type PartantScored } from "@/lib/consensus/engine";
 import { buildAnalyseDraft } from "@/lib/consensus/analyse-draft";
+import type { ValidationReport } from "@/lib/consensus/validate";
 import { findBestCourseMatch, parseReunionCourse, type CourseLite } from "@/lib/consensus/matcher";
 import { pickCoursesVedettes, type CourseForVedette, type CourseVedette } from "@/lib/turf/course-vedette";
 
 type AdminCourse = CourseLite & CourseForVedette;
 
-const PLACEHOLDER = `# Colle la table : 1 ligne par cheval
-# Format : numero  citations  [bases]   (cote + nom ajoutés auto par Elite)
+const PLACEHOLDER = `# Colle le bloc : 1 ligne par cheval — 3 entiers OBLIGATOIRES
+# Format v2.4 : numero  citations  bases   (JAMAIS de cote — Elite l'ajoute)
 11 28 12
 10 25 8
 8 22 5
@@ -66,7 +67,9 @@ export default function ConsensusPage() {
   const [nbSources, setNbSources] = useState<number>(30);
   const [raw, setRaw] = useState("");
   const [result, setResult] = useState<ConsensusResult | null>(null);
-  const [parseErrors, setParseErrors] = useState<string[]>([]);
+  const [valReport, setValReport] = useState<ValidationReport | null>(null);
+  const [ackWarnings, setAckWarnings] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [saveMsg, setSaveMsg] = useState("");
   const [courses, setCourses] = useState<AdminCourse[]>([]);
@@ -138,19 +141,13 @@ export default function ConsensusPage() {
     if (ns && ns > 0) setNbSources(ns);
   }, [raw]);
 
-  // Une analyse devient périmée si la course liée (donc ses cotes) ou le nombre
-  // de sources change → on force une nouvelle Analyse (cohérence + anti-fabrication).
-  useEffect(() => { setResult(null); }, [coursePartants, nbSources]);
-
-  // Fusionne cote + nom (depuis la course liée) dans les partants parsés.
-  function enrichedPartants() {
-    const { partants, errors } = parseConsensus(raw);
-    const merged = partants.map((p) => {
-      const cp = coursePartants[p.numero];
-      return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
-    });
-    return { partants: merged, errors };
-  }
+  // Une analyse (et son rapport de validation) devient périmée si le bloc, la
+  // course liée (donc ses cotes) ou le nombre de sources change → nouvelle Analyse.
+  useEffect(() => {
+    setResult(null);
+    setValReport(null);
+    setAckWarnings(false);
+  }, [coursePartants, nbSources, raw]);
 
   // Divergence presse × stats : "fort presse" = top 8 du consensus ; "fort stats"
   // = présent dans la sélection stats (top 8 déterministe).
@@ -221,12 +218,52 @@ export default function ConsensusPage() {
     );
   }
 
-  function analyser() {
-    const { partants, errors } = enrichedPartants();
-    setParseErrors(errors);
+  // Analyser = validation STRICTE côté serveur (contrat v2.4, journalisée dans
+  // consensus_imports) → si ok (et warnings acquittés), calcul du consensus sur
+  // les partants VALIDÉS, enrichis cote/nom depuis la course liée.
+  async function analyser(ack?: boolean) {
     setSaveStatus("idle");
     setSaveMsg("");
-    setResult(partants.length === 0 ? null : buildConsensus({ nbSources: nbSources || 30, partants }));
+    setResult(null);
+    setValidating(true);
+    try {
+      const npForm = typeof nbPartants === "number" && nbPartants > 0 ? nbPartants : null;
+      const linked = courses.filter((c) => c.id === courseId)[0];
+      const np = npForm ?? linked?.nb_partants ?? 0;
+
+      const res = await fetch("/api/admin/consensus/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date_course: dateCourse || null,
+          course_id: courseId || null,
+          nb_partants: np,
+          nb_sources: nbSources,
+          texte: raw,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.report) {
+        setValReport({ ok: false, errors: [{ code: "E00", message: data.error || "Erreur de validation — réessaye." }], warnings: [], partants: [], seuil_base: 0, echantillon_reduit: false });
+        return;
+      }
+      const report: ValidationReport = data.report;
+      setValReport(report);
+      if (!report.ok) return; // erreurs bloquantes affichées, rien n'est calculé
+
+      const needsAck = report.warnings.some((w) => w.requires_ack);
+      if (needsAck && !(ack || ackWarnings)) return; // l'admin doit acquitter puis relancer
+
+      const merged = report.partants.map((p) => {
+        const cp = coursePartants[p.numero];
+        return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
+      });
+      setResult(buildConsensus({ nbSources, partants: merged }));
+    } catch {
+      setValReport({ ok: false, errors: [{ code: "E00", message: "Erreur réseau — réessaye." }], warnings: [], partants: [], seuil_base: 0, echantillon_reduit: false });
+    } finally {
+      setValidating(false);
+    }
   }
 
   async function enregistrer() {
@@ -356,23 +393,49 @@ export default function ConsensusPage() {
             <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Table de citations</label>
             <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={12} placeholder={PLACEHOLDER}
               className="w-full mt-2 px-3 py-2.5 bg-bg-elevated border border-border text-text-primary text-sm font-mono rounded-xl focus:border-gold-primary/50 focus:outline-none placeholder:text-text-muted resize-none" />
-            <p className="text-text-muted text-xs mt-1">Format : <code>numero citations [bases]</code> — 1 cheval/ligne. La <span className="text-text-secondary">cote + le nom</span> sont ajoutés auto depuis la course liée.</p>
+            <p className="text-text-muted text-xs mt-1">Format v2.4 : <code>numero citations bases</code> (3 entiers) — 1 cheval/ligne. <span className="text-status-loss font-semibold">Jamais de cote dans le bloc</span> : la <span className="text-text-secondary">cote + le nom</span> sont ajoutés auto depuis la course liée.</p>
             {courseId && Object.keys(coursePartants).length > 0 && (
               <p className="text-status-win text-[11px] mt-0.5">✓ {Object.keys(coursePartants).length} cotes + noms chargés depuis la course liée.</p>
             )}
             {courseId && Object.keys(coursePartants).length === 0 && (
               <p className="text-gold-light/80 text-[11px] mt-0.5">Pas de cote en base pour cette course → clique « Enrichir PMU » sur la fiche course (sinon analyse sans cote).</p>
             )}
-            <button onClick={analyser} disabled={!raw.trim()}
+            <button onClick={() => analyser()} disabled={!raw.trim() || validating}
               className="w-full mt-3 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <Calculator className="w-4 h-4" /> Analyser
+              {validating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />} Analyser
             </button>
           </div>
 
-          {parseErrors.length > 0 && (
-            <div className="card-base p-4 border-status-loss/30">
-              <p className="text-status-loss text-xs font-semibold mb-1">Avertissements de lecture :</p>
-              {parseErrors.map((e, i) => <p key={i} className="text-text-muted text-xs">• {e}</p>)}
+          {/* ── Rapport de validation (contrat v2.4) ── */}
+          {valReport && valReport.errors.length > 0 && (
+            <div className="card-base p-4 border-2 border-status-loss/40">
+              <p className="text-status-loss text-xs font-bold uppercase tracking-wider mb-2">⛔ Bloc rejeté — corrige puis relance</p>
+              {valReport.errors.map((e, i) => (
+                <p key={i} className="text-text-primary text-xs leading-relaxed mb-1">
+                  <span className="font-mono text-status-loss font-bold">{e.code}</span> · {e.message}
+                </p>
+              ))}
+            </div>
+          )}
+          {valReport && valReport.ok && valReport.warnings.length > 0 && (
+            <div className="card-base p-4 border-2 border-gold-primary/40">
+              <p className="text-gold-light text-xs font-bold uppercase tracking-wider mb-2">⚠️ Avertissements</p>
+              {valReport.warnings.map((w, i) => (
+                <p key={i} className="text-text-primary text-xs leading-relaxed mb-1">
+                  <span className="font-mono text-gold-light font-bold">{w.code}</span> · {w.message}
+                </p>
+              ))}
+              {!result && valReport.warnings.some((w) => w.requires_ack) && (
+                <label className="flex items-start gap-2 mt-3 cursor-pointer">
+                  <input type="checkbox" checked={ackWarnings}
+                    onChange={(e) => {
+                      setAckWarnings(e.target.checked);
+                      if (e.target.checked) analyser(true);
+                    }}
+                    className="mt-0.5 accent-[#C9A84C]" />
+                  <span className="text-text-secondary text-xs">J'ai lu ces avertissements — analyser quand même.</span>
+                </label>
+              )}
             </div>
           )}
         </div>
@@ -460,7 +523,7 @@ export default function ConsensusPage() {
                   </table>
                 </div>
                 <p className="text-text-muted text-[11px] mt-3 leading-relaxed">
-                  <span className="font-semibold text-text-secondary">Signal (presse × stats)</span> — <span className="text-status-win font-semibold">🟢 Base</span> : cité ET stats fortes (consensus solide). <span className="text-blue-400 font-semibold">🔵 Value</span> : stats fortes mais peu cité (la data voit ce que la presse rate). <span className="text-gold-light font-semibold">🟡 Piège</span> : très cité mais stats faibles (surcote/hype). Colonne <span className="text-text-secondary">Stats</span> = sélection stats déterministe. Aide à la décision — c'est toi qui tranches l'Elite-6 / Pro-8.
+                  <span className="font-semibold text-text-secondary">Signal (presse × stats)</span> — <span className="text-status-win font-semibold">🟢 Base</span> : cité ET stats fortes (consensus solide). <span className="text-blue-400 font-semibold">🔵 Value</span> : stats fortes mais peu cité (la data voit ce que la presse rate). <span className="text-gold-light font-semibold">🟡 Piège</span> : très cité mais stats faibles (surcote/hype). Colonne <span className="text-text-secondary">Stats</span> = sélection stats déterministe. <span className="text-text-secondary font-semibold">R01</span> : base auto réservée aux chevaux cités ≥ <span className="text-gold-light font-semibold">{result.seuilBase}</span> fois (anti-fausse-base, incident 01/07). Aide à la décision — c'est toi qui tranches l'Elite-6 / Pro-8.
                 </p>
               </div>
 

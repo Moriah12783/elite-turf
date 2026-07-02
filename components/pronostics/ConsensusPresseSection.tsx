@@ -1,4 +1,5 @@
 import { buildConsensus, type PartantConsensus } from "@/lib/consensus/engine";
+import { SEUIL_ECHANTILLON_REDUIT } from "@/lib/consensus/validate";
 import { Newspaper } from "lucide-react";
 
 interface Props {
@@ -44,6 +45,11 @@ export function ConsensusPresseSection({ partants, nbSources, selection, noms }:
         <p className="text-text-muted text-xs">
           {nb} sources de presse agrégées — aide à la décision, jamais une garantie.
         </p>
+        {nb < SEUIL_ECHANTILLON_REDUIT && (
+          <p className="text-gold-light text-xs font-semibold">
+            ⚠️ Échantillon réduit ({nb} avis) — fiabilité moindre.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {sel.map((numero) => {
             const p = byNum[numero];
