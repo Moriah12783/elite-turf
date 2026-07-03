@@ -140,6 +140,8 @@ crons = [
   "0 6 * * *",       # daily-push matin
   "0 17 * * *",      # daily-push soir
   "30 10 * * *",     # sms-sequence (sequence SMS J2 preuve / J5 upgrade)
+  "45 10 * * *",     # alerte-sms-jour (abonnes payants : "analyses du jour dispo" — passe matin, apres publication premium)
+  "0 13 * * *",      # alerte-sms-jour (filet apres-midi ; dedup 1/jour via sms_log ALERTE_JOUR_<date>)
   "33 9 * * *",      # lead-sequence (drip email leads J2/J5 — passe matin)
   "33 16 * * *",     # lead-sequence (drip email leads J2/J5 — passe apres-midi)
 ]
