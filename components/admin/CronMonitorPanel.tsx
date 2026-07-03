@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle2, XCircle, Clock, RefreshCw, Play, MinusCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, RefreshCw, Play, MinusCircle, GitBranch, ExternalLink } from "lucide-react";
 
 interface CronJobStatus {
-  cronName:     string;
-  label:        string;
-  schedule:     string;
-  lastStatus:   "success" | "failure" | "skip" | "never";
-  lastRun:      string | null;
-  lastDuration: number | null;
-  lastDetails:  Record<string, unknown> | null;
+  cronName:       string;
+  label:          string;
+  schedule:       string;
+  lastStatus:     "success" | "failure" | "skip" | "never";
+  lastRun:        string | null;
+  lastDuration:   number | null;
+  lastDetails:    Record<string, unknown> | null;
+  /** si présent : job sur GitHub Actions (IP propre) → pas de statut cron_logs */
+  githubWorkflow?: string | null;
 }
+
+const GH_ACTIONS_BASE = "https://github.com/Moriah12783/elite-turf/actions/workflows/";
 
 // Mapping cron → target force-sync
 const FORCE_TARGETS: Record<string, string> = {
@@ -149,26 +153,39 @@ export default function CronMonitorPanel() {
             const target   = FORCE_TARGETS[cron.cronName];
             const isForcingThis = forcing === cron.cronName;
             const fb = feedback?.cronName === cron.cronName ? feedback : null;
+            // Job Geny sur GitHub Actions : cron_logs ne le voit pas (« JAMAIS »
+            // trompeur) et « Forcer » taperait Geny depuis l'IP bloquée du Worker.
+            const isGithub = !!cron.githubWorkflow;
 
             return (
               <div key={cron.cronName} className="flex items-center gap-4 px-5 py-3.5 hover:bg-bg-elevated/40 transition-colors">
 
                 {/* Status badge */}
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold flex-shrink-0 w-24 justify-center ${cfg.bg}`}>
-                  <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} />
-                  <span className={cfg.color}>{cfg.label}</span>
-                </div>
+                {isGithub ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold flex-shrink-0 w-24 justify-center bg-blue-500/10 border-blue-400/20">
+                    <GitBranch className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-blue-400">Actions</span>
+                  </div>
+                ) : (
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold flex-shrink-0 w-24 justify-center ${cfg.bg}`}>
+                    <StatusIcon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                    <span className={cfg.color}>{cfg.label}</span>
+                  </div>
+                )}
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-text-primary text-sm font-medium">{cron.label}</p>
                   <p className="text-text-muted text-xs">
                     {cron.schedule}
-                    {cron.lastRun && (
+                    {!isGithub && cron.lastRun && (
                       <span className="ml-2 text-text-muted/60">· {relativeTime(cron.lastRun)}</span>
                     )}
-                    {cron.lastDuration && (
+                    {!isGithub && cron.lastDuration && (
                       <span className="ml-2 text-text-muted/60">· {formatDuration(cron.lastDuration)}</span>
+                    )}
+                    {isGithub && (
+                      <span className="ml-2 text-blue-400/70">· tourne sur GitHub Actions (IP propre)</span>
                     )}
                   </p>
                   {/* Feedback inline */}
@@ -179,8 +196,20 @@ export default function CronMonitorPanel() {
                   )}
                 </div>
 
-                {/* Force button */}
-                {target && (
+                {/* Action : jobs Geny → lien GitHub Actions (le « Forcer » taperait
+                    l'IP bloquée du Worker) ; autres → bouton Forcer classique. */}
+                {isGithub ? (
+                  <a
+                    href={`${GH_ACTIONS_BASE}${cron.githubWorkflow}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Voir les runs réels sur GitHub Actions"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-400/30 hover:bg-blue-500/20 rounded-lg transition-all flex-shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Voir Actions
+                  </a>
+                ) : target ? (
                   <button
                     onClick={() => handleForce(cron.cronName)}
                     disabled={!!forcing}
@@ -193,7 +222,7 @@ export default function CronMonitorPanel() {
                     }
                     {isForcingThis ? "En cours…" : "Forcer"}
                   </button>
-                )}
+                ) : null}
               </div>
             );
           })
