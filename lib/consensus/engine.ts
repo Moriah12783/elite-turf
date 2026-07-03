@@ -42,6 +42,8 @@ export interface PartantScored {
   categorie: CategorieCote;
   /** citations + 0.5 × bases */
   scoreConsensus: number;
+  /** cheval NON-PARTANT : reste compté dans les totaux, jamais dans une sélection */
+  nonPartant: boolean;
 }
 
 export interface PlanConsensus {
@@ -78,6 +80,8 @@ export interface ConsensusOptions {
   coteOutsiderMax?: number; // cote <= x = OUTSIDER, sinon TOCARD (défaut 12)
   elite?: CompositionPlan; // défaut { base:3, value:2, coup:1, total:6 }
   pro?: CompositionPlan; // défaut { base:4, value:3, coup:1, total:8 }
+  /** numéros NON-PARTANTS : exclus de toute sélection (jamais chez l'abonné) */
+  nonPartants?: number[];
 }
 
 const DEF_TOP_N = 5;
@@ -135,24 +139,29 @@ function buildPlan(
   // R01 (anti-fausse-base, incident du 01/07) : un cheval sous le seuil de
   // citations ne peut JAMAIS occuper un slot « base » automatiquement, quel
   // que soit son score (il reste éligible value/coup/complétion).
+  // NON-PARTANTS (!p.nonPartant) : exclus de TOUS les slots — un cheval rayé ne
+  // doit jamais atterrir dans un pronostic d'abonné, quelles que soient ses
+  // citations presse (les grilles sont établies la veille).
   const base = sortedAll
-    .filter((p) => p.citations >= seuilBaseVal)
+    .filter((p) => p.citations >= seuilBaseVal && !p.nonPartant)
     .slice(0, comp.base)
     .map((p) => p.numero);
   const value = topOutsiders
+    .filter((p) => !p.nonPartant)
     .map((p) => p.numero)
     .filter((n) => base.indexOf(n) === -1)
     .slice(0, comp.value);
   const chosen = base.concat(value);
   const coup = topTocards
+    .filter((p) => !p.nonPartant)
     .map((p) => p.numero)
     .filter((n) => chosen.indexOf(n) === -1)
     .slice(0, comp.coup);
 
   let selection = uniqNumeros(base.concat(value).concat(coup));
-  // Compléter avec le consensus si on n'atteint pas le total visé.
+  // Compléter avec le consensus si on n'atteint pas le total visé (NP exclus).
   if (selection.length < comp.total) {
-    const fill = sortedAll.map((p) => p.numero).filter((n) => selection.indexOf(n) === -1);
+    const fill = sortedAll.filter((p) => !p.nonPartant).map((p) => p.numero).filter((n) => selection.indexOf(n) === -1);
     selection = uniqNumeros(selection.concat(fill));
   }
   selection = selection.slice(0, comp.total);
@@ -171,6 +180,10 @@ export function buildConsensus(input: ConsensusInput, options?: ConsensusOptions
   const compPro = options && options.pro ? options.pro : DEF_PRO;
   const nbSources = Math.max(1, input.nbSources || 0);
 
+  const npList = options && options.nonPartants ? options.nonPartants : [];
+  const npSet: Record<number, boolean> = {};
+  for (let i = 0; i < npList.length; i++) npSet[npList[i]] = true;
+
   const scored: PartantScored[] = (input.partants || []).map((p) => {
     const citations = Math.max(0, p.citations || 0);
     const bases = Math.max(0, p.bases || 0);
@@ -184,6 +197,7 @@ export function buildConsensus(input: ConsensusInput, options?: ConsensusOptions
       cote,
       categorie: classifyCote(cote, favMax, outMax),
       scoreConsensus: citations + 0.5 * bases,
+      nonPartant: !!npSet[p.numero],
     };
   });
 
