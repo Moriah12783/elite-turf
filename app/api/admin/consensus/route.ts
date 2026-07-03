@@ -66,7 +66,12 @@ export async function GET(req: NextRequest) {
       statRank:  statByNumero[p.numero]?.rank ?? null,
       statLabel: statByNumero[p.numero]?.label ?? null,
     }));
-    return NextResponse.json({ partants });
+    // Numéros marqués non-partants en base (flag Geny) → l'atelier les exclut
+    // des sélections, en complément des NP déclarés par le pipeline.
+    const nonPartants = (data ?? [])
+      .filter((p: any) => p.non_partant)
+      .map((p: any) => p.numero);
+    return NextResponse.json({ partants, nonPartants });
   }
 
   const date = req.nextUrl.searchParams.get("date");

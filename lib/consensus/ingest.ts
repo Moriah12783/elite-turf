@@ -28,6 +28,8 @@ export interface ParsedIngest {
   reunion_course: string; // RxCx
   hippodrome: string | null;
   nb_partants: number;
+  /** numéros non-partants déclarés par le pipeline (course.non_partants) */
+  non_partants: number[];
   type_pari: string;
   nb_sources: number;
   nb_sources_brut: number | null;
@@ -135,6 +137,14 @@ export function parseIngestPayload(payload: any): ParseResult {
     lignes.push(`${numero} ${cit} ${bases}`);
   }
 
+  // Non-partants déclarés par le pipeline (source explicite, en plus du flag
+  // non_partant en base) : exclus de toute sélection, jamais chez l'abonné.
+  const non_partants = Array.isArray(course.non_partants)
+    ? course.non_partants
+        .map((x: unknown) => toInt(x))
+        .filter((n: number | null): n is number => n != null)
+    : [];
+
   return {
     ok: true,
     parsed: {
@@ -144,6 +154,7 @@ export function parseIngestPayload(payload: any): ParseResult {
       reunion_course,
       hippodrome: typeof course.hippodrome === "string" ? course.hippodrome.trim() : null,
       nb_partants,
+      non_partants,
       type_pari: typeof payload.type_pari === "string" ? payload.type_pari : "QUINTE_PLUS",
       nb_sources,
       nb_sources_brut: toInt(consensus.nb_sources_brut),

@@ -129,6 +129,14 @@ export async function POST(req: NextRequest) {
 
   // 5) Upsert idempotent (date, RxCx, run_type). Un re-POST du même run remplace
   //    le brouillon non publié — jamais de doublon (created_at préservé).
+  // Les non-partants déclarés par le pipeline sont marqués DANS les citations
+  // (`np: true`) — pas de colonne dédiée, l'atelier les lit de là.
+  const npSet: Record<number, boolean> = {};
+  for (let i = 0; i < p.non_partants.length; i++) npSet[p.non_partants[i]] = true;
+  const citationsForDraft = p.citations.map((c) =>
+    npSet[c.numero] ? { numero: c.numero, citations: c.citations, bases: c.bases, np: true } : c,
+  );
+
   const draftRow = {
     date_course: p.date_course,
     reunion_course: p.reunion_course,
@@ -141,7 +149,7 @@ export async function POST(req: NextRequest) {
     nb_sources: p.nb_sources,
     nb_sources_brut: p.nb_sources_brut,
     echantillon_reduit: report.echantillon_reduit,
-    citations: p.citations,
+    citations: citationsForDraft,
     commentaires: p.commentaires,
     validation_report: {
       ok: report.ok, warnings: report.warnings,

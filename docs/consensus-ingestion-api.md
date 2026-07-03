@@ -24,7 +24,7 @@ Secrets (posés dans Cloudflare → Worker `elite-turf` → Settings → Variabl
 {
   "contract_version": "2.4",
   "run_type": "matin | filet_j1 | sentinelle",
-  "course": { "date": "2026-07-02", "reunion_course": "R1C2", "hippodrome": "Cabourg", "nb_partants": 16 },
+  "course": { "date": "2026-07-02", "reunion_course": "R1C2", "hippodrome": "Cabourg", "nb_partants": 16, "non_partants": [2] },
   "consensus": {
     "nb_sources": 33, "nb_sources_brut": 35, "echantillon_reduit": false,
     "citations": [ { "numero": 7, "citations": 33, "bases": 12 } ]
@@ -38,6 +38,11 @@ Secrets (posés dans Cloudflare → Worker `elite-turf` → Settings → Variabl
 ```
 Les `citations` sont des ENTIERS stricts (`numero citations bases`) — **jamais de cote**
 (la cote vient de la course liée). Un flottant/valeur non entière est rejeté à la validation.
+
+`course.non_partants` (optionnel) : numéros **non-partants** connus au moment de la
+génération. Ils restent comptés dans les citations (invariant Σ = 8×N préservé), mais
+Elite les **exclut de toute sélection** (jamais dans un pronostic d'abonné). C'est une
+2ᵉ source, en plus du flag `non_partant` déjà présent en base côté Elite.
 
 ### Réponses
 | Code | Cas | Corps |

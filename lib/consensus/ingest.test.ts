@@ -41,6 +41,12 @@ describe("parseIngestPayload — structure du contrat v2.4", () => {
     expect(r.parsed?.commentaires.elite?.selection).toEqual([7, 8, 4, 11, 13, 6]);
   });
 
+  it("course.non_partants parsé en entiers stricts ; absent → []", () => {
+    const p = validPayload(); (p.course as any).non_partants = [2, "5", 3.5];
+    expect(parseIngestPayload(p).parsed?.non_partants).toEqual([2, 5]); // 3.5 rejeté
+    expect(parseIngestPayload(validPayload()).parsed?.non_partants).toEqual([]);
+  });
+
   it("run_type invalide → erreur", () => {
     const p = validPayload(); (p as any).run_type = "soir";
     expect(parseIngestPayload(p).ok).toBe(false);

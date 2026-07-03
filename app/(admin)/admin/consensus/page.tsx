@@ -83,6 +83,13 @@ export default function ConsensusPage() {
   // le rattachement exact déposé par le pipeline.
   const draftPickRef = useRef<{ date: string; courseId: string } | null>(null);
   const [coursePartants, setCoursePartants] = useState<Record<number, { cote: number | null; nom: string | null; statRank: number | null; statLabel: string | null }>>({});
+  // Non-partants (jamais dans une sélection) — 2 sources unies : déclarés par le
+  // pipeline (brouillon, `np` dans citations) + flag `non_partant` en base.
+  const [draftNonPartants, setDraftNonPartants] = useState<number[]>([]);
+  const [courseNonPartants, setCourseNonPartants] = useState<number[]>([]);
+  // Cotes + NP de la course en cours de chargement → Analyser reste bloqué tant
+  // que ce n'est pas prêt (sinon on analyserait sans les NP du flag base).
+  const [partantsLoading, setPartantsLoading] = useState(false);
 
   // Défaut = date du jour (effet client-only → pas de mismatch d'hydratation)
   useEffect(() => {
@@ -115,6 +122,7 @@ export default function ConsensusPage() {
           .map((c: any) => `${c.numero} ${c.citations} ${c.bases}`)
           .join("\n");
         setRaw(lignes);
+        setDraftNonPartants((Array.isArray(dr.citations) ? dr.citations : []).filter((c: any) => c && c.np).map((c: any) => c.numero));
         if (dr.course_id) { setManualPick(true); setCourseId(dr.course_id); }
         // Marque le brouillon relu (best-effort).
         fetch("/api/admin/consensus/drafts", {
@@ -171,9 +179,10 @@ export default function ConsensusPage() {
   // Cote + nom des partants de la course liée → enrichissement « à notre niveau »
   // (la cote vient de PMU/Geny déjà en base, jamais saisie par Cowork).
   useEffect(() => {
-    if (!courseId) { setCoursePartants({}); return; }
+    if (!courseId) { setCoursePartants({}); setCourseNonPartants([]); setPartantsLoading(false); return; }
     let cancelled = false;
     setCoursePartants({}); // neutre pendant le fetch → jamais la cote d'une autre course
+    setPartantsLoading(true);
     fetch(`/api/admin/consensus?courseId=${courseId}`)
       .then((r) => r.json())
       .then((d) => {
@@ -183,8 +192,10 @@ export default function ConsensusPage() {
           if (p && p.numero != null) map[p.numero] = { cote: p.cote ?? null, nom: p.nom ?? null, statRank: p.statRank ?? null, statLabel: p.statLabel ?? null };
         });
         setCoursePartants(map);
+        setCourseNonPartants(Array.isArray(d.nonPartants) ? d.nonPartants : []);
       })
-      .catch(() => { if (!cancelled) setCoursePartants({}); });
+      .catch(() => { if (!cancelled) { setCoursePartants({}); setCourseNonPartants([]); } })
+      .finally(() => { if (!cancelled) setPartantsLoading(false); });
     return () => { cancelled = true; };
   }, [courseId]);
 
@@ -312,7 +323,8 @@ export default function ConsensusPage() {
         const cp = coursePartants[p.numero];
         return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
       });
-      setResult(buildConsensus({ nbSources, partants: merged }));
+      const nonPartants = draftNonPartants.concat(courseNonPartants);
+      setResult(buildConsensus({ nbSources, partants: merged }, { nonPartants }));
     } catch {
       setValReport({ ok: false, errors: [{ code: "E00", message: "Erreur réseau — réessaye." }], warnings: [], partants: [], seuil_base: 0, echantillon_reduit: false });
     } finally {
@@ -462,9 +474,10 @@ export default function ConsensusPage() {
             {courseId && Object.keys(coursePartants).length === 0 && (
               <p className="text-gold-light/80 text-[11px] mt-0.5">Pas de cote en base pour cette course → clique « Enrichir PMU » sur la fiche course (sinon analyse sans cote).</p>
             )}
-            <button onClick={() => analyser()} disabled={!raw.trim() || validating}
+            <button onClick={() => analyser()} disabled={!raw.trim() || validating || partantsLoading}
               className="w-full mt-3 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              {validating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />} Analyser
+              {validating || partantsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
+              {partantsLoading ? "Chargement des cotes…" : "Analyser"}
             </button>
           </div>
 
@@ -562,17 +575,22 @@ export default function ConsensusPage() {
                     </thead>
                     <tbody>
                       {result.partants.map((p) => (
-                        <tr key={p.numero} className="border-b border-border/50">
-                          <td className="py-1.5 px-2 font-bold text-text-primary">{p.numero}</td>
+                        <tr key={p.numero} className={`border-b border-border/50 ${p.nonPartant ? "opacity-45" : ""}`}>
+                          <td className="py-1.5 px-2 font-bold text-text-primary">
+                            {p.numero}
+                            {p.nonPartant && <span className="ml-1.5 text-[10px] font-bold text-status-loss align-middle">NP</span>}
+                          </td>
                           <td className="py-1.5 px-2 text-right text-text-secondary">{p.citations}</td>
                           <td className="py-1.5 px-2 text-right text-text-muted">{Math.round(p.tauxCitation * 100)}%</td>
                           <td className="py-1.5 px-2 text-right text-text-muted">{p.bases || "—"}</td>
-                          <td className="py-1.5 px-2 text-right text-text-muted">{p.cote == null ? "—" : p.cote}</td>
-                          <td className={`py-1.5 px-2 font-semibold ${CAT_STYLE[p.categorie] || ""}`}>{p.categorie}</td>
+                          <td className="py-1.5 px-2 text-right text-text-muted">{p.nonPartant || p.cote == null ? "—" : p.cote}</td>
+                          <td className={`py-1.5 px-2 font-semibold ${CAT_STYLE[p.categorie] || ""}`}>{p.nonPartant ? "—" : p.categorie}</td>
                           <td className="py-1.5 px-2 text-right text-text-secondary">{p.scoreConsensus}</td>
                           <td className="py-1.5 px-2 text-text-muted text-xs">{coursePartants[p.numero]?.statLabel ?? "—"}</td>
                           <td className="py-1.5 px-2 text-xs">
-                            {(() => {
+                            {p.nonPartant ? (
+                              <span className="font-semibold text-status-loss">⛔ Non-partant</span>
+                            ) : (() => {
                               const d = divergenceCode(p.numero);
                               return d
                                 ? <span className={`font-semibold ${DIV_FLAG[d].cls}`}>{DIV_FLAG[d].label}</span>
@@ -585,7 +603,7 @@ export default function ConsensusPage() {
                   </table>
                 </div>
                 <p className="text-text-muted text-[11px] mt-3 leading-relaxed">
-                  <span className="font-semibold text-text-secondary">Signal (presse × stats)</span> — <span className="text-status-win font-semibold">🟢 Base</span> : cité ET stats fortes (consensus solide). <span className="text-blue-400 font-semibold">🔵 Value</span> : stats fortes mais peu cité (la data voit ce que la presse rate). <span className="text-gold-light font-semibold">🟡 Piège</span> : très cité mais stats faibles (surcote/hype). Colonne <span className="text-text-secondary">Stats</span> = sélection stats déterministe. <span className="text-text-secondary font-semibold">R01</span> : base auto réservée aux chevaux cités ≥ <span className="text-gold-light font-semibold">{result.seuilBase}</span> fois (anti-fausse-base, incident 01/07). Aide à la décision — c'est toi qui tranches l'Elite-6 / Pro-8.
+                  <span className="font-semibold text-text-secondary">Signal (presse × stats)</span> — <span className="text-status-win font-semibold">🟢 Base</span> : cité ET stats fortes (consensus solide). <span className="text-blue-400 font-semibold">🔵 Value</span> : stats fortes mais peu cité (la data voit ce que la presse rate). <span className="text-gold-light font-semibold">🟡 Piège</span> : très cité mais stats faibles (surcote/hype). Colonne <span className="text-text-secondary">Stats</span> = sélection stats déterministe. <span className="text-text-secondary font-semibold">R01</span> : base auto réservée aux chevaux cités ≥ <span className="text-gold-light font-semibold">{result.seuilBase}</span> fois (anti-fausse-base, incident 01/07). <span className="text-status-loss font-semibold">⛔ Non-partant</span> : compté dans les citations (invariant) mais <span className="text-text-secondary">exclu de toute sélection</span> — jamais chez l'abonné. Aide à la décision — c'est toi qui tranches l'Elite-6 / Pro-8.
                 </p>
               </div>
 

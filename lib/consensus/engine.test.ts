@@ -26,6 +26,48 @@ describe("R01 anti-fausse-base (incident 01/07)", () => {
   });
 });
 
+describe("Non-partants exclus de toute sélection (cas Cabourg R1C4, 03/07)", () => {
+  it("un NP très cité (n°2, 16 citations) n'entre JAMAIS en base/value/coup/selection", () => {
+    const r = buildConsensus(
+      {
+        nbSources: 34,
+        partants: [
+          { numero: 6, citations: 34, bases: 16, cote: 4.7 },
+          { numero: 8, citations: 31, bases: 7, cote: 4.1 },
+          { numero: 9, citations: 32, bases: 5, cote: 6.7 },
+          { numero: 3, citations: 32, bases: 5, cote: 11.4 },
+          { numero: 11, citations: 17, bases: 0, cote: 5.6 },
+          { numero: 2, citations: 16, bases: 0, cote: null }, // NON-PARTANT, très cité
+          { numero: 5, citations: 23, bases: 0, cote: 44 },
+          { numero: 7, citations: 20, bases: 0, cote: 32 },
+          { numero: 1, citations: 19, bases: 0, cote: 62 },
+        ],
+      },
+      { nonPartants: [2] },
+    );
+    const tous = [
+      ...r.elite.base, ...r.elite.value, ...r.elite.coup, ...r.elite.selection,
+      ...r.pro.base, ...r.pro.value, ...r.pro.coup, ...r.pro.selection,
+    ];
+    expect(tous).not.toContain(2);
+    // …mais le NP reste dans les partants scorés (invariant + transparence), marqué.
+    const p2 = r.partants.filter((p) => p.numero === 2)[0];
+    expect(p2.nonPartant).toBe(true);
+    expect(p2.citations).toBe(16);
+  });
+
+  it("sans NP déclaré, comportement inchangé (nonPartant = false partout)", () => {
+    const r = buildConsensus({
+      nbSources: 34,
+      partants: [
+        { numero: 6, citations: 34, bases: 16, cote: 4.7 },
+        { numero: 2, citations: 16, bases: 0, cote: 5.6 },
+      ],
+    });
+    expect(r.partants.every((p) => p.nonPartant === false)).toBe(true);
+  });
+});
+
 /**
  * Exemple réaliste : une course de 16 partants, consensus agrégé sur 30 sources.
  * Chiffres choisis pour des assertions claires (favoris très cités, outsiders et
