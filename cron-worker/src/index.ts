@@ -168,6 +168,8 @@ const CRON_MAP: Record<string, string> = {
   "0 6 * * *":    "/api/cron/daily-push",
   "0 17 * * *":   "/api/cron/daily-push",
   "30 10 * * *":  "/api/cron/sms-sequence",
+  "45 10 * * *":  "/api/cron/alerte-sms-jour",  // abonnes payants : analyses du jour dispo (matin)
+  "0 13 * * *":   "/api/cron/alerte-sms-jour",  // filet apres-midi (dedup 1/jour)
   "33 9 * * *":   "/api/cron/lead-sequence",   // drip email leads J2/J5 (matin)
   "33 16 * * *":  "/api/cron/lead-sequence",   // drip email leads J2/J5 (apres-midi)
 };
