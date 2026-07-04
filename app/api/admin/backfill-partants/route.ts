@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
+import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -115,7 +116,6 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
     .from("courses")
     .select("id, numero_reunion, numero_course, libelle, geny_url, date_course")
     .neq("statut", "ANNULE")
-    .not("geny_url", "is", null)
     .order("date_course", { ascending: false })
     .limit(500); // cap pour ne pas exploser le filter
 
@@ -159,6 +159,26 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
   // Étape 1 : fetch Geny en parallèle (lecture seule)
   const outcomes = await processInPool(toBackfill, CONCURRENCY, scrapeOne);
   const okOutcomes = outcomes.filter((o): o is Extract<ScrapeOutcome, { status: "ok" }> => o.status === "ok");
+
+  // Fallback LONACI (jour courant uniquement — LONACI ne sert que le jour) :
+  // comble les courses que Geny n'a pas pu enrichir (429 ou pas de geny_url car
+  // chargées via PMU/LONACI). 1 requête pour toutes les courses du jour.
+  const todayStr = new Date().toISOString().split("T")[0];
+  const okSet = new Set(okOutcomes.map((o) => o.courseId));
+  const failedToday = toBackfill.filter((c) => !okSet.has(c.id) && c.date_course === todayStr);
+  if (failedToday.length > 0) {
+    try {
+      const lonaciMap = await fetchLonaciPartantsMap(todayStr);
+      for (const c of failedToday) {
+        const parts = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (parts && parts.length > 0) {
+          okOutcomes.push({ courseId: c.id, status: "ok", partants: parts as unknown as GenyParticipant[] });
+        }
+      }
+    } catch (e) {
+      logger.warn("backfill-partants", "Fallback LONACI KO", { error: e instanceof Error ? e.message : String(e) });
+    }
+  }
 
   // Étape 2 : bulk delete + bulk insert
   let inserted = 0;
