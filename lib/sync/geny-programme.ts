@@ -15,6 +15,7 @@
 // bundlable en Node sur GitHub Actions (scripts/geny-programme-cli.ts).
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
+import { runPmuProgrammeSync } from "./pmu-programme";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,8 @@ export interface GenyProgrammeResult {
   updated:       number;
   hippodromes:   number;
   message?:      string;
+  /** "geny" (normal) ou "pmu-fallback" (Geny bloqué → API PMU.fr) */
+  source?:       string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -371,7 +374,17 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
       ? tomorrowParisISO()
       : rawDate;
 
-  const allCourses = await scrapeGenyProgramme(dateISO);
+  // Geny bloque désormais l'IP du Worker ET de GitHub Actions (429, constaté
+  // 03/07). On tente Geny (données riches), et on BASCULE sur PMU.fr (API
+  // officielle via le proxy `pmu-proxy`, non bloquée) si le scrape échoue ou
+  // revient vide → le programme se charge quand même.
+  let allCourses: GenyCourse[];
+  try {
+    allCourses = await scrapeGenyProgramme(dateISO);
+  } catch (err) {
+    console.warn(`[Geny Programme] scrape KO (${err instanceof Error ? err.message : String(err)}) → fallback PMU.fr`);
+    return await pmuFallback(dateISO);
+  }
 
   // Filtre : courses françaises et marocaines (jouables via LONACI/PMU-CI)
   const courses = allCourses.filter(
@@ -379,10 +392,15 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
   );
 
   if (!courses.length) {
+    // Geny a répondu mais 0 course exploitable (structure changée ?) → PMU.fr.
+    console.warn(`[Geny Programme] 0 course France/Maroc via Geny pour ${dateISO} → tentative PMU.fr`);
+    const pmu = await pmuFallback(dateISO);
+    if (pmu.courses > 0) return pmu;
     return {
       ok:            true,
       date:          dateISO,
-      message:       `Aucune course France/Maroc trouvée pour ${dateISO}`,
+      message:       `Aucune course France/Maroc trouvée pour ${dateISO} (Geny + PMU.fr)`,
+      source:        "pmu-fallback",
       courses:       0,
       filtered_out:  allCourses.length,
       reunions:      0,
@@ -398,9 +416,32 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
   return {
     ok:            true,
     date:          dateISO,
+    source:        "geny",
     courses:       courses.length,
     filtered_out:  allCourses.length - courses.length,
     reunions:      Array.from(new Set(courses.map((c) => c.reunionNum))).length,
     ...result,
+  };
+}
+
+/**
+ * Fallback PMU.fr → forme GenyProgrammeResult. Appelé quand Geny bloque (429/403)
+ * ou renvoie 0 course. Si PMU.fr échoue AUSSI, l'exception remonte (la CLU/cron
+ * la traite en échec → alerte) : c'est le comportement voulu (les 2 sources KO).
+ */
+async function pmuFallback(dateISO: string): Promise<GenyProgrammeResult> {
+  const dateStr = dateISO.replace(/-/g, "");
+  const r = await runPmuProgrammeSync(dateStr);
+  console.log(`[Geny Programme] FALLBACK PMU.fr ${dateISO} → ${r.inserted} insérées, ${r.updated} maj (${r.courses} courses)`);
+  return {
+    ok:           true,
+    date:         dateISO,
+    source:       "pmu-fallback",
+    courses:      r.courses,
+    filtered_out: 0,
+    reunions:     r.reunions,
+    inserted:     r.inserted,
+    updated:      r.updated,
+    hippodromes:  r.hippodromes,
   };
 }
