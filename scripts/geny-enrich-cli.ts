@@ -22,6 +22,7 @@ import {
   safeSmallInt,
 } from "@/lib/geny";
 import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
+import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -60,8 +61,9 @@ async function main(): Promise<void> {
     .from("courses")
     .select("id, numero_reunion, numero_course, libelle, statut, geny_url, date_course, nb_partants, paris_disponibles, hippodrome:hippodromes(nom), pronostics(publie)")
     .eq("date_course", targetDate)
-    .neq("statut", "ANNULE")
-    .not("geny_url", "is", null);
+    .neq("statut", "ANNULE");
+  // NB : on ne filtre PLUS sur geny_url — les courses chargées via PMU/LONACI
+  // n'en ont pas, mais doivent quand même être enrichies (par le fallback LONACI).
 
   if (error) {
     console.error("❌ Query courses :", error.message);
@@ -100,22 +102,45 @@ async function main(): Promise<void> {
   const ok: { c: CourseRow; partants: any[] }[] = [];
   for (const c of slice) {
     let partants: any[] = [];
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        const r = await fetchGenyPartantsWithMeta(
-          c.date_course, c.numero_reunion, c.numero_course, FETCH_TIMEOUT_MS, c.geny_url,
-        );
-        partants = r.partants;
-      } catch {
-        partants = [];
+    // Geny seulement si on a une URL (les courses PMU/LONACI n'en ont pas →
+    // elles passent directement par le fallback LONACI ci-dessous).
+    if (c.geny_url) {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const r = await fetchGenyPartantsWithMeta(
+            c.date_course, c.numero_reunion, c.numero_course, FETCH_TIMEOUT_MS, c.geny_url,
+          );
+          partants = r.partants;
+        } catch {
+          partants = [];
+        }
+        if (partants.length > 0) break;
+        // Vide = souvent un 429 transitoire → backoff croissant avant de réessayer.
+        if (attempt < MAX_ATTEMPTS) await sleep(PACING_MS * 2 * attempt);
       }
-      if (partants.length > 0) break;
-      // Vide = souvent un 429 transitoire → backoff croissant avant de réessayer.
-      if (attempt < MAX_ATTEMPTS) await sleep(PACING_MS * 2 * attempt);
+      await sleep(PACING_MS); // pacing poli entre deux courses Geny
     }
     if (partants.length > 0) ok.push({ c, partants });
-    await sleep(PACING_MS); // pacing poli entre deux courses
   }
+
+  // Fallback LONACI : combler les courses que Geny n'a pas enrichies (429, ou
+  // pas de geny_url car chargées via PMU/LONACI). UNE seule requête LONACI pour
+  // toutes les courses ; match par (réunion, course). LONACI = jour courant.
+  const failed = slice.filter((c) => !ok.some((o) => o.c.id === c.id));
+  if (failed.length > 0) {
+    try {
+      const lonaciMap = await fetchLonaciPartantsMap(targetDate);
+      let filled = 0;
+      for (const c of failed) {
+        const parts = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (parts && parts.length > 0) { ok.push({ c, partants: parts }); filled++; }
+      }
+      if (filled > 0) console.log(`🔁 Fallback LONACI : ${filled}/${failed.length} courses comblées (cotes)`);
+    } catch (e) {
+      console.warn(`Fallback LONACI KO : ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   const okIds = ok.map((o) => o.c.id);
 
   // 2. Bulk delete des partants des courses OK, puis bulk insert (cotes incluses)
