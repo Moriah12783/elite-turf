@@ -16,6 +16,7 @@
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
 import { runPmuProgrammeSync } from "./pmu-programme";
+import { runLonaciProgrammeSync } from "./lonaci-programme";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -383,7 +384,7 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
     allCourses = await scrapeGenyProgramme(dateISO);
   } catch (err) {
     console.warn(`[Geny Programme] scrape KO (${err instanceof Error ? err.message : String(err)}) → fallback PMU.fr`);
-    return await pmuFallback(dateISO);
+    return await programmeFallback(dateISO);
   }
 
   // Filtre : courses françaises et marocaines (jouables via LONACI/PMU-CI)
@@ -394,7 +395,7 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
   if (!courses.length) {
     // Geny a répondu mais 0 course exploitable (structure changée ?) → PMU.fr.
     console.warn(`[Geny Programme] 0 course France/Maroc via Geny pour ${dateISO} → tentative PMU.fr`);
-    const pmu = await pmuFallback(dateISO);
+    const pmu = await programmeFallback(dateISO);
     if (pmu.courses > 0) return pmu;
     return {
       ok:            true,
@@ -425,23 +426,29 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
 }
 
 /**
- * Fallback PMU.fr → forme GenyProgrammeResult. Appelé quand Geny bloque (429/403)
- * ou renvoie 0 course. Si PMU.fr échoue AUSSI, l'exception remonte (la CLU/cron
- * la traite en échec → alerte) : c'est le comportement voulu (les 2 sources KO).
+ * Chaîne de secours quand Geny échoue (429/403) ou renvoie 0 course : PMU.fr
+ * d'abord (API officielle, données riches), puis LONACI (opérateur africain qui
+ * relaie le PMU — accessible même quand PMU direct bloque, constaté le 04/07).
+ * Renvoie la 1re source qui charge des courses. Si les 3 sont KO, l'exception (ou
+ * 0 course) remonte → la CLI/cron marque l'anomalie (alerte anti-silent-failure).
  */
-async function pmuFallback(dateISO: string): Promise<GenyProgrammeResult> {
+async function programmeFallback(dateISO: string): Promise<GenyProgrammeResult> {
   const dateStr = dateISO.replace(/-/g, "");
-  const r = await runPmuProgrammeSync(dateStr);
-  console.log(`[Geny Programme] FALLBACK PMU.fr ${dateISO} → ${r.inserted} insérées, ${r.updated} maj (${r.courses} courses)`);
-  return {
-    ok:           true,
-    date:         dateISO,
-    source:       "pmu-fallback",
-    courses:      r.courses,
-    filtered_out: 0,
-    reunions:     r.reunions,
-    inserted:     r.inserted,
-    updated:      r.updated,
-    hippodromes:  r.hippodromes,
-  };
+
+  // 1) PMU.fr (API officielle via le proxy pmu-proxy)
+  try {
+    const r = await runPmuProgrammeSync(dateStr);
+    if (r.courses > 0) {
+      console.log(`[Programme] FALLBACK PMU.fr ${dateISO} → ${r.courses} courses (${r.inserted} ins, ${r.updated} maj)`);
+      return { ok: true, date: dateISO, source: "pmu-fallback", courses: r.courses, filtered_out: 0, reunions: r.reunions, inserted: r.inserted, updated: r.updated, hippodromes: r.hippodromes };
+    }
+    console.warn(`[Programme] PMU.fr 0 course pour ${dateISO} → LONACI`);
+  } catch (e) {
+    console.warn(`[Programme] PMU.fr KO (${e instanceof Error ? e.message : String(e)}) → LONACI`);
+  }
+
+  // 2) LONACI (Nationales + réunions relayées Afrique — dernier recours)
+  const l = await runLonaciProgrammeSync(dateISO);
+  console.log(`[Programme] FALLBACK LONACI ${dateISO} → ${l.courses} courses (${l.inserted} ins, ${l.updated} maj)`);
+  return { ok: true, date: dateISO, source: "lonaci-fallback", courses: l.courses, filtered_out: 0, reunions: l.reunions, inserted: l.inserted, updated: l.updated, hippodromes: l.hippodromes };
 }
