@@ -139,8 +139,8 @@ export function validateConsensusBlock(input: ValidateInput): ValidationReport {
       continue;
     }
     // ── E04 — bornes citations & bases ────────────────────────────────────
-    if (citations < 1 || citations > nbSources) {
-      errors.push({ code: "E04", ligne: n, message: `Ligne ${n} : ${citations} citations hors bornes [1, ${nbSources}].` });
+    if (citations < 0 || citations > nbSources) {
+      errors.push({ code: "E04", ligne: n, message: `Ligne ${n} : ${citations} citations hors bornes [0, ${nbSources}].` });
       continue;
     }
     if (bases > citations) {
@@ -149,6 +149,10 @@ export function validateConsensusBlock(input: ValidateInput): ValidationReport {
     }
 
     seen[numero] = true;
+    // 0 citation = cheval NON cité. Le contrat dit de ne pas le lister, mais si
+    // une source (Cowork) liste tous les partants avec 0, on l'IGNORE proprement
+    // au lieu de bloquer (il ne porte aucune info).
+    if (citations === 0) continue;
     partants.push({ numero, citations, bases });
   }
 
@@ -163,11 +167,15 @@ export function validateConsensusBlock(input: ValidateInput): ValidationReport {
     sumCitations += partants[i].citations;
     sumBases += partants[i].bases || 0;
   }
+  // E05 — total citations vs 8 × nb_sources. AVERTISSEMENT (pas bloquant) :
+  // le « 8 par source » est un idéal ; en vrai certaines sources citent 5-7
+  // chevaux → Σ < 8×N est LÉGITIME. On informe (ack requis) sans bloquer. Les
+  // vraies corruptions (cote dans le bloc) sont déjà bloquées par E01/E04.
   const attendu = SELECTIONS_PAR_SOURCE * nbSources;
   if (errors.length === 0 && sumCitations !== attendu) {
-    errors.push({
-      code: "E05",
-      message: `Total citations = ${sumCitations}, attendu ${attendu} (${SELECTIONS_PAR_SOURCE} chevaux × ${nbSources} avis). Bloc incomplet ou Nb sources erroné.`,
+    warnings.push({
+      code: "E05", requires_ack: true,
+      message: `Total citations = ${sumCitations}, attendu ~${attendu} (${SELECTIONS_PAR_SOURCE} × ${nbSources} avis). Normal si des sources citent moins de ${SELECTIONS_PAR_SOURCE} chevaux ; à vérifier si le bloc est incomplet ou Nb sources erroné.`,
     });
   }
 
