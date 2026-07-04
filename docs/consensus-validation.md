@@ -23,8 +23,8 @@ cheval cité 2/33 tagué Base → injecté dans l'Elite-6).
 | E01 | bloquant | chaque ligne de données = exactement 3 entiers `numero citations bases` — **jamais de cote** |
 | E02 | bloquant | `numero ∈ [1, nb_partants]` |
 | E03 | bloquant | `numero` unique |
-| E04 | bloquant | `citations ∈ [1, nb_sources]` et `bases ∈ [0, citations]` |
-| E05 | bloquant | `Σ citations == 8 × nb_sources` (8 chevaux par avis) |
+| E04 | bloquant | `citations ∈ [0, nb_sources]` et `bases ∈ [0, citations]` — une ligne à **0 citation** est ignorée (non listée), pas une erreur |
+| E05 | **warning** (ack) | `Σ citations ≈ 8 × nb_sources` — avertissement seulement : les sources citent souvent 5-8 chevaux, un écart est légitime (l'anti-cote reste couvert par E01/E04) |
 | E06 | bloquant si `Σ bases > nb_sources` ; warning (ack) si `<` | `Σ bases == nb_sources` (1 base par avis) |
 | E07 | warning (ack) | `nb_sources < 15` → `echantillon_reduit`, propagé jusqu'à l'affichage abonnés |
 | R01 | règle moteur | `citations < max(3, ceil(0.30 × nb_sources))` → jamais tagué « Base » auto |

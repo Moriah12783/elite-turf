@@ -80,15 +80,23 @@ describe("validateConsensusBlock — fixtures réelles", () => {
     expect(r.echantillon_reduit).toBe(false);
   });
 
-  it("4. Σ citations = 263 sur 33 sources → E05", () => {
-    // retire la ligne « 12 1 0 » → Σ = 263
+  it("4. Σ citations = 263 sur 33 sources → warning E05 (ack), NON bloquant", () => {
+    // retire la ligne « 12 1 0 » → Σ = 263 (sources ne citent pas toutes 8 chevaux)
     const texte = BLOC_0107_CORRIGE.split("\n").filter((l) => l !== "12 1 0").join("\n");
     const r = validateConsensusBlock({ nbPartants: 15, nbSources: 33, texte });
-    expect(r.ok).toBe(false);
-    const e05 = r.errors.filter((e) => e.code === "E05");
+    expect(r.ok).toBe(true); // E05 est désormais un avertissement, pas un blocage
+    const e05 = r.warnings.filter((w) => w.code === "E05");
     expect(e05.length).toBe(1);
+    expect(e05[0].requires_ack).toBe(true);
     expect(e05[0].message).toContain("263");
-    expect(e05[0].message).toContain("264");
+  });
+
+  it("lignes à 0 citation (Cowork liste tous les partants) → ignorées, jamais E04", () => {
+    const texte = "7 3 1\n8 2 0\n15 0 0\n";
+    const r = validateConsensusBlock({ nbPartants: 16, nbSources: 5, texte });
+    expect(r.errors.some((e) => e.code === "E04")).toBe(false); // 0 citation n'est pas une erreur
+    expect(r.partants.map((p) => p.numero)).not.toContain(15);  // ignoré, pas dans les partants
+    expect(r.ok).toBe(true);
   });
 
   it("5. numéro 16 sur 15 partants → E02", () => {
