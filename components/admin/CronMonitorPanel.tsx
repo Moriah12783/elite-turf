@@ -45,6 +45,18 @@ function formatDuration(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** Résumé compact des compteurs GenyBet (jour / J+1 / arrivées) pour la ligne. */
+function genybetSummary(details: Record<string, unknown> | null): string | null {
+  if (!details) return null;
+  const jour = details.jour_courses;
+  if (typeof jour !== "number") return null;
+  const j1 = details.j1_courses;
+  const arr = details.jour_arrivees;
+  return `jour ${jour}`
+    + (typeof j1 === "number" ? ` · J+1 ${j1}` : "")
+    + (typeof arr === "number" ? ` · ${arr} arrivées` : "");
+}
+
 const STATUS_CONFIG = {
   success: { icon: CheckCircle2, color: "text-status-win",     bg: "bg-status-win/10 border-status-win/20",     label: "OK" },
   failure: { icon: XCircle,      color: "text-status-loss",    bg: "bg-status-loss/10 border-status-loss/20",   label: "ÉCHEC" },
@@ -156,12 +168,15 @@ export default function CronMonitorPanel() {
             // Job Geny sur GitHub Actions : cron_logs ne le voit pas (« JAMAIS »
             // trompeur) et « Forcer » taperait Geny depuis l'IP bloquée du Worker.
             const isGithub = !!cron.githubWorkflow;
+            const hasStatus = cron.lastStatus !== "never";
+            const gbSummary = cron.cronName === "genybet-health" ? genybetSummary(cron.lastDetails) : null;
 
             return (
               <div key={cron.cronName} className="flex items-center gap-4 px-5 py-3.5 hover:bg-bg-elevated/40 transition-colors">
 
-                {/* Status badge */}
-                {isGithub ? (
+                {/* Badge : statut réel si connu (cron_logs), sinon « Actions » pour
+                    les jobs GitHub qui ne journalisent pas. */}
+                {isGithub && !hasStatus ? (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold flex-shrink-0 w-24 justify-center bg-blue-500/10 border-blue-400/20">
                     <GitBranch className="w-3.5 h-3.5 text-blue-400" />
                     <span className="text-blue-400">Actions</span>
@@ -178,13 +193,16 @@ export default function CronMonitorPanel() {
                   <p className="text-text-primary text-sm font-medium">{cron.label}</p>
                   <p className="text-text-muted text-xs">
                     {cron.schedule}
-                    {!isGithub && cron.lastRun && (
+                    {hasStatus && cron.lastRun && (
                       <span className="ml-2 text-text-muted/60">· {relativeTime(cron.lastRun)}</span>
                     )}
-                    {!isGithub && cron.lastDuration && (
+                    {hasStatus && cron.lastDuration && (
                       <span className="ml-2 text-text-muted/60">· {formatDuration(cron.lastDuration)}</span>
                     )}
-                    {isGithub && (
+                    {gbSummary && (
+                      <span className="ml-2 text-status-win/70">· {gbSummary}</span>
+                    )}
+                    {isGithub && !hasStatus && (
                       <span className="ml-2 text-blue-400/70">· tourne sur GitHub Actions (IP propre)</span>
                     )}
                   </p>
