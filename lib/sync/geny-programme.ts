@@ -17,6 +17,7 @@ import { createServiceClient } from "@/lib/supabase/service-client";
 import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
 import { runPmuProgrammeSync } from "./pmu-programme";
 import { runLonaciProgrammeSync } from "./lonaci-programme";
+import { runGenybetProgrammeSync } from "./genybet-programme";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ export interface GenyProgrammeResult {
   updated:       number;
   hippodromes:   number;
   message?:      string;
-  /** "geny" (normal) ou "pmu-fallback" (Geny bloqué → API PMU.fr) */
+  /** "geny" · "pmu-fallback" · "lonaci-fallback" · "genybet-fallback" (J+1 / filet ultime) */
   source?:       string;
 }
 
@@ -447,8 +448,25 @@ async function programmeFallback(dateISO: string): Promise<GenyProgrammeResult> 
     console.warn(`[Programme] PMU.fr KO (${e instanceof Error ? e.message : String(e)}) → LONACI`);
   }
 
-  // 2) LONACI (Nationales + réunions relayées Afrique — dernier recours)
-  const l = await runLonaciProgrammeSync(dateISO);
-  console.log(`[Programme] FALLBACK LONACI ${dateISO} → ${l.courses} courses (${l.inserted} ins, ${l.updated} maj)`);
-  return { ok: true, date: dateISO, source: "lonaci-fallback", courses: l.courses, filtered_out: 0, reunions: l.reunions, inserted: l.inserted, updated: l.updated, hippodromes: l.hippodromes };
+  // 2) LONACI (Nationales relayées — couvre surtout le JOUR courant, pas le J+1).
+  //    On le garde prioritaire sur GenyBet car il marque correctement le Quinté+
+  //    (course vedette) via augmentParisFromNationale.
+  try {
+    const l = await runLonaciProgrammeSync(dateISO);
+    if (l.courses > 0) {
+      console.log(`[Programme] FALLBACK LONACI ${dateISO} → ${l.courses} courses (${l.inserted} ins, ${l.updated} maj)`);
+      return { ok: true, date: dateISO, source: "lonaci-fallback", courses: l.courses, filtered_out: 0, reunions: l.reunions, inserted: l.inserted, updated: l.updated, hippodromes: l.hippodromes };
+    }
+    console.warn(`[Programme] LONACI 0 course pour ${dateISO} (ex. J+1 non relayé) → GenyBet`);
+  } catch (e) {
+    console.warn(`[Programme] LONACI KO (${e instanceof Error ? e.message : String(e)}) → GenyBet`);
+  }
+
+  // 3) GenyBet (site betting sœur de Geny, MÊMES données mais domaine NON bloqué)
+  //    = dernier filet. Couvre le J+1 que LONACI ne relaie pas, et sert de secours
+  //    ultime quand tout le reste est KO. Si GenyBet échoue aussi, l'exception
+  //    remonte → la CLI/cron marque l'anomalie (anti-silent-failure).
+  const g = await runGenybetProgrammeSync(dateISO);
+  console.log(`[Programme] FALLBACK GenyBet ${dateISO} → ${g.courses} courses (${g.inserted} ins, ${g.updated} maj)`);
+  return { ok: true, date: dateISO, source: "genybet-fallback", courses: g.courses, filtered_out: g.filteredOut, reunions: g.reunions, inserted: g.inserted, updated: g.updated, hippodromes: g.hippodromes };
 }
