@@ -19,6 +19,7 @@
 // bundlable en Node sur GitHub Actions (scripts/geny-arrivees-cli.ts).
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { buildGenyUrlFromStored } from "@/lib/geny";
+import { fetchGenybetArriveesMap } from "@/lib/sync/genybet-arrivees";
 import { todayParisISO } from "@/lib/paris-date";
 import {
   parseRapportsPMU,
@@ -538,6 +539,41 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     (s): s is { courseId: string } & FetchedArrivee => s !== null,
   );
 
+  // ── Fallback GenyBet (Geny.com 429 / courses sans geny_url) ──────────────
+  // La page programme GenyBet donne l'ordre d'arrivée de TOUTES les courses
+  // courues du jour en 1 seul fetch → comble celles que Geny n'a pas ramenées.
+  // L'ordre n'existe que pour une course réellement courue → pas de fausse
+  // arrivée sur une course future (le filtre temporel est implicite).
+  const gotArrivee = new Set(valid.map((v) => v.courseId));
+  const stillMissing = unique.filter((c) => !gotArrivee.has(c.id));
+  if (stillMissing.length > 0) {
+    try {
+      const gbMap = await fetchGenybetArriveesMap(date);
+      let filled = 0;
+      for (const c of stillMissing) {
+        const order = gbMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!order || order.length < 3) continue;
+        // Sécurité : si on connaît les partants, on ne garde que les numéros
+        // valides (en préservant l'ordre) ; sinon on prend l'ordre officiel
+        // GenyBet tel quel. Cap selon le type de pari (Quinté+ = 7, sinon 6).
+        const maxHorses = maxHorsesForParis(c.parisDisponibles);
+        const kept = Array.isArray(c.validNumbers) && c.validNumbers.length > 0
+          ? order.filter((n) => c.validNumbers!.includes(n))
+          : order;
+        const finalOrder = kept.slice(0, maxHorses);
+        if (finalOrder.length >= 3) {
+          valid.push({ courseId: c.id, arrivee: finalOrder, rapports: null, commentaire: null });
+          filled++;
+        }
+      }
+      if (filled > 0) {
+        console.log(`[geny-arrivees] Fallback GenyBet : ${filled}/${stillMissing.length} arrivées comblées`);
+      }
+    } catch (e) {
+      console.warn(`[geny-arrivees] Fallback GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   // Upsert dans courses (arrivee_officielle + statut TERMINE)
   if (valid.length > 0) {
     const courseUpdates = valid.map(({ courseId, arrivee }) => ({
@@ -568,12 +604,15 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     );
   }
 
+  // Courses éligibles (temporellement, avec geny_url) qu'AUCUNE source (Geny NI
+  // GenyBet) n'a résolues → compteur honnête après fallback.
+  const resolvedIds = new Set(valid.map((v) => v.courseId));
   return {
     ok:        true,
     date,
     scraped:   valid.length,
     upserted:  valid.length,
     skipped:   withoutGeny,
-    not_found: withGeny.length - valid.length,
+    not_found: withGenyFiltered.filter((c) => !resolvedIds.has(c.id)).length,
   };
 }

@@ -162,7 +162,7 @@ const FETCH_ATTEMPTS   = 2;
 const RETRY_DELAY_MS   = 1_500;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-async function fetchGenybetHtml(url: string): Promise<string> {
+export async function fetchGenybetHtml(url: string): Promise<string> {
   let lastError = "";
   for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
     const controller = new AbortController();
@@ -195,7 +195,7 @@ async function fetchGenybetHtml(url: string): Promise<string> {
 }
 
 /** "YYYY-MM-DD" -> "JJ-MM-AAAA" (format d'URL GenyBet). */
-function toGenybetDate(dateISO: string): string {
+export function toGenybetDate(dateISO: string): string {
   const [y, m, d] = dateISO.split("-");
   return `${d}-${m}-${y}`;
 }
