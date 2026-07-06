@@ -1,0 +1,43 @@
+name: genybet-health
+
+# Health-check GenyBet (source info courses de secours) → journalise dans
+# cron_logs pour la ligne « Source GenyBet » du monitoring admin. Tourne sur
+# GitHub Actions (IP Azure) car le Worker Cloudflare est probablement bloqué
+# par GenyBet comme il l'est par geny.com.
+
+on:
+  schedule:
+    - cron: "20 */4 * * *"   # toutes les 4h
+  workflow_dispatch:
+
+concurrency:
+  group: genybet-health
+  cancel-in-progress: false
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/genybet-health-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=genybet-health.mjs
+
+      - name: Health check GenyBet
+        run: node genybet-health.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -203,10 +203,10 @@ export default async function AdminDashboard() {
           Pré-remplir tous les partants
         </h2>
         <p className="text-text-secondary text-sm mb-4">
-          Récupère depuis Geny.com les partants (numéro, nom, jockey/driver, cote, musique)
-          de toutes les courses d&apos;une date qui n&apos;ont pas encore de partants en base.
-          Pool de 4 workers en parallèle. Utile à 6h du matin pour préparer le programme du
-          jour, ou si le cron auto <code className="text-purple-400 bg-bg-elevated px-1 rounded">enrichir-partants</code> est tombé en panne.
+          Récupère les partants (numéro, nom, jockey/driver, cote) des courses d&apos;une date
+          sans partants en base — via Geny.com, puis <strong>LONACI</strong> en secours (Geny bloqué).
+          La <strong>forme GenyBet</strong> (musique/âge) est ajoutée automatiquement par les syncs GitHub Actions.
+          Dépannage si le cron auto <code className="text-purple-400 bg-bg-elevated px-1 rounded">enrichir-partants</code> est tombé.
         </p>
         <BatchPrefillPartantsButton />
       </div>
