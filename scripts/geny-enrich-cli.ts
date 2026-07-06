@@ -23,6 +23,7 @@ import {
 } from "@/lib/geny";
 import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
+import { fetchGenybetPartantsMap } from "@/lib/sync/genybet-partants";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -138,6 +139,40 @@ async function main(): Promise<void> {
       if (filled > 0) console.log(`🔁 Fallback LONACI : ${filled}/${failed.length} courses comblées (cotes)`);
     } catch (e) {
       console.warn(`Fallback LONACI KO : ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  // Enrichissement GenyBet : musique + forme (âge/sexe/poids/corde/jockey/
+  // entraîneur) que LONACI n'a PAS. Les cotes GenyBet sont en JS (non
+  // scrapables) → on NE touche PAS aux cotes déjà en place, on ne complète que
+  // la forme. Uniquement pour les courses dont les partants manquent de musique
+  // (typiquement celles comblées par LONACI). Fusion par numéro.
+  const needRich = ok.filter((o) => o.partants.some((g: any) => g.musique == null));
+  if (needRich.length > 0) {
+    try {
+      const wanted = new Set(needRich.map((o) => `${o.c.numero_reunion}|${o.c.numero_course}`));
+      const gbMap = await fetchGenybetPartantsMap(targetDate, wanted);
+      let enriched = 0;
+      for (const o of needRich) {
+        const rich = gbMap.get(`${o.c.numero_reunion}|${o.c.numero_course}`);
+        if (!rich || rich.length === 0) continue;
+        const byNum = new Map(rich.map((r) => [r.numPmu, r] as const));
+        for (const g of o.partants as any[]) {
+          const r = byNum.get(g.numPmu);
+          if (!r) continue;
+          if (g.musique == null && r.musique != null) g.musique = r.musique;
+          if (g.age == null && r.age != null) g.age = r.age;
+          if (g.sexe == null && r.sexe != null) g.sexe = r.sexe;
+          if (g.poids == null && r.poids != null) g.poids = r.poids;
+          if (g.placeCorde == null && r.placeCorde != null) g.placeCorde = r.placeCorde;
+          if (!g.jockey?.nom && r.jockey) g.jockey = r.jockey;
+          if (!g.entraineur?.nom && r.entraineur) g.entraineur = r.entraineur;
+        }
+        enriched++;
+      }
+      if (enriched > 0) console.log(`🔬 Enrichissement GenyBet : ${enriched}/${needRich.length} courses (musique/forme)`);
+    } catch (e) {
+      console.warn(`Enrichissement GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
