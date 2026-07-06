@@ -142,17 +142,35 @@ async function main(): Promise<void> {
     }
   }
 
-  // Enrichissement GenyBet : musique + forme (âge/sexe/poids/corde/jockey/
-  // entraîneur) que LONACI n'a PAS. Les cotes GenyBet sont en JS (non
-  // scrapables) → on NE touche PAS aux cotes déjà en place, on ne complète que
-  // la forme. Uniquement pour les courses dont les partants manquent de musique
-  // (typiquement celles comblées par LONACI). Fusion par numéro.
+  // GenyBet — deux rôles, un seul passage (1 fetch programme + 1/course voulue) :
+  //  (a) SOURCE PRIMAIRE des partants pour les courses SANS aucun partant (Geny
+  //      bloqué + LONACI ne relaie pas, ex. J+1) → insertion standalone de la
+  //      FORME (nom/jockey/entraîneur/musique/âge/sexe/poids/corde). Pas de cote
+  //      (cotes GenyBet = WebSocket, non scrapables) → cote NULL, remplie le
+  //      jour J par LONACI. C'est le levier « aperçu J+1 » (SEO).
+  //  (b) ENRICHISSEMENT forme des partants LONACI (qui portent la cote mais pas
+  //      la musique/forme). Non destructif : ne complète que si champ manquant,
+  //      ne touche JAMAIS la cote.
+  const stillFailed = slice.filter((c) => !ok.some((o) => o.c.id === c.id));
   const needRich = ok.filter((o) => o.partants.some((g: any) => g.musique == null));
-  if (needRich.length > 0) {
+  if (stillFailed.length > 0 || needRich.length > 0) {
     try {
-      const wanted = new Set(needRich.map((o) => `${o.c.numero_reunion}|${o.c.numero_course}`));
+      const wanted = new Set(
+        stillFailed.map((c) => `${c.numero_reunion}|${c.numero_course}`)
+          .concat(needRich.map((o) => `${o.c.numero_reunion}|${o.c.numero_course}`)),
+      );
       const gbMap = await fetchGenybetPartantsMap(targetDate, wanted);
-      let enriched = 0;
+
+      // (a) primaire : insère les partants GenyBet des courses sans partants
+      let gbPrimary = 0;
+      for (const c of stillFailed) {
+        const parts = gbMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (parts && parts.length > 0) { ok.push({ c, partants: parts }); gbPrimary++; }
+      }
+      if (gbPrimary > 0) console.log(`🟢 GenyBet partants (source primaire, sans cote) : ${gbPrimary}/${stillFailed.length} courses`);
+
+      // (b) enrichissement forme sur les partants LONACI existants
+      let gbEnriched = 0;
       for (const o of needRich) {
         const rich = gbMap.get(`${o.c.numero_reunion}|${o.c.numero_course}`);
         if (!rich || rich.length === 0) continue;
@@ -168,11 +186,11 @@ async function main(): Promise<void> {
           if (!g.jockey?.nom && r.jockey) g.jockey = r.jockey;
           if (!g.entraineur?.nom && r.entraineur) g.entraineur = r.entraineur;
         }
-        enriched++;
+        gbEnriched++;
       }
-      if (enriched > 0) console.log(`🔬 Enrichissement GenyBet : ${enriched}/${needRich.length} courses (musique/forme)`);
+      if (gbEnriched > 0) console.log(`🔬 Enrichissement GenyBet (forme) : ${gbEnriched}/${needRich.length} courses`);
     } catch (e) {
-      console.warn(`Enrichissement GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
+      console.warn(`GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
