@@ -42,3 +42,23 @@ jobs:
           PROG_DAY: demain
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # Partants J+1 depuis GenyBet (forme SANS cote — cotes GenyBet = WebSocket).
+      # Donne aux visiteurs le tableau des chevaux de demain la veille (levier
+      # SEO). best-effort : n'invalide pas le succès du programme si ça échoue.
+      - name: Bundle enrich CLI
+        run: >-
+          npx -y esbuild scripts/geny-enrich-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=geny-enrich.mjs
+
+      - name: Partants J+1 (GenyBet, forme sans cote)
+        continue-on-error: true
+        run: |
+          TARGET_DATE=$(TZ=Europe/Paris date -d "tomorrow" +%Y-%m-%d)
+          echo "Partants J+1 pour $TARGET_DATE"
+          TARGET_DATE="$TARGET_DATE" node geny-enrich.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
