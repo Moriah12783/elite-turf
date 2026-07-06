@@ -126,9 +126,11 @@ export default function BatchPrefillPartantsButton() {
                   Pré-remplir tous les partants
                 </h3>
                 <p className="text-text-secondary text-sm">
-                  Récupère depuis Geny les partants de toutes les courses
-                  d&apos;une date qui n&apos;ont pas encore de partants en
-                  base. Les courses déjà remplies sont ignorées.
+                  Récupère les partants (Geny.com, puis LONACI en secours si
+                  Geny est bloqué) des courses d&apos;une date sans partants en
+                  base. Les courses déjà remplies sont ignorées. La forme
+                  GenyBet (musique/âge) est ajoutée automatiquement par les
+                  syncs.
                 </p>
               </div>
               <button

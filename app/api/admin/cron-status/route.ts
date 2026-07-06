@@ -20,6 +20,10 @@ const KNOWN_CRONS: Array<{
   { cronName: "pmu-demain",           label: "Sync PMU Lendemain (J+1)", schedule: "20h UTC",       githubWorkflow: "pmu-demain.yml" },
   { cronName: "lonaci-sync",          label: "Sync LONACI",             schedule: "7h30 Paris" },
   { cronName: "geny-arrivees",        label: "Arrivées Geny",           schedule: "13h–19h / 1h",  githubWorkflow: "geny-arrivees.yml" },
+  // GenyBet = source info de secours (programme jour+J+1, partants/forme,
+  // arrivées) quand Geny/PMU bloquent. Ligne SANS marqueur github → affiche le
+  // vrai statut du health-check (genybet-health.yml écrit dans cron_logs).
+  { cronName: "genybet-health",       label: "Source GenyBet",          schedule: "health · toutes les 4h" },
   { cronName: "sync-resultats",       label: "Résultats pronostics",    schedule: "21h Paris" },
   { cronName: "expire-abonnements",   label: "Expiration abonnements",  schedule: "2h Paris" },
   { cronName: "rappel-expiration",    label: "Rappels expiration",      schedule: "10h Paris" },
