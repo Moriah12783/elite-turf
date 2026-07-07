@@ -24,6 +24,7 @@ import {
 import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { fetchGenybetPartantsMap } from "@/lib/sync/genybet-partants";
+import { fetchPmuCotesMap, resolvePmuCote, sameHorse } from "@/lib/cotes/pmu-csv";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -192,6 +193,38 @@ async function main(): Promise<void> {
     } catch (e) {
       console.warn(`GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // Cotes PMU OFFICIELLES (CSV public alimenté par une IP Google, NON bloquée
+  // par PMU/Geny) = SOURCE PRIORITAIRE des cotes. On écrase la cote de chaque
+  // partant par la cote_directe PMU (repli cote_reference), appariée par
+  // (réunion, course, num) + garde-fou nom normalisé (anti-décalage). Course
+  // hors CSV (non-PMU, ex. certains Maroc) → cote LONACI conservée en repli.
+  // NP ou cote absente → cote NULL (jamais de « 1,2 » inventé — cf. affichage « — »).
+  try {
+    const pmuCotes = await fetchPmuCotesMap();
+    if (pmuCotes.size > 0) {
+      let fromPmu = 0, mismatch = 0, pending = 0;
+      for (const o of ok) {
+        for (const g of o.partants as any[]) {
+          const row = pmuCotes.get(`${o.c.numero_reunion}|${o.c.numero_course}|${g.numPmu}`);
+          if (!row) continue;
+          if (!sameHorse(g.nom ?? "", row.cheval)) { mismatch++; continue; }
+          const cote = resolvePmuCote(row);          // number | null (NP ou cote pas encore ouverte → null)
+          // PARTANT dont la cote PMU n'est pas encore publiée (paris pas ouverts)
+          // → on NE l'écrase PAS : on garde la cote existante (LONACI, indicatif).
+          if (cote == null && !row.nonPartant) { pending++; continue; }
+          g.coteProbable = cote == null ? undefined : cote; // NP → null ; sinon cote PMU
+          if (row.nonPartant) g.nonPartant = true;
+          fromPmu++;
+        }
+      }
+      console.log(`💶 Cotes PMU (CSV officiel) : ${fromPmu} partants${mismatch ? ` (${mismatch} nom≠)` : ""}${pending ? ` (${pending} cote PMU pas encore ouverte → LONACI)` : ""} — reste = LONACI (indicatif)`);
+    } else {
+      console.warn("💶 Cotes PMU CSV indisponible → cotes LONACI conservées (repli)");
+    }
+  } catch (e) {
+    console.warn(`💶 Cotes PMU CSV KO : ${e instanceof Error ? e.message : String(e)}`);
   }
 
   const okIds = ok.map((o) => o.c.id);
