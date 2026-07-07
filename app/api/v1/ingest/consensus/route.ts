@@ -133,9 +133,14 @@ export async function POST(req: NextRequest) {
   // (`np: true`) — pas de colonne dédiée, l'atelier les lit de là.
   const npSet: Record<number, boolean> = {};
   for (let i = 0; i < p.non_partants.length; i++) npSet[p.non_partants[i]] = true;
-  const citationsForDraft = p.citations.map((c) =>
-    npSet[c.numero] ? { numero: c.numero, citations: c.citations, bases: c.bases, np: true } : c,
-  );
+  const citationsForDraft = p.citations.map((c) => {
+    const row: { numero: number; citations: number; bases: number; cote?: number; np?: true } = {
+      numero: c.numero, citations: c.citations, bases: c.bases,
+    };
+    if (c.cote != null) row.cote = c.cote;   // cote PMU du pipeline (priorité LONACI côté atelier)
+    if (npSet[c.numero]) row.np = true;
+    return row;
+  });
 
   const draftRow = {
     date_course: p.date_course,

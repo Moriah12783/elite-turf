@@ -87,6 +87,9 @@ export default function ConsensusPage() {
   // pipeline (brouillon, `np` dans citations) + flag `non_partant` en base.
   const [draftNonPartants, setDraftNonPartants] = useState<number[]>([]);
   const [courseNonPartants, setCourseNonPartants] = useState<number[]>([]);
+  // Cotes LIVE (PMU) déposées par le pipeline dans le brouillon (par numéro).
+  // Prioritaires sur les cotes de la course liée (LONACI, souvent incomplet).
+  const [draftCotes, setDraftCotes] = useState<Record<number, number>>({});
   // Cotes + NP de la course en cours de chargement → Analyser reste bloqué tant
   // que ce n'est pas prêt (sinon on analyserait sans les NP du flag base).
   const [partantsLoading, setPartantsLoading] = useState(false);
@@ -123,6 +126,12 @@ export default function ConsensusPage() {
           .join("\n");
         setRaw(lignes);
         setDraftNonPartants((Array.isArray(dr.citations) ? dr.citations : []).filter((c: any) => c && c.np).map((c: any) => c.numero));
+        // Cotes PMU déposées par le pipeline (par numéro) → prioritaires à l'analyse.
+        const cotes: Record<number, number> = {};
+        (Array.isArray(dr.citations) ? dr.citations : []).forEach((c: any) => {
+          if (c && c.numero != null && typeof c.cote === "number" && c.cote > 0) cotes[Number(c.numero)] = c.cote;
+        });
+        setDraftCotes(cotes);
         if (dr.course_id) { setManualPick(true); setCourseId(dr.course_id); }
         // Marque le brouillon relu (best-effort).
         fetch("/api/admin/consensus/drafts", {
@@ -212,7 +221,7 @@ export default function ConsensusPage() {
     setResult(null);
     setValReport(null);
     setAckWarnings(false);
-  }, [coursePartants, nbSources, raw]);
+  }, [coursePartants, nbSources, raw, draftCotes]);
 
   // Divergence presse × stats : "fort presse" = top 8 du consensus ; "fort stats"
   // = présent dans la sélection stats (top 8 déterministe).
@@ -321,7 +330,9 @@ export default function ConsensusPage() {
 
       const merged = report.partants.map((p) => {
         const cp = coursePartants[p.numero];
-        return cp ? { ...p, cote: cp.cote, nom: cp.nom ?? p.nom } : p;
+        const dc = draftCotes[p.numero];          // cote PMU du pipeline → priorité sur LONACI
+        if (dc == null && !cp) return p;
+        return { ...p, cote: dc != null ? dc : (cp?.cote ?? null), nom: cp?.nom ?? p.nom };
       });
       const nonPartants = draftNonPartants.concat(courseNonPartants);
       setResult(buildConsensus({ nbSources, partants: merged }, { nonPartants }));
@@ -468,6 +479,9 @@ export default function ConsensusPage() {
             <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={12} placeholder={PLACEHOLDER}
               className="w-full mt-2 px-3 py-2.5 bg-bg-elevated border border-border text-text-primary text-sm font-mono rounded-xl focus:border-gold-primary/50 focus:outline-none placeholder:text-text-muted resize-none" />
             <p className="text-text-muted text-xs mt-1">Format v2.4 : <code>numero citations bases</code> (3 entiers) — 1 cheval/ligne. <span className="text-status-loss font-semibold">Jamais de cote dans le bloc</span> : la <span className="text-text-secondary">cote + le nom</span> sont ajoutés auto depuis la course liée.</p>
+            {Object.keys(draftCotes).length > 0 && (
+              <p className="text-status-win text-[11px] mt-0.5">✓ {Object.keys(draftCotes).length} cotes PMU (pipeline) — prioritaires sur la course liée.</p>
+            )}
             {courseId && Object.keys(coursePartants).length > 0 && (
               <p className="text-status-win text-[11px] mt-0.5">✓ {Object.keys(coursePartants).length} cotes + noms chargés depuis la course liée.</p>
             )}
