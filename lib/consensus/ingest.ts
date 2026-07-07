@@ -56,6 +56,18 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const RC_RE = /^R\d+C\d+$/i;
 
 /**
+ * Retire un éventuel emballage markdown ```json … ``` autour du payload — très
+ * fréquent quand un LLM (pipeline Cowork) génère le JSON. Robustesse pure : si
+ * pas d'emballage, renvoie la chaîne inchangée. (N'affecte pas le HMAC, qui est
+ * calculé sur le corps brut par l'appelant.)
+ */
+export function stripJsonFences(s: string): string {
+  const t = (s || "").trim();
+  const m = t.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return m ? m[1].trim() : t;
+}
+
+/**
  * Entier STRICT : rejette tout non-entier (ex. une cote 4.6 glissée par erreur
  * dans un champ citations/bases → null, jamais planchée en silence). Défense en
  * profondeur cohérente avec l'incident du 01/07.

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { verifyIngestAuth } from "@/lib/consensus/ingest-auth";
-import { parseIngestPayload } from "@/lib/consensus/ingest";
+import { parseIngestPayload, stripJsonFences } from "@/lib/consensus/ingest";
 import { validateConsensusBlock } from "@/lib/consensus/validate";
 import { sendEmail, APP_URL } from "@/lib/email";
 
@@ -38,7 +38,9 @@ export async function POST(req: NextRequest) {
 
   let payload: any;
   try {
-    payload = JSON.parse(rawBody);
+    // Tolère un emballage markdown ```json … ``` (fréquent quand un LLM génère
+    // le payload). Le HMAC (si activé) reste calculé sur rawBody inchangé.
+    payload = JSON.parse(stripJsonFences(rawBody));
   } catch {
     return NextResponse.json({ error: "JSON invalide" }, { status: 400 });
   }

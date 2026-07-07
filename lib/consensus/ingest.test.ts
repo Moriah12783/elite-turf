@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import crypto from "crypto";
-import { parseIngestPayload } from "./ingest";
+import { parseIngestPayload, stripJsonFences } from "./ingest";
 import { verifyIngestAuth } from "./ingest-auth";
 import { validateConsensusBlock } from "./validate";
 
@@ -61,6 +61,14 @@ describe("parseIngestPayload — structure du contrat v2.4", () => {
     expect(cote(11)).toBeUndefined();
     // le bloc validé reste SANS cote (contrat v2.4 inchangé)
     expect(r.parsed?.texteBloc.split("\n")[0]).toBe("7 33 12");
+  });
+
+  it("stripJsonFences retire l'emballage ```json … ``` (LLM) mais laisse le JSON nu intact", () => {
+    expect(stripJsonFences('```json\n{"a":1}\n```')).toBe('{"a":1}');
+    expect(stripJsonFences('```\n{"a":1}\n```')).toBe('{"a":1}');
+    expect(stripJsonFences('  ```json {"a":1} ```  ')).toBe('{"a":1}');
+    expect(stripJsonFences('{"a":1}')).toBe('{"a":1}');            // nu → inchangé
+    expect(JSON.parse(stripJsonFences('```json\n{"run_type":"matin"}\n```')).run_type).toBe("matin");
   });
 
   it("run_type invalide → erreur", () => {
