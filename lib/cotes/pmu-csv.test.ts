@@ -34,8 +34,9 @@ describe("parsePmuCotesCsv — fixture réelle (471 lignes)", () => {
     expect(rows.every((x) => Number.isInteger(x.reunion) && Number.isInteger(x.course) && Number.isInteger(x.num))).toBe(true);
   });
 
-  it("Chantilly R1C1 n°1 MASTER MAN : directe=4 (prioritaire sur référence 5,2)", () => {
+  it("Chantilly R1C1 n°1 MASTER MAN : directe=4 (prioritaire sur référence 5,2) + date parsée", () => {
     const p = get(1, 1, 1)!;
+    expect(p.date).toBe("2026-07-07"); // sert au filtre par jour (anti-mélange de dates)
     expect(p.cheval).toBe("MASTER MAN");
     expect(p.coteReference).toBe(5.2);
     expect(p.coteDirecte).toBe(4);

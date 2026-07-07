@@ -186,14 +186,14 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
   // PMU (repli référence) appariée par (réunion, course, num) + garde-fou nom.
   // Course hors CSV → cote existante conservée. NP/absente → NULL (jamais 1,2).
   try {
-    const pmuCotes = await fetchPmuCotesMap();
+    const pmuCotes = await fetchPmuCotesMap(todayStr); // CSV = jour courant uniquement
     if (pmuCotes.size > 0) {
       const rcById = new Map(
-        toBackfill.map((c) => [c.id, { reunion: c.numero_reunion, course: c.numero_course }] as const),
+        toBackfill.map((c) => [c.id, { reunion: c.numero_reunion, course: c.numero_course, date: c.date_course }] as const),
       );
       for (const o of okOutcomes) {
         const rc = rcById.get(o.courseId);
-        if (!rc) continue;
+        if (!rc || rc.date !== todayStr) continue; // n'applique les cotes PMU qu'au jour courant
         for (const g of o.partants as any[]) {
           const row = pmuCotes.get(`${rc.reunion}|${rc.course}|${g.numPmu}`);
           if (!row || !sameHorse(g.nom ?? "", row.cheval)) continue;

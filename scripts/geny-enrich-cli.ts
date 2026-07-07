@@ -202,7 +202,7 @@ async function main(): Promise<void> {
   // hors CSV (non-PMU, ex. certains Maroc) → cote LONACI conservée en repli.
   // NP ou cote absente → cote NULL (jamais de « 1,2 » inventé — cf. affichage « — »).
   try {
-    const pmuCotes = await fetchPmuCotesMap();
+    const pmuCotes = await fetchPmuCotesMap(targetDate); // seulement les cotes du jour ciblé
     if (pmuCotes.size > 0) {
       let fromPmu = 0, mismatch = 0, pending = 0;
       for (const o of ok) {

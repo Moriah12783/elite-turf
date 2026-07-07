@@ -28,6 +28,7 @@ export function pmuCotesCsvUrl(): string {
 }
 
 export interface PmuCoteRow {
+  date:           string;  // "AAAA-MM-JJ" (jour du programme PMU)
   reunion:        number;  // "R1" -> 1
   course:         number;  // "C8" -> 8
   num:            number;  // dossard
@@ -90,7 +91,8 @@ export function parsePmuCotesCsv(csv: string): PmuCoteRow[] {
 
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
   const col = (name: string) => header.indexOf(name);
-  const iR = col("reunion"), iC = col("course"), iN = col("num"),
+  const iDate = col("date"),
+        iR = col("reunion"), iC = col("course"), iN = col("num"),
         iCh = col("cheval"), iS = col("statut"),
         iRef = col("cote_reference"), iDir = col("cote_directe");
   if (iR < 0 || iC < 0 || iN < 0) return [];
@@ -105,6 +107,7 @@ export function parsePmuCotesCsv(csv: string): PmuCoteRow[] {
 
     const statut = (c[iS] || "").trim().toUpperCase();
     out.push({
+      date:          iDate >= 0 ? (c[iDate] || "").trim() : "",
       reunion, course, num,
       cheval:        (c[iCh] || "").trim(),
       statut,
@@ -147,9 +150,14 @@ export function sameHorse(a: string, b: string): boolean {
 
 /**
  * Récupère le CSV PMU -> map `${reunion}|${course}|${num}` -> ligne. Une seule
- * requête pour toutes les courses du jour. Ne throw jamais (map vide si KO).
+ * requête. Ne throw jamais (map vide si KO).
+ *
+ * @param dateISO Si fourni ("AAAA-MM-JJ"), ne garde QUE les lignes de ce jour →
+ *   garantit qu'on n'applique jamais les cotes d'un autre jour (les numéros
+ *   R1C8… se répètent chaque jour). Une course d'un jour absent du CSV (ex. J+1,
+ *   cotes pas encore ouvertes) donne une map vide → repli LONACI, pas d'erreur.
  */
-export async function fetchPmuCotesMap(): Promise<Map<string, PmuCoteRow>> {
+export async function fetchPmuCotesMap(dateISO?: string): Promise<Map<string, PmuCoteRow>> {
   const map = new Map<string, PmuCoteRow>();
   try {
     const controller = new AbortController();
@@ -158,7 +166,10 @@ export async function fetchPmuCotesMap(): Promise<Map<string, PmuCoteRow>> {
     clearTimeout(timer);
     if (!res.ok) return map;
     const rows = parsePmuCotesCsv(await res.text());
-    for (const r of rows) map.set(`${r.reunion}|${r.course}|${r.num}`, r);
+    for (const r of rows) {
+      if (dateISO && r.date && r.date !== dateISO) continue; // seulement le jour ciblé
+      map.set(`${r.reunion}|${r.course}|${r.num}`, r);
+    }
   } catch {
     // Google KO / timeout -> pas de cotes PMU (map vide, l'appelant retombe sur LONACI)
   }
