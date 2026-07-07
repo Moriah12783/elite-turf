@@ -12,6 +12,12 @@ export interface IngestCitation {
   numero: number;
   citations: number;
   bases: number;
+  /**
+   * Cote LIVE (PMU) optionnelle, fournie par le pipeline. Décimale (≥ 0). Sert à
+   * enrichir la course vedette avec des cotes fiables quand LONACI (course liée)
+   * est incomplet/faux. Priorité sur la cote en base côté atelier admin.
+   */
+  cote?: number;
 }
 
 export interface IngestCommentaire {
@@ -58,6 +64,16 @@ function toInt(v: unknown): number | null {
   if (typeof v === "boolean") return null;
   const n = Number(v);
   return Number.isInteger(n) ? n : null;
+}
+
+/**
+ * Cote décimale (ex. 4,5 / 6.3). Tolère la virgule décimale. Retourne undefined
+ * si absente ou non exploitable (0, négative, NP…) → jamais de cote fabriquée.
+ */
+function toCote(v: unknown): number | undefined {
+  if (v == null || typeof v === "boolean") return undefined;
+  const n = typeof v === "string" ? parseFloat(v.replace(",", ".")) : Number(v);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
 function parseCommentaire(raw: any): IngestCommentaire | null {
@@ -133,8 +149,9 @@ export function parseIngestPayload(payload: any): ParseResult {
       lignes.push(`${c?.numero} ${c?.citations} ${c?.bases}`);
       continue;
     }
-    citations.push({ numero, citations: cit, bases });
-    lignes.push(`${numero} ${cit} ${bases}`);
+    const cote = toCote(c?.cote);
+    citations.push(cote != null ? { numero, citations: cit, bases, cote } : { numero, citations: cit, bases });
+    lignes.push(`${numero} ${cit} ${bases}`); // le bloc validé reste SANS cote (contrat v2.4)
   }
 
   // Non-partants déclarés par le pipeline (source explicite, en plus du flag

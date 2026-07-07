@@ -47,6 +47,22 @@ describe("parseIngestPayload — structure du contrat v2.4", () => {
     expect(parseIngestPayload(validPayload()).parsed?.non_partants).toEqual([]);
   });
 
+  it("cote optionnelle : décimale (virgule ou point, >0) parsée ; absente/0/négative → omise", () => {
+    const p = validPayload();
+    (p.consensus.citations[0] as any).cote = "4,5"; // 7 → 4.5 (virgule décimale)
+    (p.consensus.citations[1] as any).cote = 6.3;   // 8 → 6.3 (nombre)
+    (p.consensus.citations[2] as any).cote = 0;     // 4 → omise (0)
+    (p.consensus.citations[3] as any).cote = -1;    // 11 → omise (négative)
+    const r = parseIngestPayload(p);
+    const cote = (n: number) => (r.parsed?.citations ?? []).find((c) => c.numero === n)?.cote;
+    expect(cote(7)).toBe(4.5);
+    expect(cote(8)).toBe(6.3);
+    expect(cote(4)).toBeUndefined();
+    expect(cote(11)).toBeUndefined();
+    // le bloc validé reste SANS cote (contrat v2.4 inchangé)
+    expect(r.parsed?.texteBloc.split("\n")[0]).toBe("7 33 12");
+  });
+
   it("run_type invalide → erreur", () => {
     const p = validPayload(); (p as any).run_type = "soir";
     expect(parseIngestPayload(p).ok).toBe(false);
