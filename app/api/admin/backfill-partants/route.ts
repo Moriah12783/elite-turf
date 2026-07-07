@@ -23,6 +23,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
+import { fetchPmuCotesMap, resolvePmuCote, sameHorse } from "@/lib/cotes/pmu-csv";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -178,6 +179,34 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
     } catch (e) {
       logger.warn("backfill-partants", "Fallback LONACI KO", { error: e instanceof Error ? e.message : String(e) });
     }
+  }
+
+  // Cotes PMU OFFICIELLES (CSV public, IP Google non bloquée) = source
+  // PRIORITAIRE des cotes (comme le cron). Écrase la cote par la cote_directe
+  // PMU (repli référence) appariée par (réunion, course, num) + garde-fou nom.
+  // Course hors CSV → cote existante conservée. NP/absente → NULL (jamais 1,2).
+  try {
+    const pmuCotes = await fetchPmuCotesMap();
+    if (pmuCotes.size > 0) {
+      const rcById = new Map(
+        toBackfill.map((c) => [c.id, { reunion: c.numero_reunion, course: c.numero_course }] as const),
+      );
+      for (const o of okOutcomes) {
+        const rc = rcById.get(o.courseId);
+        if (!rc) continue;
+        for (const g of o.partants as any[]) {
+          const row = pmuCotes.get(`${rc.reunion}|${rc.course}|${g.numPmu}`);
+          if (!row || !sameHorse(g.nom ?? "", row.cheval)) continue;
+          const cote = resolvePmuCote(row);
+          // PARTANT sans cote PMU encore publiée → garder la cote existante (LONACI).
+          if (cote == null && !row.nonPartant) continue;
+          g.coteProbable = cote == null ? undefined : cote;
+          if (row.nonPartant) g.nonPartant = true;
+        }
+      }
+    }
+  } catch (e) {
+    logger.warn("backfill-partants", "Cotes PMU CSV KO", { error: e instanceof Error ? e.message : String(e) });
   }
 
   // Étape 2 : bulk delete + bulk insert

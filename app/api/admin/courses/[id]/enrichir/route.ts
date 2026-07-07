@@ -1,21 +1,21 @@
 /**
- * POST /api/admin/courses/[id]/enrichir
+ * POST /api/admin/courses/[id]/enrichir  (bouton « Enrichir PMU » de l'admin)
  *
- * Enrichit les partants d'une course avec les données complètes de l'API PMU :
- *  - Cote de départ / cote en temps réel
- *  - Musique (historique des performances)
- *  - Poids / place à la corde
- *  - Jockey + entraîneur
- *  - Âge / sexe du cheval
+ * Rafraîchit les COTES des partants d'une course depuis le CSV public PMU
+ * (Google Apps Script, IP Google NON bloquée — contrairement à l'API PMU
+ * directe qui renvoie 420 à l'IP du Worker/Azure d'Elite). Cotes = rapports
+ * pari-mutuel unifiés (Masse Commune Internationale), justes pour l'Afrique.
  *
- * Utilisé par le skill Elite Turf pour préparer l'analyse pré-course.
- * Peut aussi être déclenché manuellement depuis l'admin.
+ * NB : le CSV ne porte que les cotes (num/cheval/statut/cote), pas la forme
+ * (musique/jockey…). Les partants doivent déjà exister (créés par le cron
+ * `enrichir-partants` / « Pré-remplir »). Ce bouton MET À JOUR leurs cotes.
+ * Priorité : cote_directe > cote_reference ; NP/absente → cote NULL (jamais 1,2).
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
-import { fetchPmuPartants } from "@/lib/pmu-api";
+import { fetchPmuCotesMap, resolvePmuCote, sameHorse } from "@/lib/cotes/pmu-csv";
 
 export const dynamic = "force-dynamic";
 
@@ -24,102 +24,85 @@ interface RouteParams { params: { id: string } }
 export async function POST(_req: NextRequest, { params }: RouteParams) {
   const supabase = createServiceClient();
 
-  // 1. Récupérer la course
+  // 1. Course (numéros réunion/course pour matcher le CSV)
   const { data: course, error: courseErr } = await supabase
     .from("courses")
     .select("id, date_course, numero_reunion, numero_course, libelle, statut, hippodrome:hippodromes(nom)")
     .eq("id", params.id)
     .single();
-
-  if (courseErr || !course) {
-    return NextResponse.json({ error: "Course introuvable" }, { status: 404 });
-  }
-
+  if (courseErr || !course) return NextResponse.json({ error: "Course introuvable" }, { status: 404 });
   if (course.statut === "ANNULE") {
     return NextResponse.json({ error: "Course annulée — enrichissement ignoré" }, { status: 400 });
   }
 
-  // 2. Appel API PMU via fetchPmuPartants
-  const dateStr = course.date_course.replace(/-/g, ""); // YYYYMMDD
-  let participants;
-  try {
-    participants = await fetchPmuPartants(
-      dateStr,
-      course.numero_reunion,
-      course.numero_course,
-    );
-  } catch (err: any) {
-    return NextResponse.json({ error: `API PMU indisponible: ${err?.message}` }, { status: 503 });
-  }
-
-  if (!participants || participants.length === 0) {
+  // 2. Partants déjà en base (créés par le cron / GenyBet / LONACI)
+  const { data: partants } = await supabase
+    .from("partants")
+    .select("id, numero, nom_cheval")
+    .eq("course_id", params.id);
+  if (!partants || partants.length === 0) {
     return NextResponse.json({
       ok: false,
-      message: "Aucun partant retourné par l'API PMU — données pas encore disponibles",
+      message: "Aucun partant en base pour cette course — lance d'abord « Pré-remplir » (ou le cron).",
       courseId: params.id,
     });
   }
 
-  // 3. Upsert partants enrichis dans la table partants
-  const toUpsert = participants
-    .filter((p) => !p.nom?.toUpperCase().includes("NON_PARTANT"))
-    .map((p) => ({
-      course_id:   params.id,
-      numero:      p.numPmu,
-      nom_cheval:  p.nom,
-      jockey:      p.jockey?.nom ?? null,
-      entraineur:  p.entraineur?.nom ?? null,
-      cote:        p.coteDefinitive ?? p.coteProbable ?? p.dernierRapportDirect?.rapport ?? null,
-      musique:     p.musique ?? null,
-      poids_kg:    p.handicapPoids ?? p.poids ?? null,
-      place_corde: p.placeCorde ?? null,
-      age:         p.age ?? null,
-      sexe:        p.sexe ?? null,
-      non_partant: false,
-      scraped_at:  new Date().toISOString(),
-    }));
-
-  // Supprimer les anciens + réinsérer (enrichissement complet)
-  await supabase.from("partants").delete().eq("course_id", params.id);
-  const { error: insErr } = await supabase.from("partants").insert(toUpsert);
-
-  if (insErr) {
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
+  // 3. CSV cotes PMU (1 fetch pour tout le programme du jour)
+  let pmuCotes;
+  try {
+    pmuCotes = await fetchPmuCotesMap();
+  } catch (err: any) {
+    return NextResponse.json({ error: `CSV cotes PMU indisponible: ${err?.message}` }, { status: 503 });
   }
 
-  // Mettre à jour nb_partants
-  await supabase
-    .from("courses")
-    .update({ nb_partants: toUpsert.length })
-    .eq("id", params.id);
+  const R = course.numero_reunion, C = course.numero_course;
+  const covered = partants.some((p: { numero: number }) => pmuCotes.has(`${R}|${C}|${p.numero}`));
+  if (!covered) {
+    return NextResponse.json({
+      ok: false,
+      message: `Course R${R}C${C} non couverte par le CSV PMU (~40 courses PMU/jour) — cotes inchangées.`,
+      courseId: params.id,
+    });
+  }
+
+  // 4. Mise à jour des cotes par numéro (garde-fou nom anti-décalage)
+  let updated = 0, indisponible = 0, mismatch = 0, pending = 0;
+  const results: Array<{ n: number; nom: string; cote: number | string; source: string }> = [];
+
+  for (const p of partants as Array<{ id: string; numero: number; nom_cheval: string }>) {
+    const row = pmuCotes.get(`${R}|${C}|${p.numero}`);
+    if (!row) {
+      // Partant absent du CSV (rare) : on laisse sa cote existante inchangée.
+      results.push({ n: p.numero, nom: p.nom_cheval, cote: "inchangée", source: "autre" });
+      continue;
+    }
+    if (!sameHorse(p.nom_cheval ?? "", row.cheval)) {
+      mismatch++;
+      results.push({ n: p.numero, nom: p.nom_cheval, cote: "inchangée", source: `nom≠ (${row.cheval})` });
+      continue;
+    }
+    const cote = resolvePmuCote(row); // number | null (NP ou cote pas encore ouverte → null)
+    // PARTANT sans cote PMU encore publiée → on garde la cote existante (LONACI),
+    // on ne la remplace PAS par « — ».
+    if (cote == null && !row.nonPartant) {
+      pending++;
+      results.push({ n: p.numero, nom: p.nom_cheval, cote: "en attente", source: "pmu (cote non ouverte)" });
+      continue;
+    }
+    await supabase.from("partants").update({ cote, non_partant: row.nonPartant }).eq("id", p.id);
+    if (cote == null) { indisponible++; results.push({ n: p.numero, nom: p.nom_cheval, cote: "—", source: "NP" }); }
+    else { updated++; results.push({ n: p.numero, nom: p.nom_cheval, cote, source: "pmu" }); }
+  }
 
   revalidatePath(`/admin/courses/${params.id}`);
   revalidatePath("/admin/courses");
 
-  // 4. Retourner les données enrichies (pour usage direct par le skill)
-  const enriched = toUpsert.map((p) => ({
-    n:          p.numero,
-    nom:        p.nom_cheval,
-    cote:       p.cote ?? "N/D",
-    musique:    p.musique ?? "—",
-    poids:      p.poids_kg ? `${p.poids_kg}kg` : "—",
-    jockey:     p.jockey ?? "—",
-    entraineur: p.entraineur ?? "—",
-    age:        p.age ?? "—",
-    sexe:       p.sexe ?? "—",
-    corde:      p.place_corde ?? "—",
-  }));
-
-  // Trier par cote croissante (favori en premier)
-  enriched.sort((a, b) => {
-    const ca = typeof a.cote === "number" ? a.cote : 999;
-    const cb = typeof b.cote === "number" ? b.cote : 999;
-    return ca - cb;
-  });
-
   const hippNom = Array.isArray(course.hippodrome)
     ? course.hippodrome[0]?.nom
     : (course.hippodrome as any)?.nom ?? "—";
+
+  results.sort((a, b) => (typeof a.cote === "number" ? a.cote : 999) - (typeof b.cote === "number" ? b.cote : 999));
 
   return NextResponse.json({
     ok:          true,
@@ -127,9 +110,12 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     libelle:     course.libelle,
     hippodrome:  hippNom,
     date:        course.date_course,
-    nbPartants:  toUpsert.length,
-    partants:    enriched,
-    source:      "PMU API",
+    updated,
+    indisponible,
+    mismatch,
+    pending,
+    source:      "CSV PMU (Masse Commune Internationale, ~1h)",
+    partants:    results,
     enrichedAt:  new Date().toISOString(),
   });
 }
