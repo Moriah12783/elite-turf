@@ -51,7 +51,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   // 3. CSV cotes PMU (1 fetch pour tout le programme du jour)
   let pmuCotes;
   try {
-    pmuCotes = await fetchPmuCotesMap();
+    pmuCotes = await fetchPmuCotesMap(course.date_course); // cotes de la date de CETTE course
   } catch (err: any) {
     return NextResponse.json({ error: `CSV cotes PMU indisponible: ${err?.message}` }, { status: 503 });
   }
