@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseCsvLine, toCote, parsePmuCotesCsv, resolvePmuCote, normalizeHorseName, sameHorse } from "./pmu-csv";
+import { parseCsvLine, toCote, parsePmuCotesCsv, resolvePmuCote, normalizeHorseName, sameHorse, coteSource } from "./pmu-csv";
 
 const CSV = readFileSync(fileURLToPath(new URL("./__fixtures__/pmu-cotes-sample.csv", import.meta.url)), "utf8");
 
@@ -66,6 +66,21 @@ describe("parsePmuCotesCsv — fixture réelle (471 lignes)", () => {
   it("CSV vide / en-tête seul → []", () => {
     expect(parsePmuCotesCsv("")).toEqual([]);
     expect(parsePmuCotesCsv("date,reunion,course,num")).toEqual([]);
+  });
+});
+
+describe("coteSource — traçabilité audit (pmu / lonaci / indisponible)", () => {
+  it("cote NULL → « indisponible » (même si PMU l'a marqué non-partant)", () => {
+    expect(coteSource(null, true)).toBe("indisponible");
+    expect(coteSource(null, false)).toBe("indisponible");
+    expect(coteSource(undefined, true)).toBe("indisponible");
+  });
+  it("cote présente issue du CSV PMU → « pmu »", () => {
+    expect(coteSource(4, true)).toBe("pmu");
+    expect(coteSource(9.8, true)).toBe("pmu");
+  });
+  it("cote présente hors PMU (repli) → « lonaci »", () => {
+    expect(coteSource(3.5, false)).toBe("lonaci");
   });
 });
 

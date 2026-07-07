@@ -13,11 +13,19 @@ interface Partant {
   jockey: string;
   entraineur: string;
   cote: number | "";
+  cote_source: string | null; // audit : "pmu" | "lonaci" | "indisponible" | null (édition manuelle)
   musique: string;
   poids_kg: number | "";
   deferre: boolean;
   non_partant: boolean;
 }
+
+/** Badge de provenance de la cote (audit) : couleur + libellé courts. */
+const COTE_SOURCE_BADGE: Record<string, { label: string; className: string }> = {
+  pmu:          { label: "PMU",   className: "bg-status-win/10 text-status-win border-status-win/30" },
+  lonaci:       { label: "LONACI", className: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+  indisponible: { label: "indispo", className: "bg-bg-elevated text-text-muted border-border" },
+};
 
 function emptyPartant(numero: number): Partant {
   return {
@@ -27,6 +35,7 @@ function emptyPartant(numero: number): Partant {
     jockey: "",
     entraineur: "",
     cote: "",
+    cote_source: null,
     musique: "",
     poids_kg: "",
     deferre: false,
@@ -43,6 +52,7 @@ function fromDb(p: any): Partant {
     jockey: p.jockey ?? "",
     entraineur: p.entraineur ?? "",
     cote: p.cote ?? "",
+    cote_source: p.cote_source ?? null,
     musique: p.musique ?? "",
     poids_kg: p.poids_kg ?? "",
     deferre: p.deferre ?? false,
@@ -386,6 +396,14 @@ export default function PartantsClient({ courseId, nbPartants, initialPartants }
                       placeholder="3.5"
                       className="w-full px-2 py-1 bg-bg-elevated border border-border rounded text-text-primary text-sm text-right placeholder:text-text-muted focus:border-gold-primary focus:outline-none"
                     />
+                    {row.cote_source && COTE_SOURCE_BADGE[row.cote_source] && (
+                      <span
+                        title={`Source de la cote : ${row.cote_source}`}
+                        className={`mt-1 inline-block rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${COTE_SOURCE_BADGE[row.cote_source].className}`}
+                      >
+                        {COTE_SOURCE_BADGE[row.cote_source].label}
+                      </span>
+                    )}
                   </td>
                   {/* Colonnes extra */}
                   {showExtra && (
