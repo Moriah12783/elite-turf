@@ -23,7 +23,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
-import { fetchPmuCotesMap, resolvePmuCote, sameHorse } from "@/lib/cotes/pmu-csv";
+import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -202,6 +202,7 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
           if (cote == null && !row.nonPartant) continue;
           g.coteProbable = cote == null ? undefined : cote;
           if (row.nonPartant) g.nonPartant = true;
+          g.coteFromPmu = true; // provenance : cote (ou statut NP) autoritaire depuis le CSV PMU
         }
       }
     }
@@ -221,21 +222,25 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
     const allRows = okOutcomes.flatMap((o) =>
       o.partants
         .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
-        .map((g) => ({
-          course_id:   o.courseId,
-          numero:      g.numPmu,
-          nom_cheval:  g.nom,
-          jockey:      g.jockey?.nom ?? null,
-          entraineur:  g.entraineur?.nom ?? null,
-          cote:        safeCote(g.coteProbable),
-          musique:     g.musique ?? null,
-          poids_kg:    safePoids(g.poids),
-          place_corde: safeSmallInt(g.placeCorde, 1, 30),
-          age:         safeSmallInt(g.age, 1, 30),
-          sexe:        g.sexe ?? null,
-          non_partant: g.nonPartant ?? false,
-          scraped_at:  new Date().toISOString(),
-        })),
+        .map((g) => {
+          const cote = safeCote(g.coteProbable);
+          return {
+            course_id:   o.courseId,
+            numero:      g.numPmu,
+            nom_cheval:  g.nom,
+            jockey:      g.jockey?.nom ?? null,
+            entraineur:  g.entraineur?.nom ?? null,
+            cote,
+            cote_source: coteSource(cote, !!(g as any).coteFromPmu),
+            musique:     g.musique ?? null,
+            poids_kg:    safePoids(g.poids),
+            place_corde: safeSmallInt(g.placeCorde, 1, 30),
+            age:         safeSmallInt(g.age, 1, 30),
+            sexe:        g.sexe ?? null,
+            non_partant: g.nonPartant ?? false,
+            scraped_at:  new Date().toISOString(),
+          };
+        }),
     );
 
     if (allRows.length > 0) {

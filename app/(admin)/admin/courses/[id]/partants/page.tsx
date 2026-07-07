@@ -19,7 +19,7 @@ export default async function PartantsPage({ params }: { params: { id: string } 
       .single(),
     supabase
       .from("partants")
-      .select("id, numero, nom_cheval, jockey, entraineur, cote, musique, poids_kg, deferre, non_partant")
+      .select("id, numero, nom_cheval, jockey, entraineur, cote, cote_source, musique, poids_kg, deferre, non_partant")
       .eq("course_id", params.id)
       .order("numero", { ascending: true }),
   ]);

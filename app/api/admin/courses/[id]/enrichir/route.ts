@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
-import { fetchPmuCotesMap, resolvePmuCote, sameHorse } from "@/lib/cotes/pmu-csv";
+import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +90,12 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
       results.push({ n: p.numero, nom: p.nom_cheval, cote: "en attente", source: "pmu (cote non ouverte)" });
       continue;
     }
-    await supabase.from("partants").update({ cote, non_partant: row.nonPartant }).eq("id", p.id);
+    // Ce chemin est PMU-only (le CSV a matché) : cote présente → « pmu »,
+    // cote NULL (non-partant) → « indisponible ».
+    await supabase
+      .from("partants")
+      .update({ cote, non_partant: row.nonPartant, cote_source: coteSource(cote, true) })
+      .eq("id", p.id);
     if (cote == null) { indisponible++; results.push({ n: p.numero, nom: p.nom_cheval, cote: "—", source: "NP" }); }
     else { updated++; results.push({ n: p.numero, nom: p.nom_cheval, cote, source: "pmu" }); }
   }

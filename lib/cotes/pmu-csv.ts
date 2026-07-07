@@ -125,6 +125,22 @@ export function resolvePmuCote(row: PmuCoteRow): number | null {
   return row.coteDirecte ?? row.coteReference ?? null;
 }
 
+/** Provenance d'audit d'une cote (colonne `partants.cote_source`). */
+export type CoteSource = "pmu" | "lonaci" | "indisponible";
+
+/**
+ * Traçabilité de la SOURCE d'une cote de partant, pour audit :
+ *  - "indisponible" : aucune cote (NULL) — non-partant ou cote pas encore ouverte.
+ *  - "pmu"          : cote issue du CSV PMU officiel (via resolvePmuCote).
+ *  - "lonaci"       : cote de repli (LONACI / Geny / autre source non-PMU).
+ * NULL prime TOUJOURS : une cote absente est « indisponible », même si PMU a
+ * marqué le cheval non-partant (cohérent avec l'affichage « — »).
+ */
+export function coteSource(cote: number | null | undefined, fromPmu: boolean): CoteSource {
+  if (cote == null) return "indisponible";
+  return fromPmu ? "pmu" : "lonaci";
+}
+
 /** Nom de cheval normalisé (sans accents/ponctuation, MAJUSCULES) pour matcher. */
 export function normalizeHorseName(s: string): string {
   return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
