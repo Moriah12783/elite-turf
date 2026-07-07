@@ -139,9 +139,12 @@ describe("validateConsensusBlock — règles unitaires", () => {
     expect(r.errors.some((e) => e.code === "E04")).toBe(true);
   });
 
-  it("E06 : Σ bases > nb_sources → bloquant ; < → warning ack", () => {
+  it("E06 : Σ bases ≠ nb_sources (> ou <) → AVERTISSEMENT ack, jamais bloquant", () => {
+    // Pipeline LLM : bases estimées → ne bloque pas (E01/E04 gardent la corruption).
     const trop = validateConsensusBlock({ nbPartants: 15, nbSources: 33, texte: BLOC_0107_CORRIGE.replace("7 33 12", "7 33 13") });
-    expect(trop.errors.some((e) => e.code === "E06")).toBe(true);
+    expect(trop.ok).toBe(true);
+    expect(trop.errors.some((e) => e.code === "E06")).toBe(false);
+    expect(trop.warnings.some((w) => w.code === "E06" && w.requires_ack)).toBe(true);
     const moins = validateConsensusBlock({ nbPartants: 15, nbSources: 33, texte: BLOC_0107_CORRIGE.replace("7 33 12", "7 33 11") });
     expect(moins.ok).toBe(true);
     expect(moins.warnings.some((w) => w.code === "E06" && w.requires_ack)).toBe(true);

@@ -179,16 +179,20 @@ export function validateConsensusBlock(input: ValidateInput): ValidationReport {
     });
   }
 
-  // ── E06 — total bases = nb_sources (1 base par avis) ────────────────────
-  if (errors.length === 0) {
-    if (sumBases > nbSources) {
-      errors.push({ code: "E06", message: `Total bases = ${sumBases} pour ${nbSources} avis (impossible : 1 base par avis).` });
-    } else if (sumBases < nbSources) {
-      warnings.push({
-        code: "E06", requires_ack: true,
-        message: `Total bases = ${sumBases} pour ${nbSources} avis — bases partiellement collectées ?`,
-      });
-    }
+  // ── E06 — total bases vs nb_sources (idéal : 1 base/avis) ───────────────
+  // AVERTISSEMENT (pas bloquant, ack). Le pipeline LLM ESTIME les bases et
+  // n'atteint pas Σ = nb_sources exact (constaté : 36/41 pour 29). La vraie
+  // corruption (cote lue comme base, incident 01/07) reste bloquée par E01
+  // (3 entiers) + E04 (bases ≤ citations) ; R01 gate la sélection base sur les
+  // CITATIONS (pas les bases) → un sur-comptage n'invente jamais de fausse base.
+  // L'admin relit le brouillon avant toute publication.
+  if (errors.length === 0 && sumBases !== nbSources) {
+    warnings.push({
+      code: "E06", requires_ack: true,
+      message: sumBases > nbSources
+        ? `Total bases = ${sumBases} pour ${nbSources} avis (idéal = ${nbSources}, 1 base/avis) — bases surestimées par le pipeline, à vérifier.`
+        : `Total bases = ${sumBases} pour ${nbSources} avis — bases partiellement collectées ?`,
+    });
   }
 
   // ── E07 — échantillon réduit ─────────────────────────────────────────────
