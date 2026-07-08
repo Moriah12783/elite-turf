@@ -164,8 +164,41 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     .eq("id", p.id)
     .then(() => {});
 
+  // JSON-LD — Article de pronostic, relié au graphe d'entités (auteur Person +
+  // éditeur Organization par @id). isAccessibleForFree = false pour le premium
+  // (contenu paywallé mais page crawlable) → l'IA comprend le sujet + l'accès.
+  const typePariLabel = BET_TYPE_LABELS[p.type_pari as keyof typeof BET_TYPE_LABELS] ?? p.type_pari;
+  const pronosticJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${APP_URL}/pronostics/${p.id}#article`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${APP_URL}/pronostics/${p.id}` },
+    headline: `Pronostic ${typePariLabel} — ${course?.libelle ?? "course PMU"}${course?.hippodrome?.nom ? ` (${course.hippodrome.nom})` : ""}`.slice(0, 110),
+    ...(p.date_publication ? { datePublished: p.date_publication, dateModified: p.date_publication } : {}),
+    inLanguage: "fr-FR",
+    isAccessibleForFree: p.niveau_acces === "GRATUIT",
+    author: {
+      "@type": "Person",
+      "@id":   `${APP_URL}/equipe-redactionnelle#person`,
+      name:    "Stéphane Y.",
+      url:     `${APP_URL}/equipe-redactionnelle`,
+    },
+    publisher: { "@id": `${APP_URL}/#organization` },
+    articleSection: "Pronostics hippiques",
+    ...(course?.libelle ? {
+      about: {
+        "@type": "SportsEvent",
+        name:  course.libelle,
+        sport: "Horse racing",
+        ...(course.date_course ? { startDate: course.date_course } : {}),
+        ...(course.hippodrome?.nom ? { location: { "@type": "Place", name: course.hippodrome.nom } } : {}),
+      },
+    } : {}),
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pronosticJsonLd) }} />
       {/* ── HERO BANNER ─────────────────────────────────────────────── */}
       <div className="relative overflow-hidden h-40 sm:h-52">
         <Image
