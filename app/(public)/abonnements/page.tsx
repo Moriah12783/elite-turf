@@ -143,12 +143,37 @@ export default async function AbonnementsPage() {
     isAdmin = profile?.role === "ADMIN";
   }
 
+  // JSON-LD (graphe) : fil d'Ariane + Product/Offers → les prix des abonnements
+  // deviennent lisibles par l'IA et Google (« plans & tarifs Elite Turf »).
+  // NB : nom de const conservé (`breadcrumbJsonLd`) car il alimente la balise
+  // <script> existante ; on n'ajoute PAS de nouvelle balise (data-only).
+  const paidPlans = PLAN_CONFIG.filter((pl) => pl.nom !== "Test");
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Accueil",      item: APP_URL },
-      { "@type": "ListItem", position: 2, name: "Abonnements",  item: `${APP_URL}/abonnements` },
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Accueil",      item: APP_URL },
+          { "@type": "ListItem", position: 2, name: "Abonnements",  item: `${APP_URL}/abonnements` },
+        ],
+      },
+      {
+        "@type": "Product",
+        name: "Abonnement Elite Turf — Pronostics PMU",
+        description:
+          "Accès aux pronostics hippiques experts d'Elite Turf (Quinté+, Quarté+, Tiercé) : packs Starter, Pro et Elite.",
+        brand: { "@id": `${APP_URL}/#organization` },
+        offers: paidPlans.map((pl) => ({
+          "@type":        "Offer",
+          name:           `Pack ${pl.nom}`,
+          price:          pl.prix_eur,
+          priceCurrency:  "EUR",
+          availability:   "https://schema.org/InStock",
+          url:            `${APP_URL}/abonnements#${pl.id}`,
+          category:       "Abonnement",
+        })),
+      },
     ],
   };
 

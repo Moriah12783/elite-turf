@@ -170,7 +170,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
       <div className="relative overflow-hidden h-40 sm:h-52">
         <Image
           src="/images/heroes/hero-pronostics.jpg"
-          alt="Course hippique"
+          alt={course?.libelle ? `Pronostic PMU — ${course.libelle}${course?.hippodrome?.nom ? ` (${course.hippodrome.nom})` : ""}` : "Pronostic hippique PMU"}
           fill
           sizes="100vw"
           priority

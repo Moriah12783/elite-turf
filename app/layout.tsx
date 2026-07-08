@@ -85,10 +85,21 @@ export const metadata: Metadata = {
   },
 };
 
-// JSON-LD — Organisation + données légales TSALACH VENTURES LLC
+// @id stables : socle du graphe d'entités relié (identité de marque pour les
+// moteurs génératifs/IA + Google). L'Organization et le WebSite sont présents
+// sur CHAQUE page (root layout) → les articles/pages peuvent y référer par @id.
+const ORG_ID     = `${APP_URL}/#organization`;
+const WEBSITE_ID = `${APP_URL}/#website`;
+
+// JSON-LD — graphe Organisation (NewsMediaOrganization) + WebSite, reliés par @id.
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@graph": [
+    {
+  // Double type : Organization (entité légale) + NewsMediaOrganization (éditeur
+  // du contenu éditorial) → cohérent avec le `publisher` des articles.
+  "@type": ["Organization", "NewsMediaOrganization"],
+  "@id": ORG_ID,
   name: "Elite Turf",
   legalName: "TSALACH VENTURES LLC",
   alternateName: "Elite Turf",
@@ -103,6 +114,11 @@ const organizationJsonLd = {
   image: `${APP_URL}/images/logo-v2/logo-horizontal-1000.png`,
   description:
     "Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC, dédiée aux analyses hippiques informatives.",
+  // sameAs — profils officiels de la marque (signal fort d'identification pour
+  // les IA et le Knowledge Graph). À compléter au fil de la création des comptes.
+  sameAs: [
+    "https://www.facebook.com/profile.php?id=61589172490141",
+  ],
   publishingPrinciples:     `${APP_URL}/equipe-redactionnelle`,
   actionableFeedbackPolicy: `${APP_URL}/contact`,
   ethicsPolicy:             `${APP_URL}/equipe-redactionnelle`,
@@ -146,6 +162,19 @@ const organizationJsonLd = {
   // Numéros téléphoniques de l'entreprise (Schema.org standard, redondance
   // utile pour la vérification automatique Meta + Google KP)
   telephone: "+13073819522",
+    },
+    {
+      "@type": "WebSite",
+      "@id": WEBSITE_ID,
+      url: APP_URL,
+      name: "Elite Turf",
+      alternateName: "Elite Turf — Pronostics PMU",
+      description:
+        "Analyses et pronostics hippiques PMU (Quinté+, Quarté+, Tiercé) pour les parieurs francophones — France et Afrique francophone.",
+      inLanguage: "fr-FR",
+      publisher: { "@id": ORG_ID },
+    },
+  ],
 };
 
 export default function RootLayout({
