@@ -9,6 +9,10 @@ import { getHomeStats } from "@/lib/stats/home-stats";
 import WhyChooseUsSection from "@/components/home/WhyChooseUsSection";
 import CoursesSection from "@/components/home/CoursesSection";
 import NotreSelectionSection from "@/components/home/NotreSelectionSection";
+import RadarPresseSection from "@/components/home/RadarPresseSection";
+import { getRadarVedette } from "@/lib/consensus/radar-vedette";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { resolveUserSubscription } from "@/lib/auth/subscription";
 import PronosticsSection from "@/components/home/PronosticsSection";
 import StatsSection from "@/components/home/StatsSection";
 import PricingSection from "@/components/home/PricingSection";
@@ -64,9 +68,30 @@ const homeFaqJsonLd = {
 // typée BreadcrumbList faisait afficher à Google un fil d'Ariane erroné
 // (« Accueil › … › Blog › Performances ») sur le résultat d'accueil. Retiré 2026-06-20.
 
+/**
+ * Vrai abonné = plan payant ACTIF (STARTER/PRO/ELITE non expiré). Suit le
+ * même pattern que PronosticsSection (createClient → getUser → statut effectif).
+ * Sert à MASQUER le Radar de la presse aux abonnés (ils ont déjà le pronostic).
+ */
+async function isVraiAbonne(): Promise<boolean> {
+  try {
+    const supabaseClient = await createClient();
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return false;
+    const sub = await resolveUserSubscription(createServiceClient(), user.id);
+    return sub !== "GRATUIT" && sub !== "EXPIRE";
+  } catch {
+    return false; // non authentifié / erreur → traité comme visiteur
+  }
+}
+
 export default async function HomePage() {
-  // Stats SSR (source unique) → passées au hero en prop : plus aucun « … ».
-  const heroStats = await getHomeStats();
+  // Stats SSR + Radar presse (course vedette) + statut abonné, en parallèle.
+  const [heroStats, radar, abonne] = await Promise.all([
+    getHomeStats(),
+    getRadarVedette(),
+    isVraiAbonne(),
+  ]);
 
   return (
     <>
@@ -76,6 +101,12 @@ export default async function HomePage() {
       {/* 1 — Hero : clarté immédiate + 2 CTAs (stats en SSR via prop) */}
       <HeroSection stats={heroStats} />
 
+      {/* 1b — Le Radar de la presse : consensus de la course vedette, tout en haut
+            pour motiver l'indécis. Visiteurs + inscrits gratuits uniquement
+            (invisible pour les abonnés payants). Repli sur l'ancien bloc « Sélection
+            gratuite » tant qu'aucun consensus n'est publié pour aujourd'hui. */}
+      {!abonne && (radar ? <RadarPresseSection data={radar} /> : <NotreSelectionSection />)}
+
       {/* 2 — Réassurance rapide : 4 piliers (expertise, transparence, paiement, accès) */}
       <WhyChooseUsSection />
 
@@ -84,9 +115,6 @@ export default async function HomePage() {
 
       {/* 4 — Programme des courses du jour */}
       <CoursesSection />
-
-      {/* 4b — Sélection gratuite sur chaque course (positionnement conseil) */}
-      <NotreSelectionSection />
 
       {/* 5 — Comment ça marche : 4 étapes */}
       <HowItWorksSection />
