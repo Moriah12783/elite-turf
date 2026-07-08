@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import { MessageCircle, Mail, MapPin, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { MessageCircle, Mail, MapPin, AlertTriangle, Zap, ArrowRight } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
+import ContactForm from "@/components/contact/ContactForm";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
@@ -23,6 +25,31 @@ export default function ContactPage() {
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-6">
+
+        {/* ── FORMULAIRE EMAIL (Web3Forms) ── */}
+        <ContactForm />
+
+        {/* ── CTA « prise en charge prioritaire » sous le formulaire ── */}
+        <div className="card-base p-6 flex flex-col sm:flex-row sm:items-center gap-4 border-gold-primary/25">
+          <div className="w-11 h-11 rounded-2xl bg-gold-faint border border-gold-primary/30 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-gold-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-serif font-bold text-text-primary mb-1">Une prise en charge plus rapide ?</h3>
+            <p className="text-text-secondary text-sm leading-relaxed">
+              Pour un traitement prioritaire de votre requête (abonnement, connexion, accès aux
+              pronostics), <span className="text-text-primary font-semibold">créez un compte</span> —
+              vos demandes sont traitées en priorité.
+            </p>
+          </div>
+          <Link
+            href="/inscription"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors shadow-gold flex-shrink-0 whitespace-nowrap"
+          >
+            Créer un compte
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
 
         {/* ── WHATSAPP ── */}
         <div className="card-base p-6 flex items-start gap-5">

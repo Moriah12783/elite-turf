@@ -85,7 +85,7 @@ export default function Navbar() {
             >
               📥 Guide
             </Link>
-            <NavLink href="/performances">Performances</NavLink>
+            <NavLink href="/contact">Contact</NavLink>
           </div>
 
           {/* Desktop CTA */}
@@ -185,7 +185,7 @@ export default function Navbar() {
               { href: "/live",         label: "🔴 Direct"          },
               { href: "/abonnements",  label: "Abonnements"        },
               { href: "/guide-initie", label: "📥 Guide gratuit"   },
-              { href: "/performances", label: "Performances"       },
+              { href: "/contact",      label: "Contact"            },
             ].map(({ href, label }) => (
               <MobileNavLink key={href} href={href} onClick={() => setIsOpen(false)}>
                 {label}
