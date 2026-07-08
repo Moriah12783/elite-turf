@@ -198,9 +198,9 @@ export default function MethodologiePage() {
 
         {/* Intro */}
         <div className="mb-10">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
             Comment nous analysons les courses PMU
-          </h1>
+          </h2>
           <p className="text-text-secondary text-base sm:text-lg leading-relaxed">
             Elite Turf publie chaque jour des pronostics PMU. Voici exactement comment ils sont produits :
             les sources de données utilisées, l&apos;analyse algorithmique, la validation par notre expert,

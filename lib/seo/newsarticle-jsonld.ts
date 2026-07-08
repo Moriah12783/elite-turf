@@ -60,15 +60,21 @@ export function buildNewsArticleJsonLd(args: NewsArticleArgs): Record<string, un
     image: [image],
     datePublished: args.datePublished,
     dateModified,
-    // Google News exige author = Person (pas Organization) — bylines humaines
+    // Google News exige author = Person (pas Organization) — bylines humaines.
+    // @id = entité Person canonique (définie sur /equipe-redactionnelle) → relie
+    // toutes les bylines à un seul auteur pour l'IA et le Knowledge Graph.
     author: {
       "@type":  "Person",
+      "@id":    `${APP_URL}/equipe-redactionnelle#person`,
       name:     "Stéphane Y.",
       url:      `${APP_URL}/equipe-redactionnelle`,
       jobTitle: "Fondateur & Rédacteur en chef",
     },
+    // @id = l'Organization du site (déclarée dans le root layout, présente sur
+    // chaque page) → un seul éditeur consolidé dans le graphe d'entités.
     publisher: {
       "@type": "NewsMediaOrganization",
+      "@id":   `${APP_URL}/#organization`,
       name:    "Elite Turf",
       url:     APP_URL,
       logo: {

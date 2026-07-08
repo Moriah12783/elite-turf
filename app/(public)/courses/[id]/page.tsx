@@ -269,7 +269,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
       <div className="relative overflow-hidden h-36 sm:h-48">
         <Image
           src="/images/heroes/hero-courses.jpg"
-          alt="Course hippique"
+          alt="Course hippique PMU — programme, partants et cotes"
           fill
           sizes="100vw"
           priority

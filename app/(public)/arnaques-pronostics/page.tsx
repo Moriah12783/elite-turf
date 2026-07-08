@@ -187,9 +187,9 @@ export default function ArnaquesPronosticsPage() {
 
         {/* Intro */}
         <div className="mb-12">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
             Les pièges des vendeurs de pronostics — et comment les éviter
-          </h1>
+          </h2>
           <p className="text-text-secondary text-base sm:text-lg leading-relaxed">
             Le turf attire les arnaqueurs : sites de pronostics « miracles », « gourous » sur
             WhatsApp ou Telegram, coupons « garantis »… Beaucoup de parieurs se font piéger. Voici

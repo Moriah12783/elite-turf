@@ -78,7 +78,7 @@ export default async function StatsSection() {
       <div className="absolute inset-0 z-0">
         <Image
           src="/images/heroes/hero-performances.jpg"
-          alt="Hippodrome"
+          alt="Performances Elite Turf — résultats vérifiables des courses PMU"
           fill
           sizes="100vw"
           loading="lazy"

@@ -15,16 +15,20 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-// JSON-LD Person + Article — relie cette page aux auteurs cités dans les NewsArticle
+// JSON-LD Person — @id stable : c'est l'entité auteur canonique référencée par
+// tous les NewsArticle/Article (author.@id) → un seul auteur consolidé pour l'IA.
 const personJsonLd = {
   "@context": "https://schema.org",
   "@type":    "Person",
+  "@id":      `${APP_URL}/equipe-redactionnelle#person`,
   name:       "Stéphane Y.",
   alternateName: "Yapi Landry Stéphane",
   url:        `${APP_URL}/equipe-redactionnelle`,
   jobTitle:   "Fondateur & Directeur de la publication",
+  // worksFor relié à l'Organization du site par @id (graphe d'entités unifié).
   worksFor: {
     "@type": "NewsMediaOrganization",
+    "@id":   `${APP_URL}/#organization`,
     name:    "Elite Turf",
     url:     APP_URL,
   },

@@ -1,17 +1,27 @@
+# ──────────────────────────────────────────────────────────────────
+# Elite Turf — robots.txt
+#
+# SOURCE UNIQUE : en hébergement Cloudflare, ce fichier statique prime
+# sur une route Next `app/robots.ts` (retirée pour éviter la divergence).
+#
+# Robots IA explicitement BIENVENUS — Elite Turf veut être cité par les
+# assistants (GEO) : GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot,
+# anthropic-ai, Claude-Web, PerplexityBot, Perplexity-User, Google-Extended,
+# Applebot-Extended, Amazonbot, Meta-ExternalAgent, CCBot. Ils suivent la
+# règle « User-agent: * » ci-dessous : tout est autorisé, SAUF les zones
+# transactionnelles/privées. (NB : des groupes par-bot avec un « Allow: / »
+# nu contourneraient ces Disallow → on garde une règle unique et sûre.)
+# Carte de contenu dédiée aux IA : /llms.txt
+# ──────────────────────────────────────────────────────────────────
+
 User-agent: *
 Allow: /
 
-# Pages transactionnelles et de test — jamais à indexer
-Disallow: /paiement/sandbox
-Disallow: /paiement/test-stripe
-Disallow: /paiement/test-paystack
-Disallow: /paiement/succes
-Disallow: /paiement/echec
-
-# Pages admin
+# Zones transactionnelles / privées / sans valeur SEO
+Disallow: /paiement/
 Disallow: /admin/
-
-# Pages auth (pas de valeur SEO)
+Disallow: /espace-membre
+Disallow: /api/
 Disallow: /connexion
 Disallow: /inscription
 Disallow: /mot-de-passe-oublie

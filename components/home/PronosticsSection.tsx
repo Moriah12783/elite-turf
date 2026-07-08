@@ -308,7 +308,7 @@ export default async function PronosticsSection() {
           <div className="absolute inset-0 z-0">
             <Image
               src="/images/heroes/hero-a-propos.jpg"
-              alt="Cheval vedette"
+              alt="Cheval de la course vedette du jour — Elite Turf"
               fill
               sizes="100vw"
               loading="lazy"
@@ -551,7 +551,7 @@ function BannerImage({ count }: { count: number }) {
     <div className="relative rounded-2xl overflow-hidden mb-12 h-48">
       <Image
         src="/images/heroes/hero-legal.jpg"
-        alt="Chevaux au galop"
+        alt="Chevaux au galop sur un hippodrome PMU — pronostics Elite Turf"
         fill
         sizes="100vw"
         loading="lazy"
