@@ -31,6 +31,8 @@ export interface RadarVedette {
   coup:          number[];
   /** Cheval le plus cité par la presse (le « favori presse »). */
   favori:        { numero: number; citations: number; tauxPct: number } | null;
+  /** Favori du MARCHÉ = plus basse cote RÉELLE PMU (jamais le placeholder 1,2 LONACI). */
+  favoriMarche:  { numero: number; cote: number } | null;
 }
 
 export interface RadarMeta {
@@ -56,6 +58,7 @@ const PARI_LABEL: Record<string, string> = {
 export function shapeRadarFromConsensus(
   result: ConsensusResult | null | undefined,
   meta: RadarMeta,
+  favoriMarche: RadarVedette["favoriMarche"] = null,
 ): RadarVedette | null {
   if (!result || !result.pro) return null;
   const base  = Array.isArray(result.pro.base)  ? result.pro.base  : [];
@@ -84,7 +87,29 @@ export function shapeRadarFromConsensus(
     favori: fav
       ? { numero: fav.numero, citations: fav.citations, tauxPct: Math.round(fav.taux * 100) }
       : null,
+    favoriMarche,
   };
+}
+
+/**
+ * Favori DU MARCHÉ = la plus basse cote RÉELLE parmi les partants — **cotes PMU
+ * uniquement** (`cote_source === "pmu"`), jamais le placeholder LONACI « 1,2 ».
+ * PUR. `null` si aucune cote PMU fiable → on n'affiche rien plutôt qu'une fausse
+ * info (anti-fabrication). Distinct du « favori presse » (le plus cité).
+ */
+export function pickFavoriMarche(
+  rows: Array<{ numero?: unknown; cote?: unknown; cote_source?: unknown; non_partant?: unknown }> | null | undefined,
+): { numero: number; cote: number } | null {
+  let best: { numero: number; cote: number } | null = null;
+  for (const r of rows ?? []) {
+    if (r?.non_partant) continue;
+    if (r?.cote_source !== "pmu") continue; // seulement les vraies cotes PMU
+    const numero = Number(r?.numero);
+    const cote = Number(r?.cote);
+    if (!Number.isFinite(numero) || !Number.isFinite(cote) || cote <= 0) continue;
+    if (!best || cote < best.cote) best = { numero, cote };
+  }
+  return best;
 }
 
 /** Date du jour en heure de Paris (le programme/les courses sont FR). */
@@ -138,11 +163,13 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
     }
 
     // 3. Enrichir cotes manquantes + non-partants depuis `partants` (course liée),
-    //    exactement comme l'atelier → même classement base/value/coup.
+    //    exactement comme l'atelier → même classement base/value/coup. On en
+    //    profite pour calculer le FAVORI DU MARCHÉ (plus basse cote PMU réelle).
+    let favoriMarche: RadarVedette["favoriMarche"] = null;
     if (draft.course_id) {
       const { data: parts } = await supabase
         .from("partants")
-        .select("numero, cote, non_partant")
+        .select("numero, cote, cote_source, non_partant")
         .eq("course_id", draft.course_id);
       if (parts && parts.length) {
         const coteByNum = new Map<number, number>();
@@ -155,6 +182,7 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
         for (const pc of partants) {
           if (pc.cote == null && coteByNum.has(pc.numero)) pc.cote = coteByNum.get(pc.numero)!;
         }
+        favoriMarche = pickFavoriMarche(parts as any[]);
       }
     }
 
@@ -169,7 +197,7 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
       course:     draft.reunion_course,
       nbPartants: draft.nb_partants,
       typePari:   draft.type_pari,
-    });
+    }, favoriMarche);
   } catch {
     return null; // Supabase KO / réseau → repli, jamais d'erreur sur la home
   }
