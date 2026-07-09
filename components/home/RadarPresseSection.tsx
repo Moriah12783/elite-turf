@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Radar, ArrowRight, Star, Info } from "lucide-react";
+import { Radar, ArrowRight, Star, Info, Coins } from "lucide-react";
 import type { RadarVedette } from "@/lib/consensus/radar-vedette";
 
 /**
@@ -140,6 +140,32 @@ export default function RadarPresseSection({ data }: { data: RadarVedette }) {
                   {data.favori.tauxPct ? ` (${data.favori.tauxPct} %)` : ""}
                 </span>
               </div>
+            )}
+
+            {/* Favori du marché = plus basse cote PMU (là où va l'argent du public) */}
+            {data.favoriMarche && (
+              <div className="flex flex-wrap items-center gap-2 mt-2.5 px-4 py-3 rounded-xl bg-blue-400/5 border border-blue-400/25 text-sm text-blue-300">
+                <Coins className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <span>Favori du marché :</span>
+                <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-blue-400 text-bg-primary font-bold text-xs tabular-nums">
+                  {data.favoriMarche.numero}
+                </span>
+                <span>
+                  la plus basse cote PMU —{" "}
+                  <b className="text-text-primary font-semibold">
+                    {data.favoriMarche.cote.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}
+                  </b>
+                </span>
+              </div>
+            )}
+
+            {/* Légende pédagogique : presse ≠ marché */}
+            {(data.favori || data.favoriMarche) && (
+              <p className="text-text-muted text-xs leading-relaxed mt-2 px-1">
+                <span className="text-gold-light font-medium">Presse</span> = l&apos;avis des experts ·{" "}
+                <span className="text-blue-300 font-medium">Marché</span> = là où va l&apos;argent (la cote la plus basse).
+                Quand les deux se rejoignent, le signal est fort ; quand ils divergent, c&apos;est souvent là que se cache la value.
+              </p>
             )}
 
             {/* Disclaimer honnête : presse ≠ notre pronostic */}

@@ -1,6 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { shapeRadarFromConsensus } from "./radar-vedette";
+import { shapeRadarFromConsensus, pickFavoriMarche } from "./radar-vedette";
 import type { ConsensusResult, PartantScored } from "./engine";
+
+describe("pickFavoriMarche — plus basse cote PMU (jamais le 1,2 LONACI)", () => {
+  it("prend la plus basse cote source=pmu ; ignore lonaci + non-partants", () => {
+    const rows = [
+      { numero: 1, cote: 24,  cote_source: "pmu",    non_partant: false },
+      { numero: 3, cote: 5,   cote_source: "pmu",    non_partant: false },
+      { numero: 4, cote: 1.2, cote_source: "lonaci", non_partant: false }, // placeholder → ignoré
+      { numero: 6, cote: 5.6, cote_source: "pmu",    non_partant: false },
+      { numero: 9, cote: 2,   cote_source: "pmu",    non_partant: true },   // NP → ignoré
+    ];
+    expect(pickFavoriMarche(rows)).toEqual({ numero: 3, cote: 5 });
+  });
+
+  it("aucune cote PMU fiable → null (rien plutôt qu'une fausse info)", () => {
+    expect(pickFavoriMarche([{ numero: 1, cote: 1.2, cote_source: "lonaci", non_partant: false }])).toBeNull();
+    expect(pickFavoriMarche([])).toBeNull();
+    expect(pickFavoriMarche(null)).toBeNull();
+  });
+});
 
 function scored(over: Partial<PartantScored>): PartantScored {
   return {
