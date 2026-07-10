@@ -14,6 +14,7 @@ import type { SubscriptionStatus, PronosticResult } from "@/types";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
+import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
 import { ProSelectionBlock, countNonEmptyProSections, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
 import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
@@ -168,6 +169,23 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   // éditeur Organization par @id). isAccessibleForFree = false pour le premium
   // (contenu paywallé mais page crawlable) → l'IA comprend le sujet + l'accès.
   const typePariLabel = BET_TYPE_LABELS[p.type_pari as keyof typeof BET_TYPE_LABELS] ?? p.type_pari;
+  // `about` = SportsEvent COMPLET via le helper (eventStatus + description +
+  // location.address) → évite les warnings GSC « Événements ». On retire le
+  // @context (entité imbriquée, pas racine du document JSON-LD).
+  const aboutEvent = course?.libelle
+    ? buildSportsEventJsonLd({
+        id:              course.id ?? p.id,
+        libelle:         course.libelle,
+        date_course:     course.date_course,
+        heure_depart:    course.heure_depart,
+        distance_metres: course.distance_metres,
+        categorie:       course.categorie,
+        nb_partants:     course.nb_partants,
+        statut:          Array.isArray(course.arrivee_officielle) && course.arrivee_officielle.length ? "TERMINE" : "PROGRAMME",
+        hippodrome:      course.hippodrome,
+      })
+    : null;
+  if (aboutEvent) delete (aboutEvent as Record<string, unknown>)["@context"];
   const pronosticJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -185,15 +203,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
     },
     publisher: { "@id": `${APP_URL}/#organization` },
     articleSection: "Pronostics hippiques",
-    ...(course?.libelle ? {
-      about: {
-        "@type": "SportsEvent",
-        name:  course.libelle,
-        sport: "Horse racing",
-        ...(course.date_course ? { startDate: course.date_course } : {}),
-        ...(course.hippodrome?.nom ? { location: { "@type": "Place", name: course.hippodrome.nom } } : {}),
-      },
-    } : {}),
+    ...(aboutEvent ? { about: aboutEvent } : {}),
   };
 
   return (
