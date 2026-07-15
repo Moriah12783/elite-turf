@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, UserPlus, Loader2, Check } from "lucide-react";
+import { Eye, EyeOff, UserPlus, Loader2, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { trackEvent } from "@/lib/analytics/track";
@@ -168,19 +168,28 @@ function InscriptionForm() {
   if (step === "success") {
     return (
       <div className="card-base p-6 sm:p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-status-win/10 border border-status-win/30 flex items-center justify-center mx-auto mb-6">
-          <Check className="w-8 h-8 text-status-win" />
+        <div className="w-16 h-16 rounded-full bg-gold-faint border border-gold-primary/30 flex items-center justify-center mx-auto mb-6">
+          <Mail className="w-8 h-8 text-gold-primary" />
         </div>
         <h2 className="font-serif text-2xl font-bold text-text-primary mb-3">
-          Compte créé !
+          Compte créé — vérifiez vos e-mails
         </h2>
         <p className="text-text-secondary text-sm mb-2">
-          Votre compte a été créé avec succès pour{" "}
+          Votre compte a été créé pour{" "}
           <strong className="text-text-primary">{form.email}</strong>.
         </p>
-        <p className="text-text-secondary text-sm mb-8">
-          Vous pouvez maintenant vous connecter et accéder aux pronostics du jour.
+        <p className="text-text-secondary text-sm mb-4">
+          <strong className="text-text-primary">Dernière étape :</strong> ouvrez l&apos;e-mail
+          de confirmation que nous venons de vous envoyer et cliquez sur le lien pour activer
+          votre compte, puis connectez-vous.
         </p>
+        <div className="mb-8 p-4 bg-gold-faint border border-gold-primary/20 rounded-xl text-left">
+          <p className="text-gold-light text-xs leading-relaxed">
+            📩 L&apos;e-mail peut mettre quelques minutes à arriver et se glisse parfois dans vos{" "}
+            <strong>spams / courriers indésirables</strong> — pensez à les vérifier.
+            Sans cette confirmation, la connexion ne fonctionnera pas encore.
+          </p>
+        </div>
         {planSelectionne && (
           <div className="mb-6 p-4 bg-gold-faint border border-gold-primary/20 rounded-xl">
             <p className="text-gold-light text-sm">
