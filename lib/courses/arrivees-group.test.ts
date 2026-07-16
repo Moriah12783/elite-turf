@@ -48,6 +48,37 @@ describe("dedupeArriveeCourses", () => {
     expect(out.map((c) => c.numero_course).sort()).toEqual([7, 8]);
   });
 
+  it("fusionne un alias nom court / nom long (Pornichet ⊂ Pornichet-La Baule)", () => {
+    const court = {
+      numero_reunion: 5, numero_course: 1, heure_depart: "16:40:00",
+      hippodrome: { nom: "Pornichet", pays: "France" },
+      rapports_pmu: null, partants: [{ nom_cheval: "KER POULGWEN" }],
+    };
+    const long = {
+      numero_reunion: 5, numero_course: 1, heure_depart: "18:40:00",
+      hippodrome: { nom: "Pornichet-La Baule", pays: "France" },
+      rapports_pmu: { couple_gagnant: 34.35 }, partants: [{ nom_cheval: "Ker Poulgwen" }],
+    };
+    const out = dedupeArriveeCourses([court, long]);
+    expect(out).toHaveLength(1);
+    expect(out[0].hippodrome?.nom).toBe("Pornichet-La Baule"); // la plus riche gagne
+  });
+
+  it("ne fusionne PAS deux pistes distinctes partageant réunion+course (sécurité)", () => {
+    const fr = {
+      numero_reunion: 5, numero_course: 1, heure_depart: "16:40:00",
+      hippodrome: { nom: "Pornichet", pays: "France" },
+      rapports_pmu: null, partants: [],
+    };
+    const etranger = {
+      numero_reunion: 5, numero_course: 1, heure_depart: "12:00:00",
+      hippodrome: { nom: "Casablanca", pays: "Maroc" },
+      rapports_pmu: null, partants: [],
+    };
+    const out = dedupeArriveeCourses([fr, etranger]);
+    expect(out).toHaveLength(2); // noms incompatibles → gardés séparés
+  });
+
   it("liste vide → vide", () => {
     expect(dedupeArriveeCourses([])).toEqual([]);
   });
