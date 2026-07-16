@@ -28,6 +28,7 @@ import {
 } from "@/lib/seo/dates";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
+import { dedupeArriveeCourses, groupByCanonicalHippodrome } from "@/lib/courses/arrivees-group";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 // Format un rapport en EUR français : 4500 → "4 500,00 €"
@@ -142,13 +143,15 @@ export default async function ArriveesPage({ params }: PageProps) {
     new Set((rawDates ?? []).map((r: { date_course: string }) => r.date_course)),
   );
 
-  // Courses avec arrivée officielle
-  const finies = allCourses.filter(
+  // Courses avec arrivée officielle. Dédoublonnées : une même course peut
+  // exister en 2 exemplaires quand 2 sources créent 2 hippodromes pour la même
+  // piste (« Compiegne » vs « Compiègne »…). cf. lib/courses/arrivees-group.
+  const finies = dedupeArriveeCourses(allCourses.filter(
     (c: any) => Array.isArray(c.arrivee_officielle) && c.arrivee_officielle.length > 0,
-  );
-  const enAttente = allCourses.filter(
+  ));
+  const enAttente = dedupeArriveeCourses(allCourses.filter(
     (c: any) => !Array.isArray(c.arrivee_officielle) || c.arrivee_officielle.length === 0,
-  );
+  ));
 
   const dateLong   = formatDateLong(params.date);
   const dateShort  = formatDateShort(params.date);
@@ -160,18 +163,10 @@ export default async function ArriveesPage({ params }: PageProps) {
     (c: any) => Array.isArray(c.paris_disponibles) && c.paris_disponibles.includes("QUINTE_PLUS"),
   );
 
-  // Regrouper par hippodrome
-  const groupByHippo = (list: any[]) => {
-    const grouped: Record<string, { hippodrome: any; courses: any[] }> = {};
-    for (const c of list) {
-      const key = c.hippodrome?.nom || "Autre";
-      if (!grouped[key]) grouped[key] = { hippodrome: c.hippodrome, courses: [] };
-      grouped[key].courses.push(c);
-    }
-    return Object.values(grouped);
-  };
-  const groupsFinies    = groupByHippo(finies);
-  const groupsEnAttente = groupByHippo(enAttente);
+  // Regrouper par hippodrome CANONIQUE (fusionne les variantes d'orthographe,
+  // garde le nom le plus propre). cf. lib/courses/arrivees-group.
+  const groupsFinies    = groupByCanonicalHippodrome(finies);
+  const groupsEnAttente = groupByCanonicalHippodrome(enAttente);
 
   // ── Schema.org ───────────────────────────────────────────────────
   const breadcrumbLd = {
