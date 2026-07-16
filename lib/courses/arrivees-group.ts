@@ -56,24 +56,49 @@ function richness(c: ArriveeCourseLike): number {
   return s;
 }
 
-function raceKey(c: ArriveeCourseLike): string {
-  return `${canonicalHippodrome(c.hippodrome?.nom ?? "")}|${c.numero_reunion}|${c.numero_course}`;
+/** Deux formes canoniques désignent-elles le même hippodrome ? Égalité, OU
+ * l'une est préfixe de l'autre (partie commune ≥ 5 car.) → gère les alias
+ * court/long (« pornichet » ⊂ « pornichetlabaule », « cagnes » ⊂
+ * « cagnessurmer »). Le garde-fou « préfixe + longueur » évite de fusionner
+ * deux pistes réellement distinctes (ex. réunion étrangère homonyme). */
+function sameHippodrome(a: string, b: string): boolean {
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.length >= 5 && long.startsWith(short);
 }
 
 /**
- * Dédoublonne une liste de courses par (hippodrome canonique, réunion, course)
- * en gardant la ligne la plus riche. Ordre stable (1re apparition). PUR.
+ * Dédoublonne une liste de courses. Sur une même date, (réunion, course)
+ * identifie UNE épreuve : on regroupe dessus, puis on clusterise par
+ * hippodrome COMPATIBLE (cf. sameHippodrome — jamais deux pistes distinctes)
+ * et on garde la ligne la plus RICHE de chaque cluster. Ordre stable
+ * (1re apparition de la réunion/course). PUR.
  */
 export function dedupeArriveeCourses<T extends ArriveeCourseLike>(list: T[]): T[] {
-  const best = new Map<string, T>();
+  const groups = new Map<string, T[]>();
   const order: string[] = [];
   for (const c of list) {
-    const key = raceKey(c);
-    const prev = best.get(key);
-    if (!prev) { best.set(key, c); order.push(key); }
-    else if (richness(c) > richness(prev)) best.set(key, c);
+    const key = `${c.numero_reunion}|${c.numero_course}`;
+    let g = groups.get(key);
+    if (!g) { g = []; groups.set(key, g); order.push(key); }
+    g.push(c);
   }
-  return order.map((k) => best.get(k)!);
+  const out: T[] = [];
+  for (const key of order) {
+    const clusters: { proto: string; best: T }[] = [];
+    for (const c of groups.get(key)!) {
+      const cc = canonicalHippodrome(c.hippodrome?.nom ?? "");
+      const cl = clusters.find((x) => sameHippodrome(x.proto, cc));
+      if (!cl) {
+        clusters.push({ proto: cc, best: c });
+      } else {
+        if (cc.length > cl.proto.length) cl.proto = cc; // proto = variante la plus complète
+        if (richness(c) > richness(cl.best)) cl.best = c;
+      }
+    }
+    for (const cl of clusters) out.push(cl.best);
+  }
+  return out;
 }
 
 /**
