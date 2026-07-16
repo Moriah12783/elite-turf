@@ -8,6 +8,7 @@
  * PUR (client Supabase sans next/headers) → bundlable Node sur GitHub Actions.
  */
 import { createServiceClient } from "@/lib/supabase/service-client";
+import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
 
 /** Forme normalisée commune (PMU.fr `NormalizedCourse` la satisfait déjà). */
 export interface ProgrammeCourse {
@@ -28,11 +29,6 @@ export interface UpsertResult {
   inserted:    number;
   updated:     number;
   hippodromes: number;
-}
-
-/** Nom d'hippodrome normalisé (sans accents, majuscules) pour le matching. */
-function normalizeHipName(s: string): string {
-  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
 }
 
 /**
@@ -58,7 +54,7 @@ export async function upsertProgrammeCourses(courses: ProgrammeCourse[]): Promis
     const pays = courses.find((c) => c.hippodromeName === nom)?.hippodromePays || "France";
     const found = (allHip ?? []).find(
       (h: { id: string; nom: string; pays: string }) =>
-        h.pays === pays && normalizeHipName(h.nom) === normalizeHipName(nom),
+        h.pays === pays && canonicalHippodrome(h.nom) === canonicalHippodrome(nom),
     );
     if (found) hipMap[nom] = found.id;
   }
