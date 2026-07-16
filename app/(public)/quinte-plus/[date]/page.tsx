@@ -31,6 +31,8 @@ import {
 } from "@/lib/seo/dates";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
+import TrackPageView from "@/components/analytics/TrackPageView";
+import LeadCaptureCompact from "@/components/leads/LeadCaptureCompact";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -255,6 +257,8 @@ export default async function QuintePlusPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-bg-primary">
+      {/* 📊 Funnel haut : vue de la page vedette (cf lib/analytics/track.ts) */}
+      <TrackPageView event="view_vedette" params={{ source: "quinte-plus", date: params.date }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
@@ -492,6 +496,15 @@ export default async function QuintePlusPage({ params }: PageProps) {
             </div>
           </section>
         )}
+
+        {/* ── Capture email (funnel Étage 2) ──────────────────────── */}
+        {/*
+          Réutilise le pipeline leads existant (guide de l'Initié).
+          Placé avant les liens annexes : Clarity montre 91,8% de bounce
+          sur ces pages SEO — on propose une raison de laisser un email
+          avant que le visiteur reparte.
+        */}
+        <LeadCaptureCompact source="quinte-plus" />
 
         {/* ── Liens annexes ───────────────────────────────────────── */}
         {/*

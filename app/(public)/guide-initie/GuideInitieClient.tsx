@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, CheckCircle2, ArrowRight, Loader2, Lock, TrendingUp, Users, BarChart2 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
+import { trackEvent } from "@/lib/analytics/track";
 
 const SECRETS = [
   { num: "01", titre: "Décrypter la Musique du Cheval", texte: "Au-delà des chiffres — comment lire un CV de cheval comme un pro." },
@@ -31,10 +32,12 @@ export default function GuideInitieClient({ parieursFormes }: { parieursFormes: 
       const res = await fetch("/api/guide/telechargement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nom }),
+        body: JSON.stringify({ email, nom, source: "guide-initie" }),
       });
 
       if (!res.ok) throw new Error("Erreur serveur");
+      // 📊 Funnel : lead capturé (jamais d'email dans le dataLayer — règle anti-PII)
+      trackEvent("generate_lead", { source: "guide-initie" });
       setDone(true);
     } catch {
       setError("Une erreur est survenue. Réessayez ou contactez-nous.");

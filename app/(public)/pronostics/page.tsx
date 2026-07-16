@@ -8,6 +8,7 @@ import PronosticsFilters from "@/components/pronostics/PronosticsFilters";
 import PaywallBanner from "@/components/pronostics/PaywallBanner";
 import PageHero from "@/components/layout/PageHero";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+import TrackPageView from "@/components/analytics/TrackPageView";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 
@@ -221,6 +222,8 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-bg-primary">
+      {/* 📊 Funnel haut : vue de la page vedette (cf lib/analytics/track.ts) */}
+      <TrackPageView event="view_vedette" params={{ source: "pronostics" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       {/* ── HERO BANNER ──────────────────────────────────────────────── */}
       <PageHero

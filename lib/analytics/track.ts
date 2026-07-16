@@ -42,6 +42,7 @@ declare global {
 export type FunnelEvent =
   | "sign_up"
   | "login"
+  | "view_vedette"        // vue page course vedette (/quinte-plus/[date], /pronostics) — haut de funnel
   | "view_pricing"
   | "select_plan"
   | "begin_checkout"
