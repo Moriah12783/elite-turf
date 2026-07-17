@@ -59,8 +59,20 @@ export async function POST(req: NextRequest) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
+  const renderTo = typeof body?.renderTo === "string" ? body.renderTo : null;
   const onlyEmail = typeof body?.onlyEmail === "string" ? body.onlyEmail.toLowerCase() : null;
   const confirmer = body?.confirmer !== false; // confirme par défaut
+
+  // Prévisualisation : envoie juste le rendu à une adresse (aucune confirmation,
+  // n'affecte pas les 32). Pour valider le mail sur sa propre boîte.
+  if (renderTo) {
+    const { subject, html } = templateReactivation({ prenom: "Turfiste" });
+    const result = await sendEmailBatch([{ to: renderTo, subject, html }]);
+    return NextResponse.json({
+      mode: "render-test", to: renderTo, envoyes: result.sent, echecs: result.failed,
+      details_echecs: result.details.filter((d) => !d.ok).map((d) => ({ email: d.email, raison: d.error })),
+    });
+  }
 
   const admin = createServiceClient();
   let cibles = await collectUnconfirmed();
