@@ -12,18 +12,120 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 // Cache 1h pour ne pas marteler Supabase à chaque crawl Google
 export const revalidate = 3600;
 
+// Taille de page PostgREST. Supabase plafonne à 1000 lignes/réponse (max-rows) :
+// on pagine via .range() pour couvrir des mois > 1000 courses sans troncature.
+const PAGE = 1000;
+
 /**
- * Sitemap programmatique :
- *  - 10 pages statiques cœur
- *  - Articles de blog
- *  - Pronostics publiés (gratuits + payants : Google les voit, le contenu
- *    est paywallé via JS mais l'URL reste indexable, ce que les concurrents
- *    Geny/Zone-Turf font aussi)
- *  - Courses des 30 derniers + 7 prochains jours (≈ 700-1500 URLs/run)
+ * Sitemap SEGMENTÉ (Next.js generateSitemaps) :
+ *  - /sitemap.xml            → index auto-généré par Next, listant les segments
+ *  - /sitemap/0.xml          → CŒUR : pages statiques, géo, blog, calendrier,
+ *                              pages temporelles, hippodromes, acteurs, pronostics
+ *  - /sitemap/1.xml … N.xml  → COURSES par mois (une carte par mois calendaire),
+ *                              couvrant 100 % des ~7,5k fiches /courses/[id]
+ *                              indexables (statut ≠ ANNULE), au lieu de la
+ *                              fenêtre glissante [-30j, +7j] d'avant (~1k, bridée
+ *                              en plus par le plafond PostgREST de 1000).
  *
- * Volume cible : ≈ 1 000 URLs vs 40 avant la PR.
+ * Pourquoi segmenter par date : Google re-crawle plus vite les cartes qui
+ * changent (mois courant) et laisse les mois passés stables ; la couverture
+ * Search Console se lit par période ; et chaque segment reste < 50k URLs.
+ *
+ * robots.txt (statique) pointe déjà vers /sitemap.xml → devient l'index, aucune
+ * autre modification nécessaire.
  */
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+
+// ── Helpers segmentation par mois ──────────────────────────────────────────
+
+/** 'YYYY-MM' → mois calendaire suivant ('2026-12' → '2027-01'). */
+function moisSuivant(m: string): string {
+  const [y, mo] = m.split("-").map(Number);
+  const d = new Date(Date.UTC(y, mo, 1)); // mo (1-based) comme index = mois suivant
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Liste ordonnée (ascendante) des mois 'YYYY-MM' du plus ancien au plus récent. */
+function enumMois(minMois: string, maxMois: string): string[] {
+  const out: string[] = [];
+  let cur = minMois;
+  // Garde-fou 20 ans pour éviter toute boucle infinie sur données aberrantes.
+  for (let i = 0; i < 240 && cur <= maxMois; i++) {
+    out.push(cur);
+    cur = moisSuivant(cur);
+  }
+  return out;
+}
+
+/**
+ * Mois (segments) couvrant toutes les courses indexables, dérivés des bornes
+ * min/max réelles en base (2 requêtes légères). Ordre stable et déterministe :
+ * partagé par generateSitemaps() et le rendu, pour un mapping id→mois fiable.
+ */
+async function moisSegments(): Promise<string[]> {
+  try {
+    const supabase = createServiceClient();
+    const base = supabase
+      .from("courses")
+      .select("date_course")
+      .neq("statut", "ANNULE")
+      .not("date_course", "is", null);
+
+    const [{ data: minRow }, { data: maxRow }] = await Promise.all([
+      base.order("date_course", { ascending: true }).limit(1).maybeSingle(),
+      supabase
+        .from("courses")
+        .select("date_course")
+        .neq("statut", "ANNULE")
+        .not("date_course", "is", null)
+        .order("date_course", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const min = (minRow as any)?.date_course as string | undefined;
+    const max = (maxRow as any)?.date_course as string | undefined;
+    if (!min || !max) return [];
+    return enumMois(min.slice(0, 7), max.slice(0, 7));
+  } catch {
+    return [];
+  }
+}
+
+/** Toutes les courses indexables d'un mois donné, paginées (au-delà de 1000). */
+async function coursesDuMois(mois: string): Promise<MetadataRoute.Sitemap> {
+  const debut = `${mois}-01`;
+  const fin = `${moisSuivant(mois)}-01`; // borne haute exclusive
+  const urls: MetadataRoute.Sitemap = [];
+  try {
+    const supabase = createServiceClient();
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, date_course, updated_at, statut")
+        .gte("date_course", debut)
+        .lt("date_course", fin)
+        .neq("statut", "ANNULE")
+        .order("date_course", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error || !data || data.length === 0) break;
+      for (const c of data as any[]) {
+        urls.push({
+          url: `${APP_URL}/courses/${c.id}`,
+          lastModified: c.updated_at ? new Date(c.updated_at) : new Date(c.date_course),
+          changeFrequency: c.statut === "TERMINE" ? ("monthly" as const) : ("daily" as const),
+          priority: c.statut === "TERMINE" ? 0.5 : 0.7,
+        });
+      }
+      if (data.length < PAGE) break;
+    }
+  } catch {
+    // Supabase indisponible → segment vide (les autres segments restent servis)
+  }
+  return urls;
+}
+
+// ── Segment CŒUR : tout sauf les fiches course (déplacées en segments mois) ──
+async function coreSitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // ── Pages statiques cœur ─────────────────────────────────────────────────
@@ -89,8 +191,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // ── Pages temporelles SEO (programme/quinte-plus/arrivees par date) ──────
-  // Fenêtre [-30j, +7j] pour matcher la stratégie courses ci-dessous.
-  // Volume : 38 dates × 3 pages = 114 URLs (négligeable, fort levier SEO).
+  // Fenêtre [-30j, +7j]. Ce sont des pages "date" (landing), distinctes des
+  // fiches /courses/[id] désormais couvertes intégralement par les segments mois.
+  // Volume : 38 dates × ~3 pages = ~114 URLs (négligeable, fort levier SEO).
   const temporalUrls: MetadataRoute.Sitemap = [];
   const todayStr = now.toISOString().split("T")[0];
   for (let i = -30; i <= 7; i++) {
@@ -128,8 +231,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ── Pronostics publiés (tous niveaux) ────────────────────────────────────
   let pronosticUrls: MetadataRoute.Sitemap = [];
-  // ── Courses des 30 derniers + 7 prochains jours ──────────────────────────
-  let courseUrls: MetadataRoute.Sitemap = [];
   // ── Hippodromes (dérivés du nom via slugify) ──────────────────────────────
   let hippoUrls: MetadataRoute.Sitemap = [];
   // ── Acteurs (chevaux/jockeys/entraineurs avec slug) ──────────────────────
@@ -137,11 +238,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const supabase = createServiceClient();
-    const today = new Date();
-    const minus30 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-      .toISOString().split("T")[0];
-    const plus7 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-      .toISOString().split("T")[0];
 
     // Pronostics
     const { data: pronostics } = await supabase
@@ -234,26 +330,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
       }
     }
-
-    // Courses dans la fenêtre [-30j, +7j]
-    const { data: courses } = await supabase
-      .from("courses")
-      .select("id, date_course, updated_at, statut")
-      .gte("date_course", minus30)
-      .lte("date_course", plus7)
-      .neq("statut", "ANNULE")
-      .order("date_course", { ascending: false })
-      .limit(2000);
-    if (courses) {
-      courseUrls = courses.map((c) => ({
-        url: `${APP_URL}/courses/${c.id}`,
-        lastModified: c.updated_at ? new Date(c.updated_at) : new Date(c.date_course),
-        // Course terminée : contenu stable (résultats), check moins fréquent
-        changeFrequency: c.statut === "TERMINE" ? ("monthly" as const) : ("daily" as const),
-        // Course du jour ou à venir : priorité haute pour les requêtes long-tail
-        priority: c.statut === "TERMINE" ? 0.5 : 0.7,
-      }));
-    }
   } catch {
     // Supabase indisponible — on retourne au moins les pages statiques
   }
@@ -275,6 +351,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...hippoUrls,
     ...acteurUrls,
     ...pronosticUrls,
-    ...courseUrls,
   ];
+}
+
+/**
+ * Déclare les segments à Next.js : id 0 = cœur, id 1..N = un mois de courses.
+ * Next génère alors /sitemap/[id].xml + un index /sitemap.xml.
+ */
+export async function generateSitemaps(): Promise<{ id: number }[]> {
+  const mois = await moisSegments();
+  return [{ id: 0 }, ...mois.map((_, i) => ({ id: i + 1 }))];
+}
+
+export default async function sitemap(
+  { id }: { id: number },
+): Promise<MetadataRoute.Sitemap> {
+  // Segment cœur
+  if (!id || id === 0) return coreSitemap();
+
+  // Segment mois : id 1 → mois[0], etc. Recalcule la liste (ordre déterministe).
+  const mois = await moisSegments();
+  const m = mois[id - 1];
+  if (!m) return [];
+  return coursesDuMois(m);
 }
