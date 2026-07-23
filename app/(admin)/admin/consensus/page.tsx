@@ -252,7 +252,15 @@ export default function ConsensusPage() {
   // « Nouveau pronostic », pré-rempli + éditable. L'admin ajuste et publie lui-même.
   function creerPronostic(niveau: "ELITE" | "PRO") {
     if (!result || !courseId) return;
-    const sel = niveau === "ELITE" ? result.elite.selection : result.pro.selection;
+    const plan = niveau === "ELITE" ? result.elite : result.pro;
+    const sel = plan.selection;
+
+    // Pivot = le mieux classé de la sélection (score consensus) — EXACTEMENT le
+    // « pivot du jeu » nommé dans le brouillon d'analyse. On garde texte et
+    // structure alignés.
+    const scoreByNum: Record<number, number> = {};
+    result.partants.forEach((p) => { scoreByNum[p.numero] = p.scoreConsensus ?? 0; });
+    const pivot = sel.slice().sort((a, b) => (scoreByNum[b] ?? 0) - (scoreByNum[a] ?? 0))[0] ?? null;
 
     // Brouillon d'analyse auto (factuel) à partir du consensus + stats + divergence.
     const noms: Record<number, string | null> = {};
@@ -271,6 +279,12 @@ export default function ConsensusPage() {
       niveau_acces: niveau,
       type_pari: typePari,
       selection: sel.join(","),
+      // La structure façon Radar, calculée par le MÊME moteur que le Radar
+      // gratuit (buildConsensus) → le formulaire arrive déjà hiérarchisé.
+      base:  plan.base.join(","),
+      value: plan.value.join(","),
+      coup:  plan.coup.join(","),
+      pivot: pivot != null ? String(pivot) : "",
       analyse_courte: draft.analyseCourte,
       analyse_texte: draft.analyseTexte,
     });

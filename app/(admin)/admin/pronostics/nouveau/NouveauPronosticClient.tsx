@@ -29,6 +29,9 @@ interface Props {
     selection?: number[];
     analyse_courte?: string;
     analyse_texte?: string;
+    /** Hiérarchie façon Radar pré-remplie par l'outil consensus. */
+    roles?: Record<number, string>;
+    pivot?: number | null;
   };
 }
 
@@ -44,7 +47,11 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
     analyse_texte: initialData?.analyse_texte || "",
   });
   const [selection, setSelection] = useState<number[]>(initialData?.selection || []);
-  const [roles, setRoles] = useState<SelectionRolesValue>(EMPTY_SELECTION_ROLES);
+  const [roles, setRoles] = useState<SelectionRolesValue>(
+    initialData?.roles
+      ? { roles: initialData.roles, pivot: initialData.pivot ?? null }
+      : EMPTY_SELECTION_ROLES,
+  );
 
   const handleSave = async (publie: boolean) => {
     if (!form.course_id || selection.length === 0 || !form.analyse_courte) {
