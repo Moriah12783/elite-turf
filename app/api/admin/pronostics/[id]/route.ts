@@ -21,9 +21,12 @@ export async function PATCH(
     const supabase = createServiceClient();
     const body = await req.json();
 
+    // ⚠️ Allow-list : un champ absent d'ICI **et** de l'objet .update() plus bas
+    // est ignoré SILENCIEUSEMENT (pas d'erreur, pas de toast, colonne inchangée).
+    // Toujours modifier les deux endroits.
     const {
       course_id, niveau_acces, type_pari, confiance,
-      analyse_courte, analyse_texte, selection, publie,
+      analyse_courte, analyse_texte, selection, selection_detail, publie,
       resultat, date_publication,
     } = body;
 
@@ -45,6 +48,9 @@ export async function PATCH(
         analyse_courte,
         analyse_texte,
         selection,
+        // `undefined` (client qui n'envoie pas le champ) → on ne touche pas la
+        // colonne ; `null` (rien de qualifié) → on l'efface volontairement.
+        ...(selection_detail === undefined ? {} : { selection_detail }),
         publie,
         resultat,
         date_publication,
