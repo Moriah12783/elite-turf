@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Send, Plus, X, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Save, Send, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import SelectionRolesEditor, { type SelectionRolesValue } from "@/components/admin/SelectionRolesEditor";
+import { buildSelectionDetail, parseSelectionRoles } from "@/lib/pronostics/selection-detail";
 
 type CourseOption = {
   id: string;
@@ -23,7 +25,10 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selection, setSelection] = useState<number[]>(pronostic.selection || []);
-  const [newNumero, setNewNumero] = useState("");
+  // Recharge la hiérarchie déjà stockée (y compris les rôles du pipeline, repris
+  // verbatim) pour qu'un simple réenregistrement ne dégrade rien.
+  const dejaStocke = parseSelectionRoles(pronostic.selection_detail);
+  const [roles, setRoles] = useState<SelectionRolesValue>(() => dejaStocke);
 
   const [form, setForm] = useState({
     course_id: pronostic.course_id || "",
@@ -35,16 +40,6 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
     publie: pronostic.publie || false,
     resultat: pronostic.resultat || "EN_ATTENTE",
   });
-
-  const addNumero = () => {
-    const n = parseInt(newNumero);
-    if (n > 0 && !selection.includes(n)) {
-      setSelection([...selection, n]);
-      setNewNumero("");
-    }
-  };
-
-  const removeNumero = (n: number) => setSelection(selection.filter((x) => x !== n));
 
   const handleSave = async (publie: boolean) => {
     if (!form.course_id || selection.length === 0 || !form.analyse_courte) {
@@ -65,6 +60,14 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
           analyse_courte: form.analyse_courte,
           analyse_texte: form.analyse_texte,
           selection,
+          selection_detail: buildSelectionDetail({
+            selection,
+            roles: roles.roles,
+            pivot: roles.pivot,
+            // Réinjecte les noms déjà stockés : sans eux, un simple
+            // réenregistrement les effacerait de la colonne.
+            noms: dejaStocke.noms,
+          }),
           publie,
           resultat: form.resultat,
           date_publication: publie ? new Date().toISOString() : null,
@@ -248,44 +251,14 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
           </div>
         </div>
 
-        {/* Sélection */}
-        <div>
-          <label className="block text-text-secondary text-sm font-medium mb-2">
-            Sélection (numéros) <span className="text-status-loss">*</span>
-          </label>
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            {selection.map((n) => (
-              <span
-                key={n}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-faint border border-gold-primary/40 rounded-full text-gold-light text-sm font-semibold"
-              >
-                {n}
-                <button onClick={() => removeNumero(n)} className="text-gold-primary/60 hover:text-gold-primary">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={newNumero}
-                onChange={(e) => setNewNumero(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addNumero())}
-                placeholder="N°"
-                min={1}
-                max={20}
-                className="w-16 px-3 py-1.5 bg-bg-elevated border border-border rounded-lg text-text-primary text-sm"
-              />
-              <button
-                type="button"
-                onClick={addNumero}
-                className="p-1.5 bg-gold-faint border border-gold-primary/30 rounded-lg text-gold-primary hover:bg-gold-primary hover:text-bg-primary transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Sélection + hiérarchie (base / value / coup + pivot) */}
+        <SelectionRolesEditor
+          courseId={form.course_id}
+          selection={selection}
+          onSelectionChange={setSelection}
+          value={roles}
+          onChange={setRoles}
+        />
 
         {/* Analyse courte */}
         <div>

@@ -127,7 +127,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
     .select(
       `
       id, niveau_acces, type_pari, selection, confiance,
-      analyse_courte, analyse_texte, resultat, nb_vues, nb_likes,
+      analyse_courte, analyse_texte, plan_de_jeu, selection_detail, resultat, nb_vues, nb_likes,
       publie, date_publication,
       course:courses(
         id, libelle, date_course, heure_depart,

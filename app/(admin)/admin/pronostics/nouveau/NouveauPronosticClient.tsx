@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Save, Send, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Send } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import SelectionRolesEditor, {
+  EMPTY_SELECTION_ROLES,
+  type SelectionRolesValue,
+} from "@/components/admin/SelectionRolesEditor";
+import { buildSelectionDetail } from "@/lib/pronostics/selection-detail";
 
 type CourseOption = {
   id: string;
@@ -39,19 +44,7 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
     analyse_texte: initialData?.analyse_texte || "",
   });
   const [selection, setSelection] = useState<number[]>(initialData?.selection || []);
-  const [newNumero, setNewNumero] = useState("");
-
-  const addNumero = () => {
-    const n = parseInt(newNumero);
-    if (n > 0 && !selection.includes(n)) {
-      setSelection([...selection, n]);
-      setNewNumero("");
-    }
-  };
-
-  const removeNumero = (n: number) => {
-    setSelection(selection.filter((x) => x !== n));
-  };
+  const [roles, setRoles] = useState<SelectionRolesValue>(EMPTY_SELECTION_ROLES);
 
   const handleSave = async (publie: boolean) => {
     if (!form.course_id || selection.length === 0 || !form.analyse_courte) {
@@ -68,6 +61,13 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
         .insert({
           ...form,
           selection,
+          // null si rien n'a été qualifié → l'affichage public reste la liste
+          // par mérite, rien n'est inventé.
+          selection_detail: buildSelectionDetail({
+            selection,
+            roles: roles.roles,
+            pivot: roles.pivot,
+          }),
           publie,
           auteur_id: user?.id,
           date_publication: publie ? new Date().toISOString() : null,
@@ -194,45 +194,14 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
           </div>
         </div>
 
-        {/* Sélection */}
-        <div>
-          <label className="block text-text-secondary text-sm font-medium mb-2">
-            Sélection (numéros des partants) <span className="text-status-loss">*</span>
-          </label>
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            {selection.map((n) => (
-              <span
-                key={n}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gold-faint border border-gold-primary/40 rounded-full text-gold-light text-sm font-semibold"
-              >
-                {n}
-                <button type="button" onClick={() => removeNumero(n)} className="text-gold-primary/60 hover:text-gold-primary">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={newNumero}
-                onChange={(e) => setNewNumero(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addNumero())}
-                placeholder="N°"
-                min={1}
-                max={20}
-                className="w-16 px-3 py-1.5 bg-bg-elevated border border-border rounded-lg text-text-primary text-sm"
-              />
-              <button
-                type="button"
-                onClick={addNumero}
-                className="p-1.5 bg-gold-faint border border-gold-primary/30 rounded-lg text-gold-primary hover:bg-gold-primary hover:text-bg-primary transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <p className="text-text-muted text-xs">Ajoutez les numéros des chevaux sélectionnés dans l&apos;ordre conseillé</p>
-        </div>
+        {/* Sélection + hiérarchie (base / value / coup + pivot) */}
+        <SelectionRolesEditor
+          courseId={form.course_id}
+          selection={selection}
+          onSelectionChange={setSelection}
+          value={roles}
+          onChange={setRoles}
+        />
 
         {/* Analyse courte */}
         <div>

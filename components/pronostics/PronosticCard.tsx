@@ -8,6 +8,8 @@ import PaywallBanner from "./PaywallBanner";
 import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { PronosticLevel, SubscriptionStatus, BetType, Confidence, PronosticResult } from "@/types";
 import { canAccess } from "@/lib/auth/access";
+import { buildPlanRadar, type PlanDeJeuLike, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
+import PlanRadarBlock from "./PlanRadarBlock";
 
 interface PronosticCardProps {
   pronostic: {
@@ -18,6 +20,10 @@ interface PronosticCardProps {
     confiance: Confidence;
     analyse_courte: string;
     analyse_texte?: string | null;
+    /** Plan de jeu de l'expert (pronostics ELITE) — alimente le bloc façon Radar. */
+    plan_de_jeu?: PlanDeJeuLike | null;
+    /** Rôles par cheval — repli du bloc façon Radar quand il n'y a pas de plan. */
+    selection_detail?: SelectionDetailLike[] | null;
     resultat: PronosticResult;
     nb_vues: number;
     nb_likes: number;
@@ -63,6 +69,16 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   const racePast = p.resultat === "EN_ATTENTE" && p.course?.date_course && p.course.date_course < today;
   const resultatConf = racePast ? RESULTAT_CONFIG_DEPASSE : RESULTAT_CONFIG[p.resultat];
   const ResultatIcon = resultatConf.icon;
+  // Structure « façon Radar » du vrai pronostic — plan de jeu si l'expert en a
+  // posé un, sinon repli sur les rôles. null si ni l'un ni l'autre → on garde
+  // l'affichage sélection classique, rien d'inventé.
+  const planRadar = hasAccess
+    ? buildPlanRadar({
+        selection:       p.selection,
+        planDeJeu:       p.plan_de_jeu ?? null,
+        selectionDetail: p.selection_detail ?? null,
+      })
+    : null;
 
   return (
     /* cursor-pointer + active:scale = signal visuel fort que TOUTE la carte est
@@ -165,7 +181,14 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
           </span>
         </div>
 
-        {/* ── Selection ── */}
+        {/* ── Selection ──
+            Abonné + plan de jeu disponible → bloc structuré « façon Radar »
+            (base / value / coup + pivot). Sinon : affichage classique. */}
+        {planRadar ? (
+          <div className="mb-4">
+            <PlanRadarBlock plan={planRadar} />
+          </div>
+        ) : (
         <div className="flex items-center gap-3 mb-4">
           <span className="text-text-muted text-xs uppercase tracking-wider flex-shrink-0">
             Sélection :
@@ -198,6 +221,7 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
             </div>
           )}
         </div>
+        )}
 
         {/* ── Analyse ── */}
         {hasAccess ? (
