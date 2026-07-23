@@ -129,7 +129,9 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const ResultatIcon = resultatConf.icon;
   const course = p.course as any;
   const plan = ((p as { plan_de_jeu?: unknown }).plan_de_jeu ?? null) as ElitePlanDeJeu | null;
-  const isPro = p.niveau_acces === "PRO";
+  // La hiérarchie par rôles vaut pour les 2 niveaux « pronostic travaillé » —
+  // demande PO : « à partir du pronostic Pro ou Elite ».
+  const isPro = p.niveau_acces === "PRO" || p.niveau_acces === "ELITE";
   const selectionDetail = (((p as { selection_detail?: unknown }).selection_detail ?? []) as SelectionDetailItem[]);
   // Hiérarchie PRO seulement si ≥ 2 tiers réels (sinon liste par mérite : évite
   // un bloc dégénéré à une section + le mislabel du favori sur BDD jeune).

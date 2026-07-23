@@ -1,4 +1,5 @@
 import type { RunnerRole } from "@/lib/ai-pronostics/types";
+import { ROLE_COUP, ROLE_CHAMP } from "@/lib/pronostics/selection-roles";
 
 export interface SelectionDetailItem {
   number: number;
@@ -17,7 +18,11 @@ interface PartantLite {
  * Découpe la sélection PRO en tiers jouables.
  * - COMPLEMENT (couverture) est rangé avec les « Chances » — JAMAIS présenté
  *   comme outsider/value (anti-mislabel du favori, cf revue 2026-06-26).
- * - Le 3e tier est un catch-all (OUTSIDER + rôle inattendu) → aucun cheval perdu.
+ * - COUP est le pari d'audace DÉSIGNÉ par l'expert dans l'admin (il n'est jamais
+ *   produit par le pipeline) : tier dédié, en dernier, pour que la fiche dise la
+ *   même chose que le bloc « façon Radar » de la carte.
+ * - L'avant-dernier tier reste un catch-all (OUTSIDER + rôle inattendu)
+ *   → aucun cheval perdu.
  * L'ordre de mérite est préservé (items est déjà rank-ordonné).
  */
 export function buildProSections(items: SelectionDetailItem[]) {
@@ -36,8 +41,23 @@ export function buildProSections(items: SelectionDetailItem[]) {
       label: "🎲 Outsiders & value",
       hint: "Cotes intéressantes pour élargir le jeu",
       horses: items.filter(
-        (it) => it.role !== "BASE" && it.role !== "APPUI" && it.role !== "COMPLEMENT",
+        (it) =>
+          it.role !== "BASE" &&
+          it.role !== "APPUI" &&
+          it.role !== "COMPLEMENT" &&
+          it.role !== ROLE_COUP &&
+          it.role !== ROLE_CHAMP,
       ),
+    },
+    {
+      label: "⚡ Le coup",
+      hint: "Le pari d'audace de l'expert",
+      horses: items.filter((it) => it.role === ROLE_COUP),
+    },
+    {
+      label: "🧩 Champ (couverture)",
+      hint: "Complètent le ticket sans être mis en avant",
+      horses: items.filter((it) => it.role === ROLE_CHAMP),
     },
   ];
 }

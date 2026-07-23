@@ -10,11 +10,13 @@
  *
  * DEUX SOURCES, par ordre de richesse :
  *  1. `plan_de_jeu` (pronostics ELITE) → pivot (banker) + base + value_picks.
- *  2. Repli `selection_detail` (présent sur ~tous les pronos) → on s'appuie sur
- *     les RÔLES posés par nos experts : BASE/APPUI/COMPLEMENT = le socle,
- *     le reste (OUTSIDER…) = la value. Même découpage que `ProSelectionBlock`
- *     déjà utilisé sur la fiche détail. Validé PO : « chances régulières »
- *     et « base » désignent bien le même socle jouable.
+ *  2. Repli `selection_detail` → on s'appuie sur les RÔLES : BASE/APPUI/COMPLEMENT
+ *     = le socle, le reste (OUTSIDER…) = la value. Même découpage que
+ *     `ProSelectionBlock` déjà utilisé sur la fiche détail. Validé PO :
+ *     « chances régulières » et « base » désignent bien le même socle jouable.
+ *     Quand l'expert saisit lui-même ses rôles dans l'admin, il peut en plus
+ *     DÉSIGNER le coup (rôle COUP) et le pivot (`pivot: true`) — un choix, qui
+ *     prime alors sur les heuristiques. Vocabulaire : ./selection-roles.ts.
  *
  * ⚠️ ANTI-FABRICATION — règles strictes :
  *  - Les effectifs viennent du PRONOSTIC, jamais d'un quota imposé : on
@@ -27,8 +29,7 @@
  * PUR (aucune I/O), testé.
  */
 
-/** Rôles considérés comme le SOCLE jouable (cf. ProSelectionBlock). */
-const ROLES_SOCLE = ["BASE", "APPUI", "COMPLEMENT"];
+import { ROLES_SOCLE, ROLE_COUP, ROLE_CHAMP } from "./selection-roles";
 
 export interface PlanDeJeuLike {
   banker?:      { number?: number | null } | null;
@@ -39,6 +40,8 @@ export interface PlanDeJeuLike {
 export interface SelectionDetailLike {
   number?: number | null;
   role?:   string | null;
+  /** Posé à la main par l'expert : ce cheval est le pivot du jeu. */
+  pivot?:  boolean | null;
 }
 
 export interface PlanRadarInput {
@@ -129,21 +132,50 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
 
   const socle: number[] = [];
   const autres: number[] = [];
+  const champ: number[] = [];
   const inSelection = new Set(selection);
   const seen: Record<number, boolean> = {};
+  let coupExplicite: number | null = null;
+  let pivotExplicite: number | null = null;
+
   for (const it of detail) {
     const n = Number(it?.number);
     if (!Number.isFinite(n) || !inSelection.has(n) || seen[n]) continue;
     seen[n] = true;
+    if (it?.pivot === true && pivotExplicite === null) pivotExplicite = n;
+
     const role = String(it?.role ?? "").toUpperCase();
-    (ROLES_SOCLE.indexOf(role) !== -1 ? socle : autres).push(n);
+    if (role === ROLE_COUP) {
+      // Le coup DÉSIGNÉ par l'expert prime sur l'heuristique de cote : c'est un
+      // choix, pas une déduction. Un seul est mis en avant (ordre = mérite) ;
+      // un éventuel second reste en value — aucun cheval perdu.
+      if (coupExplicite === null) coupExplicite = n;
+      else autres.push(n);
+    } else if (role === ROLE_CHAMP) {
+      // Couverture : l'expert l'a laissé dans le jeu sans le mettre en avant.
+      // Ni base ni value — mais candidat au coup déduit, comme le champ d'un
+      // plan de jeu Elite.
+      champ.push(n);
+    } else if (ROLES_SOCLE.indexOf(role) !== -1) {
+      socle.push(n);
+    } else {
+      autres.push(n);
+    }
   }
-  if (socle.length === 0 && autres.length === 0) return null;
+  if (socle.length === 0 && autres.length === 0 && coupExplicite === null) return null;
 
-  // Ici le coup se prend parmi les outsiders (le tocard), et sort de la value
-  // pour n'apparaître qu'une fois.
-  const coup = plusHauteCote(autres, cotes);
-  const value = coup != null ? autres.filter((n) => n !== coup) : autres;
+  // À défaut de coup désigné, on le déduit du tocard (plus haute cote). On le
+  // cherche d'abord dans le champ ; sinon parmi les outsiders, d'où il est alors
+  // retiré pour n'apparaître qu'une fois.
+  const coupChamp = coupExplicite === null ? plusHauteCote(champ, cotes) : null;
+  const coup =
+    coupExplicite !== null ? coupExplicite
+    : coupChamp !== null   ? coupChamp
+    : plusHauteCote(autres, cotes);
+  const value =
+    coupExplicite === null && coupChamp === null && coup !== null
+      ? autres.filter((n) => n !== coup)
+      : autres;
 
-  return { pivot: null, base: socle, value, coup, source: "roles" };
+  return { pivot: pivotExplicite, base: socle, value, coup, source: "roles" };
 }

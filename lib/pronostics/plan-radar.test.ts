@@ -113,6 +113,109 @@ describe("buildPlanRadar — repli sur les rôles (selection_detail)", () => {
   });
 });
 
+// Rôles saisis à la main par l'expert dans l'admin (vocabulaire Radar).
+const DETAIL_ADMIN = [
+  { number: 7,  role: "BASE",     pivot: true },
+  { number: 2,  role: "BASE" },
+  { number: 11, role: "OUTSIDER" },
+  { number: 5,  role: "COUP" },
+];
+
+describe("buildPlanRadar — rôles saisis par l'expert (admin)", () => {
+  it("restitue base / value / coup / pivot tels que désignés", () => {
+    const r = buildPlanRadar({
+      selection: [7, 2, 11, 5],
+      selectionDetail: DETAIL_ADMIN,
+    })!;
+    expect(r.source).toBe("roles");
+    expect(r.base).toEqual([7, 2]);
+    expect(r.value).toEqual([11]);
+    expect(r.coup).toBe(5);      // désigné, sans avoir besoin des cotes
+    expect(r.pivot).toBe(7);
+  });
+
+  it("le coup DÉSIGNÉ prime sur la plus haute cote", () => {
+    const r = buildPlanRadar({
+      selection: [7, 2, 11, 5],
+      selectionDetail: DETAIL_ADMIN,
+      cotes: { 7: 2.5, 2: 4, 11: 60, 5: 9 }, // le 11 cote bien plus haut
+    })!;
+    expect(r.coup).toBe(5);       // on respecte le choix de l'expert
+    expect(r.value).toEqual([11]); // et le 11 reste en value
+  });
+
+  it("le coup désigné n'est jamais compté deux fois", () => {
+    const r = buildPlanRadar({ selection: [7, 5], selectionDetail: DETAIL_ADMIN })!;
+    expect(r.value).not.toContain(5);
+    expect(r.base).not.toContain(5);
+  });
+
+  it("ignore un pivot posé sur un cheval hors sélection", () => {
+    const r = buildPlanRadar({
+      selection: [2, 11],
+      selectionDetail: DETAIL_ADMIN, // le pivot 7 n'est plus dans la sélection
+    })!;
+    expect(r.pivot).toBeNull();
+  });
+
+  it("affiche le bloc même si SEUL un coup a été désigné", () => {
+    const r = buildPlanRadar({
+      selection: [5],
+      selectionDetail: [{ number: 5, role: "COUP" }],
+    })!;
+    expect(r.coup).toBe(5);
+    expect(r.base).toEqual([]);
+    expect(r.value).toEqual([]);
+  });
+
+  it("le champ n'est ni base ni value — il ne pollue pas le bloc", () => {
+    const r = buildPlanRadar({
+      selection: [7, 2, 11, 9, 3],
+      selectionDetail: [
+        { number: 7,  role: "BASE" },
+        { number: 2,  role: "BASE" },
+        { number: 11, role: "OUTSIDER" },
+        { number: 9,  role: "CHAMP" },
+        { number: 3,  role: "CHAMP" },
+      ],
+    })!;
+    expect(r.base).toEqual([7, 2]);
+    expect(r.value).toEqual([11]);
+    expect(r.base).not.toContain(9);
+    expect(r.value).not.toContain(3);
+  });
+
+  it("déduit le coup dans le champ en priorité, sans amputer la value", () => {
+    const r = buildPlanRadar({
+      selection: [7, 11, 9, 3],
+      selectionDetail: [
+        { number: 7,  role: "BASE" },
+        { number: 11, role: "OUTSIDER" },
+        { number: 9,  role: "CHAMP" },
+        { number: 3,  role: "CHAMP" },
+      ],
+      cotes: { 7: 3, 11: 12, 9: 28, 3: 40 },
+    })!;
+    expect(r.coup).toBe(3);          // plus haute cote DU CHAMP
+    expect(r.value).toEqual([11]);   // la value reste intacte
+  });
+
+  it("ne retient qu'un seul coup et qu'un seul pivot (le premier au mérite)", () => {
+    const r = buildPlanRadar({
+      selection: [3, 8, 1, 4],
+      selectionDetail: [
+        { number: 3, role: "BASE", pivot: true },
+        { number: 8, role: "BASE", pivot: true },
+        { number: 1, role: "COUP" },
+        { number: 4, role: "COUP" },
+      ],
+    })!;
+    expect(r.pivot).toBe(3);
+    expect(r.coup).toBe(1);
+    expect(r.value).toEqual([4]); // le 2e COUP retombe en value — aucun cheval perdu
+  });
+});
+
 describe("buildPlanRadar — rien à afficher", () => {
   it("renvoie null sans plan de jeu NI rôles (cas saisie manuelle)", () => {
     expect(buildPlanRadar({ selection: [14, 3, 12, 8] })).toBeNull();
