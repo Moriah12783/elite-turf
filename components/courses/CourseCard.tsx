@@ -7,7 +7,7 @@ import {
   CheckCircle2, Zap, ExternalLink
 } from "lucide-react";
 import { buildGenyUrl } from "@/lib/geny";
-import { resolveAfrique } from "@/lib/pmu-api";
+import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 
 // Pool complet des 9 photos PMU locales
@@ -110,13 +110,6 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
   const typePari        = pronosticPublie?.type_pari;
   const typeBadge       = typePari ? TYPE_PARI_BADGE[typePari] : null;
 
-  const paris           = c.paris_disponibles ?? [];
-  const { jouable: jouableAfrique, nationaleLabel } = resolveAfrique({
-    jouable_afrique: c.jouable_afrique,
-    nationale:       c.nationale,
-    paris_disponibles: paris,
-  });
-
   const hasPronosticAccess =
     !pronosticPublie ||
     pronosticPublie.niveau_acces === "GRATUIT" ||
@@ -195,14 +188,7 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
                   {typeBadge.label}
                 </span>
               )}
-              {jouableAfrique && (
-                <span
-                  title={`Jouable depuis l'Afrique — ${nationaleLabel || "Paris disponibles"}`}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-semibold bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                >
-                  🌍 {nationaleLabel ?? "Jouable en Afrique"}
-                </span>
-              )}
+              <BadgeJouableAfrique course={c} />
               <span className="text-text-muted text-xs">{c.distance_metres}m</span>
               {c.terrain && (
                 <span className="text-text-muted text-xs">· {TERRAIN_LABELS[c.terrain] || c.terrain}</span>
