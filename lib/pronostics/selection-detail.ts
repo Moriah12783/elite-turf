@@ -46,6 +46,8 @@ export interface BuildSelectionDetailInput {
 export interface ParsedSelectionRoles {
   roles: Record<number, string>;
   pivot: number | null;
+  /** Noms déjà stockés — à réinjecter au réenregistrement, sinon on les perd. */
+  noms:  Record<number, string>;
 }
 
 /**
@@ -57,15 +59,17 @@ export interface ParsedSelectionRoles {
  * champ — une mutation de données invisible.
  */
 export function parseSelectionRoles(raw: unknown): ParsedSelectionRoles {
-  const out: ParsedSelectionRoles = { roles: {}, pivot: null };
+  const out: ParsedSelectionRoles = { roles: {}, pivot: null, noms: {} };
   if (!Array.isArray(raw)) return out;
   for (const it of raw) {
-    const o = it as { number?: unknown; role?: unknown; pivot?: unknown };
+    const o = it as { number?: unknown; role?: unknown; pivot?: unknown; name?: unknown };
     const n = Number(o?.number);
     if (!Number.isFinite(n)) continue;
     const role = String(o?.role ?? "").trim().toUpperCase();
     if (role && role !== ROLE_CHAMP) out.roles[n] = role;
     if (o?.pivot === true && out.pivot === null) out.pivot = n;
+    const nom = typeof o?.name === "string" ? o.name.trim() : "";
+    if (nom) out.noms[n] = nom;
   }
   return out;
 }

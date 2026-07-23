@@ -55,7 +55,10 @@ export default function SelectionRolesEditor({
 
   // Partants de la course sélectionnée (numéro + nom + cote).
   useEffect(() => {
-    if (!courseId) { setPartants([]); return; }
+    // setLoading(false) indispensable : sans lui, revenir sur « aucune course »
+    // pendant une requête en vol laissait le spinner tourner pour toujours (le
+    // .finally de la requête précédente est neutralisé par `cancelled`).
+    if (!courseId) { setPartants([]); setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
     setPartants([]);

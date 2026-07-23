@@ -27,9 +27,8 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
   const [selection, setSelection] = useState<number[]>(pronostic.selection || []);
   // Recharge la hiérarchie déjà stockée (y compris les rôles du pipeline, repris
   // verbatim) pour qu'un simple réenregistrement ne dégrade rien.
-  const [roles, setRoles] = useState<SelectionRolesValue>(() =>
-    parseSelectionRoles(pronostic.selection_detail),
-  );
+  const dejaStocke = parseSelectionRoles(pronostic.selection_detail);
+  const [roles, setRoles] = useState<SelectionRolesValue>(() => dejaStocke);
 
   const [form, setForm] = useState({
     course_id: pronostic.course_id || "",
@@ -65,6 +64,9 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
             selection,
             roles: roles.roles,
             pivot: roles.pivot,
+            // Réinjecte les noms déjà stockés : sans eux, un simple
+            // réenregistrement les effacerait de la colonne.
+            noms: dejaStocke.noms,
           }),
           publie,
           resultat: form.resultat,

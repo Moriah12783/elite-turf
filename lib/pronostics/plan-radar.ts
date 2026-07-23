@@ -64,6 +64,14 @@ export interface PlanRadar {
   value:  number[];
   /** Le pari d'audace : plus haute cote réelle. `null` si cote inconnue. */
   coup:   number | null;
+  /**
+   * Tout le reste de la sélection publiée.
+   *
+   * ⚠️ NON NÉGOCIABLE : le bloc REMPLACE la liste des dossards sur la carte.
+   * Sans ce champ, un cheval publié mais non mis en avant disparaîtrait de
+   * l'affichage — l'abonné verrait moins de chevaux qu'il n'en a payé.
+   */
+  champ:  number[];
   /** D'où vient la structure — utile pour les tests et le debug. */
   source: "plan" | "roles";
 }
@@ -96,6 +104,19 @@ function plusHauteCote(pool: number[], cotes: Record<number, number | null | und
 }
 
 /**
+ * Les chevaux publiés que le bloc ne met pas en avant. Calculé depuis
+ * `selection` (et non depuis les rôles) : c'est la garantie structurelle
+ * qu'aucun cheval payé par l'abonné ne peut manquer à l'affichage.
+ */
+function resteDe(selection: number[], base: number[], value: number[], coup: number | null): number[] {
+  const place: Record<number, boolean> = {};
+  for (const n of base) place[n] = true;
+  for (const n of value) place[n] = true;
+  if (coup !== null) place[coup] = true;
+  return selection.filter((n) => !place[n]);
+}
+
+/**
  * Construit la structure Radar d'un pronostic premium.
  * Renvoie `null` si rien d'exploitable (→ l'appelant garde l'affichage existant).
  */
@@ -120,9 +141,9 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
       const pivot = Number.isFinite(bankerNum) && selection.indexOf(bankerNum) !== -1 ? bankerNum : null;
       // Le coup se prend dans le CHAMP (hors base et hors value) : on ne
       // dépouille jamais les value_picks choisis par l'expert.
-      const placed = new Set([...base, ...value]);
+      const placed = new Set(base.concat(value));
       const coup = plusHauteCote(selection.filter((n) => !placed.has(n)), cotes);
-      return { pivot, base, value, coup, source: "plan" };
+      return { pivot, base, value, coup, champ: resteDe(selection, base, value, coup), source: "plan" };
     }
   }
 
@@ -177,5 +198,12 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
       ? autres.filter((n) => n !== coup)
       : autres;
 
-  return { pivot: pivotExplicite, base: socle, value, coup, source: "roles" };
+  return {
+    pivot: pivotExplicite,
+    base:  socle,
+    value,
+    coup,
+    champ: resteDe(selection, socle, value, coup),
+    source: "roles",
+  };
 }

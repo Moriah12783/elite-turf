@@ -87,6 +87,17 @@ describe("parseSelectionRoles", () => {
     expect(r.pivot).toBe(7);
   });
 
+  it("préserve les noms stockés — un réenregistrement ne doit pas les effacer", () => {
+    const relu = parseSelectionRoles([{ number: 14, name: "Idéal de Castelle ", role: "COMPLEMENT" }]);
+    expect(relu.noms).toEqual({ 14: "Idéal de Castelle" });
+    const rows = buildSelectionDetail({
+      selection: [14],
+      roles: relu.roles,
+      noms: relu.noms,
+    })!;
+    expect(rows[0]).toEqual({ number: 14, role: "COMPLEMENT", name: "Idéal de Castelle" });
+  });
+
   it("conserve VERBATIM les rôles du pipeline — pas de rétrogradation silencieuse", () => {
     // Forme réelle lue en production (pronostic PRO, source AI-MULTI-AGENT).
     const r = parseSelectionRoles([
@@ -101,8 +112,8 @@ describe("parseSelectionRoles", () => {
   });
 
   it("tolère null, une valeur non-tableau et des entrées cassées", () => {
-    expect(parseSelectionRoles(null)).toEqual({ roles: {}, pivot: null });
-    expect(parseSelectionRoles("nope")).toEqual({ roles: {}, pivot: null });
+    expect(parseSelectionRoles(null)).toEqual({ roles: {}, pivot: null, noms: {} });
+    expect(parseSelectionRoles("nope")).toEqual({ roles: {}, pivot: null, noms: {} });
     expect(parseSelectionRoles([{ role: "BASE" }, { number: "x", role: "BASE" }]).roles).toEqual({});
   });
 

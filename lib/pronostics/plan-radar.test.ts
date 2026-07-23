@@ -216,6 +216,48 @@ describe("buildPlanRadar — rôles saisis par l'expert (admin)", () => {
   });
 });
 
+describe("buildPlanRadar — aucun cheval publié ne peut disparaître", () => {
+  // Le bloc REMPLACE la liste des dossards sur la carte : base+value+coup+champ
+  // doit TOUJOURS recouvrir l'intégralité de la sélection publiée.
+  const couvre = (r: NonNullable<ReturnType<typeof buildPlanRadar>>, selection: number[]) => {
+    const vus = r.base.concat(r.value, r.champ, r.coup != null ? [r.coup] : []);
+    expect(vus.slice().sort((a, b) => a - b)).toEqual(selection.slice().sort((a, b) => a - b));
+  };
+
+  it("couvre toute la sélection — voie plan de jeu (cas réel de production)", () => {
+    const sel = PRONO_ELITE_REEL.selection;
+    couvre(buildPlanRadar(PRONO_ELITE_REEL)!, sel);
+    couvre(buildPlanRadar({ ...PRONO_ELITE_REEL, cotes: { 14: 12, 11: 41, 7: 25 } })!, sel);
+  });
+
+  it("couvre toute la sélection — voie rôles, avec du champ", () => {
+    const sel = [7, 2, 11, 9, 3];
+    couvre(
+      buildPlanRadar({
+        selection: sel,
+        selectionDetail: [
+          { number: 7, role: "BASE" },
+          { number: 2, role: "BASE" },
+          { number: 11, role: "OUTSIDER" },
+          { number: 9, role: "CHAMP" },
+          { number: 3, role: "CHAMP" },
+        ],
+      })!,
+      sel,
+    );
+  });
+
+  it("couvre toute la sélection — même les chevaux absents de selection_detail", () => {
+    const sel = [7, 2, 11, 9];
+    const r = buildPlanRadar({
+      selection: sel,
+      selectionDetail: [{ number: 7, role: "BASE" }], // 2, 11 et 9 non décrits
+    })!;
+    couvre(r, sel);
+    expect(r.champ).toEqual([2, 11, 9]);
+  });
+});
+
 describe("buildPlanRadar — rien à afficher", () => {
   it("renvoie null sans plan de jeu NI rôles (cas saisie manuelle)", () => {
     expect(buildPlanRadar({ selection: [14, 3, 12, 8] })).toBeNull();

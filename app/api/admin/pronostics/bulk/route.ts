@@ -178,16 +178,21 @@ export async function POST(req: NextRequest) {
 
   // 5. Récupérer les pronostics existants pour ces courses (pour UPSERT logic)
   const courseIds = Array.from(new Set(Array.from(courseMap.values()).map((c) => c.id)));
-  let existingByCourseId = new Map<string, string>(); // course_id → pronostic.id (premier trouvé)
+  // course_id → { id, selection } — la sélection sert à savoir si les colonnes
+  // dérivées (rôles, plan de jeu, ticket, analyse) décrivent encore le pronostic.
+  let existingByCourseId = new Map<string, { id: string; selection: number[] }>();
   if (courseIds.length > 0) {
     const { data: existing } = await supabase
       .from("pronostics")
-      .select("id, course_id")
+      .select("id, course_id, selection")
       .in("course_id", courseIds);
     for (const p of existing ?? []) {
       // On garde le premier pronostic trouvé par course (cas pas de doublon attendu mais safe)
       if (!existingByCourseId.has(p.course_id)) {
-        existingByCourseId.set(p.course_id, p.id);
+        existingByCourseId.set(p.course_id, {
+          id: p.id,
+          selection: Array.isArray(p.selection) ? p.selection.map(Number) : [],
+        });
       }
     }
   }
@@ -219,27 +224,32 @@ export async function POST(req: NextRequest) {
       date_publication: nowISO,
       source:           "ADMIN",
       updated_at:       nowISO,
-      // Le bulk REMPLACE un pronostic existant (typiquement celui de l'IA-cron).
-      // Ces 4 colonnes décrivent l'ANCIENNE sélection : les garder afficherait
-      // des rôles, un plan de jeu et un ticket qui contredisent les numéros
-      // publiés. On les efface avec le contenu qu'elles décrivaient.
-      selection_detail: null,
-      plan_de_jeu:      null,
-      suggested_ticket: null,
-      analyse_texte:    null,
     };
 
-    const existingId = existingByCourseId.get(course.id);
-    if (existingId) {
-      // UPDATE pronostic existant (remplace l'IA-cron par exemple)
+    const existant = existingByCourseId.get(course.id);
+    if (existant) {
+      // Le bulk REMPLACE un pronostic existant (typiquement celui de l'IA-cron).
+      // Ces 4 colonnes décrivent l'ANCIENNE sélection : les garder afficherait
+      // des rôles, un plan de jeu et un ticket portant sur des chevaux qui ne
+      // sont plus au pronostic. On ne les efface QUE si la sélection a
+      // réellement changé — sinon un simple re-run du lot (correction d'une
+      // autre ligne, republication partielle) détruirait une analyse et une
+      // hiérarchie saisies à la main, que le bulk ne sait pas réécrire.
+      const memeSelection =
+        existant.selection.length === p.selection.length &&
+        existant.selection.every((n, i) => n === p.selection[i]);
+      const nettoyage = memeSelection
+        ? {}
+        : { selection_detail: null, plan_de_jeu: null, suggested_ticket: null, analyse_texte: null };
+
       const { error } = await supabase
         .from("pronostics")
-        .update(payload)
-        .eq("id", existingId);
+        .update({ ...payload, ...nettoyage })
+        .eq("id", existant.id);
       if (error) {
         results.push({ ref: p.ref, status: "error", error: error.message });
       } else {
-        results.push({ ref: p.ref, status: "updated", pronostic_id: existingId, course_id: course.id });
+        results.push({ ref: p.ref, status: "updated", pronostic_id: existant.id, course_id: course.id });
       }
     } else {
       // INSERT nouveau
