@@ -219,6 +219,14 @@ export async function POST(req: NextRequest) {
       date_publication: nowISO,
       source:           "ADMIN",
       updated_at:       nowISO,
+      // Le bulk REMPLACE un pronostic existant (typiquement celui de l'IA-cron).
+      // Ces 4 colonnes décrivent l'ANCIENNE sélection : les garder afficherait
+      // des rôles, un plan de jeu et un ticket qui contredisent les numéros
+      // publiés. On les efface avec le contenu qu'elles décrivaient.
+      selection_detail: null,
+      plan_de_jeu:      null,
+      suggested_ticket: null,
+      analyse_texte:    null,
     };
 
     const existingId = existingByCourseId.get(course.id);
