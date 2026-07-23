@@ -13,6 +13,7 @@ import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/g
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
+import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
 import { buildNotreSelection, shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
@@ -101,6 +102,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
       date_course, heure_depart, distance_metres,
       categorie, terrain, nb_partants, statut, arrivee_officielle,
       geny_url,
+      paris_disponibles, jouable_afrique, nationale,
       hippodrome:hippodromes(nom, pays, ville),
       partants(
         id, numero, nom_cheval, jockey, entraineur,
@@ -327,6 +329,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
                       <CheckCircle2 className="w-3 h-3" /> Terminé
                     </span>
                   )}
+
+                  <BadgeJouableAfrique course={c} />
 
                   {/* Liens externes */}
                   <div className="ml-auto flex items-center gap-2">

@@ -25,6 +25,7 @@ import {
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 import DateRangeNav from "@/components/ui/DateRangeNav";
+import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
@@ -116,7 +117,7 @@ export default async function QuintePlusPage({ params }: PageProps) {
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
       categorie, terrain, nb_partants, statut, arrivee_officielle,
-      paris_disponibles,
+      paris_disponibles, jouable_afrique, nationale,
       hippodrome:hippodromes(id, nom, pays, ville),
       partants(
         id, numero, nom_cheval, jockey, entraineur,
@@ -307,6 +308,7 @@ export default async function QuintePlusPage({ params }: PageProps) {
                 <span className="text-gold-primary text-xs font-bold uppercase tracking-wider">
                   Quinté+ R{c.numero_reunion}C{c.numero_course}
                 </span>
+                <BadgeJouableAfrique course={c} />
               </div>
               <h1 className="font-serif font-bold text-text-primary text-xl sm:text-2xl mb-1">
                 {c.libelle}
