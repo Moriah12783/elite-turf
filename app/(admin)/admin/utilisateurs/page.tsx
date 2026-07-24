@@ -4,14 +4,42 @@ import { Users, Search, Crown, Star } from "lucide-react";
 
 export const metadata = { title: "Utilisateurs — Admin" };
 
+// Nb de lignes affichées dans le tableau. Les COMPTEURS, eux, portent sur toute
+// la base (count exact) — ne jamais les recalculer sur cette liste tronquée.
+const LISTE_LIMIT = 500;
+
 export default async function AdminUtilisateursPage() {
   const supabase = createServiceClient();
 
-  const { data: users } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("date_inscription", { ascending: false })
-    .limit(100);
+  // Compteurs = count exact côté base (comme le Dashboard). Les déduire de la
+  // liste plafonnée donnait un total faux et une répartition fausse dès
+  // qu'on dépassait la limite (bug : 104 membres affichés « 100 », 2 Elite « 1 »).
+  const countProfiles = (build: (q: any) => any) =>
+    build(supabase.from("profiles").select("*", { count: "exact", head: true }));
+
+  const [
+    { count: total },
+    { count: starterPro },
+    { count: elite },
+    { count: gratuit },
+    { count: expire },
+    { data: users },
+  ] = await Promise.all([
+    countProfiles((q) => q),
+    countProfiles((q) => q.in("statut_abonnement", ["STARTER", "PRO"])),
+    countProfiles((q) => q.eq("statut_abonnement", "ELITE")),
+    countProfiles((q) => q.eq("statut_abonnement", "GRATUIT")),
+    countProfiles((q) => q.eq("statut_abonnement", "EXPIRE")),
+    supabase
+      .from("profiles")
+      .select("*")
+      .order("date_inscription", { ascending: false })
+      .limit(LISTE_LIMIT),
+  ]);
+
+  const totalMembres = total ?? 0;
+  const nbAffiches = users?.length ?? 0;
+  const listeTronquee = totalMembres > nbAffiches;
 
   const STATUT_BADGE: Record<string, string> = {
     GRATUIT:  "bg-bg-elevated text-text-muted border-border",
@@ -34,18 +62,18 @@ export default async function AdminUtilisateursPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-text-primary">Utilisateurs</h1>
-          <p className="text-text-secondary text-sm mt-1">{users?.length || 0} membres</p>
+          <p className="text-text-secondary text-sm mt-1">{totalMembres} membres</p>
         </div>
       </div>
 
       {/* Stats rapides */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: "Total", value: users?.length || 0, icon: Users, color: "text-blue-400" },
-          { label: "Starter + Pro", value: users?.filter(u => ["STARTER","PRO"].includes(u.statut_abonnement)).length || 0, icon: Star, color: "text-gold-primary" },
-          { label: "Elite", value: users?.filter(u => u.statut_abonnement === "ELITE").length || 0, icon: Crown, color: "text-purple-400" },
-          { label: "Gratuit", value: users?.filter(u => u.statut_abonnement === "GRATUIT").length || 0, icon: Users, color: "text-text-secondary" },
-          { label: "Expirés", value: users?.filter(u => u.statut_abonnement === "EXPIRE").length || 0, icon: Users, color: "text-status-loss" },
+          { label: "Total", value: totalMembres, icon: Users, color: "text-blue-400" },
+          { label: "Starter + Pro", value: starterPro ?? 0, icon: Star, color: "text-gold-primary" },
+          { label: "Elite", value: elite ?? 0, icon: Crown, color: "text-purple-400" },
+          { label: "Gratuit", value: gratuit ?? 0, icon: Users, color: "text-text-secondary" },
+          { label: "Expirés", value: expire ?? 0, icon: Users, color: "text-status-loss" },
         ].map((s, i) => (
           <div key={i} className="card-base p-4">
             <s.icon className={`w-4 h-4 ${s.color} mb-2`} />
@@ -54,6 +82,14 @@ export default async function AdminUtilisateursPage() {
           </div>
         ))}
       </div>
+
+      {/* Le tableau n'affiche que les plus récents : le dire explicitement pour
+          qu'on ne le reprenne jamais pour un total (cause du bug initial). */}
+      {listeTronquee && (
+        <p className="text-text-muted text-xs">
+          Tableau : les {nbAffiches} membres les plus récents (sur {totalMembres}).
+        </p>
+      )}
 
       {/* Table */}
       <div className="card-base overflow-hidden">
