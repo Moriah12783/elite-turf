@@ -18,6 +18,7 @@ import { todayParisISO, tomorrowParisISO } from "@/lib/paris-date";
 import { runPmuProgrammeSync } from "./pmu-programme";
 import { runLonaciProgrammeSync } from "./lonaci-programme";
 import { runGenybetProgrammeSync } from "./genybet-programme";
+import { runGenybetDisciplineSync } from "./genybet-discipline";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -376,6 +377,34 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
       ? tomorrowParisISO()
       : rawDate;
 
+  const result = await loadGenyProgramme(dateISO);
+
+  // ── Overlay discipline (correctif « tout en Plat ») ──────────────────────
+  // Quelle que soit la source qui a inséré (Geny/PMU/LONACI hard-codent souvent
+  // "PLAT"), on rejoue la discipline depuis GenyBet (non bloqué) et on corrige
+  // `courses.categorie`. Best-effort : un incident GenyBet ne casse jamais le
+  // chargement du programme.
+  if (result.courses > 0) {
+    try {
+      const d = await runGenybetDisciplineSync(dateISO);
+      console.log(
+        `[Programme] discipline overlay ${dateISO} → ${d.updated} corrigées ` +
+        `(${d.matched} matchées, ${d.unmatched_hippodrome + d.unmatched_course} non matchées)`,
+      );
+    } catch (e) {
+      console.warn(`[Programme] discipline overlay KO (${e instanceof Error ? e.message : String(e)}) — categorie non corrigée`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Charge le programme d'une date via la chaîne Geny → PMU → LONACI → GenyBet et
+ * l'upsert. Extrait de runGenyProgrammeSync pour que l'overlay discipline
+ * s'applique APRÈS, quelle que soit la source ayant inséré.
+ */
+async function loadGenyProgramme(dateISO: string): Promise<GenyProgrammeResult> {
   // Geny bloque désormais l'IP du Worker ET de GitHub Actions (429, constaté
   // 03/07). On tente Geny (données riches), et on BASCULE sur PMU.fr (API
   // officielle via le proxy `pmu-proxy`, non bloquée) si le scrape échoue ou
