@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { normalizePmuReunions, type PmuReunion } from "./pmu-api";
+import {
+  normalizePmuReunions,
+  toPmuUrlDate,
+  buildProgrammeUrls,
+  type PmuReunion,
+} from "./pmu-api";
 import { canonicalHippodrome } from "./sync/hippodrome-canonical";
 
 /**
@@ -211,5 +216,92 @@ describe("normalizePmuReunions — anti-fabrication", () => {
       courses: [{ ...(reunionLive().courses[0] as object), distance: undefined }],
     });
     expect(normalizePmuReunions([sansDist])[0].distanceMetres).toBe(0);
+  });
+});
+
+// ── Format de date de l'URL PMU ───────────────────────────────────────────
+
+/**
+ * L'API PMU attend `DDMMYYYY`. Vérifié le 2026-07-25 :
+ * `/programme/25072026` -> 200 ; `/programme/20260725` -> 400 « Requête
+ * invalide ». Or `toDateStr()` et les appelants produisent `YYYYMMDD`.
+ */
+describe("toPmuUrlDate", () => {
+  it("convertit YYYYMMDD en DDMMYYYY", () => {
+    expect(toPmuUrlDate("20260725")).toBe("25072026");
+  });
+
+  it("convertit une date en début de mois sans perdre les zéros", () => {
+    expect(toPmuUrlDate("20260101")).toBe("01012026");
+  });
+
+  it("refuse une date malformée plutôt que de fabriquer une URL fausse", () => {
+    expect(() => toPmuUrlDate("2026-07-25")).toThrow();
+    expect(() => toPmuUrlDate("250726")).toThrow();
+    expect(() => toPmuUrlDate("")).toThrow();
+  });
+});
+
+// ── Ordre des URLs du programme ───────────────────────────────────────────
+
+describe("buildProgrammeUrls", () => {
+  it("attaque d'abord /programme, le seul endpoint qui répond 200", () => {
+    const urls = buildProgrammeUrls("20260725");
+    expect(urls[0]).toContain("/programme/25072026");
+    expect(urls[0]).not.toContain("/programmeComplet");
+  });
+
+  it("date toutes les URLs /programme en DDMMYYYY", () => {
+    for (const u of buildProgrammeUrls("20260725")) {
+      if (u.indexOf("/programmeComplet/") >= 0) continue;
+      expect(u).toContain("/programme/25072026");
+      expect(u).not.toContain("20260725");
+    }
+  });
+
+  it("garde /programmeComplet en dernier recours si PMU le rétablissait", () => {
+    const urls = buildProgrammeUrls("20260725");
+    const complets = urls.filter((u) => u.indexOf("/programmeComplet/") >= 0);
+    expect(complets.length).toBeGreaterThan(0);
+    // ...mais jamais avant une URL /programme.
+    const premierComplet = urls.findIndex((u) => u.indexOf("/programmeComplet/") >= 0);
+    const dernierProgramme = urls.map((u) => u.indexOf("/programmeComplet/") < 0).lastIndexOf(true);
+    expect(premierComplet).toBeGreaterThan(dernierProgramme);
+  });
+});
+
+// ── Alias d'hippodromes PMU -> noms en base ───────────────────────────────
+
+/**
+ * `libelleCourt` fait matcher 14 hippodromes sur 18, mais 3 variantes
+ * créeraient un DOUBLON en base (vérifié le 2026-07-25 sur les 183
+ * hippodromes existants). On les rapproche explicitement plutôt que de
+ * relâcher `canonicalHippodrome`, qui est partagé avec LONACI et GenyBet.
+ */
+describe("normalizePmuReunions — alias d'hippodromes", () => {
+  const nomPour = (libelleCourt: string) =>
+    normalizePmuReunions([
+      reunionLive({ hippodrome: { code: "XXX", libelleCourt } }),
+    ])[0]?.hippodromeName;
+
+  it("rapproche CAGNES/MER de « Cagnes-sur-Mer »", () => {
+    expect(nomPour("CAGNES/MER")).toBe("Cagnes-sur-Mer");
+  });
+
+  it("rapproche MAUQUENCHY de « Rouen-Mauquenchy »", () => {
+    expect(nomPour("MAUQUENCHY")).toBe("Rouen-Mauquenchy");
+  });
+
+  it("rapproche CLAIREFONTAINE de « Clairefontaine-Deauville »", () => {
+    expect(nomPour("CLAIREFONTAINE")).toBe("Clairefontaine-Deauville");
+  });
+
+  it("laisse intact un hippodrome qui matche déjà la base", () => {
+    expect(nomPour("ENGHIEN")).toBe("ENGHIEN");
+    expect(nomPour("VICHY")).toBe("VICHY");
+  });
+
+  it("laisse intact un hippodrome réellement inconnu (pas d'alias inventé)", () => {
+    expect(nomPour("GUADELOUPE")).toBe("GUADELOUPE");
   });
 });

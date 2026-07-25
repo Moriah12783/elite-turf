@@ -7,6 +7,8 @@
  *  - Résultats d'une course     : GET /resultats/{YYYYMMDD}/R{R}/C{C}
  */
 
+import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&#0*39;/g, "'")
@@ -159,21 +161,47 @@ const PMU_HEADERS = {
   "Origin":          "https://www.pmu.fr",
 };
 
+/**
+ * "YYYYMMDD" → "DDMMYYYY", le format réellement attendu par l'API PMU.
+ *
+ * Vérifié le 2026-07-25 : `/programme/25072026` répond 200, `/programme/20260725`
+ * répond 400 « Requête invalide ». Or `toDateStr()` et les appelants de la
+ * chaîne de fallback produisent tous du `YYYYMMDD`.
+ *
+ * Lève plutôt que de fabriquer une URL fausse silencieusement.
+ */
+export function toPmuUrlDate(dateStr: string): string {
+  if (!/^\d{8}$/.test(dateStr)) {
+    throw new Error(`Date PMU invalide (format attendu YYYYMMDD) : "${dateStr}"`);
+  }
+  return `${dateStr.slice(6, 8)}${dateStr.slice(4, 6)}${dateStr.slice(0, 4)}`;
+}
+
+/**
+ * URLs du programme PMU, par ordre de préférence.
+ *
+ * `/programme` d'abord : c'est le SEUL endpoint programme qui répond (200,
+ * vérifié le 2026-07-25 via le proxy ET en direct). `/programmeComplet` renvoie
+ * 420 partout depuis le 04/07 — quels que soient le client, le format de date
+ * et `specialisation` — mais on le garde en dernier recours au cas où PMU le
+ * rétablirait : `normalizePmuReunions` sait lire les deux formes de réponse.
+ */
+export function buildProgrammeUrls(dateStr: string): string[] {
+  const d = toPmuUrlDate(dateStr);
+  return [
+    // Vivants — proxy Cloudflare d'abord (l'IP du Worker est bloquée en direct).
+    `${PMU_PROXY}/rest/client/61/programme/${d}`,
+    `${PMU_PROXY}/rest/client/1/programme/${d}`,
+    `${PMU_DIRECT}/rest/client/61/programme/${d}`,
+    // Dernier recours — 420 depuis le 04/07, conservé si le contrat revient.
+    `${PMU_PROXY}/rest/client/1/programmeComplet/${dateStr}?specialisation=INTERNET`,
+    `${PMU_DIRECT}/rest/client/61/programmeComplet/${dateStr}?specialisation=INTERNET`,
+  ];
+}
+
 export async function fetchPmuProgramme(dateStr?: string): Promise<PmuReunion[]> {
   const d = dateStr || toDateStr();
-
-  // Stratégie multi-endpoints : proxy CF → direct PMU (plusieurs client IDs)
-  const urls = [
-    // 1. Proxy Cloudflare Worker (bypass IP Vercel/AWS)
-    `${PMU_PROXY}/rest/client/1/programmeComplet/${d}?specialisation=INTERNET`,
-    `${PMU_PROXY}/rest/client/2/programmeComplet/${d}?specialisation=INTERNET`,
-    // 2. Direct PMU — client web officiel (client/61 = PMU.fr navigateur)
-    `${PMU_DIRECT}/rest/client/61/programmeComplet/${d}?specialisation=INTERNET`,
-    // 3. Direct PMU — client/7 (mobile PMU)
-    `${PMU_DIRECT}/rest/client/7/programmeComplet/${d}?specialisation=INTERNET`,
-    // 4. Direct PMU — client/1 sans specialisation
-    `${PMU_DIRECT}/rest/client/1/programmeComplet/${d}`,
-  ];
+  const urls = buildProgrammeUrls(d);
 
   let lastError = "";
   for (let i = 0; i < urls.length; i++) {
@@ -429,6 +457,30 @@ const PAYS_AUTORISES: Record<string, string> = {
 };
 const MIN_PARTANTS = 8;
 
+/**
+ * Variantes PMU qui ne se rapprochent pas seules d'un hippodrome EXISTANT.
+ *
+ * `libelleCourt` fait matcher 14 hippodromes sur 18 via `canonicalHippodrome` ;
+ * ces 3 formes-là créeraient un DOUBLON (vérifié le 2026-07-25 contre les 183
+ * hippodromes en base). On les rapproche explicitement plutôt que de relâcher
+ * `canonicalHippodrome`, partagé avec LONACI, GenyBet et l'overlay distance —
+ * un assouplissement là-bas risquerait de fusionner des hippodromes distincts.
+ *
+ * Clé = forme canonique (robuste à la casse et à la ponctuation). Un hippodrome
+ * réellement absent de la base (ex. GUADELOUPE) n'a PAS d'alias : on ne lui en
+ * invente pas, il sera créé tel que PMU le nomme.
+ */
+const ALIAS_HIPPODROME_PMU: Record<string, string> = {
+  cagnesmer:      "Cagnes-sur-Mer",
+  mauquenchy:     "Rouen-Mauquenchy",
+  clairefontaine: "Clairefontaine-Deauville",
+};
+
+/** Nom d'hippodrome PMU rapproché du nom en base, sinon rendu inchangé. */
+function resolveHippodromeNom(nom: string): string {
+  return ALIAS_HIPPODROME_PMU[canonicalHippodrome(nom)] || nom;
+}
+
 export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[] {
   const courses: NormalizedCourse[] = [];
 
@@ -451,8 +503,9 @@ export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[]
     // `libelleCourt` d'abord : « ENGHIEN » se rapproche du nom en base
     // (« Enghien ») via `canonicalHippodrome`, là où `libelleLong`
     // (« HIPPODROME D'ENGHIEN SOISY ») créerait un hippodrome en DOUBLON.
-    const hipNom = reunion.hippodrome?.libelleCourt || reunion.hippodrome?.libelleLong || "";
-    if (!hipNom) continue;
+    const hipNomBrut = reunion.hippodrome?.libelleCourt || reunion.hippodrome?.libelleLong || "";
+    if (!hipNomBrut) continue;
+    const hipNom = resolveHippodromeNom(hipNomBrut);
 
     for (const c of reunion.courses ?? []) {
       const nbPartants = c.nombreDeclaresPartants || 0;
