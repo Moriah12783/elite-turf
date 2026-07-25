@@ -173,11 +173,11 @@ export default function PronosticGratuitClient({
                 {p}
               </span>
             ))}
-            {course.distance_metres && (
+            {course.distance_metres ? (
               <span className="text-xs px-2 py-0.5 bg-bg-elevated border border-border rounded text-text-secondary">
                 {course.distance_metres}m
               </span>
-            )}
+            ) : null}
             {course.terrain && (
               <span className="text-xs px-2 py-0.5 bg-bg-elevated border border-border rounded text-text-secondary">
                 {course.terrain}

@@ -384,7 +384,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
                   {[
                     { icon: MapPin,     label: "Hippodrome", value: c.hippodrome?.nom,         sub: c.hippodrome?.pays },
                     { icon: Clock,      label: "Départ",     value: c.heure_depart?.slice(0,5), sub: c.date_course, gold: true },
-                    { icon: TrendingUp, label: "Distance",   value: `${c.distance_metres}m`,   sub: TERRAIN_LABELS[c.terrain] || c.terrain },
+                    // Distance inconnue => valeur vide : le rendu affiche « — »
+                    // (cf. `item.value || "—"` plus bas). Jamais « 0m ».
+                    { icon: TrendingUp, label: "Distance",   value: c.distance_metres ? `${c.distance_metres}m` : "", sub: TERRAIN_LABELS[c.terrain] || c.terrain },
                     { icon: Users,      label: "Partants",   value: `${partants.length || c.nb_partants}`, sub: `${c.nb_partants} engagés` },
                   ].map((item, i) => (
                     <div key={i} className="p-3 bg-bg-elevated rounded-xl border border-border/50">

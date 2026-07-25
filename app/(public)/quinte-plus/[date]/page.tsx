@@ -318,7 +318,8 @@ export default async function QuintePlusPage({ params }: PageProps) {
                 {c.heure_depart && (
                   <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" />{c.heure_depart.substring(0, 5)}</span>
                 )}
-                {c.distance_metres && <span>· {c.distance_metres} m</span>}
+                {/* Ternaire (pas `&&`) : avec `0 && …` React afficherait un « 0 » nu. */}
+                {c.distance_metres ? <span>· {c.distance_metres} m</span> : null}
                 {c.categorie && <span>· {c.categorie}</span>}
                 {c.terrain && <span>· {c.terrain}</span>}
                 <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" />{c.nb_partants} partants</span>

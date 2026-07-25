@@ -189,7 +189,11 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
                 </span>
               )}
               <BadgeJouableAfrique course={c} />
-              <span className="text-text-muted text-xs">{c.distance_metres}m</span>
+              {/* Distance inconnue (source sans distance) => on n'affiche RIEN.
+                  Afficher « 0m » à un parieur est pire que ne rien afficher. */}
+              {c.distance_metres ? (
+                <span className="text-text-muted text-xs">{c.distance_metres}m</span>
+              ) : null}
               {c.terrain && (
                 <span className="text-text-muted text-xs">· {TERRAIN_LABELS[c.terrain] || c.terrain}</span>
               )}

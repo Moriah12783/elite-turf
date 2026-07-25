@@ -19,6 +19,7 @@ import { runPmuProgrammeSync } from "./pmu-programme";
 import { runLonaciProgrammeSync } from "./lonaci-programme";
 import { runGenybetProgrammeSync } from "./genybet-programme";
 import { runGenybetDisciplineSync } from "./genybet-discipline";
+import { runPmuDistanceSync } from "./pmu-distance";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -393,6 +394,22 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
       );
     } catch (e) {
       console.warn(`[Programme] discipline overlay KO (${e instanceof Error ? e.message : String(e)}) — categorie non corrigée`);
+    }
+
+    // ── Overlay distance (correctif « 0m partout ») ────────────────────────
+    // Même mécanisme : Geny et GenyBet insèrent `distance_metres: 0` en dur et
+    // rien ne le corrigeait ensuite. L'API PMU (via proxy) fournit la vraie
+    // distance. Best-effort et indépendant de l'overlay discipline : si l'un
+    // échoue, l'autre s'applique quand même.
+    try {
+      const d = await runPmuDistanceSync(dateISO);
+      console.log(
+        `[Programme] distance overlay ${dateISO} → ${d.updated} corrigées ` +
+        `(${d.matched} matchées, ${d.unmatched_hippodrome + d.unmatched_course} non matchées, ` +
+        `${d.source_sans_distance} sans distance source)`,
+      );
+    } catch (e) {
+      console.warn(`[Programme] distance overlay KO (${e instanceof Error ? e.message : String(e)}) — distance_metres non corrigée`);
     }
   }
 

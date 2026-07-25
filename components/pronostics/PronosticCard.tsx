@@ -155,7 +155,9 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
               <Clock className="w-3.5 h-3.5" />
               {p.course.heure_depart.slice(0, 5)}
             </div>
-            <span className="text-text-muted text-xs">{p.course.distance_metres}m</span>
+            {p.course.distance_metres ? (
+              <span className="text-text-muted text-xs">{p.course.distance_metres}m</span>
+            ) : null}
           </div>
         )}
 
