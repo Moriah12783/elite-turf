@@ -298,7 +298,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                   <div className="flex items-center gap-1.5">
                     <TrendingUp className="w-3.5 h-3.5 text-gold-primary flex-shrink-0" />
                     <span className="text-text-primary text-sm font-semibold">
-                      {course.distance_metres}m
+                      {course.distance_metres ? `${course.distance_metres}m` : "—"}
                     </span>
                   </div>
                   <span className="text-text-muted text-xs">{course.categorie}</span>
