@@ -239,20 +239,80 @@ export async function scrapeGenyProgramme(dateISO: string): Promise<GenyCourse[]
 
 // ── Sync Supabase (bulk) ──────────────────────────────────────────────────
 
+// ── Client Supabase : sous-ensemble réellement appelé ici ──────────────────
+//
+// Typer explicitement ce qu'on utilise permet d'injecter un double en test
+// (`opts.client`) et donc d'exercer le VRAI câblage — lecture des `{ error }`
+// comprise — sans base de données.
+
+/** Réponse brute d'une requête supabase-js (sous-ensemble utilisé ici). */
+interface SupabaseResponse {
+  data:   unknown[] | null;
+  error:  { message: string } | null;
+  count?: number | null;
+}
+
+/** SELECT chaînable : `.in(...)` (× 1 ou 2) puis `await`. */
+interface SelectBuilder extends PromiseLike<SupabaseResponse> {
+  in(column: string, values: readonly (string | number)[]): SelectBuilder;
+}
+
+/** INSERT : `await` direct, ou `.select(...)` pour récupérer les lignes créées. */
+interface InsertBuilder extends PromiseLike<SupabaseResponse> {
+  select(columns: string): PromiseLike<SupabaseResponse>;
+}
+
+export interface GenyProgrammeClient {
+  from(table: string): {
+    select(columns: string): SelectBuilder;
+    insert(rows: Record<string, unknown>[], options?: { count?: "exact" }): InsertBuilder;
+    upsert(rows: Record<string, unknown>[], options?: { count?: "exact" }): PromiseLike<SupabaseResponse>;
+  };
+}
+
+/**
+ * ANTI-SILENT-FAILURE : toute erreur renvoyée par supabase-js remonte en
+ * exception. Une écriture refusée (NOT NULL, overflow numérique, RLS…) ne doit
+ * JAMAIS passer pour un succès : `loadGenyProgramme` renverrait `source: "geny"`
+ * avec un compte fabriqué, la CLI/cron verrait un succès, et le programme du
+ * jour resterait vide sans que personne ne soit alerté.
+ */
+function assertOk(operation: string, res: { error: { message: string } | null }): void {
+  if (res.error) throw new Error(`geny-programme: ${operation} échoué — ${res.error.message}`);
+}
+
+/**
+ * Écrit le programme scrapé sur Geny (hippodromes + courses).
+ *
+ * ⚠️ CONTRAT ANTI-SILENT-FAILURE : toute requête Supabase en échec lève une
+ * exception, et `inserted`/`updated` ne comptent que les lignes que la base
+ * confirme avoir écrites (`count: "exact"`). Historique du bug : le `{ error }`
+ * de supabase-js n'était lu dans AUCUNE des 5 requêtes de cette fonction —
+ * même piège que la voie de secours partagée (`programme-upsert.ts`).
+ *
+ * @param opts.client client Supabase injectable (test). Défaut : service role.
+ * @throws si une requête Supabase échoue (voir `assertOk`).
+ */
 export async function syncCoursesToDB(
   courses: GenyCourse[],
+  opts: { client?: GenyProgrammeClient } = {},
 ): Promise<{ inserted: number; updated: number; hippodromes: number }> {
-  const supabase = createServiceClient();
+  if (!courses.length) return { inserted: 0, updated: 0, hippodromes: 0 };
+  const supabase = opts.client ?? (createServiceClient() as unknown as GenyProgrammeClient);
   const hipNoms  = Array.from(new Set(courses.map((c) => c.hippodromeNom)));
   const hipMap: Record<string, string> = {};
 
   // 1. Hippodromes — 1 SELECT bulk + 1 INSERT bulk
-  const { data: existingHips } = await supabase
+  const hipRes = await supabase
     .from("hippodromes")
     .select("id, nom")
     .in("nom", hipNoms);
+  // Un SELECT KO renvoie `data: null` : sans remontée, tous les hippodromes
+  // passeraient pour manquants et on tenterait de les recréer (doublons).
+  assertOk("SELECT des hippodromes", hipRes);
+  const existingHips = (hipRes.data ?? []) as Array<{ id: string; nom: string }>;
 
-  for (const hip of existingHips ?? []) {
+  for (const hip of existingHips) {
     hipMap[hip.nom] = hip.id;
   }
 
@@ -267,11 +327,16 @@ export async function syncCoursesToDB(
     }));
 
   if (missingHips.length > 0) {
-    const { data: insertedHips } = await supabase
+    const hipInsRes = await supabase
       .from("hippodromes")
       .insert(missingHips)
       .select("id, nom");
-    for (const hip of insertedHips ?? []) {
+    // Sans remontée : `hipMap` reste vide pour ces hippodromes, TOUTES leurs
+    // courses sont ignorées plus bas (`continue`) et la fonction renvoie
+    // `inserted: 0` sans erreur — un faux succès de plus.
+    assertOk(`INSERT de ${missingHips.length} hippodrome(s)`, hipInsRes);
+    const insertedHips = (hipInsRes.data ?? []) as Array<{ id: string; nom: string }>;
+    for (const hip of insertedHips) {
       hipMap[hip.nom] = hip.id;
     }
   }
@@ -290,12 +355,15 @@ export async function syncCoursesToDB(
 
   let existingCourses: ExistingCourse[] = [];
   if (hipIds.length > 0 && dates.length > 0) {
-    const { data } = await supabase
+    const exRes = await supabase
       .from("courses")
       .select("id, hippodrome_id, date_course, numero_reunion, numero_course")
       .in("hippodrome_id", hipIds)
       .in("date_course", dates);
-    existingCourses = (data as ExistingCourse[]) ?? [];
+    // Sans remontée : `data: null` → aucune course connue → tout repart en
+    // INSERT, y compris les courses déjà en base (doublons).
+    assertOk("SELECT des courses existantes", exRes);
+    existingCourses = (exRes.data ?? []) as ExistingCourse[];
   }
 
   const courseKey = (hipId: string, date: string, reunion: number, course: number) =>
@@ -347,16 +415,29 @@ export async function syncCoursesToDB(
     }
   }
 
+  // On ne compte QUE ce que la base confirme avoir écrit (`count: "exact"`).
+  // `count` absent (en-tête Content-Range manquant) alors qu'aucune erreur n'est
+  // remontée = écriture réussie : un INSERT/UPSERT bulk PostgreSQL est atomique,
+  // donc toutes les lignes envoyées sont passées. On retombe alors sur leur
+  // nombre plutôt que de rapporter 0 (même repli que `programme-upsert.ts`).
+  let inserted = 0;
+  let updated  = 0;
+
   if (toInsert.length > 0) {
-    await supabase.from("courses").insert(toInsert);
+    const insRes = await supabase.from("courses").insert(toInsert, { count: "exact" });
+    assertOk(`INSERT de ${toInsert.length} course(s)`, insRes);
+    inserted = insRes.count ?? toInsert.length;
   }
+
   if (toUpsert.length > 0) {
-    await supabase.from("courses").upsert(toUpsert);
+    const upsRes = await supabase.from("courses").upsert(toUpsert, { count: "exact" });
+    assertOk(`UPSERT de ${toUpsert.length} course(s)`, upsRes);
+    updated = upsRes.count ?? toUpsert.length;
   }
 
   return {
-    inserted:    toInsert.length,
-    updated:     toUpsert.length,
+    inserted,
+    updated,
     hippodromes: Object.keys(hipMap).length,
   };
 }
