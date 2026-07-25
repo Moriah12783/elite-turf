@@ -42,6 +42,12 @@ export interface UpsertResult {
   inserted:    number;
   updated:     number;
   hippodromes: number;
+  /**
+   * Courses écartées faute d'hippodrome résolu (ni trouvé, ni créé) : elles
+   * n'ont PAS été écrites. Rapporté plutôt que passé sous silence — sans ça,
+   * `inserted` plus bas que prévu passe pour un programme simplement plus léger.
+   */
+  skipped:     number;
 }
 
 // ── Client Supabase : sous-ensemble réellement appelé ici ──────────────────
@@ -98,7 +104,7 @@ export async function upsertProgrammeCourses(
   courses: ProgrammeCourse[],
   opts: { client?: ProgrammeUpsertClient } = {},
 ): Promise<UpsertResult> {
-  if (!courses.length) return { inserted: 0, updated: 0, hippodromes: 0 };
+  if (!courses.length) return { inserted: 0, updated: 0, hippodromes: 0, skipped: 0 };
   const supabase = opts.client ?? (createServiceClient() as unknown as ProgrammeUpsertClient);
 
   // ── Hippodromes ────────────────────────────────────────────────────────
@@ -171,10 +177,18 @@ export async function upsertProgrammeCourses(
 
   const toInsert: Record<string, unknown>[] = [];
   const toUpsert: Record<string, unknown>[] = [];
+  const skippedHippodromes: Record<string, boolean> = {};
+  let skipped = 0;
 
   for (const c of courses) {
     const hippodromeId = hipMap[c.hippodromeName];
-    if (!hippodromeId) continue;
+    // Hippodrome ni trouvé ni créé : la course n'est pas écrivable. On la
+    // compte au lieu de la faire disparaître (cf. `UpsertResult.skipped`).
+    if (!hippodromeId) {
+      skipped++;
+      skippedHippodromes[c.hippodromeName] = true;
+      continue;
+    }
 
     const existingId = existingCourseMap.get(
       courseKey(hippodromeId, c.dateCourse, c.numeroReunion, c.numeroCourse),
@@ -226,9 +240,19 @@ export async function upsertProgrammeCourses(
     updated = upsRes.count ?? toUpsert.length;
   }
 
+  // Le champ `skipped` ne sert à rien si personne ne le lit : on le trace aussi
+  // dans les logs GitHub Actions, avec les hippodromes fautifs pour diagnostic.
+  if (skipped > 0) {
+    console.warn(
+      `[programme-upsert] ${skipped} course(s) écartée(s) — hippodrome non résolu : ` +
+      Object.keys(skippedHippodromes).join(", "),
+    );
+  }
+
   return {
     inserted,
     updated,
     hippodromes: Object.keys(hipMap).length,
+    skipped,
   };
 }

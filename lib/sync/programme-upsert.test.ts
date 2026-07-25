@@ -248,7 +248,7 @@ describe("upsertProgrammeCourses — comptage fidèle", () => {
       { client },
     );
 
-    expect(r).toEqual({ inserted: 1, updated: 1, hippodromes: 1 });
+    expect(r).toEqual({ inserted: 1, updated: 1, hippodromes: 1, skipped: 0 });
     expect(calls).toContain("courses.insert(1)");
     expect(calls).toContain("courses.upsert(1)");
   });
@@ -256,7 +256,54 @@ describe("upsertProgrammeCourses — comptage fidèle", () => {
   it("liste vide → aucun appel à la base", async () => {
     const { client, calls } = fakeSupabase({});
     const r = await upsertProgrammeCourses([], { client });
-    expect(r).toEqual({ inserted: 0, updated: 0, hippodromes: 0 });
+    expect(r).toEqual({ inserted: 0, updated: 0, hippodromes: 0, skipped: 0 });
     expect(calls).toEqual([]);
+  });
+});
+
+describe("upsertProgrammeCourses — courses écartées (skipped)", () => {
+  /**
+   * Dernier trou silencieux du flux : une course dont l'hippodrome n'a pas pu
+   * être résolu est ignorée (`continue`) et n'apparaît nulle part dans le
+   * rapport. Toute erreur Supabase levant désormais, ce cas ne survient plus
+   * que si l'INSERT des hippodromes RÉUSSIT en renvoyant moins de lignes
+   * qu'envoyées (RLS filtrante sur le RETURNING, `ignoreDuplicates`…) — d'où
+   * un `{ data: [], error: null }` dans les doubles ci-dessous, et non une erreur.
+   */
+  it("compte les courses dont l'hippodrome n'a pas pu être résolu", async () => {
+    const { client, calls } = fakeSupabase({
+      hippodromesSelect: { data: [], error: null },
+      // INSERT accepté mais aucune ligne en retour → hippodrome introuvable.
+      hippodromesInsert: { data: [], error: null },
+    });
+
+    const r = await upsertProgrammeCourses(
+      [course({ numeroCourse: 1 }), course({ numeroCourse: 2 })],
+      { client },
+    );
+
+    expect(r).toEqual({ inserted: 0, updated: 0, hippodromes: 0, skipped: 2 });
+    // Rien n'a été écrit : le rapport ne doit pas laisser croire le contraire.
+    expect(calls).not.toContain("courses.insert(2)");
+  });
+
+  it("résolution partielle : seules les courses de l'hippodrome inconnu sont écartées", async () => {
+    const { client } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      hippodromesInsert: { data: [], error: null },
+      coursesInsert:     { error: null, count: 1 },
+    });
+
+    const r = await upsertProgrammeCourses(
+      [
+        course({ numeroCourse: 1 }),
+        course({ numeroCourse: 2, hippodromeName: "Hippodrome Fantome" }),
+      ],
+      { client },
+    );
+
+    expect(r.inserted).toBe(1);
+    expect(r.skipped).toBe(1);
+    expect(r.hippodromes).toBe(1);
   });
 });
