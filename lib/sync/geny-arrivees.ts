@@ -20,6 +20,7 @@
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { buildGenyUrlFromStored } from "@/lib/geny";
 import { fetchGenybetArriveesMap } from "@/lib/sync/genybet-arrivees";
+import { fetchPmuArriveesDuJour } from "@/lib/sync/pmu-arrivees";
 import { todayParisISO } from "@/lib/paris-date";
 import {
   parseRapportsPMU,
@@ -572,6 +573,67 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     } catch (e) {
       console.warn(`[geny-arrivees] Fallback GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // ── SOURCE D'AUTORITÉ : l'API PMU ────────────────────────────────────────
+  // `fetchArriveeForCourse` ne vérifie PAS que la page Geny reçue correspond à
+  // la course demandée. Quand Geny sert une page générique (il bloque nos IP),
+  // le parseur en extrait l'arrivée qui s'y trouve. Constaté le 27/07/2026 :
+  // une même arrivée sur 18 courses de 5 hippodromes, 134 courses contaminées
+  // sur 19 jours. `validNumbers` ne rattrape rien : une arrivée 2-8-1-7-3-5 ne
+  // contient que des petits dossards, valides dans presque toutes les courses.
+  //
+  // L'API PMU indexe l'arrivée par réunion/course : l'ambiguïté est impossible.
+  // Appliquée EN DERNIER → elle prime sur Geny et sur GenyBet.
+  try {
+    const pmuMap = await fetchPmuArriveesDuJour(date);
+    if (pmuMap.size > 0) {
+      const parId = new Map(unique.map((c) => [c.id, c]));
+      let corriges = 0;
+
+      for (const v of valid) {
+        const c = parId.get(v.courseId);
+        if (!c) continue;
+        const off = pmuMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!off || off.length < 3) continue;
+        const attendu = off.slice(0, maxHorsesForParis(c.parisDisponibles));
+        const identique = v.arrivee.length === attendu.length
+          && v.arrivee.every((n, i) => n === attendu[i]);
+        if (!identique) {
+          console.warn(
+            `[geny-arrivees] ⚠️ R${c.numero_reunion}C${c.numero_course} : ` +
+            `Geny ${v.arrivee.join("-")} ≠ PMU ${attendu.join("-")} → PMU retenue`,
+          );
+          v.arrivee = attendu;
+          corriges++;
+        }
+      }
+
+      // Compléter les courses qu'aucune source n'avait ramenées.
+      const dejaVues = new Set(valid.map((v) => v.courseId));
+      let ajoutes = 0;
+      for (const c of unique) {
+        if (dejaVues.has(c.id)) continue;
+        const off = pmuMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!off || off.length < 3) continue;
+        valid.push({
+          courseId: c.id,
+          arrivee: off.slice(0, maxHorsesForParis(c.parisDisponibles)),
+          rapports: null,
+          commentaire: null,
+        });
+        ajoutes++;
+      }
+      console.log(
+        `[geny-arrivees] PMU (autorité) : ${corriges} corrigée(s), ${ajoutes} ajoutée(s) ` +
+        `sur ${pmuMap.size} arrivées définitives connues`,
+      );
+    } else {
+      // Map vide ≠ « aucune arrivée » : on ne supprime rien, on signale.
+      console.warn("[geny-arrivees] PMU indisponible — arrivées Geny NON vérifiées");
+    }
+  } catch (e) {
+    console.warn(`[geny-arrivees] PMU KO : ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Upsert dans courses (arrivee_officielle + statut TERMINE)
