@@ -636,6 +636,41 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     console.warn(`[geny-arrivees] PMU KO : ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  // ── FILET pour les courses que PMU ne couvre pas (réunions étrangères) ───
+  // Là, Geny reste la seule source et le défaut peut récidiver. Signature de
+  // la contamination : une MÊME arrivée sur plusieurs courses du même jour.
+  // Deux courses distinctes ne peuvent pas avoir la même arrivée exacte —
+  // on préfère ne rien écrire plutôt qu'écrire faux.
+  {
+    // Objet simple et non Map : tsconfig n'a pas de `target`, l'itération d'une
+    // Map exige downlevelIteration (cf. incidents précédents du dépôt).
+    const parArrivee: Record<string, string[]> = {};
+    for (const v of valid) {
+      const k = v.arrivee.join("-");
+      if (parArrivee[k]) parArrivee[k].push(v.courseId);
+      else parArrivee[k] = [v.courseId];
+    }
+    const suspects: Record<string, boolean> = {};
+    let nbSuspects = 0;
+    for (const k of Object.keys(parArrivee)) {
+      const ids = parArrivee[k];
+      if (ids.length > 1) {
+        console.warn(
+          `[geny-arrivees] ⚠️ arrivée ${k} proposée sur ${ids.length} courses ` +
+          `→ rejetée (contamination probable)`,
+        );
+        for (const id of ids) {
+          if (!suspects[id]) { suspects[id] = true; nbSuspects++; }
+        }
+      }
+    }
+    if (nbSuspects > 0) {
+      for (let i = valid.length - 1; i >= 0; i--) {
+        if (suspects[valid[i].courseId]) valid.splice(i, 1);
+      }
+    }
+  }
+
   // Upsert dans courses (arrivee_officielle + statut TERMINE)
   if (valid.length > 0) {
     const courseUpdates = valid.map(({ courseId, arrivee }) => ({
