@@ -78,6 +78,16 @@ describe("calculerResultat", () => {
       expect(calculerResultat([10, 11, 12], [1, 2, 3, 4, 5], "TIERCE")).toBe("PERDANT");
     });
 
+    // Seuil relevé le 28/07/2026 : un seul cheval du podium ne suffit plus.
+    // Avec 8 chevaux joués, trouver 1 place sur 3 n'est pas un « partiel ».
+    it("PERDANT avec un SEUL cheval du podium, même sur une large sélection", () => {
+      expect(calculerResultat([1, 9, 10, 11, 12, 13, 14, 15], [1, 2, 3, 4, 5], "TIERCE")).toBe("PERDANT");
+    });
+
+    it("PARTIEL dès DEUX chevaux du podium trouvés", () => {
+      expect(calculerResultat([1, 2, 10, 11, 12], [1, 2, 3, 4, 5], "TIERCE")).toBe("PARTIEL");
+    });
+
     it("GAGNANT sur un Tiercé sec exactement couvert", () => {
       expect(calculerResultat([4, 9, 2], [9, 2, 4, 7, 1], "TIERCE")).toBe("GAGNANT");
     });

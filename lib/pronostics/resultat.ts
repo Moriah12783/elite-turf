@@ -107,9 +107,17 @@ export function calculerResultat(
   const cible = n < topN ? n : topN;
   if (trouves === cible) return "GAGNANT";
 
-  // Seuil du PARTIEL : trois chevaux sur les fenêtres larges, un seul sur le
-  // podium — seuils historiques, inchangés par la correction de la fenêtre.
-  const seuilPartiel = topN >= 4 ? 3 : 1;
+  // Seuil du PARTIEL : trois chevaux sur les fenêtres larges, DEUX sur le podium.
+  //
+  // L'ancien seuil du podium était de 1. Il avait un sens tant que la fenêtre
+  // suivait la taille de la sélection : elle ne valait 3 que pour des sélections
+  // d'au plus 3 chevaux, et trouver 1 cheval du podium avec 3 tickets voulait
+  // dire quelque chose. Depuis que la fenêtre vient du type de pari, un Tiercé
+  // joué à 8 chevaux passe par cette branche : 1 cheval trouvé sur 8 joués
+  // devenait un « partiel », ce qui vide le mot de son sens.
+  // Décision du porteur (28/07/2026) : remonter à 2, ce que l'en-tête de
+  // sync-resultats documentait déjà — « Tiercé : 2/3 = PARTIEL, <2 = PERDANT ».
+  const seuilPartiel = topN >= 4 ? 3 : 2;
   if (trouves >= seuilPartiel) return "PARTIEL";
   return "PERDANT";
 }
