@@ -18,6 +18,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { fenetreComparaison } from "@/lib/pronostics/resultat";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,9 @@ function computeHits(selection: number[], arrivee: number[], topN: number): numb
   return selection.filter((n) => top.has(n));
 }
 
-function getTopN(selection: number[], typePari: string): number {
-  const tp = typePari?.toLowerCase() ?? "";
-  if (tp.includes("quinté") || selection.length >= 5) return 5;
-  if (tp.includes("quarté") || selection.length >= 4) return 4;
-  if (tp.includes("tiercé") || selection.length >= 3) return 3;
-  return 3;
-}
+// Fenêtre de comparaison : `lib/pronostics/resultat.ts` (source unique, testée).
+// L'ancienne copie locale testait des libellés accentués absents de la base et
+// jugeait donc tous les Tiercés sur le top 5.
 
 function resultEmoji(resultat: string): string {
   if (resultat === "GAGNANT") return "✅";
@@ -130,7 +127,7 @@ export async function GET(req: NextRequest) {
     const selection: number[]  = p.selection ?? [];
     const arrivee: number[]    = course?.arrivee_officielle ?? [];
     const typePari: string     = p.type_pari ?? "";
-    const topN                 = getTopN(selection, typePari);
+    const topN                 = fenetreComparaison(typePari, selection.length);
     const hits                 = computeHits(selection, arrivee, topN);
     const resultat: string     = p.resultat ?? "EN_ATTENTE";
 
