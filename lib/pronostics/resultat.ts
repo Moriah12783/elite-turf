@@ -50,7 +50,13 @@ export function fenetreComparaison(
   if (tp.indexOf("QUINTE") !== -1) return 5;
   if (tp.indexOf("QUARTE") !== -1) return 4;
   if (tp.indexOf("TIERCE") !== -1) return 3;
+  if (tp.indexOf("TRIO") !== -1) return 3;      // trois premiers, ordre indifférent
 
+  // SIMPLE et COUPLÉ restent sur le filet ci-dessous : leur fenêtre exacte
+  // (1 place pour un Simple gagnant, 2 pour un Couplé) est une DÉCISION MÉTIER
+  // non tranchée, et aucun pronostic de ce type n'existe en base au 28/07/2026.
+  // Le jour où le formulaire admin en produira, il faudra choisir explicitement
+  // plutôt que laisser la taille de la sélection décider.
   if (tailleSelection >= 5) return 5;
   if (tailleSelection >= 4) return 4;
   return 3;

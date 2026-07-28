@@ -47,18 +47,31 @@ function analysePerformance(
   topN: number,
   resultat: string,
 ): string {
+  // ⚠️ La fenêtre vient du TYPE DE PARI, plus de la taille de la sélection.
+  // GAGNANT ne signifie donc PAS « toute la sélection est dans le top N » : un
+  // Tiercé gagné avec 8 chevaux joués n'en place que 3. Les messages disent
+  // désormais ce qui est réellement vrai — sans quoi le rapport affirmerait
+  // « tous les 8 chevaux dans le top 3 », arithmétiquement impossible.
+  const ordered = arrivee.slice(0, topN).join(" - ");
+  const nbTrouves = `${hits.length} ${hits.length > 1 ? "chevaux trouvés" : "cheval trouvé"}`;
+
   if (resultat === "GAGNANT") {
-    const ordered = arrivee.slice(0, topN).join(" - ");
-    return `Sélection validée. Arrivée : ${ordered}. Tous les ${selection.length} chevaux dans le top ${topN}.`;
+    return `Sélection validée. Arrivée : ${ordered}. Les ${topN} premiers sont tous `
+      + `dans la sélection (${selection.length} chevaux joués).`;
   }
   if (resultat === "PARTIEL") {
-    const found = hits.join(", ");
     const missed = selection.filter((n) => !hits.includes(n)).join(", ");
-    return `${hits.length}/${selection.length} chevaux trouvés (${found}). Manquants : ${missed}. Arrivée officielle : ${arrivee.slice(0, topN).join(" - ")}.`;
+    return `${hits.length}/${topN} places du top trouvées (${hits.join(", ")}). `
+      + `Chevaux joués non placés : ${missed || "aucun"}. Arrivée officielle : ${ordered}.`;
   }
   if (resultat === "PERDANT") {
-    const arriveeStr = arrivee.slice(0, topN).join(" - ");
-    return `Aucun cheval de la sélection (${selection.join(", ")}) dans le top ${topN}. Arrivée : ${arriveeStr}.`;
+    // Un PERDANT peut compter des chevaux trouvés : le seuil du PARTIEL est de
+    // 3 dès que la fenêtre atteint 4 places. Annoncer « aucun » serait faux.
+    if (hits.length === 0) {
+      return `Aucun cheval de la sélection (${selection.join(", ")}) dans le top ${topN}. Arrivée : ${ordered}.`;
+    }
+    return `Seulement ${nbTrouves} (${hits.join(", ")}) dans le top ${topN}, `
+      + `sous le seuil du partiel. Arrivée : ${ordered}.`;
   }
   return "Résultat en attente.";
 }

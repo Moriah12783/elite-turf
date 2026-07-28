@@ -25,6 +25,17 @@ describe("fenetreComparaison", () => {
     expect(fenetreComparaison(undefined, 2)).toBe(3);
   });
 
+  it("reconnaît TRIO comme un pari sur les trois premiers", () => {
+    expect(fenetreComparaison("TRIO", 8)).toBe(3);
+  });
+
+  it("laisse SIMPLE et COUPLE sur le filet de la taille — décision non tranchée", () => {
+    // Comportement DOCUMENTÉ, pas souhaité : la fenêtre exacte de ces paris
+    // reste à décider. Ce test existe pour qu'un changement soit délibéré.
+    expect(fenetreComparaison("SIMPLE", 8)).toBe(5);
+    expect(fenetreComparaison("COUPLE", 2)).toBe(3);
+  });
+
   it("ne confond pas QUARTE et QUINTE", () => {
     expect(fenetreComparaison("QUARTE", 3)).toBe(4);
     expect(fenetreComparaison("QUINTE_PLUS", 3)).toBe(5);
