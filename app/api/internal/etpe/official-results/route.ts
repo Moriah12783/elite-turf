@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { resoudreCourseUnique } from "@/lib/courses/resolve-course";
 
 export const dynamic = "force-dynamic";
 
@@ -55,13 +56,21 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
+
+  // ⚠️ (date, R, C) N'IDENTIFIE PAS une course : 429 clés ambiguës en base au
+  // 28/07/2026 (deux réunions de province distinctes peuvent porter le même
+  // numéro le même jour). `.maybeSingle()` levait alors une erreur remontée en
+  // 502 « UPSTREAM_ERROR » — diagnostic trompeur, la base allait très bien.
+  // Le paramètre facultatif `hippodrome` permet de départager ; à défaut on
+  // répond AMBIGUOUS avec les candidates, jamais une course au hasard.
+  const hippodrome = request.nextUrl.searchParams.get("hippodrome");
+
   const courseQuery = await supabase
     .from("courses")
-    .select("id,date_course,numero_reunion,numero_course,arrivee_officielle,statut")
+    .select("id,date_course,numero_reunion,numero_course,arrivee_officielle,statut,hippodrome:hippodromes(nom)")
     .eq("date_course", date)
     .eq("numero_reunion", meeting)
-    .eq("numero_course", race)
-    .maybeSingle();
+    .eq("numero_course", race);
 
   if (courseQuery.error) {
     console.error("[ETPE results bridge] course lookup:", courseQuery.error);
@@ -71,14 +80,36 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!courseQuery.data) {
+  const lignes = (courseQuery.data ?? []) as any[];
+  const resolution = resoudreCourseUnique(
+    lignes.map((c) => ({ id: c.id, hippodrome_nom: c.hippodrome?.nom ?? null })),
+    hippodrome,
+  );
+
+  if (resolution.statut === "ABSENTE") {
     return NextResponse.json({ status: "NOT_FOUND" }, { status: 404 });
   }
+
+  if (resolution.statut === "AMBIGUE") {
+    console.warn(
+      `[ETPE results bridge] ${date} R${meeting}C${race} : ${resolution.candidats.length} courses candidates`,
+    );
+    return NextResponse.json(
+      {
+        status: "AMBIGUOUS",
+        error: "Plusieurs courses partagent cette clé — préciser ?hippodrome=",
+        candidats: resolution.candidats.map((c) => c.hippodrome_nom),
+      },
+      { status: 409 },
+    );
+  }
+
+  const courseRetenue = lignes.find((c) => c.id === resolution.course.id)!;
 
   const arrivalQuery = await supabase
     .from("arrivees")
     .select("ordre_arrivee,horodatage")
-    .eq("course_id", courseQuery.data.id)
+    .eq("course_id", courseRetenue.id)
     .maybeSingle();
 
   if (arrivalQuery.error) {
@@ -90,16 +121,16 @@ export async function GET(request: NextRequest) {
   }
 
   const finishOrder =
-    arrivalQuery.data?.ordre_arrivee ?? courseQuery.data.arrivee_officielle;
+    arrivalQuery.data?.ordre_arrivee ?? courseRetenue.arrivee_officielle;
   const final =
-    courseQuery.data.statut === "TERMINE"
+    courseRetenue.statut === "TERMINE"
     && validFinishOrder(finishOrder);
 
   if (!final) {
     return NextResponse.json({
       status: "PENDING",
       race: {
-        eliteCourseId: courseQuery.data.id,
+        eliteCourseId: courseRetenue.id,
         date,
         meeting,
         race,
@@ -117,7 +148,7 @@ export async function GET(request: NextRequest) {
       status: "FINAL",
       source: "ELITE_TURF_ADMIN_VERIFIED",
       race: {
-        eliteCourseId: courseQuery.data.id,
+        eliteCourseId: courseRetenue.id,
         date,
         meeting,
         race,

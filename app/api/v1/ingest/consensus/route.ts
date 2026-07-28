@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { verifyIngestAuth } from "@/lib/consensus/ingest-auth";
 import { parseIngestPayload, stripJsonFences } from "@/lib/consensus/ingest";
 import { validateConsensusBlock } from "@/lib/consensus/validate";
+import { resoudreCourseUnique } from "@/lib/courses/resolve-course";
 import { sendEmail, APP_URL } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -91,18 +92,41 @@ export async function POST(req: NextRequest) {
   }
 
   // 3) Rattachement de la course par (date, RxCx). Jamais de course fantôme créée.
+  //
+  // ⚠️ (date, R, C) N'IDENTIFIE PAS une course : 429 clés ambiguës en base au
+  // 28/07/2026, car deux réunions de province distinctes peuvent porter le même
+  // numéro le même jour (Karukéra et Avignon toutes deux « R8 » le 26/07).
+  // L'ancien `.limit(1)` rattachait donc SILENCIEUSEMENT le consensus à une
+  // course prise au hasard. On récupère toutes les candidates, on départage par
+  // l'hippodrome de la charge utile, et sans certitude on laisse ORPHELIN —
+  // le mail d'alerte demande alors un rattachement manuel.
   let courseId: string | null = null;
   const rc = p.reunion_course.match(/^R(\d+)C(\d+)$/i);
   if (rc) {
-    const { data: courseRow } = await admin
+    const { data: candidats } = await admin
       .from("courses")
-      .select("id")
+      .select("id, hippodrome:hippodromes(nom)")
       .eq("date_course", p.date_course)
       .eq("numero_reunion", parseInt(rc[1], 10))
-      .eq("numero_course", parseInt(rc[2], 10))
-      .limit(1)
-      .maybeSingle();
-    courseId = courseRow?.id || null;
+      .eq("numero_course", parseInt(rc[2], 10));
+
+    const resolution = resoudreCourseUnique(
+      (candidats ?? []).map((c: any) => ({
+        id: c.id,
+        hippodrome_nom: c.hippodrome?.nom ?? null,
+      })),
+      p.hippodrome,
+    );
+
+    if (resolution.statut === "TROUVEE") {
+      courseId = resolution.course.id;
+    } else if (resolution.statut === "AMBIGUE") {
+      console.warn(
+        `[ingest consensus] ${p.date_course} ${p.reunion_course} : ` +
+        `${resolution.candidats.length} courses candidates et l'hippodrome ` +
+        `« ${p.hippodrome ?? "—"} » ne départage pas → laissé orphelin`,
+      );
+    }
   }
 
   // 4) Un consensus déjà PUBLIÉ n'est JAMAIS écrasé (contrat v2.4) : re-POST du
