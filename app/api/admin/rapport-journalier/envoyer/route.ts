@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { fenetreComparaison } from "@/lib/pronostics/resultat";
 
 export const dynamic = "force-dynamic";
 
@@ -43,12 +44,8 @@ function computeHits(selection: number[], arrivee: number[], topN: number): numb
   return selection.filter((n) => top.has(n));
 }
 
-function getTopN(selection: number[], typePari: string): number {
-  const tp = typePari?.toLowerCase() ?? "";
-  if (tp.includes("quinté") || selection.length >= 5) return 5;
-  if (tp.includes("quarté") || selection.length >= 4) return 4;
-  return 3;
-}
+// Fenêtre de comparaison : `lib/pronostics/resultat.ts` (source unique, testée).
+// La copie locale supprimée ici avait perdu sa branche Tiercé.
 
 // ── Template email HTML ───────────────────────────────────────────────────
 
@@ -206,7 +203,7 @@ export async function GET(req: NextRequest) {
     const hippNom  = Array.isArray(course?.hippodrome) ? course.hippodrome[0]?.nom : course?.hippodrome?.nom ?? "—";
     const selection: number[] = p.selection ?? [];
     const arrivee: number[]   = course?.arrivee_officielle ?? [];
-    const topN                = getTopN(selection, p.type_pari ?? "");
+    const topN                = fenetreComparaison(p.type_pari, selection.length);
     const hits                = computeHits(selection, arrivee, topN);
 
     return {

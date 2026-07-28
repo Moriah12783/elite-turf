@@ -18,6 +18,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuResultats } from "@/lib/pmu-api";
 import { logCronStart } from "@/lib/cron-logger";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
+import { calculerResultat } from "@/lib/pronostics/resultat";
 
 type CourseJoin = {
   id: string;
@@ -40,50 +41,10 @@ const CRON_SECRET = process.env.CRON_SECRET || "";
 //  Tiercé  (3 chevaux)  : 3/3 dans le top 3 = GAGNANT | 2/3   = PARTIEL | <2 = PERDANT
 //  Simple/Couplé (≤2)   : tous dans le top 3 = GAGNANT | partiel si ≥1 = PARTIEL
 //
-function calculerResultat(
-  selection: number[],   // chevaux sélectionnés par l'expert
-  arrivee: number[],     // arrivée officielle PMU
-  typePari: string,      // "Tiercé", "Quarté+", "Quinté+", "Simple", "Couplé"…
-): "GAGNANT" | "PARTIEL" | "PERDANT" {
-  const n = selection.length;
-  if (n === 0 || arrivee.length === 0) return "PERDANT";
-
-  const tp = typePari.toLowerCase();
-
-  // Nombre de positions à comparer selon le type de pari
-  let topN: number;
-  if (tp.includes("quinté") || n >= 5) topN = 5;
-  else if (tp.includes("quarté") || n >= 4) topN = 4;
-  else if (tp.includes("tiercé") || n >= 3) topN = 3;
-  else topN = 3; // Simple / Couplé (≤2 chevaux) → on vérifie dans le top 3
-
-  // Les topN premiers de l'arrivée officielle
-  const arriveeTop = new Set(arrivee.slice(0, topN));
-
-  // Combien de chevaux de la sélection sont dans le top
-  const hits = selection.filter((cheval) => arriveeTop.has(cheval)).length;
-
-  // Seuils selon le nombre de chevaux dans la sélection
-  if (topN === 5) {
-    if (hits === 5) return "GAGNANT";
-    if (hits >= 3) return "PARTIEL";
-    return "PERDANT";
-  }
-  if (topN === 4) {
-    if (hits === 4) return "GAGNANT";
-    if (hits >= 3) return "PARTIEL";
-    return "PERDANT";
-  }
-  if (topN === 3) {
-    if (hits === n) return "GAGNANT";   // tous les chevaux sélectionnés sont dans le top 3
-    if (hits >= 1) return "PARTIEL";    // au moins 1 dans le top 3
-    return "PERDANT";
-  }
-  // Fallback générique
-  if (hits === n) return "GAGNANT";
-  if (hits / n >= 0.5) return "PARTIEL";
-  return "PERDANT";
-}
+// La règle de notation vit dans `lib/pronostics/resultat.ts` — source unique,
+// testée. Elle était auparavant recopiée ici et dans trois autres routes, avec
+// un défaut commun : la fenêtre de comparaison était choisie sur des libellés
+// accentués que la base ne contient pas.
 
 // ── Route principale ──────────────────────────────────────────────────────
 

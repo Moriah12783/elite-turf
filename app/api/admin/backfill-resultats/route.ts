@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuResultats } from "@/lib/pmu-api";
+import { calculerResultat } from "@/lib/pronostics/resultat";
 
 export const dynamic  = "force-dynamic";
 export const maxDuration = 300; // 5 min max (Vercel Pro)
@@ -39,40 +40,7 @@ function dateRange(start: string, end: string): string[] {
 
 // ── Règles Elite Turf ─────────────────────────────────────────────────────────
 
-function calculerResultat(
-  selection: number[],
-  arrivee: number[],
-  typePari: string,
-): "GAGNANT" | "PARTIEL" | "PERDANT" {
-  const n = selection.length;
-  if (n === 0 || arrivee.length === 0) return "PERDANT";
-
-  const tp = typePari.toLowerCase();
-
-  let topN: number;
-  if (tp.includes("quinté") || n >= 5) topN = 5;
-  else if (tp.includes("quarté") || n >= 4) topN = 4;
-  else if (tp.includes("tiercé") || n >= 3) topN = 3;
-  else topN = 3; // Simple / Couplé (≤2 chevaux) → top 3
-
-  const arriveeTop = new Set(arrivee.slice(0, topN));
-  const hits = selection.filter(c => arriveeTop.has(c)).length;
-
-  if (topN === 5) {
-    if (hits === 5) return "GAGNANT";
-    if (hits >= 3) return "PARTIEL";
-    return "PERDANT";
-  }
-  if (topN === 4) {
-    if (hits === 4) return "GAGNANT";
-    if (hits >= 3) return "PARTIEL";
-    return "PERDANT";
-  }
-  // topN === 3 (Tiercé / Simple / Couplé)
-  if (hits === n) return "GAGNANT";   // tous les chevaux sélectionnés dans le top 3
-  if (hits >= 1) return "PARTIEL";    // au moins 1 dans le top 3
-  return "PERDANT";
-}
+// Règle de notation : `lib/pronostics/resultat.ts` (source unique, testée).
 
 // ── Scrape Geny pour une date ────────────────────────────────────────────────
 
