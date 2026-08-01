@@ -86,8 +86,16 @@ export async function POST(req: NextRequest) {
   const dureeJours: number = plan?.duree_jours ?? 30;
   const acces_elite: boolean = plan?.acces_elite ?? false;
   const nbAlertes: number  = plan?.nb_alertes   ?? 5;
+  // ⚠️ La table `plans` nomme les offres « Découverte » / « Performance » /
+  // « Elite », alors que le template d'e-mail attend « Starter » / « Pro » /
+  // « Elite ». L'ancien test `["Starter","Pro","Elite"].includes(plan.nom)` ne
+  // matchait donc JAMAIS pour Découverte ni Performance, et retombait sur le
+  // défaut « Pro » : un abonné Starter validé à la main recevait un e-mail
+  // « Votre accès Pro est activé ». On aligne la traduction sur celle qui sert
+  // déjà à calculer `statutAbonnement`, juste en dessous — même source, même
+  // résultat, plus de divergence possible.
   const planNom: "Starter" | "Pro" | "Elite" =
-    (["Starter", "Pro", "Elite"].includes(plan?.nom) ? plan.nom : "Pro") as "Starter" | "Pro" | "Elite";
+    acces_elite ? "Elite" : plan?.nom === "Découverte" ? "Starter" : "Pro";
 
   const dateDebut = new Date();
   const dateFin   = new Date(dateDebut);
