@@ -13,6 +13,7 @@ import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
 import { OFFRE_PRONOSTICS_EXPERTS } from "@/lib/pricing";
 import TrackPageView from "@/components/analytics/TrackPageView";
+import { offreEliteStarterActive } from "@/lib/promo/offre-elite-starter";
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
@@ -142,6 +143,12 @@ export default async function AbonnementsPage() {
     currentPlan = profile?.statut_abonnement || null;
     isAdmin = profile?.role === "ADMIN";
   }
+
+  // Offre de lancement : le pack Starter souscrit dans la fenêtre donne l'accès
+  // ELITE sur ses 7 jours. L'élévation elle-même se fait sur
+  // `profiles.statut_abonnement` (cf. lib/auth/access.ts) — ici on ne fait que
+  // l'ANNONCER, et seulement tant qu'elle court.
+  const offreEliteActive = offreEliteStarterActive(new Date());
 
   // JSON-LD (graphe) : fil d'Ariane + Product/Offers → les prix des abonnements
   // deviennent lisibles par l'IA et Google (« plans & tarifs Elite Turf »).
@@ -426,6 +433,14 @@ export default async function AbonnementsPage() {
                       </span>
                     </div>
                   )}
+                  {/* Offre de lancement — disparaît d'elle-même après le 5 août. */}
+                  {plan.nom === "Starter" && offreEliteActive && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                      <span className="px-4 py-1.5 bg-purple-600 text-white text-[11px] font-bold rounded-full whitespace-nowrap">
+                        🎁 ACCÈS ELITE OFFERT
+                      </span>
+                    </div>
+                  )}
 
                   <div className="mb-6">
                     <div className={`w-12 h-12 rounded-2xl border ${styles.iconBg} flex items-center justify-center mb-4`}>
@@ -434,6 +449,13 @@ export default async function AbonnementsPage() {
                     <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">
                       {plan.nom.toUpperCase()}
                     </h2>
+                    {plan.nom === "Starter" && offreEliteActive && (
+                      <p className="text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2 mb-3">
+                        <span className="font-bold">Jusqu&apos;au 5 août :</span> votre pack Starter
+                        vous ouvre l&apos;accès <span className="font-bold">Elite</span> pendant
+                        toute sa durée, sans supplément.
+                      </p>
+                    )}
                     {plan.nom === "Starter" && (
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted/80 mb-1">
                         Le galop d&apos;essai
