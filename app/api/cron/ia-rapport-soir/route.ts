@@ -12,6 +12,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { logCronStart } from "@/lib/cron-logger";
+import { requeteInterne, lireReponse } from "@/lib/http/requete-interne";
+import { POST as synchroniserResultats } from "@/app/api/admin/sync-resultats/route";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -50,19 +52,25 @@ export async function GET(req: NextRequest) {
   const today    = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).split(" ")[0];
 
   try {
-    // ── 1. Déclencher une dernière sync des résultats ─────────────────────
+    // ── 1. Déclencher une dernière sync des résultats, EN PROCESSUS ───────
+    // ⚠️ L'ancien `fetch` vers l'URL publique échouait en silence : un Worker
+    // Cloudflare qui s'appelle lui-même reçoit « error code: 522 ». Comme le
+    // résultat n'était pas vérifié, le rapport du soir se construisait sur des
+    // résultats non resynchronisés SANS que rien ne le signale. On appelle
+    // désormais le handler directement, et on journalise l'issue.
+    //
+    // L'attente de 3 s n'a plus lieu d'être : l'appel en processus est await,
+    // donc la synchronisation est terminée quand on reprend la main.
     try {
-      await fetch(`${APP_URL}/api/admin/sync-resultats`, {
-        method: "POST",
-        headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${CRON_SECRET}`,
-        },
-      });
-      // Attendre 3s que la sync se termine avant de lire les résultats
-      await new Promise((r) => setTimeout(r, 3000));
-    } catch {
-      // Non bloquant — on continue même si la sync échoue
+      const res = await synchroniserResultats(requeteInterne("/api/admin/sync-resultats"));
+      const { ok, statut, donnees, texte } = await lireReponse(res);
+      if (!ok) {
+        console.error(`[ia-rapport-soir] sync-resultats a échoué (${statut}) :`, texte ?? donnees);
+      }
+    } catch (e) {
+      // Non bloquant — le rapport reste utile même sans resynchronisation,
+      // mais l'échec est désormais VISIBLE dans les logs.
+      console.error("[ia-rapport-soir] sync-resultats indisponible :", e);
     }
 
     // ── 2. Récupérer tous les pronostics du jour ──────────────────────────

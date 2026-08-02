@@ -14,11 +14,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { logCronStart } from "@/lib/cron-logger";
 import { scoreCourse, buildSelection, generateAnalyse } from "@/lib/pronostic-gratuit";
+import { requeteInterne, lireReponse } from "@/lib/http/requete-interne";
+import { POST as publierPronosticGratuit } from "@/app/api/admin/pronostic-gratuit/route";
 
 export const dynamic = "force-dynamic";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
-const APP_URL     = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
+// NB : plus d'URL publique ici. La publication passe par un appel EN PROCESSUS
+// au handler admin — voir lib/http/requete-interne.ts pour le pourquoi.
 
 function getTodayParis(): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -114,27 +117,28 @@ export async function GET(req: NextRequest) {
     // ── 7. Analyse automatique ───────────────────────────────────────
     const analyse_courte = generateAnalyse(best, partants, selection);
 
-    // ── 8. Publier via l'API admin ───────────────────────────────────
-    const res = await fetch(`${APP_URL}/api/admin/pronostic-gratuit`, {
-      method: "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${CRON_SECRET}`,
-      },
-      body: JSON.stringify({
+    // ── 8. Publier via le handler admin, EN PROCESSUS ─────────────────
+    // ⚠️ Surtout pas un `fetch` vers l'URL publique : un Worker Cloudflare qui
+    // appelle son propre nom d'hôte reboucle sur l'edge et reçoit une page
+    // « error code: 522 » en quelques centaines de millisecondes. C'est ce qui
+    // a empêché TOUTE publication du pronostic gratuit du 28/07 au 02/08/2026.
+    const res = await publierPronosticGratuit(
+      requeteInterne("/api/admin/pronostic-gratuit", {
         course_id:     best.id,
         selection,
         analyse_courte,
         confiance:     3,
       }),
-    });
+    );
 
-    const data = await res.json();
+    const { ok, statut, donnees, texte } = await lireReponse(res);
 
-    if (!res.ok) {
-      await logger.finish("failure", { error: data?.error ?? `HTTP ${res.status}`, course: best.libelle });
-      return NextResponse.json({ error: data?.error }, { status: 500 });
+    if (!ok) {
+      const erreur = donnees?.error ?? texte ?? `HTTP ${statut}`;
+      await logger.finish("failure", { error: erreur, statut, course: best.libelle });
+      return NextResponse.json({ error: erreur }, { status: 500 });
     }
+    const data = donnees;
 
     await logger.finish("success", {
       pronostic_id: data.pronostic_id,
