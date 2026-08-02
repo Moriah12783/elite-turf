@@ -34,6 +34,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireBearerOnly } from "@/lib/auth/checkAdminAuth";
 import { logCronStart } from "@/lib/cron-logger";
+import { requeteInterne, lireReponse } from "@/lib/http/requete-interne";
+import { POST as publierBrouillonIa } from "@/app/api/admin/ai-review/[id]/publish/route";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
@@ -119,24 +121,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── 3. Promotion via la route admin existante (logique = publish humain)
-    const origin = req.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || "https://www.elite-turf.fr";
+    // ── 3. Promotion via le handler admin, EN PROCESSUS (logique = publish humain)
+    // ⚠️ L'ancien `fetch(${origin}/api/admin/...)` visait le nom d'hôte public
+    // du site. Un Worker Cloudflare qui s'appelle ainsi reboucle sur l'edge,
+    // qui renvoie « error code: 522 » en quelques centaines de millisecondes —
+    // ce n'est pas un dépassement de délai malgré le code. Résultat : aucun
+    // brouillon auto-publié du 27/07 au 02/08/2026.
     const results: Array<{ draft_id: string; ok: boolean; status: number; detail?: string }> = [];
 
     for (const draft of publishable) {
       try {
-        const res = await fetch(`${origin}/api/admin/ai-review/${draft.id}/publish`, {
-          method:  "POST",
-          headers: {
-            "Authorization": `Bearer ${CRON_SECRET}`,
-            "Content-Type":  "application/json",
-          },
-          body: JSON.stringify({
+        const res = await publierBrouillonIa(
+          requeteInterne(`/api/admin/ai-review/${draft.id}/publish`, {
             human_comment: "Publication automatique (filet de sécurité — admin indisponible)",
           }),
-        });
-        const detail = res.ok ? undefined : (await res.text().catch(() => "")).slice(0, 200);
-        results.push({ draft_id: draft.id, ok: res.ok, status: res.status, detail });
+          { params: { id: draft.id } },
+        );
+        const { ok, statut, texte, donnees } = await lireReponse(res);
+        const detail = ok ? undefined : (texte ?? JSON.stringify(donnees ?? {})).slice(0, 200);
+        results.push({ draft_id: draft.id, ok, status: statut, detail });
       } catch (e) {
         results.push({
           draft_id: draft.id, ok: false, status: 0,
