@@ -8,7 +8,7 @@
  *   "Chateaubriant" = "CHATEAUBRIANT"       -> "chateaubriant"
  *   "Le Lion-d&#039;Angers"                 -> "leliondangers"
  */
-function decodeEntities(s: string): string {
+export function decodeEntities(s: string): string {
   return s
     .replace(/&#0*39;/g, "'")
     .replace(/&#0*34;/g, '"')
