@@ -56,6 +56,33 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   const logger   = logCronStart("ia-auto-publish-v2");
+
+  // ⛔ FILET FERMÉ par décision du porteur (04/08/2026).
+  //
+  // Ce cron passe à 09h30 UTC, or l'admin publie vers 15h. Ses deux garde-fous
+  // (« l'admin a déjà validé un brouillon » et « une publication premium
+  // manuelle existe déjà ») testent un travail qui n'a pas encore eu lieu à
+  // cette heure-là : ils ne se déclenchent jamais. Le filet ne rattrapait donc
+  // pas l'absence de l'admin, il le DEVANÇAIT — tous les jours.
+  //
+  // Constaté : les 3 et 4 août, un pronostic ELITE non relu a été publié à
+  // 09h30, avant les publications de l'admin à 15h07 et 15h37. Publier une
+  // sélection que personne n'a relue contredit frontalement la ligne
+  // anti-fabrication du site et pollue le bilan public.
+  //
+  // FERMÉ PAR DÉFAUT : un drapeau absent vaut « désactivé ». Pour rouvrir,
+  // poser IA_AUTO_PUBLISH_ENABLED=true — et décaler le cron APRÈS le créneau
+  // de publication de l'admin, sans quoi le défaut ci-dessus reviendra.
+  if (process.env.IA_AUTO_PUBLISH_ENABLED !== "true") {
+    await logger.finish("skip", {
+      reason: "filet_ferme",
+      drapeau_a_poser: "IA_AUTO_PUBLISH_ENABLED",
+    });
+    return NextResponse.json({
+      ok: true, skipped: true, reason: "filet_ferme", drapeau: "IA_AUTO_PUBLISH_ENABLED",
+    });
+  }
+
   const supabase = createServiceClient();
   const today    = new Date().toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).split(" ")[0];
 
