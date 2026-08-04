@@ -20,6 +20,7 @@ import { runLonaciProgrammeSync } from "./lonaci-programme";
 import { runGenybetProgrammeSync } from "./genybet-programme";
 import { runGenybetDisciplineSync } from "./genybet-discipline";
 import { runPmuDistanceSync } from "./pmu-distance";
+import { cleHippodrome } from "./hippodrome-cle";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -247,13 +248,25 @@ export async function syncCoursesToDB(
   const hipMap: Record<string, string> = {};
 
   // 1. Hippodromes — 1 SELECT bulk + 1 INSERT bulk
+  //
+  // ⚠️ On lit TOUS les hippodromes, puis on rapproche par `cleHippodrome`.
+  // L'ancien filtre `.in("nom", hipNoms)` comparait au CARACTÈRE PRÈS : un
+  // libellé différant d'un accent, d'un tiret, d'un suffixe « [Matinée] » ou
+  // de l'ordre des mots ne trouvait rien et créait une fiche de plus. C'est
+  // ainsi que sont nés « Deauville-Clairefontaine », « Chatelaillon » et trois
+  // hippodromes « [Matinée] » — 51 courses en double les 3-4/08/2026.
   const { data: existingHips } = await supabase
     .from("hippodromes")
-    .select("id, nom")
-    .in("nom", hipNoms);
+    .select("id, nom");
 
+  const parCle: Record<string, string> = {};
   for (const hip of existingHips ?? []) {
-    hipMap[hip.nom] = hip.id;
+    const cle = cleHippodrome(hip.nom);
+    if (cle && !parCle[cle]) parCle[cle] = hip.id;
+  }
+  for (const nom of hipNoms) {
+    const trouve = parCle[cleHippodrome(nom)];
+    if (trouve) hipMap[nom] = trouve;
   }
 
   const missingHips = hipNoms

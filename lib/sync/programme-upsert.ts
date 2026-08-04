@@ -21,7 +21,7 @@
  * PUR (client Supabase sans next/headers) → bundlable Node sur GitHub Actions.
  */
 import { createServiceClient } from "@/lib/supabase/service-client";
-import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
+import { cleHippodrome } from "@/lib/sync/hippodrome-cle";
 
 /** Forme normalisée commune (PMU.fr `NormalizedCourse` la satisfait déjà). */
 export interface ProgrammeCourse {
@@ -123,8 +123,12 @@ export async function upsertProgrammeCourses(
 
   for (const nom of hipNoms) {
     const pays = courses.find((c) => c.hippodromeName === nom)?.hippodromePays || "France";
+    // `cleHippodrome` et non `canonicalHippodrome` : ce dernier laissait
+    // passer les suffixes de source (« [Matinee] ») et l'ordre des mots
+    // (« Deauville-Clairefontaine » vs « Clairefontaine-Deauville »), ce qui a
+    // cree 4 hippodromes fantomes et 51 courses en double les 3-4/08/2026.
     const found = allHip.find(
-      (h) => h.pays === pays && canonicalHippodrome(h.nom) === canonicalHippodrome(nom),
+      (h) => h.pays === pays && cleHippodrome(h.nom) === cleHippodrome(nom),
     );
     if (found) hipMap[nom] = found.id;
   }
