@@ -19,6 +19,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendSMS } from "@/lib/sms";
 import { isTwilioConfigured, normalizeE164, stopLink, SMS_HOST } from "@/lib/sms-helpers";
+import { canalSmsActif } from "@/lib/sms/canaux";
 
 /**
  * Corps du SMS de bienvenue. GSM-7 strict (PAS d'accents/emoji) pour rester
@@ -36,6 +37,11 @@ export async function sendWelcomeSms(params: {
   /** Choix de la case "recevoir par SMS" du formulaire (pré-cochée → true). */
   smsOptIn?: boolean;
 }): Promise<void> {
+  // Canal fermé par décision du porteur (04/08/2026) : plus aucun SMS hors
+  // alerte de publication aux abonnés payants. Fermé par défaut — il faut
+  // poser SMS_WELCOME_ENABLED=true pour le rouvrir.
+  if (!canalSmsActif("BIENVENUE")) return;
+
   // Feature OFF tant que Twilio n'est pas configuré : on ne touche à rien.
   if (!isTwilioConfigured()) return;
 

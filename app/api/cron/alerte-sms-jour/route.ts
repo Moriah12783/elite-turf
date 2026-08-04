@@ -16,6 +16,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { isTwilioConfigured } from "@/lib/sms-helpers";
 import { sendDailyPronosticAlertSms } from "@/lib/sms-alerte-jour";
 import { logCronStart } from "@/lib/cron-logger";
+import { canalSmsActif, drapeauDe } from "@/lib/sms/canaux";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,15 +29,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ⚠️ Le journal est ouvert AVANT les garde-fous, volontairement.
+  // Auparavant `logCronStart` venait après : quand le canal était fermé, la
+  // route sortait sans laisser la moindre trace. Ce cron tournait donc deux
+  // fois par jour depuis des semaines sans rien envoyer ET sans que rien ne
+  // le signale — constaté le 04/08/2026, `cron_logs` ne contenait aucune
+  // ligne « alerte-sms-jour ». Un canal fermé doit être VISIBLE.
+  const cronLog = logCronStart("alerte-sms-jour");
+
   // Opt-in explicite (le SMS coûte de l'argent) + Twilio configuré.
-  if (process.env.SMS_ALERTE_JOUR_ENABLED !== "true") {
-    return NextResponse.json({ ok: true, skipped: "feature_disabled" });
+  if (!canalSmsActif("ALERTE_JOUR")) {
+    await cronLog.finish("success", {
+      skipped: "canal_ferme",
+      drapeau_a_poser: drapeauDe("ALERTE_JOUR"),
+    });
+    return NextResponse.json({ ok: true, skipped: "canal_ferme", drapeau: drapeauDe("ALERTE_JOUR") });
   }
   if (!isTwilioConfigured()) {
+    await cronLog.finish("success", { skipped: "twilio_not_configured" });
     return NextResponse.json({ ok: true, skipped: "twilio_not_configured" });
   }
 
-  const cronLog = logCronStart("alerte-sms-jour");
   const supabase = createServiceClient();
 
   try {

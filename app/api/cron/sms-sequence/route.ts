@@ -25,6 +25,7 @@ import { smsJ2Body, smsJ5Body, sendSequenceSms } from "@/lib/sms-sequence";
 import { computeRecentPerf } from "@/lib/stats/recent-perf";
 import { logCronStart } from "@/lib/cron-logger";
 import { logger } from "@/lib/observability/logger";
+import { canalSmsActif, drapeauDe } from "@/lib/sms/canaux";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 60;
@@ -52,12 +53,27 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Le journal s'ouvre AVANT les garde-fous : un canal fermé doit rester
+  // visible dans `cron_logs`, sinon le cron tourne dans le vide en silence.
+  const cronLog  = logCronStart("sms-sequence");
+
+  // ⛔ Canal FERMÉ par décision du porteur (04/08/2026) : plus aucun SMS de
+  // nurturing vers les inscrits NON abonnés. Seule l'alerte de publication
+  // aux abonnés PAYANTS reste ouverte. Pour rouvrir : SMS_SEQUENCE_ENABLED=true.
+  if (!canalSmsActif("SEQUENCE")) {
+    await cronLog.finish("success", {
+      skipped: "canal_ferme",
+      drapeau_a_poser: drapeauDe("SEQUENCE"),
+    });
+    return NextResponse.json({ ok: true, skipped: "canal_ferme", drapeau: drapeauDe("SEQUENCE") });
+  }
+
   // Feature OFF tant que Twilio n'est pas configuré.
   if (!isTwilioConfigured()) {
+    await cronLog.finish("success", { skipped: "twilio_not_configured" });
     return NextResponse.json({ ok: true, skipped: "twilio_not_configured" });
   }
 
-  const cronLog  = logCronStart("sms-sequence");
   const supabase = createServiceClient();
   const stats    = { processed: 0, sent: 0, failed: 0, skipped: 0 };
   const now      = Date.now();
