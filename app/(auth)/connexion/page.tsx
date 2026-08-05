@@ -206,7 +206,12 @@ function ConnexionForm() {
       {/* Premium promo */}
       <div className="mt-6 p-4 bg-gold-faint border border-gold-primary/20 rounded-xl">
         <p className="text-gold-light text-xs text-center">
-          🏆 <strong>312 abonnés actifs</strong> font confiance à Elite Turf.{" "}
+          {/* Chiffre PLANCHER, pas un compteur : il ne peut que devenir plus
+              vrai, puisque les inscriptions ne font qu'augmenter. Base au
+              05/08/2026 : 116 comptes + 134 leads = 250 turfistes inscrits.
+              Remplace « 312 abonnés actifs », qui était écrit en dur et
+              annonçait 78× le nombre réel d'abonnés payants (4). */}
+          🏆 Plus de <strong>250 turfistes</strong> suivent nos analyses.{" "}
           <Link href="/abonnements" className="underline hover:text-gold-primary">
             Découvrir les offres
           </Link>
