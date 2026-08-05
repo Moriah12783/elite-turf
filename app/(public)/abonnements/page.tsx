@@ -196,6 +196,37 @@ export default async function AbonnementsPage() {
         sousTitre="Sélection stats gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt."
       />
 
+      {/* ── PREUVE VÉRIFIABLE (au-dessus de la ligne de flottaison) ──────
+          Remplace l'ancienne preuve sociale chiffrée, qui annonçait un
+          nombre d'abonnés sans rapport avec la réalité. Ici, chaque élément
+          est opposable : le taux, la méthode, la taille de l'échantillon, la
+          date, et un lien vers le détail course par course.
+
+          ⚠️ Le chiffre est DATÉ à dessein. Un taux non daté devient faux en
+          vieillissant ; daté, il reste vrai pour toujours et le lecteur va
+          vérifier l'actuel sur /performances. C'est la seule façon d'écrire
+          un chiffre en dur sans mentir un jour.
+
+          Source : audit du 05/08/2026 — 93 pronostics Elite dont l'identité
+          de course est prouvée (hippodrome confronté au programme PMU),
+          46,2 % couvrent les 5 premiers, contre 1,8 % attendus au hasard à
+          sélection et champ identiques (loi hypergéométrique). */}
+      <div className="border-b border-border bg-gold-faint/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center">
+          <p className="text-sm text-text-primary">
+            <strong className="text-gold-light">46 % de nos pronostics Elite</strong>{" "}
+            placent les cinq premiers dans notre sélection.
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            Vérifié course par course contre les arrivées officielles PMU, sur
+            93 pronostics (au 5 août 2026).{" "}
+            <Link href="/performances" className="underline hover:text-gold-primary">
+              Voir le détail, course par course
+            </Link>
+          </p>
+        </div>
+      </div>
+
       {/* ── TRUST STRIP (above the fold) ─────────────────────────────────
           Audit Clarity 18/05/2026 : sur /abonnements, scroll depth moyen
           ~60%, beaucoup quittent avant d'atteindre les réassurances qui
