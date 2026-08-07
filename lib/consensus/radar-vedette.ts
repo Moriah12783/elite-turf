@@ -53,6 +53,79 @@ export interface RadarMeta {
   typePari?:   string | null;
 }
 
+/**
+ * Ligne de scellement quotidien du Radar (table `radar_snapshots`).
+ *
+ * POURQUOI : le Radar recalcule sa sélection à chaque affichage et ne l'écrivait
+ * nulle part — impossible de prouver après coup ce qui a été montré au public.
+ * On fige la PREMIÈRE apparition du jour (write-once : contrainte
+ * unique(date_course) + insertion ignore-duplicates). Même philosophie que le
+ * scellement des sélections : une sélection affichée doit être opposable.
+ */
+export interface RadarSnapshotRow {
+  date_course:     string;
+  origine:         "live";
+  reunion_course:  string | null;
+  hippodrome:      string | null;
+  type_pari:       string | null;
+  nb_partants:     number | null;
+  nb_sources:      number;
+  course_id:       string | null;
+  base:            number[];
+  value:           number[];
+  coup:            number[];
+  selection:       number[];
+  non_partants:    number[];
+  favori_presse:   { numero: number; citations: number; tauxPct: number } | null;
+  favori_marche:   { numero: number; cote: number } | null;
+  cotes_utilisees: Record<string, number>;
+}
+
+/**
+ * Construit la ligne de scellement depuis le Radar affiché + le contexte du
+ * calcul. PUR (testable). Les non-partants sont dédupliqués : la liste reçue
+ * cumule ceux du brouillon (`np`) et ceux de la table `partants`, souvent en
+ * double.
+ */
+export function snapshotRowFromRadar(
+  radar: RadarVedette,
+  extra: {
+    dateCourse:     string;
+    typePari:       string | null;
+    courseId:       string | null;
+    selection:      number[];
+    nonPartants:    number[];
+    cotesUtilisees: Record<string, number>;
+  },
+): RadarSnapshotRow {
+  // Déduplication ES5-safe (pas de Set spread — tsconfig sans target).
+  const seen: Record<number, boolean> = {};
+  const np: number[] = [];
+  for (let i = 0; i < extra.nonPartants.length; i++) {
+    const n = extra.nonPartants[i];
+    if (!seen[n]) { seen[n] = true; np.push(n); }
+  }
+
+  return {
+    date_course:     extra.dateCourse,
+    origine:         "live",
+    reunion_course:  radar.course,
+    hippodrome:      radar.hippodrome,
+    type_pari:       extra.typePari,
+    nb_partants:     radar.nbPartants,
+    nb_sources:      radar.nbSources,
+    course_id:       extra.courseId,
+    base:            radar.base,
+    value:           radar.value,
+    coup:            radar.coup,
+    selection:       extra.selection,
+    non_partants:    np,
+    favori_presse:   radar.favori,
+    favori_marche:   radar.favoriMarche,
+    cotes_utilisees: extra.cotesUtilisees,
+  };
+}
+
 const PARI_LABEL: Record<string, string> = {
   QUINTE_PLUS: "Quinté+",
   QUARTE_PLUS: "Quarté+",
@@ -204,12 +277,41 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
       { nonPartants },
     );
 
-    return shapeRadarFromConsensus(result, {
+    const shaped = shapeRadarFromConsensus(result, {
       hippodrome: draft.hippodrome,
       course:     draft.reunion_course,
       nbPartants: draft.nb_partants,
       typePari:   draft.type_pari,
     }, favoriMarche);
+
+    // 5. Scellement write-once : la PREMIÈRE apparition publique du jour est
+    //    figée dans `radar_snapshots` (unique(date_course) + ignoreDuplicates →
+    //    tous les affichages suivants sont des no-ops). Le scellement ne doit
+    //    JAMAIS casser la home : échec avalé, le Radar s'affiche quand même.
+    if (shaped) {
+      try {
+        const cotesUtilisees: Record<string, number> = {};
+        for (const pc of partants) {
+          if (pc.cote != null) cotesUtilisees[String(pc.numero)] = pc.cote;
+        }
+        await supabase.from("radar_snapshots").upsert(
+          snapshotRowFromRadar(shaped, {
+            dateCourse:     today,
+            typePari:       draft.type_pari ?? null,
+            courseId:       draft.course_id ?? null,
+            selection:      result.pro ? result.pro.selection : [],
+            nonPartants,
+            cotesUtilisees,
+          }),
+          { onConflict: "date_course", ignoreDuplicates: true },
+        );
+      } catch {
+        // Table absente / réseau → tant pis pour le scellement du jour, pas
+        // pour le visiteur.
+      }
+    }
+
+    return shaped;
   } catch {
     return null; // Supabase KO / réseau → repli, jamais d'erreur sur la home
   }

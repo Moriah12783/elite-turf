@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { isRadarPublishableStatus, shapeRadarFromConsensus, pickFavoriMarche } from "./radar-vedette";
+import {
+  isRadarPublishableStatus,
+  shapeRadarFromConsensus,
+  pickFavoriMarche,
+  snapshotRowFromRadar,
+  type RadarVedette,
+} from "./radar-vedette";
 
 describe("isRadarPublishableStatus — validation humaine avant exposition", () => {
   it("autorise uniquement reviewed et published", () => {
@@ -97,5 +103,54 @@ describe("shapeRadarFromConsensus — consensus → Radar", () => {
     )!;
     expect(r.typePariLabel).toBe("La course vedette");
     expect(r.favori).toEqual({ numero: 1, citations: 5, tauxPct: 50 });
+  });
+});
+
+describe("snapshotRowFromRadar — scellement quotidien du Radar", () => {
+  const RADAR: RadarVedette = {
+    hippodrome:    "CABOURG",
+    course:        "R1C4",
+    nbPartants:    16,
+    nbSources:     29,
+    typePariLabel: "Quinté+",
+    base:          [9, 8, 12, 11],
+    value:         [13, 10, 5],
+    coup:          [14],
+    favori:        { numero: 9, citations: 29, tauxPct: 100 },
+    favoriMarche:  { numero: 8, cote: 3.4 },
+  };
+
+  it("fige la sélection affichée + le contexte du calcul, en origine live", () => {
+    const row = snapshotRowFromRadar(RADAR, {
+      dateCourse:     "2026-08-07",
+      typePari:       "QUINTE_PLUS",
+      courseId:       "abc-123",
+      selection:      [9, 8, 12, 11, 13, 10, 5, 14],
+      nonPartants:    [7],
+      cotesUtilisees: { "9": 4.5, "8": 3.4 },
+    });
+    expect(row.date_course).toBe("2026-08-07");
+    expect(row.origine).toBe("live");
+    expect(row.reunion_course).toBe("R1C4");
+    expect(row.hippodrome).toBe("CABOURG");
+    expect(row.type_pari).toBe("QUINTE_PLUS");
+    expect(row.nb_partants).toBe(16);
+    expect(row.nb_sources).toBe(29);
+    expect(row.course_id).toBe("abc-123");
+    expect(row.base).toEqual([9, 8, 12, 11]);
+    expect(row.value).toEqual([13, 10, 5]);
+    expect(row.coup).toEqual([14]);
+    expect(row.selection).toEqual([9, 8, 12, 11, 13, 10, 5, 14]);
+    expect(row.favori_presse).toEqual({ numero: 9, citations: 29, tauxPct: 100 });
+    expect(row.favori_marche).toEqual({ numero: 8, cote: 3.4 });
+    expect(row.cotes_utilisees).toEqual({ "9": 4.5, "8": 3.4 });
+  });
+
+  it("déduplique les non-partants (brouillon + table partants signalent souvent les mêmes)", () => {
+    const row = snapshotRowFromRadar(RADAR, {
+      dateCourse: "2026-08-07", typePari: null, courseId: null,
+      selection: [], nonPartants: [7, 3, 7, 3, 15], cotesUtilisees: {},
+    });
+    expect(row.non_partants).toEqual([7, 3, 15]);
   });
 });
