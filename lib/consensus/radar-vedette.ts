@@ -35,6 +35,17 @@ export interface RadarVedette {
   favoriMarche:  { numero: number; cote: number } | null;
 }
 
+/**
+ * Seuls les consensus explicitement relus ou publiés peuvent alimenter le
+ * Radar public. Un brouillon brut ne doit jamais être exposé avant validation
+ * humaine.
+ */
+export const RADAR_PUBLISHABLE_STATUSES = ["reviewed", "published"] as const;
+
+export function isRadarPublishableStatus(status: unknown): boolean {
+  return RADAR_PUBLISHABLE_STATUSES.some((allowed) => allowed === status);
+}
+
 export interface RadarMeta {
   hippodrome?: string | null;
   course?:     string | null;
@@ -133,12 +144,13 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
     const supabase = createServiceClient();
     const today = todayParis();
 
-    // 1. Brouillon du jour (le plus récent non rejeté ; on préfère le Quinté+).
+    // 1. Consensus du jour explicitement validé (reviewed/published ; jamais un
+    //    draft brut). Parmi les candidats, on préfère le Quinté+.
     const { data: drafts } = await supabase
       .from("consensus_drafts")
       .select("reunion_course, hippodrome, type_pari, nb_partants, nb_sources, course_id, citations, created_at")
       .eq("date_course", today)
-      .neq("status", "rejected")
+      .in("status", [...RADAR_PUBLISHABLE_STATUSES])
       .order("created_at", { ascending: false })
       .limit(8);
     if (!drafts || drafts.length === 0) return null;

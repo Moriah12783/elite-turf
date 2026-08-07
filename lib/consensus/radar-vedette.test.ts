@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { shapeRadarFromConsensus, pickFavoriMarche } from "./radar-vedette";
+import { isRadarPublishableStatus, shapeRadarFromConsensus, pickFavoriMarche } from "./radar-vedette";
+
+describe("isRadarPublishableStatus — validation humaine avant exposition", () => {
+  it("autorise uniquement reviewed et published", () => {
+    expect(isRadarPublishableStatus("reviewed")).toBe(true);
+    expect(isRadarPublishableStatus("published")).toBe(true);
+    expect(isRadarPublishableStatus("draft")).toBe(false);
+    expect(isRadarPublishableStatus("rejected")).toBe(false);
+    expect(isRadarPublishableStatus(null)).toBe(false);
+  });
+});
 import type { ConsensusResult, PartantScored } from "./engine";
 
 describe("pickFavoriMarche — plus basse cote PMU (jamais le 1,2 LONACI)", () => {
