@@ -36,14 +36,25 @@ export interface RadarVedette {
 }
 
 /**
- * Seuls les consensus explicitement relus ou publiés peuvent alimenter le
- * Radar public. Un brouillon brut ne doit jamais être exposé avant validation
- * humaine.
+ * Statuts qui alimentent le Radar public : tout SAUF un consensus rejeté.
+ *
+ * ⚠️ HISTOIRE DE CE FILTRE — ne pas le re-durcir sans décision produit.
+ * Le 07/08 il a été restreint à ["reviewed","published"] au nom du principe
+ * « jamais de brouillon brut en public ». Conséquence non anticipée, constatée
+ * en prod le 08/08 à 10h : le pipeline dépose son brouillon en `draft` vers
+ * 10h, mais la relecture humaine a lieu bien plus tard — le Radar restait donc
+ * VIDE toute la matinée, chaque jour. Le bloc gratuit de la home, qui draine
+ * le trafic, disparaissait aux heures où les parieurs le consultent.
+ *
+ * Décision de Steph (08/08) : revenir au comportement d'origine. Le garde-fou
+ * réel contre une mauvaise donnée n'est pas ce filtre, c'est le rejet explicite
+ * (`rejected`) et les validations du moteur — pas l'absence d'affichage.
  */
-export const RADAR_PUBLISHABLE_STATUSES = ["reviewed", "published"] as const;
+export const RADAR_STATUT_EXCLU = "rejected";
 
+/** Un consensus peut alimenter le Radar tant qu'il n'a pas été rejeté. */
 export function isRadarPublishableStatus(status: unknown): boolean {
-  return RADAR_PUBLISHABLE_STATUSES.some((allowed) => allowed === status);
+  return status !== RADAR_STATUT_EXCLU;
 }
 
 export interface RadarMeta {
@@ -217,13 +228,14 @@ export async function getRadarVedette(): Promise<RadarVedette | null> {
     const supabase = createServiceClient();
     const today = todayParis();
 
-    // 1. Consensus du jour explicitement validé (reviewed/published ; jamais un
-    //    draft brut). Parmi les candidats, on préfère le Quinté+.
+    // 1. Consensus du jour non rejeté (voir RADAR_STATUT_EXCLU : exiger une
+    //    relecture préalable laissait le Radar vide toute la matinée).
+    //    Parmi les candidats, on préfère le Quinté+.
     const { data: drafts } = await supabase
       .from("consensus_drafts")
       .select("reunion_course, hippodrome, type_pari, nb_partants, nb_sources, course_id, citations, created_at")
       .eq("date_course", today)
-      .in("status", [...RADAR_PUBLISHABLE_STATUSES])
+      .neq("status", RADAR_STATUT_EXCLU)
       .order("created_at", { ascending: false })
       .limit(8);
     if (!drafts || drafts.length === 0) return null;

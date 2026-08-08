@@ -7,13 +7,15 @@ import {
   type RadarVedette,
 } from "./radar-vedette";
 
-describe("isRadarPublishableStatus — validation humaine avant exposition", () => {
-  it("autorise uniquement reviewed et published", () => {
+describe("isRadarPublishableStatus — tout sauf un consensus rejeté", () => {
+  it("laisse passer draft, reviewed et published ; bloque le seul rejected", () => {
+    // Un `draft` DOIT passer : le pipeline dépose vers 10h et la relecture
+    // humaine vient bien plus tard. L'exiger laissait le Radar vide toute la
+    // matinée (constaté en prod le 08/08). Le garde-fou est le rejet explicite.
+    expect(isRadarPublishableStatus("draft")).toBe(true);
     expect(isRadarPublishableStatus("reviewed")).toBe(true);
     expect(isRadarPublishableStatus("published")).toBe(true);
-    expect(isRadarPublishableStatus("draft")).toBe(false);
     expect(isRadarPublishableStatus("rejected")).toBe(false);
-    expect(isRadarPublishableStatus(null)).toBe(false);
   });
 });
 import type { ConsensusResult, PartantScored } from "./engine";
