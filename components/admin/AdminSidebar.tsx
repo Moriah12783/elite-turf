@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Star, Users,
   CreditCard, Bell, Settings, LogOut, Menu, X, TrendingUp, Newspaper, Gift, Trophy, Zap, Brain,
-  MessageCircle, Quote, PlayCircle, ListChecks, Gauge, Inbox, ChevronDown, type LucideIcon,
+  MessageCircle, Quote, PlayCircle, ListChecks, Gauge, Inbox, ChevronDown, Radar, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
@@ -28,6 +28,7 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/consensus",            icon: ListChecks,  label: "Consensus presse", exact: true },
       { href: "/admin/consensus/brouillons", icon: Inbox,       label: "Brouillons consensus" },
       { href: "/admin/banc-mesure",          icon: Gauge,       label: "Banc de mesure" },
+      { href: "/admin/radar",                icon: Radar,       label: "Archive du Radar" },
       { href: "/admin/pronostic-gratuit",    icon: Gift,        label: "Pronostic Gratuit" },
     ],
   },
