@@ -51,7 +51,14 @@ export default function RadarPresseSection({ data }: { data: RadarVedette }) {
     : data.course || null;
 
   return (
-    <section className="py-14 px-4">
+    // id="radar" → lien direct partageable : https://www.elite-turf.fr/#radar
+    // scroll-mt-24 (96 px) compense la Navbar en `fixed top-0` (h-16 / sm:h-20),
+    // sinon le titre de la section arrive MASQUÉ sous la barre.
+    // Le même id est posé sur NotreSelectionSection, l'alternative exclusive
+    // affichée quand il n'y a pas de consensus du jour : le lien atterrit alors
+    // au bon endroit plutôt que de ne rien faire. Jamais de doublon d'id : les
+    // deux sections ne sont jamais rendues ensemble (app/(public)/page.tsx:108).
+    <section id="radar" className="scroll-mt-24 py-14 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="relative rounded-2xl border border-gold-primary/30 bg-gradient-to-br from-bg-card via-bg-card to-bg-elevated/40 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
