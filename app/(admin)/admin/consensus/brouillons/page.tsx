@@ -95,8 +95,18 @@ export default function BrouillonsPage() {
                   )}
                 </div>
 
+                {/* APERÇU du pipeline, PAS la sélection finale. L'atelier ne lit
+                    pas ces valeurs : il recalcule tout avec `buildConsensus` (le
+                    moteur du site, celui qui publie et qui alimente le Radar).
+                    Les deux divergent chaque jour — mesuré sur 12 jours en août
+                    2026 : 6,5 chevaux communs sur 8 en moyenne, l'écart portant
+                    sur les derniers slots (value / coup). Étiqueter honnêtement
+                    plutôt que laisser croire à une sélection définitive. */}
                 {(elite || pro) && (
                   <div className="text-xs text-text-secondary space-y-1 mb-4">
+                    <p className="text-text-muted">
+                      Proposition du pipeline — <span className="text-text-secondary">l&apos;atelier recalcule</span>, la sélection finale peut différer.
+                    </p>
                     {elite && <p><b className="text-gold-light">Elite-{elite.selection.length}</b> : {elite.selection.join(" · ")}</p>}
                     {pro && <p><b className="text-blue-400">Pro-{pro.selection.length}</b> : {pro.selection.join(" · ")}</p>}
                   </div>

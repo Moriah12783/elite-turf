@@ -400,6 +400,9 @@ export default function ConsensusPage() {
         {fromDraft && (
           <div className="mt-3 p-3 rounded-xl bg-gold-primary/10 border border-gold-primary/30 text-xs text-gold-light">
             📥 Chargé depuis un brouillon du pipeline. Clique <b>Analyser</b>, relis, ajuste si besoin, puis crée &amp; publie le pronostic. <span className="text-text-secondary">Rien n&apos;est publié sans toi.</span>
+            <span className="block mt-1 text-text-muted">
+              ⚠️ <b>Analyser</b> <b>recalcule</b> la sélection avec le moteur du site — elle peut différer de l&apos;aperçu affiché dans la liste des brouillons, qui est la proposition brute du pipeline. C&apos;est la sélection ci-dessous qui fait foi.
+            </span>
           </div>
         )}
       </div>
