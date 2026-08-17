@@ -9,7 +9,11 @@ import { Sparkles, ArrowRight, Check } from "lucide-react";
 export default function NotreSelectionSection() {
   const points = ["Sur toutes les courses", "100 % gratuite", "Sans inscription"];
   return (
-    <section className="py-14 px-4">
+    // Même ancre #radar que RadarPresseSection : cette section la REMPLACE au
+    // même emplacement quand il n'y a pas de consensus du jour. Le lien direct
+    // https://www.elite-turf.fr/#radar atterrit donc toujours au bon endroit.
+    // Aucun risque de doublon d'id : les deux sont exclusives (page.tsx:108).
+    <section id="radar" className="scroll-mt-24 py-14 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="relative rounded-2xl border border-gold-primary/30 bg-gradient-to-br from-gold-faint/60 via-bg-card to-bg-card overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
