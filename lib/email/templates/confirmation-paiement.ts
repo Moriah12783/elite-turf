@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider, emailBadge } from "../base";
+import { blocModeEmploi } from "./bloc-mode-emploi";
 import { renderHeaderBanner, BANNER_CONFIRMATION_PAIEMENT } from "./banners/header-banner";
 
 interface ConfirmationPaiementData {
@@ -101,6 +102,8 @@ export function templateConfirmationPaiement(data: ConfirmationPaiementData): {
     <p style="margin:0 0 4px 0;color:#6B7280;font-size:13px;text-align:center;">
       Les pronostics du jour sont publiés entre 8h30 et 9h30 (heure GMT)
     </p>
+
+    ${blocModeEmploi}
 
     ${emailButton(`${appUrl}/pronostics`, "Voir les pronostics du jour")}
 

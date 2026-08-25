@@ -1,4 +1,5 @@
 import { emailBase, emailButton, emailDivider } from "../base";
+import { blocModeEmploi } from "./bloc-mode-emploi";
 import { renderHeaderBanner, BANNER_CONFIRMATION_PACK } from "./banners/header-banner";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
 
@@ -107,6 +108,8 @@ function templateDecuverte(prenom: string, dateExp: string, nbAlertes: number): 
       ${avantagesRows(avantages)}
     </table>
 
+    ${blocModeEmploi}
+
     ${emailButton(`${APP_URL}/pronostics`, "🏇 Recevoir ma première alerte")}
 
     ${emailDivider}
@@ -202,6 +205,8 @@ function templatePerformance(prenom: string, dateExp: string, nbAlertes: number)
       </tr>
       ${avantagesRows(avantages)}
     </table>
+
+    ${blocModeEmploi}
 
     ${emailButton(`${APP_URL}/espace-membre`, "⭐ Accéder à mon Dashboard Pro")}
 
@@ -299,6 +304,8 @@ function templateElite(prenom: string, dateExp: string): string {
       </tr>
       ${avantagesRows(avantages)}
     </table>
+
+    ${blocModeEmploi}
 
     ${emailButton(`${APP_URL}/pronostics`, "🏆 Dominer la piste maintenant")}
 
