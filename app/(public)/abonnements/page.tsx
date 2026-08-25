@@ -13,7 +13,7 @@ import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
 import { OFFRE_PRONOSTICS_EXPERTS } from "@/lib/pricing";
 import TrackPageView from "@/components/analytics/TrackPageView";
-import { offreEliteStarterActive } from "@/lib/promo/offre-elite-starter";
+import { offreEliteStarterActive, libelleFinOffre } from "@/lib/promo/offre-elite-starter";
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
@@ -464,7 +464,9 @@ export default async function AbonnementsPage() {
                       </span>
                     </div>
                   )}
-                  {/* Offre de lancement — disparaît d'elle-même après le 5 août. */}
+                  {/* Offre Starter → Elite. Fenêtre pilotée par
+                      lib/promo/offre-elite-starter.ts : le badge et le texte
+                      disparaissent d'eux-mêmes à la clôture. */}
                   {plan.nom === "Starter" && offreEliteActive && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                       <span className="px-4 py-1.5 bg-purple-600 text-white text-[11px] font-bold rounded-full whitespace-nowrap">
@@ -482,7 +484,7 @@ export default async function AbonnementsPage() {
                     </h2>
                     {plan.nom === "Starter" && offreEliteActive && (
                       <p className="text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/30 rounded-lg px-3 py-2 mb-3">
-                        <span className="font-bold">Jusqu&apos;au 5 août :</span> votre pack Starter
+                        <span className="font-bold">Jusqu&apos;au {libelleFinOffre()} :</span> votre pack Starter
                         vous ouvre l&apos;accès <span className="font-bold">Elite</span> pendant
                         toute sa durée, sans supplément.
                       </p>
