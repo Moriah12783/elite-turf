@@ -85,15 +85,22 @@ const FORMULES = [
 
 export default function GuideUtilisation() {
   return (
-    <details className="card-base overflow-hidden group">
+    // OUVERTE par défaut, et bordure dorée : livrée repliée, la notice passait
+    // inaperçue — Steph lui-même ne l'a pas vue sur sa propre page. Une section
+    // qu'il faut penser à déplier n'est pas « bien visible ». Elle reste
+    // repliable pour ceux qui connaissent déjà la méthode.
+    <details open className="card-base overflow-hidden group border border-gold-primary/40">
       <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none hover:bg-bg-elevated/40 transition-colors">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gold-faint border border-gold-primary/30 flex items-center justify-center flex-shrink-0">
             <BookOpen className="w-5 h-5 text-gold-primary" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-serif font-bold text-text-primary text-lg leading-tight">
+            <h2 className="font-serif font-bold text-text-primary text-lg leading-tight flex items-center gap-2 flex-wrap">
               Exploiter vos pronostics
+              <span className="text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gold-primary text-bg-primary">
+                À lire
+              </span>
             </h2>
             <p className="text-text-secondary text-xs mt-0.5">
               Lire la sélection et construire vos tickets — guide en 2 minutes

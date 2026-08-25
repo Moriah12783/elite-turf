@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
+import RenvoyerConfirmationButton from "@/components/admin/RenvoyerConfirmationButton";
 import { Users, Search, Crown, Star } from "lucide-react";
 
 export const metadata = { title: "Utilisateurs — Admin" };
@@ -102,6 +103,7 @@ export default async function AdminUtilisateursPage() {
                 <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase">Abonnement</th>
                 <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase">Inscrit le</th>
                 <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase">Statut</th>
+                <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -131,6 +133,17 @@ export default async function AdminUtilisateursPage() {
                     <span className={`text-xs font-medium ${user.actif ? "text-status-win" : "text-status-loss"}`}>
                       {user.actif ? "● Actif" : "● Inactif"}
                     </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    {/* Bouton affiché UNIQUEMENT sur les profils réellement
+                        activés — même règle que la route, qui refuse (409) les
+                        autres. Inutile de proposer une action vouée à échouer. */}
+                    {["STARTER", "PRO", "ELITE"].indexOf(user.statut_abonnement) !== -1 && (
+                      <RenvoyerConfirmationButton
+                        email={user.email}
+                        nom={user.nom_complet || user.email}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
