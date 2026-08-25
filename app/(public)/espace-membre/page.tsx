@@ -15,6 +15,7 @@ import PageHero from "@/components/layout/PageHero";
 import ProfileEditForm from "@/components/membre/ProfileEditForm";
 import TransactionsHistory from "@/components/membre/TransactionsHistory";
 import AnnulerRenouvellement from "@/components/membre/AnnulerRenouvellement";
+import GuideUtilisation from "@/components/membre/GuideUtilisation";
 
 export const metadata: Metadata = {
   title: "Mon Espace Membre — Elite Turf",
@@ -469,6 +470,12 @@ export default async function EspaceMembrePage() {
             ))}
           </div>
         </div>
+
+        {/* ── GUIDE « EXPLOITER VOS PRONOSTICS » ────────────────────── */}
+        {/* Placé juste avant les pronostics : on explique comment lire la
+            sélection, puis on la montre. Repliable (details natif) pour ne pas
+            allonger la page de ceux qui connaissent déjà la méthode. */}
+        <GuideUtilisation />
 
         {/* ── PRONOSTICS RÉCENTS ────────────────────────────────────── */}
         <div>
