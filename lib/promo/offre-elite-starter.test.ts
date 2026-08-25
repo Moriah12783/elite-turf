@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   offreEliteStarterActive,
+  libelleFinOffre,
   OFFRE_ELITE_STARTER,
   type OffrePromotionnelle,
 } from "./offre-elite-starter";
@@ -35,10 +36,33 @@ describe("offreEliteStarterActive", () => {
     expect(offreEliteStarterActive(new Date("2026-08-03T12:00:00Z"), { ...OFFRE, actif: false })).toBe(false);
   });
 
-  it("la configuration livrée couvre bien du 1er au 5 août 2026", () => {
-    expect(OFFRE_ELITE_STARTER.debut).toBe("2026-08-01");
-    expect(OFFRE_ELITE_STARTER.fin).toBe("2026-08-05");
-    expect(offreEliteStarterActive(new Date("2026-08-02T09:00:00Z"))).toBe(true);
-    expect(offreEliteStarterActive(new Date("2026-08-09T09:00:00Z"))).toBe(false);
+  // Reconduction : 3 jours, du 25 au 27 août 2026 inclus.
+  it("la configuration livrée couvre bien du 25 au 27 août 2026", () => {
+    expect(OFFRE_ELITE_STARTER.debut).toBe("2026-08-25");
+    expect(OFFRE_ELITE_STARTER.fin).toBe("2026-08-27");
+    expect(offreEliteStarterActive(new Date("2026-08-24T23:59:59Z"))).toBe(false); // veille
+    expect(offreEliteStarterActive(new Date("2026-08-25T00:00:00Z"))).toBe(true);  // 1er jour
+    expect(offreEliteStarterActive(new Date("2026-08-27T23:59:59Z"))).toBe(true);  // dernier jour, inclus
+    expect(offreEliteStarterActive(new Date("2026-08-28T00:00:00Z"))).toBe(false); // lendemain
+  });
+
+  // La page /abonnements annonçait « Jusqu'au 5 août » en dur alors que la
+  // fenêtre avait bougé au 27. Le libellé se dérive désormais de la config.
+  it("libelleFinOffre rend la date de clôture en toutes lettres", () => {
+    expect(libelleFinOffre()).toBe("27 août");
+    expect(libelleFinOffre({ actif: true, debut: "2026-08-01", fin: "2026-08-05" })).toBe("5 août");
+    expect(libelleFinOffre({ actif: true, debut: "2026-11-28", fin: "2026-12-01" })).toBe("1er décembre");
+  });
+
+  it("libelleFinOffre ne casse pas sur une date malformée", () => {
+    expect(libelleFinOffre({ actif: true, debut: "x", fin: "pas-une-date" })).toBe("pas-une-date");
+    expect(libelleFinOffre({ actif: true, debut: "x", fin: "2026-99-01" })).toBe("2026-99-01");
+  });
+
+  it("la fenêtre annoncée fait bien 3 jours", () => {
+    const jour = 86400000;
+    const debut = new Date(OFFRE_ELITE_STARTER.debut + "T00:00:00Z").getTime();
+    const fin   = new Date(OFFRE_ELITE_STARTER.fin   + "T00:00:00Z").getTime();
+    expect((fin - debut) / jour + 1).toBe(3);
   });
 });
