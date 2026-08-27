@@ -341,6 +341,23 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
                     30 derniers jours
                   </span>
                 </div>
+
+                {/* UN SEUL avertissement, en tête de section — pas un par carte.
+                    Répété dix fois, un bandeau devient du décor qu'on ne lit
+                    plus. Ces pronostics restent VISIBLES et non repliés : ils
+                    sont la preuve publique et vérifiable qui distingue Elite
+                    Turf des vendeurs de tickets garantis. Le problème n'était
+                    pas qu'on les voie, c'est qu'ils ne disaient pas leur date —
+                    corrigé sur la carte elle-même. */}
+                <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-border bg-bg-elevated/40 px-4 py-3">
+                  <History className="w-4 h-4 text-text-muted flex-shrink-0 mt-0.5" />
+                  <p className="text-text-secondary text-xs leading-relaxed">
+                    <span className="font-semibold text-text-primary">Pronostics passés</span> —
+                    conservés comme preuve de nos résultats, <span className="font-semibold">à ne pas jouer aujourd&apos;hui</span>.
+                    La date de chaque course est indiquée sur sa fiche.
+                  </p>
+                </div>
+
                 <div className="space-y-4">
                   {pronosticsHistorique.slice(0, 10).map((p: any) => (
                     <PronosticCard key={p.id} pronostic={p} userSubscription={userSubscription} />
