@@ -16,7 +16,16 @@ const SECRETS = [
 
 // Compteur réel passé par la page serveur (app/(public)/guide-initie/page.tsx)
 // — voir audit P5 (remplace le placeholder « 847+ »).
-export default function GuideInitieClient({ parieursFormes }: { parieursFormes: number }) {
+export default function GuideInitieClient({
+  parieursFormes,
+  tauxGagnant,
+  pronosticsResultes,
+}: {
+  parieursFormes: number;
+  /** % de pronostics gagnants, lu en base. `null` = on n'affiche rien. */
+  tauxGagnant: number | null;
+  pronosticsResultes: number;
+}) {
   const [email, setEmail] = useState("");
   const [nom, setNom] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,9 +93,17 @@ export default function GuideInitieClient({ parieursFormes }: { parieursFormes: 
 
           {/* Stats */}
           <div className="flex items-center justify-center gap-8 flex-wrap">
+            {/* Le badge de performance est SOURCÉ : il vient de la base
+                (pronostics publiés et résultés), pas d'un chiffre écrit à la
+                main. Il disparaît si l'échantillon est trop mince ou si la
+                requête échoue — ne rien afficher plutôt qu'affirmer du faux.
+                Formulation précise : « pronostics gagnants », pas « taux de
+                réussite », qui ne dit pas de quoi on parle. */}
             {[
               { icon: Users, label: `${parieursFormes} parieurs formés` },
-              { icon: TrendingUp, label: "73% de taux de réussite" },
+              ...(tauxGagnant != null
+                ? [{ icon: TrendingUp, label: `${tauxGagnant}% de pronostics gagnants sur ${pronosticsResultes}` }]
+                : []),
               { icon: BarChart2, label: "100% gratuit" },
             ].map((s, i) => (
               <div key={i} className="flex items-center gap-2 text-text-muted text-sm">
