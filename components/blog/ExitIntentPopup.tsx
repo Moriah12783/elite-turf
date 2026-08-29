@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Gift, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import CreerCompteCTA from "@/components/leads/CreerCompteCTA";
 
 /**
  * Exit-intent popup — se déclenche quand la souris quitte la fenêtre
@@ -152,9 +153,15 @@ export default function ExitIntentPopup({ source = "guide-gratuit" }: { source?:
                 <p className="text-text-secondary text-sm mb-4">
                   Vérifiez votre email — vos 5 Secrets d&apos;Experts arrivent dans les prochaines minutes.
                 </p>
+
+                {/* C'est le point de capture qui convertit le MOINS en compte
+                    (10 sur 53 au 25/08) : il ne proposait rien d'autre que de
+                    refermer la fenêtre. */}
+                <CreerCompteCTA email={email} compact />
+
                 <button
                   onClick={close}
-                  className="px-6 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-colors"
+                  className="mt-3 text-text-muted hover:text-text-secondary text-xs font-medium transition-colors"
                 >
                   Continuer la lecture
                 </button>

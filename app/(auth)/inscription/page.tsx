@@ -17,9 +17,19 @@ function InscriptionForm() {
   const searchParams = useSearchParams();
   const planSelectionne = searchParams.get("plan") || "";
 
+  /**
+   * `?email=` et `?nom=` pré-remplissent le formulaire quand on arrive depuis
+   * la capture d'un guide : le prospect vient de saisir ces informations, les
+   * lui redemander est une friction gratuite — et c'est précisément là qu'on
+   * perd les gens (66 % des prospects n'ont jamais créé de compte, mesuré le
+   * 25/08/2026). Les champs restent modifiables ; rien n'est verrouillé.
+   */
+  const emailPrefill = (searchParams.get("email") || "").trim();
+  const nomPrefill   = (searchParams.get("nom") || "").trim();
+
   const [form, setForm] = useState({
-    nomComplet: "",
-    email: "",
+    nomComplet: nomPrefill,
+    email: emailPrefill,
     // Pré-rempli avec l'indicatif Côte d'Ivoire (+225 ) par défaut puisque
     // c'est le pays par défaut sélectionné.
     phone: "+225 ",
