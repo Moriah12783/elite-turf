@@ -10,6 +10,7 @@ import type { PronosticLevel, SubscriptionStatus, BetType, Confidence, Pronostic
 import { canAccess } from "@/lib/auth/access";
 import { buildPlanRadar, type PlanDeJeuLike, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
 import PlanRadarBlock from "./PlanRadarBlock";
+import { libelleDateCourse, estDuJour, estPassee } from "@/lib/pronostics/date-affichage";
 
 interface PronosticCardProps {
   pronostic: {
@@ -67,6 +68,20 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   // Si le résultat est EN_ATTENTE mais que la date de course est passée → "Non actualisé"
   const today = new Date().toISOString().split("T")[0];
   const racePast = p.resultat === "EN_ATTENTE" && p.course?.date_course && p.course.date_course < today;
+  /**
+   * La carte n'affichait QUE l'heure de départ — « 15:00 », en doré et en gras,
+   * l'accent visuel le plus fort — et jamais la date. Un pronostic d'il y a
+   * trois jours était donc indiscernable de celui du jour, et des abonnés ont
+   * cru jouer une sélection actuelle (constaté 25/08/2026).
+   *
+   * Deux corrections ici : on AFFICHE la date, et on ÉTEINT visuellement les
+   * cartes passées (heure en gris au lieu de doré). L'en-tête de section
+   * « Résultats récents » ne suffisait pas : il disparaît au défilement, et sur
+   * téléphone il ne reste que la carte.
+   */
+  const dateCourse = p.course?.date_course || "";
+  const courseDuJour = estDuJour(dateCourse, today);
+  const coursePassee = estPassee(dateCourse, today);
   const resultatConf = racePast ? RESULTAT_CONFIG_DEPASSE : RESULTAT_CONFIG[p.resultat];
   const ResultatIcon = resultatConf.icon;
   // Structure « façon Radar » du vrai pronostic — plan de jeu si l'expert en a
@@ -89,7 +104,11 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
        Solution : cursor-pointer global + badges rendus visuellement "tag-like"
        (rounded-md au lieu de rounded-full, pas de border épaisse) pour réduire
        leur look "boutonnable". */
-    <article className="card-base relative overflow-hidden group cursor-pointer active:scale-[0.995] transition-transform">
+    <article
+      className={`card-base relative overflow-hidden group cursor-pointer active:scale-[0.995] transition-transform ${
+        coursePassee ? "border-border/50" : ""
+      }`}
+    >
       {/* Premium shimmer */}
       {(p.niveau_acces === "STARTER" || p.niveau_acces === "PRO") && (
         <div className="absolute inset-0 shimmer-bg pointer-events-none rounded-xl" />
@@ -151,8 +170,17 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
               <span className="font-medium">{p.course.hippodrome?.nom || "—"}</span>
               <span className="text-text-muted">· {p.course.hippodrome?.pays}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-gold-light font-semibold">
+            <div
+              className={`flex items-center gap-1.5 font-semibold ${
+                coursePassee ? "text-text-muted" : "text-gold-light"
+              }`}
+            >
               <Clock className="w-3.5 h-3.5" />
+              {/* La date d'abord : c'est l'information qui manquait. Omise
+                  uniquement pour le jour même, où elle n'apprend rien. */}
+              {dateCourse && !courseDuJour && (
+                <span className="whitespace-nowrap">{libelleDateCourse(dateCourse)} ·</span>
+              )}
               {p.course.heure_depart.slice(0, 5)}
             </div>
             {p.course.distance_metres ? (
