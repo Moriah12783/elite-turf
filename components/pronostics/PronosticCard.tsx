@@ -140,7 +140,17 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
               ? "bg-purple-500/10 text-purple-400"
               : "bg-gold-faint text-gold-light"
           }`}>
-            {p.niveau_acces === "GRATUIT" ? "✓ La Base Solide" : p.niveau_acces === "ELITE" ? "★ L'Outsider Elite" : "⭐ Le Duo de Choc"}
+            {/* Le badge nomme la FORMULE, pas une strategie de jeu. Les anciens
+                libelles editoriaux (« La Base Solide », « L'Outsider Elite »,
+                « Le Duo de Choc ») pretaient a confusion : l'abonne croyait
+                lire une methode alors qu'on lui indiquait son palier d'acces.
+                Les trois disent desormais exactement ce qu'ils sont, et se
+                repondent entre eux. */}
+            {p.niveau_acces === "GRATUIT"
+              ? "✓ Sélection gratuite"
+              : p.niveau_acces === "ELITE"
+              ? "★ Sélection Elite"
+              : "⭐ Sélection Pro"}
           </span>
 
           {/* Type de pari */}
