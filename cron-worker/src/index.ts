@@ -176,10 +176,19 @@ const CRON_MAP: Record<string, string> = {
 
 /**
  * Timeout maximum d'un HTTP fetch vers l'app principale.
- * Doit être inférieur à la limite CPU du Worker (30s) pour permettre le
- * logging final même en cas de timeout.
+ *
+ * ⚠️ Ce délai est du temps d'ATTENTE I/O (await d'une sous-requête), PAS du
+ * temps CPU — il ne compte donc pas dans la limite CPU 30s du Worker. Le
+ * handler `scheduled()` (via ctx.waitUntil) peut attendre bien plus longtemps.
+ *
+ * Relevé de 25s → 90s le 2026-05-31 : le pipeline ia-pronostics-v2 (le plus
+ * lourd) prend ~35-50s une fois ses AnalyseWriter parallélisés. À 25s, le
+ * cron-worker coupait la connexion AVANT la fin du pipeline → le résultat
+ * n'était jamais capté (et selon le runtime, l'app pouvait être annulée). 90s
+ * laisse le pipeline finir et écrire son propre cron_log. Les autres crons
+ * (fetch DB rapides) finissent en 1-3s, non impactés.
  */
-const FETCH_TIMEOUT_MS = 25_000;
+const FETCH_TIMEOUT_MS = 90_000;
 
 export default {
   /**
