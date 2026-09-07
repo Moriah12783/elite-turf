@@ -10,6 +10,8 @@ Les migrations de ce dossier sont appliquées **à la main** via MCP `apply_migr
 | 07/09/2026 | `migrations/20260907_02_journal_value_picks.sql` | `journal_value_picks` | Axe 2 — `journal_value_picks` (INSERT-ONLY), `fn_value_seal`, `v_value_picks_juges`, cron `value-seal`, clé `preregistration_value_picks` |
 | 07/09/2026 | `briefs/04-brief-claude-code-tableau-de-bord-calibration.md` (§ Chantier 1) | `calibration_hebdo_fn` | Axe 1 — `fn_calibration_tranches(p_debut, p_fin)` : agrégats seuls (n ≥ 30, plage ≤ 400 j), `grant execute to anon`, appelée en `/rest/v1/rpc` avec la clé **publiable** (aucune clé service ne quitte Supabase) |
 | 07/09/2026 | `../../supabase/migrations/20260908_calibration_hebdo.sql` | `calibration_hebdo` (projet **prod** `cpzjjnmszbyizeqhgrat`) | Axe 1 — table write-once du site + amorçage manuel de la semaine 31/08–06/09 (12 lignes, valeurs exactes de la fonction) |
+| 07/09/2026 | `briefs/05-brief-claude-code-pont-radar-v4.md` (Partie 1) | `radar_v4_bridge` | Pont RADAR_V4 — table privée `bridge_secrets` (jeton), `fn_journal_du_jour(p_date, p_token)` bornée à [hier, demain], `grant execute to anon` ; clé `pont_radar_v4` |
+| 07/09/2026 | `turf-engine/radar-turf-engine-pont-radar-v4.patch` + `.zip` | — (Radar Turf Engine) | Pont RADAR_V4 — 4e moteur du banc (`turf_lab/radar_bridge.py`, `_lock_radar`, courses communes, secrets GitHub) ; rapport identique pour les 3 moteurs existants |
 | 07/09/2026 | `turf-engine/radar-turf-engine-verrou-fraicheur.patch` | — (dépôt **Radar Turf Engine**, ex-`turf-engine`) | Chantier A — verrou de fraîcheur + porte de diffusion `can_publish` |
 
 ## Invariants vérifiés le 07/09/2026 (avant / après migrations)
