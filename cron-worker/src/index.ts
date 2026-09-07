@@ -162,6 +162,7 @@ const CRON_MAP: Record<string, string> = {
   // ── Monitoring & SEO ──────────────────────────────────────────────
   "*/30 * * * *": "/api/cron/health-alerter",
   "45 3 * * *":   "/api/cron/seo-etl",
+  "40 9 * * 1":   "/api/cron/calibration-hebdo",  // lundi : calibration Radar de la semaine précédente (write-once)
 
   // ── Notifications utilisateurs ────────────────────────────────────
   "23 * * * *":   "/api/cron/welcome-emails",

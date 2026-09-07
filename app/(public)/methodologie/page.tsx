@@ -204,7 +204,9 @@ export default function MethodologiePage() {
           <p className="text-text-secondary text-base sm:text-lg leading-relaxed">
             Elite Turf publie chaque jour des pronostics PMU. Voici exactement comment ils sont produits :
             les sources de données utilisées, l&apos;analyse algorithmique, la validation par notre expert,
-            et la manière dont les résultats sont rendus publics et vérifiables.
+            et la manière dont les résultats sont rendus publics et vérifiables. Depuis septembre 2026, la
+            justesse de nos probabilités face au marché est publiée chaque semaine sur la page{" "}
+            <Link href="/calibration" className="text-gold-primary underline hover:text-gold-light">Calibration du moteur</Link>.
           </p>
         </div>
 
