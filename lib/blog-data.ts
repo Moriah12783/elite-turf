@@ -2,6 +2,7 @@
 // ELITE TURF — articles SEO (base + lot juin 2026)
 
 import { BLOG_ARTICLES_2026_06 } from "./blog-data-batch-2026-06";
+import { BLOG_ARTICLES_2026_09 } from "./blog-data-batch-2026-09";
 
 export interface BlogArticle {
   slug: string;
@@ -495,8 +496,10 @@ const BLOG_ARTICLES_BASE: BlogArticle[] = [
   },
 ];
 
-// Base (articles historiques) + lot SEO juin 2026 (relance blog).
-export const BLOG_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES_BASE, ...BLOG_ARTICLES_2026_06];
+// Base (articles historiques) + lot SEO juin 2026 (relance blog) + lot septembre 2026
+// (test pré-enregistré). Les lots récents sont placés en tête : le listing du blog
+// et les sitemaps trient par date, mais l'ordre du tableau sert de repli.
+export const BLOG_ARTICLES: BlogArticle[] = [...BLOG_ARTICLES_2026_09, ...BLOG_ARTICLES_BASE, ...BLOG_ARTICLES_2026_06];
 
 export function getArticleBySlug(slug: string): BlogArticle | undefined {
   return BLOG_ARTICLES.find((a) => a.slug === slug);
