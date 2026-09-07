@@ -134,6 +134,7 @@ crons = [
   # ── Monitoring & SEO ────────────────────────────────────────────────
   "*/30 * * * *",    # health-alerter (toutes les 30 min)
   "45 3 * * *",      # seo-etl (sitemap + canonicals 3h45 nuit)
+  "40 9 * * 1",      # calibration-hebdo (lundi 9h40 UTC : scellé write-once de la semaine précédente, Radar)
 
   # ── Notifications utilisateurs ──────────────────────────────────────
   "23 * * * *",      # welcome-emails (toutes les heures à :23)
