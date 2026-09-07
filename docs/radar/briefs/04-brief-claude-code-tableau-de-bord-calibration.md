@@ -6,7 +6,7 @@
 
 ## Règles absolues
 
-1. **Aucune lecture publique du projet Radar.** RLS deny-all y reste en place (0 policy). La seule porte est une fonction `security definer` qui ne renvoie que des agrégats (jamais une ligne de partant), appelée côté serveur par le cron du site avec une clé stockée en secret Cloudflare.
+1. **Aucune lecture publique des lignes du projet Radar.** RLS deny-all y reste en place (0 policy). La seule porte est une fonction `security definer` qui ne renvoie que des agrégats (jamais une ligne de partant), exposée par `grant execute … to anon` et appelée en `POST /rest/v1/rpc/fn_calibration_tranches` avec la **clé publiable** du projet Radar. **Correction de sécurité (Steph, 07/09) : aucune clé service (`service_role`) du laboratoire ne quitte Supabase**, ni en secret Cloudflare ni dans le dépôt : une clé service donnerait au site un accès total au journal. La clé publiable est publique par conception ; ce qu'elle autorise est borné par la fonction (agrégats, ≥ 30 partants par tranche, plage de dates bornée).
 2. **Écriture write-once côté site** : une ligne par (semaine ISO, tranche, périmètre), jamais réécrite. Une semaine publiée reste telle quelle, bonne ou mauvaise.
 3. **Édition `MATIN` uniquement** (règle de la clé `preregistration_v4_t252_note_edition_soir`). Le périmètre `SOIR` n'entre pas dans le tableau avant sa calibration séparée (≥ 4 semaines).
 4. **Jamais de fetch client** pour la page : SSR + prop, repli chiffré depuis la dernière semaine disponible (règle 3 du CLAUDE.md). Aucune valeur inventée : si aucune ligne, la page dit « en cours de constitution » avec la date du prochain calcul.
@@ -56,8 +56,10 @@ language sql security definer set search_path to 'public' stable as $$
          round(avg((y-p_mkt)^2 - (y-p_win)^2)::numeric, 6)
   from j group by 1 order by 1;
 $$;
-revoke execute on function public.fn_calibration_tranches(date, date) from public, anon, authenticated;
--- Appel serveur uniquement (service role du projet Radar, secret Cloudflare RADAR_SERVICE_ROLE_KEY).
+revoke execute on function public.fn_calibration_tranches(date, date) from public, authenticated;
+grant execute on function public.fn_calibration_tranches(date, date) to anon;
+-- Appel : POST {RADAR_URL}/rest/v1/rpc/fn_calibration_tranches avec apikey = clé PUBLIABLE du projet Radar.
+-- Garde-fous dans la fonction : plage ≤ 400 jours, tranche renvoyée seulement si n ≥ 30 (aucune ré-identification possible).
 ```
 
 Aucune table, aucune policy, aucun droit `anon`. Test : `select * from fn_calibration_tranches('2026-07-22', '2026-09-06')` redonne le tableau de référence.
@@ -86,7 +88,7 @@ alter table public.calibration_hebdo enable row level security;   -- deny-all : 
 
 ## Chantier 3 — Site : cron + page
 
-1. **`lib/calibration/sync-calibration.ts`** : `runCalibrationSync(semaine?)` — calcule le lundi précédent, appelle `fn_calibration_tranches` sur Radar via `@supabase/supabase-js` créé avec `RADAR_SUPABASE_URL` + `RADAR_SERVICE_ROLE_KEY` (nouveaux secrets, jamais `NEXT_PUBLIC_`), deux appels (SEMAINE, CUMUL depuis 2026-07-22), insère avec `ignoreDuplicates: true` (write-once). Retourne `{semaine, inseres, ignores}`. Si Radar renvoie 0 tranche pour SEMAINE → aucune insertion, log `CALIBRATION_VIDE` (pas de ligne fausse).
+1. **`lib/calibration/sync-calibration.ts`** : `runCalibrationSync(semaine?)` — calcule le lundi précédent, appelle `fn_calibration_tranches` sur Radar en `fetch` direct sur `/rest/v1/rpc` avec `RADAR_SUPABASE_URL` + `RADAR_SUPABASE_ANON_KEY` (clé publiable, variable non secrète, valeurs par défaut dans le code), deux appels (SEMAINE, CUMUL depuis 2026-07-22), insère avec `ignoreDuplicates: true` (write-once). Retourne `{semaine, inseres, ignores}`. Si Radar renvoie 0 tranche pour SEMAINE → aucune insertion, log `CALIBRATION_VIDE` (pas de ligne fausse).
 2. **`app/api/cron/calibration-hebdo/route.ts`** : même gabarit que `seo-etl` (Bearer `CRON_SECRET`, `logCronStart`).
 3. **`cron-worker`** : trigger `40 9 * * 1` → `/api/cron/calibration-hebdo` (ajout dans `wrangler.toml` + `CRON_MAP`, redéploiement auto).
 4. **`lib/calibration/get-calibration.ts`** : `getCalibration()` (SSR, service client prod) → dernière semaine disponible + cumul associé + liste des semaines publiées ; repli `null` géré par la page (jamais « … »).
@@ -103,7 +105,7 @@ Le lundi, l'auditeur 9h20 rapporte la semaine à sceller ; à 09h40 le cron la s
 - [ ] `fn_calibration_tranches` : aucun droit `anon`/`authenticated` ; `select * from fn_calibration_tranches('2026-07-22','2026-09-06')` = tableau de référence.
 - [ ] Première exécution du cron (lundi 14/09 09h40 UTC) : 12 lignes pour `semaine = 2026-09-07` ; seconde exécution forcée → 0 inséré, 12 ignorés.
 - [ ] `/calibration` rendue en SSR avec les 12 lignes ; en base vide, message « en cours de constitution » et aucun « … ».
-- [ ] Aucun secret Radar côté client (`grep -r RADAR_ app components` vide hors `lib/calibration`).
+- [ ] Aucune clé service Radar nulle part (`grep -ri service_role lib/calibration` vide) ; seule la clé publiable est utilisée.
 - [ ] `tsc` + `build` verts ; vitest sur `lib/calibration/*.test.ts` (calcul de la semaine ISO, write-once, repli vide).
 - [ ] Article et méthodologie liés vers `/calibration`.
 
@@ -111,5 +113,5 @@ Le lundi, l'auditeur 9h20 rapporte la semaine à sceller ; à 09h40 le cron la s
 
 1. Chantier 1 (Radar, 5 min, test de la fonction sur le tableau de référence).
 2. Chantier 2 + 3 sur une branche du site, gate tsc + build, validation humaine.
-3. Secrets Cloudflare `RADAR_SUPABASE_URL` / `RADAR_SERVICE_ROLE_KEY` posés par Steph avant merge (jamais dans le dépôt).
+3. Aucun secret à poser : URL et clé publiable Radar sont des valeurs publiques, portées par le code avec surcharge possible par variables d'environnement.
 4. Premier scellé le lundi 14/09 ; mise à jour de l'article après la première semaine publiée.
