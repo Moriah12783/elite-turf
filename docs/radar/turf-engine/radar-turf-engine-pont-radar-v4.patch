@@ -1,0 +1,873 @@
+From 6050de56d448b54e9a64ccd85ae1a75ba6f3b56c Mon Sep 17 00:00:00 2001
+From: "Steph (via Claude Code)" <bot@elite-turf.fr>
+Date: Mon, 7 Sep 2026 14:57:09 +0000
+Subject: [PATCH] =?UTF-8?q?feat(radar):=20pont=20RADAR=5FV4=20=E2=80=94=20?=
+ =?UTF-8?q?les=20probabilit=C3=A9s=20scell=C3=A9es=20de=20Radar=20entrent?=
+ =?UTF-8?q?=20au=20banc=20comme=204e=20moteur?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Les probabilités du journal Radar (modèle actif v4-labels) sont verrouillées
+aux mêmes horizons (T_MATIN/T90/T30/T15), aux mêmes cotes et aux mêmes
+instants que NEW_VALUE_ENGINE, ETPE_ENGINE et MARKET_BASELINE, puis jugées par
+le même banc. On ajoute, on ne remplace pas : aucun moteur existant modifié,
+rapport régénéré identique pour les trois moteurs actuels.
+
+- turf_lab/radar_bridge.py : client PostgREST (POST /rest/v1/rpc/fn_journal_du_jour,
+  jeton de pont RADAR_BRIDGE_TOKEN, clé publiable, timeout 10 s + 1 retry,
+  cache mémoire par date et par passe) ; RadarV4Engine.predict(race, runners,
+  as_of_utc) — appariement (num_reunion, num_course, num_pmu), non-partants
+  exclus, garde anti-fuite scelle_a ≤ as_of_utc, couverture ≥ 0.90 sinon
+  ABSENT, p_win renormalisées, value_indices aux cotes du moment.
+  Config absente => RADAR_BRIDGE_DISABLED, aucun verrou, rien d'autre ne change.
+- daily_sync._lock_radar : après _lock_horizon, même porte de fraîcheur
+  (GATE_REFUSED engine RADAR_V4), RADAR_ABSENT sans enregistrement, verrou
+  unique par (course, horizon) avec odds_real / priced_ratio / lock_time_utc.
+  Stats radar_locked / radar_absent / gate_refused_radar.
+- benchmark : RADAR_V4 dans engines_evaluated, horizon_breakdown_radar,
+  discipline_breakdown_radar, bloc courses_communes (métriques des trois
+  cerveaux recalculées sur l'intersection, par horizon et toutes éditions).
+- html_report : colonne « Radar v4 (labo) », 3e ligne dans les bancs par
+  discipline et par horizon, card « Courses communes », note de bas de
+  tableau. Aucun changement d'affichage des sélections abonnés.
+- daily_sync.yml : secrets RADAR_SUPABASE_URL / RADAR_PUBLISHABLE_KEY /
+  RADAR_BRIDGE_TOKEN transmis à l'étape de sync (rien en clair).
+- tests/test_radar_bridge.py : 7 cas (appariement, NP, couverture 8/10 et
+  9/10, anti-fuite, verrou unique, porte de fraîcheur, config absente).
+---
+ .github/workflows/daily_sync.yml |   7 +
+ main.py                          |  11 +-
+ tests/test_radar_bridge.py       | 168 +++++++++++++++++++++++
+ turf_lab/benchmark.py            |  45 ++++++-
+ turf_lab/daily_sync.py           |  65 ++++++++-
+ turf_lab/html_report.py          |  91 ++++++++++++-
+ turf_lab/radar_bridge.py         | 225 +++++++++++++++++++++++++++++++
+ 7 files changed, 599 insertions(+), 13 deletions(-)
+ create mode 100644 tests/test_radar_bridge.py
+ create mode 100644 turf_lab/radar_bridge.py
+
+diff --git a/.github/workflows/daily_sync.yml b/.github/workflows/daily_sync.yml
+index cf5e536..82f6a0b 100644
+--- a/.github/workflows/daily_sync.yml
++++ b/.github/workflows/daily_sync.yml
+@@ -39,6 +39,13 @@ jobs:
+           python-version: '3.11'
+ 
+       - name: Run Turf Prediction Engine (verrouillage multi-horizon T_MATIN/T90/T30/T15)
++        # Pont RADAR_V4 (4e moteur du banc) : les trois secrets sont posés dans
++        # GitHub → Settings → Secrets and variables → Actions. Absents => pont
++        # désactivé proprement (RADAR_BRIDGE_DISABLED), rien d'autre ne change.
++        env:
++          RADAR_SUPABASE_URL: ${{ secrets.RADAR_SUPABASE_URL }}
++          RADAR_PUBLISHABLE_KEY: ${{ secrets.RADAR_PUBLISHABLE_KEY }}
++          RADAR_BRIDGE_TOKEN: ${{ secrets.RADAR_BRIDGE_TOKEN }}
+         run: |
+           # Ancres du matin (08h30) et du soir (21h30) : fenêtre complète de 7 jours.
+           # TOUTES les autres passes (crons live ET frappes du métronome
+diff --git a/main.py b/main.py
+index 482c552..e5471f1 100644
+--- a/main.py
++++ b/main.py
+@@ -22,8 +22,8 @@ def format_markdown_table(report: dict) -> str:
+ 
+     md = []
+     md.append(f"### Rapport d'Evaluation Comparatif du Banc de Mesure ({total_races} courses analysees)\n")
+-    md.append("| Metrique d'Evaluation | Nouveau Moteur (Value) | ETPE (Heuristique) | Favoris Marche (PMU) |")
+-    md.append("| :--- | :---: | :---: | :---: |")
++    md.append("| Metrique d'Evaluation | Nouveau Moteur (Value) | ETPE (Heuristique) | Favoris Marche (PMU) | Radar v4 (labo) |")
++    md.append("| :--- | :---: | :---: | :---: | :---: |")
+ 
+     # Hit rates
+     row_top1 = "| **Victoire Top 1 (Gagnant direct)** |"
+@@ -44,7 +44,7 @@ def format_markdown_table(report: dict) -> str:
+     # Stats
+     row_brier = "| **Brier Score (Calibration proba)** |"
+ 
+-    for eng in ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE"]:
++    for eng in ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE", "RADAR_V4"]:
+         e = evals.get(eng, {})
+         hr = e.get("hit_rates", {})
+         fin = e.get("financial_performance", {})
+@@ -74,9 +74,9 @@ def format_markdown_table(report: dict) -> str:
+     md.extend([
+         row_top1, row_winner_top3, row_winner_top8,
+         row_base_top3, row_both_bases, row_tierce, row_quinte, row_outsider,
+-        "| **--- PERFORMANCE FINANCIERE ---** | | | |",
++        "| **--- PERFORMANCE FINANCIERE ---** | | | | |",
+         row_sg_roi, row_sg_dd, row_sp_roi, row_sp_dd,
+-        "| **--- CALIBRATION STATISTIQUE ---** | | | |",
++        "| **--- CALIBRATION STATISTIQUE ---** | | | | |",
+         row_brier
+     ])
+ 
+@@ -139,6 +139,7 @@ def main():
+             print(f"    - Courses ajoutees : {stats['races_added']}")
+             print(f"    - Pronostics verrouilles : {stats['predictions_locked']}")
+             print(f"    - Verrous refuses (cotes non ouvertes, GATE_REFUSED) : {stats.get('gate_refused', 0)}")
++            print(f"    - Radar v4 (pont) : {stats.get('radar_locked', 0)} verrous, {stats.get('radar_absent', 0)} absents, {stats.get('gate_refused_radar', 0)} refuses")
+             print(f"    - Resultats resolus : {stats['results_resolved']}")
+ 
+         # (Transparence) Plus aucune injection de reunions de reference :
+diff --git a/tests/test_radar_bridge.py b/tests/test_radar_bridge.py
+new file mode 100644
+index 0000000..db76663
+--- /dev/null
++++ b/tests/test_radar_bridge.py
+@@ -0,0 +1,168 @@
++"""Tests du pont RADAR_V4 (4e moteur du banc). Aucun réseau : les lignes du
++journal Radar sont injectées ; les instants sont contrôlés."""
++import os
++import sys
++import tempfile
++from datetime import datetime, timedelta
++
++sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
++
++from turf_lab.database import TurfDatabase
++from turf_lab.daily_sync import DailySyncManager
++from turf_lab.odds_quality import DEFAULT_ODDS
++from turf_lab.radar_bridge import ENGINE_NAME, RadarBridgeClient, RadarV4Engine, bridge_config
++
++RACE_DATE = "2026-09-07"
++RACE_ID = "R3C8_07092026_FEURS"
++NOW = datetime(2026, 9, 7, 12, 0)
++
++
++class FakeClient(RadarBridgeClient):
++    """Client de pont sans réseau : renvoie les lignes fournies."""
++
++    def __init__(self, rows):
++        super().__init__({"url": "https://x", "key": "k", "token": "t"})
++        self.rows = rows
++        self.calls = 0
++
++    def fetch_radar_journal(self, date_iso):
++        self.calls += 1
++        return list(self.rows) if date_iso == RACE_DATE else []
++
++
++def _race():
++    return {
++        "race_id": RACE_ID, "date": RACE_DATE, "meeting_number": 3, "race_number": 8,
++        "name": "Prix Test", "hippodrome": "FEURS", "discipline": "TROT_ATTELE", "distance": 2700,
++        "track_type": "SABLE", "track_condition": "BON", "rope": "GAUCHE", "autostart": False,
++        "scheduled_start_time": "14:00 GMT (16:00 Paris)", "status": "SCHEDULED",
++    }
++
++
++def _runners(n=10, priced=10, np_nums=()):
++    out = []
++    for i in range(1, n + 1):
++        odds = 3.0 + i if i <= priced else DEFAULT_ODDS
++        out.append({
++            "num": i, "horse_name": f"Cheval{i}", "sex": "M", "age": 5, "driver_jockey": "J", "trainer": "T",
++            "weight": 60.0, "draw": i, "shoeing": "FERRE", "blinkers": "SANS",
++            "morning_odds": odds, "odds_t15": odds, "final_odds": odds, "is_non_partant": i in np_nums,
++            "press_citation_count": 0, "music": "1a2a3a", "earnings": 1000.0, "record_chrono": 0.0, "official_rating": 0.0,
++        })
++    return out
++
++
++def _rows(nums, scelle_a="2026-09-07T07:35:00+00:00", r=3, c=8, edition="MATIN"):
++    # p_win décroissante avec le numéro : le n° 1 est le favori Radar
++    return [{
++        "num_reunion": r, "num_course": c, "num_pmu": n, "nom": f"Cheval{n}",
++        "p_win": round(0.30 - 0.02 * (n - 1), 4), "p_top2": 0.4, "p_top3": 0.5,
++        "cote_au_scelle": 3.0 + n, "rang_note": n, "edition": edition, "modele": "v4-labels", "scelle_a": scelle_a,
++    } for n in nums]
++
++
++def _mgr(rows=None):
++    db = TurfDatabase(os.path.join(tempfile.mkdtemp(), "radar.db"))
++    mgr = DailySyncManager(db)
++    if rows is not None:
++        mgr.radar_engine = RadarV4Engine(client=FakeClient(rows))
++    else:
++        mgr.radar_engine = RadarV4Engine(client=RadarBridgeClient(None))  # pont désactivé
++    return db, mgr
++
++
++def test_config_absente_desactive_le_pont(monkeypatch=None):
++    for v in ("RADAR_SUPABASE_URL", "RADAR_PUBLISHABLE_KEY", "RADAR_BRIDGE_TOKEN"):
++        os.environ.pop(v, None)
++    assert bridge_config() is None
++    eng = RadarV4Engine()  # aucune exception, log RADAR_BRIDGE_DISABLED
++    assert eng.enabled is False
++    p = eng.predict(_race(), _runners(), as_of_utc=NOW)
++    assert p["metadata"]["status"] == "ABSENT" and p["selection"] == []
++    db, mgr = _mgr(rows=None)
++    db.save_race(_race()); db.save_runners(RACE_ID, _runners())
++    assert mgr._lock_radar(_race(), _runners(), "T_MATIN", NOW) == 0
++    assert not db.has_prediction(RACE_ID, ENGINE_NAME, "T_MATIN")
++
++
++def test_appariement_et_non_partant_ignore():
++    eng = RadarV4Engine(client=FakeClient(_rows(range(1, 11)) + _rows([1, 2], r=1, c=1)))  # lignes d'une autre course
++    runners = _runners(10, np_nums=(10,))
++    p = eng.predict(_race(), runners, as_of_utc=NOW)
++    assert p["metadata"]["status"] == "OK"
++    assert 10 not in p["selection"] and "10" not in p["probabilities"]
++    assert p["selection"] == [1, 2, 3, 4, 5, 6, 7, 8]
++    assert p["bases"] == [1, 2] and p["outsider_num"] == 8
++    assert abs(sum(p["probabilities"].values()) - 1.0) < 1e-3
++    assert p["metadata"]["value_indices"]["1"] == round(p["probabilities"]["1"] * 4.0, 2)
++
++
++def test_couverture_insuffisante_absent():
++    eng = RadarV4Engine(client=FakeClient(_rows(range(1, 9))))  # 8 lignes sur 10 partants
++    p = eng.predict(_race(), _runners(10), as_of_utc=NOW)
++    assert p["metadata"]["status"] == "ABSENT" and p["metadata"]["coverage"] == 0.8
++    assert p["selection"] == [] and p["probabilities"] == {}
++    # 9/10 = 90 % : accepté (seuil inclusif)
++    eng9 = RadarV4Engine(client=FakeClient(_rows(range(1, 10))))
++    assert eng9.predict(_race(), _runners(10), as_of_utc=NOW)["metadata"]["status"] == "OK"
++
++
++def test_garde_anti_fuite_scelle_a_posterieur():
++    rows = _rows(range(1, 11), scelle_a="2026-09-07T16:40:00+00:00")  # scellé du soir, après l'instant du verrou
++    eng = RadarV4Engine(client=FakeClient(rows))
++    p = eng.predict(_race(), _runners(10), as_of_utc=NOW)
++    assert p["metadata"]["status"] == "ABSENT" and p["metadata"]["coverage"] == 0.0
++    # À une passe ultérieure (après le scellé), la même ligne devient utilisable
++    p2 = eng.predict(_race(), _runners(10), as_of_utc=datetime(2026, 9, 7, 17, 0))
++    assert p2["metadata"]["status"] == "OK" and p2["metadata"]["edition"] == "MATIN"
++
++
++def test_lock_radar_une_seule_fois_et_persistance():
++    db, mgr = _mgr(rows=_rows(range(1, 11)))
++    db.save_race(_race()); db.save_runners(RACE_ID, _runners())
++    assert mgr._lock_radar(_race(), _runners(), "T_MATIN", NOW) == 1
++    assert mgr._lock_radar(_race(), _runners(), "T_MATIN", NOW) == 0  # jamais réécrit
++    preds = [p for p in db.get_predictions(RACE_ID) if p["engine_name"] == ENGINE_NAME]
++    assert len(preds) == 1 and preds[0]["horizon"] == "T_MATIN"
++    assert preds[0]["odds_real"] == 1 and preds[0]["priced_ratio"] == 1.0 and preds[0]["lock_time_utc"] == NOW.isoformat()
++    assert preds[0]["selection"][:2] == [1, 2] and preds[0]["metadata"]["status"] == "OK"
++    # Un autre horizon reçoit son propre verrou
++    assert mgr._lock_radar(_race(), _runners(), "T90", NOW + timedelta(hours=1)) == 1
++
++
++def test_lock_radar_porte_de_fraicheur_et_absent():
++    db, mgr = _mgr(rows=_rows(range(1, 9)))
++    db.save_race(_race())
++    # Cotes par défaut : refusé, rien enregistré
++    assert mgr._lock_radar(_race(), _runners(10, priced=0), "T_MATIN", NOW) == 0
++    assert mgr.gate_refused_radar == 1
++    # Cotes réelles mais couverture 8/10 : ABSENT, rien enregistré
++    assert mgr._lock_radar(_race(), _runners(10), "T_MATIN", NOW) == 0
++    assert mgr.radar_absent == 1
++    assert not db.has_prediction(RACE_ID, ENGINE_NAME, "T_MATIN")
++
++
++def test_cache_une_requete_par_passe():
++    client = FakeClient(_rows(range(1, 11)))
++    eng = RadarV4Engine(client=client)
++    for _ in range(5):
++        eng.predict(_race(), _runners(), as_of_utc=NOW)
++    # FakeClient court-circuite le cache : on vérifie le cache du vrai client
++    real = RadarBridgeClient({"url": "https://x", "key": "k", "token": "t"})
++    real._cache[RACE_DATE] = _rows(range(1, 11))
++    eng2 = RadarV4Engine(client=real)
++    assert eng2.predict(_race(), _runners(), as_of_utc=NOW)["metadata"]["status"] == "OK"
++    real.clear_cache()
++    assert real._cache == {}
++
++
++def main():
++    tests = [(k, v) for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
++    for name, fn in tests:
++        fn()
++        print(f"  [OK] {name}")
++    print(f"\n=== {len(tests)} TESTS PONT RADAR_V4 PASSENT ===")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/turf_lab/benchmark.py b/turf_lab/benchmark.py
+index 5be263d..2e60b91 100644
+--- a/turf_lab/benchmark.py
++++ b/turf_lab/benchmark.py
+@@ -301,6 +301,39 @@ class TurfBenchmarkLab:
+                 results[h] = {"total_races": 0, "status": "NO_DATA"}
+         return results
+ 
++    def evaluate_common_races(self, engines: List[str]) -> Dict[str, Any]:
++        """Pont RADAR_V4 — banc sur les COURSES COMMUNES.
++
++        Par horizon (et « TOUS » = édition la plus proche du départ), ne
++        retient que les courses terminées (depuis HORIZON_BENCH_START_DATE)
++        où CHAQUE moteur de `engines` a un verrou avec sélection, puis
++        recalcule les métriques de chacun sur cette intersection. Les
++        métriques « toutes courses » restent affichées pour continuité."""
++        finished = [r_id for r_id in self.db.get_finished_races()
++                    if str((self.db.get_race(r_id) or {}).get("date", "")) >= self.HORIZON_BENCH_START_DATE]
++        preds_by_race: Dict[str, List[Dict[str, Any]]] = {r_id: self.db.get_predictions(r_id) for r_id in finished}
++
++        def has_lock(preds: List[Dict[str, Any]], engine: str, horizon: Optional[str]) -> bool:
++            for p in preds:
++                if p.get("engine_name") != engine or not p.get("selection"):
++                    continue
++                if horizon is None or p.get("horizon") == horizon:
++                    return True
++            return False
++
++        out: Dict[str, Any] = {"engines": engines, "horizons": {}}
++        for h in ["T_MATIN", "T90", "T30", "T15", "TOUS"]:
++            hz = None if h == "TOUS" else h
++            common = [r_id for r_id, preds in preds_by_race.items() if all(has_lock(preds, e, hz) for e in engines)]
++            entry: Dict[str, Any] = {"courses": len(common), "metriques": {}}
++            for e in engines:
++                if common:
++                    entry["metriques"][e] = self.evaluate_engine(e, race_ids=common, horizon=hz)
++                else:
++                    entry["metriques"][e] = {"engine_name": e, "total_races": 0, "status": "NO_DATA"}
++            out["horizons"][h] = entry
++        return out
++
+     def get_historical_race_logs(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+         """Extract all races (both finished and scheduled upcoming) with permanent cumulative history."""
+         with self.db.transaction() as conn:
+@@ -577,12 +610,19 @@ class TurfBenchmarkLab:
+         if engines is None:
+             # PRESS_SYNTHESIS retiré : aucune donnée presse réelle n'est branchée,
+             # on ne compare pas le moteur à un adversaire fictif.
+-            engines = ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE"]
++            engines = ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE", "RADAR_V4"]
+ 
+         evaluations = {}
+         for eng in engines:
+             evaluations[eng] = self.evaluate_engine(eng)
+ 
++        # Pont RADAR_V4 (4e moteur, labo) : mêmes bancs que les autres, plus le
++        # bloc « courses communes » — la seule comparaison loyale (mêmes courses,
++        # mêmes cotes, mêmes instants).
++        discipline_breakdown_radar = self.evaluate_by_discipline("RADAR_V4")
++        horizon_breakdown_radar = self.evaluate_by_horizon("RADAR_V4")
++        courses_communes = self.evaluate_common_races(["NEW_VALUE_ENGINE", "MARKET_BASELINE", "RADAR_V4"])
++
+         discipline_breakdown = self.evaluate_by_discipline("NEW_VALUE_ENGINE")
+         # Comparatif par discipline : les mêmes métriques pour le MARCHÉ (favoris
+         # PMU), affichées côte à côte sur le site pour conseiller les abonnés
+@@ -606,6 +646,9 @@ class TurfBenchmarkLab:
+             "discipline_breakdown_market": discipline_breakdown_market,
+             "horizon_breakdown": horizon_breakdown,
+             "horizon_breakdown_market": horizon_breakdown_market,
++            "horizon_breakdown_radar": horizon_breakdown_radar,
++            "discipline_breakdown_radar": discipline_breakdown_radar,
++            "courses_communes": courses_communes,
+             "horizon_bench_start_date": self.HORIZON_BENCH_START_DATE,
+             "historical_logs": historical_logs
+         }
+diff --git a/turf_lab/daily_sync.py b/turf_lab/daily_sync.py
+index 076ff12..f7aaac2 100644
+--- a/turf_lab/daily_sync.py
++++ b/turf_lab/daily_sync.py
+@@ -17,6 +17,7 @@ from turf_lab.engine import NewValueEngine
+ from turf_lab.baselines import ETPEEngineProxy, MarketOddsEngine
+ from turf_lab.human_stats import HumanStatsBook
+ from turf_lab.odds_quality import MIN_PRICED_RATIO, priced_ratio
++from turf_lab.radar_bridge import ENGINE_NAME as RADAR_ENGINE, RadarV4Engine
+ 
+ 
+ class PMUDataFetcher:
+@@ -103,6 +104,12 @@ class DailySyncManager:
+         # Compteur de verrous refusés par la porte de fraîcheur (remis à zéro
+         # à chaque passe, reporté dans les stats de sync_date).
+         self.gate_refused = 0
++        # Pont RADAR_V4 (4e moteur du banc) : désactivé proprement si la
++        # configuration (RADAR_SUPABASE_URL / RADAR_PUBLISHABLE_KEY /
++        # RADAR_BRIDGE_TOKEN) est absente — rien d'autre ne change.
++        self.radar_engine = RadarV4Engine()
++        self.gate_refused_radar = 0
++        self.radar_absent = 0
+         # Transparence « aucun chiffre retouché » : purge définitive des
+         # courses de référence fictives et des dividendes estimés (idempotent).
+         purged = self.db.purge_fictitious_data()
+@@ -291,6 +298,52 @@ class DailySyncManager:
+         self.db.save_odds_snapshots(race_id, horizon, odds_map)
+         return 1
+ 
++    def _lock_radar(self, race_data: Dict[str, Any], runners: List[Dict[str, Any]], horizon: str,
++                    now_utc: Optional[datetime] = None) -> int:
++        """Verrouille le moteur RADAR_V4 (probabilités scellées du journal Radar)
++        pour un horizon, UNE SEULE FOIS, aux mêmes cotes et au même instant que
++        les trois autres moteurs. Retourne 1 si un verrou a été posé, sinon 0.
++
++        - Pont désactivé (config absente) → 0, rien ne change.
++        - Même porte de fraîcheur : priced_ratio ≥ MIN_PRICED_RATIO, sinon
++          GATE_REFUSED (engine RADAR_V4) et retour à la passe suivante.
++        - Ligne Radar absente / couverture < 90 % / scelle_a postérieur au verrou
++          → RADAR_ABSENT, rien n'est enregistré (l'édition du soir arrive à une
++          passe suivante). Jamais de verrou rétroactif (due_horizons décide)."""
++        if not self.radar_engine.enabled:
++            return 0
++        race_id = race_data["race_id"]
++        if self.db.has_prediction(race_id, RADAR_ENGINE, horizon):
++            return 0
++        if now_utc is None:
++            now_utc = datetime.utcnow()
++        ratio = priced_ratio(runners)
++        if ratio < MIN_PRICED_RATIO:
++            self.gate_refused_radar += 1
++            print("GATE_REFUSED " + json.dumps({
++                "race_id": race_id, "horizon": horizon, "engine": RADAR_ENGINE,
++                "priced_ratio": round(ratio, 3), "now_utc": now_utc.isoformat()
++            }))
++            return 0
++        p = self.radar_engine.predict(race_data, runners, as_of_utc=now_utc)
++        meta = p.get("metadata", {}) or {}
++        if meta.get("status") != "OK" or not p.get("selection"):
++            self.radar_absent += 1
++            print("RADAR_ABSENT " + json.dumps({
++                "race_id": race_id, "horizon": horizon,
++                "coverage": meta.get("coverage"), "reason": meta.get("reason"),
++                "now_utc": now_utc.isoformat()
++            }))
++            return 0
++        p["prediction_id"] = f"{race_id}_RADAR_{horizon}"
++        p["race_id"] = race_id
++        p["horizon"] = horizon
++        p["odds_real"] = True
++        p["priced_ratio"] = round(ratio, 4)
++        p["lock_time_utc"] = now_utc.isoformat()
++        self.db.save_prediction(p)
++        return 1
++
+     def inject_recent_real_meetings(self):
+         """Désactivé : plus aucune donnée fictive n'est injectée (transparence)."""
+         return None
+@@ -345,8 +398,13 @@ class DailySyncManager:
+         date_str_db = target_date.strftime("%Y-%m-%d")
+         now_utc = datetime.utcnow()
+ 
+-        stats = {"races_added": 0, "predictions_locked": 0, "results_resolved": 0, "np_detected": 0, "races_frozen": 0, "gate_refused": 0}
++        stats = {"races_added": 0, "predictions_locked": 0, "results_resolved": 0, "np_detected": 0, "races_frozen": 0, "gate_refused": 0,
++                 "radar_locked": 0, "radar_absent": 0, "gate_refused_radar": 0}
+         self.gate_refused = 0
++        self.gate_refused_radar = 0
++        self.radar_absent = 0
++        # Une requête Radar par date et par passe (cache vidé à chaque passe).
++        self.radar_engine.client.clear_cache()
+ 
+         programme = self.fetcher.fetch_programme(date_str_api)
+         if not programme or not isinstance(programme, dict) or "programme" not in programme:
+@@ -551,7 +609,12 @@ class DailySyncManager:
+                 due = self.due_horizons(time_display, date_str_db, now_utc)
+                 for h in due:
+                     stats["predictions_locked"] += self._lock_horizon(race_data, runners, h)
++                    # 4e moteur (pont Radar) : indépendant du résultat ci-dessus,
++                    # une seule fois par (course, horizon), même porte de fraîcheur.
++                    stats["radar_locked"] += self._lock_radar(race_data, runners, h, now_utc)
+                 stats["gate_refused"] = self.gate_refused
++                stats["gate_refused_radar"] = self.gate_refused_radar
++                stats["radar_absent"] = self.radar_absent
+ 
+                 # 3. Check for official finish results and dividends
+                 arrival_order = []
+diff --git a/turf_lab/html_report.py b/turf_lab/html_report.py
+index 7791ad5..7ab4259 100644
+--- a/turf_lab/html_report.py
++++ b/turf_lab/html_report.py
+@@ -55,7 +55,7 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+     disc_breakdown = report_data.get("discipline_breakdown", {})
+     historical_logs = report_data.get("historical_logs", [])
+ 
+-    engines = ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE"]
++    engines = ["NEW_VALUE_ENGINE", "ETPE_ENGINE", "MARKET_BASELINE", "RADAR_V4"]
+ 
+     new_eng = evals.get("NEW_VALUE_ENGINE", {})
+     new_sg_roi = new_eng.get("financial_performance", {}).get("simple_gagnant", {}).get("roi_pct", 0.0)
+@@ -87,7 +87,7 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+         if key is None:
+             table_rows_html.append(f"""
+             <tr class="section-divider">
+-                <td colspan="4"><strong>{label}</strong></td>
++                <td colspan="5"><strong>{label}</strong></td>
+             </tr>
+             """)
+             continue
+@@ -156,22 +156,28 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+             f"<td class=\"{'val-pos' if d_sp > 0 else 'val-neg'}\"><strong>{d_sp:+.1f}%</strong></td>"
+         )
+ 
++    disc_breakdown_radar = report_data.get("discipline_breakdown_radar", {})
+     for disc_key, disc_label, disc_sub in disc_titles:
+         moteur_cells = _disc_cells(disc_breakdown.get(disc_key, {}), "val-pos")
+         marche_cells = _disc_cells(disc_breakdown_market.get(disc_key, {}), "val-norm")
++        radar_cells = _disc_cells(disc_breakdown_radar.get(disc_key, {}), "val-stat")
+         discipline_rows_html.append(f"""
+             <tr>
+-                <td rowspan="2" style="text-align:left; vertical-align:middle; border-right:1px solid var(--border);">
++                <td rowspan="3" style="text-align:left; vertical-align:middle; border-right:1px solid var(--border);">
+                     <strong>{disc_label}</strong><br>
+                     <small style="color:var(--text-muted);">{disc_sub}</small>
+                 </td>
+                 <td style="text-align:left;"><span class="badge badge-primary" style="font-size:0.75rem;">Moteur</span></td>
+                 {moteur_cells}
+             </tr>
+-            <tr style="border-bottom:2px solid var(--border);">
++            <tr>
+                 <td style="text-align:left;"><span class="badge badge-neutral" style="font-size:0.75rem;">Marché</span></td>
+                 {marche_cells}
+             </tr>
++            <tr style="border-bottom:2px solid var(--border);">
++                <td style="text-align:left;"><span class="badge badge-secondary" style="font-size:0.75rem;">Radar v4</span></td>
++                {radar_cells}
++            </tr>
+             """)
+ 
+     # 2bis. F3 — Banc de mesure par horizon de verrouillage : quelle édition
+@@ -189,24 +195,65 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+         ("T15", "🔒 Édition T-15", "~15 min avant le départ")
+     ]
+ 
++    horizon_breakdown_radar = report_data.get("horizon_breakdown_radar", {})
+     for h_key, h_label, h_sub in horizon_titles:
+         h_moteur_cells = _disc_cells(horizon_breakdown.get(h_key, {}), "val-pos")
+         h_marche_cells = _disc_cells(horizon_breakdown_market.get(h_key, {}), "val-norm")
++        h_radar_cells = _disc_cells(horizon_breakdown_radar.get(h_key, {}), "val-stat")
+         horizon_rows_html.append(f"""
+             <tr>
+-                <td rowspan="2" style="text-align:left; vertical-align:middle; border-right:1px solid var(--border);">
++                <td rowspan="3" style="text-align:left; vertical-align:middle; border-right:1px solid var(--border);">
+                     <strong>{h_label}</strong><br>
+                     <small style="color:var(--text-muted);">{h_sub}</small>
+                 </td>
+                 <td style="text-align:left;"><span class="badge badge-primary" style="font-size:0.75rem;">Moteur</span></td>
+                 {h_moteur_cells}
+             </tr>
+-            <tr style="border-bottom:2px solid var(--border);">
++            <tr>
+                 <td style="text-align:left;"><span class="badge badge-neutral" style="font-size:0.75rem;">Marché</span></td>
+                 {h_marche_cells}
+             </tr>
++            <tr style="border-bottom:2px solid var(--border);">
++                <td style="text-align:left;"><span class="badge badge-secondary" style="font-size:0.75rem;">Radar v4</span></td>
++                {h_radar_cells}
++            </tr>
+             """)
+ 
++    # 2ter. Pont RADAR_V4 — COURSES COMMUNES : la seule comparaison loyale
++    # (mêmes courses, mêmes cotes, mêmes instants), par horizon.
++    courses_communes = report_data.get("courses_communes", {}) or {}
++    cc_engines = courses_communes.get("engines", ["NEW_VALUE_ENGINE", "MARKET_BASELINE", "RADAR_V4"])
++    cc_labels = {"NEW_VALUE_ENGINE": "Moteur", "MARKET_BASELINE": "Marché", "RADAR_V4": "Radar v4"}
++    cc_rows_html = []
++    for h_key, h_label, _h_sub in horizon_titles + [("TOUS", "🧭 Toutes éditions", "édition la plus proche du départ")]:
++        entry = (courses_communes.get("horizons", {}) or {}).get(h_key, {}) or {}
++        n_cc = entry.get("courses", 0)
++        cells = []
++        for e in cc_engines:
++            m = (entry.get("metriques", {}) or {}).get(e, {}) or {}
++            if not m or m.get("total_races", 0) <= 0:
++                cells.append("<td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td>")
++                continue
++            hr = m.get("hit_rates", {})
++            brier = m.get("statistical_calibration", {}).get("brier_score")
++            cells.append(
++                f"<td class='val-stat'>{brier:.4f}</td>" if brier is not None else "<td class='val-na'>N/A</td>"
++            )
++            cells.append(f"<td>{hr.get('top1_win_rate_pct', 0.0):.1f}%</td>")
++            cells.append(f"<td>{hr.get('winner_in_top3_pct', 0.0):.1f}%</td>")
++            cells.append(f"<td>{hr.get('winner_in_top8_pct', 0.0):.1f}%</td>")
++        cc_rows_html.append(f"""
++            <tr>
++                <td style="text-align:left;"><strong>{h_label}</strong></td>
++                <td><strong>{n_cc}</strong></td>
++                {''.join(cells)}
++            </tr>""")
++    cc_head_html = "".join(
++        f"<th colspan='4'><span class='badge {'badge-primary' if e == 'NEW_VALUE_ENGINE' else ('badge-neutral' if e == 'MARKET_BASELINE' else 'badge-secondary')}'>{cc_labels.get(e, e)}</span></th>"
++        for e in cc_engines
++    )
++    cc_sub_html = "".join("<th>Brier</th><th>Top 1</th><th>Gagnant Top 3</th><th>Gagnant Top 8</th>" for _ in cc_engines)
++
+     logs_json = json.dumps(historical_logs, ensure_ascii=False)
+     archive_manifest = report_data.get("archive_manifest", {})
+     manifest_json = json.dumps(archive_manifest, ensure_ascii=False)
+@@ -415,12 +462,18 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+                         <th><span class="badge badge-primary">Nouveau Moteur (Value)</span></th>
+                         <th><span class="badge badge-secondary">ETPE (Heuristique)</span></th>
+                         <th><span class="badge badge-neutral">Favoris Marché (PMU)</span></th>
++                        <th><span class="badge badge-secondary">Radar v4 (labo)</span></th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     {''.join(table_rows_html)}
+                 </tbody>
+             </table>
++            <p style="margin-top:10px; font-size:0.78rem; color:var(--text-muted);">
++                🧪 Radar v4 : probabilités scellées le matin (07h35) ou le soir par le laboratoire Radar,
++                jugées aux cotes de chaque horizon. Moteur de banc uniquement — jamais une sélection publiée.
++                Comparaison loyale : voir « Courses communes » plus bas.
++            </p>
+         </div>
+ 
+         <div class="card">
+@@ -490,6 +543,32 @@ def generate_html_dashboard(report_data: Dict[str, Any], output_path: str = "ben
+             </p>
+         </div>
+ 
++        <!-- Section 2ter (pont RADAR_V4) : courses communes, la seule comparaison loyale -->
++        <div class="card">
++            <div class="card-header">
++                <h2>Courses Communes — Moteur vs Marché vs Radar v4, aux mêmes cotes, aux mêmes instants</h2>
++                <span class="badge-count">Seules les courses où les trois cerveaux ont un verrou à l'horizon comptent</span>
++            </div>
++            <table>
++                <thead>
++                    <tr>
++                        <th rowspan="2" style="width: 18%;">Horizon</th>
++                        <th rowspan="2">Courses communes</th>
++                        {cc_head_html}
++                    </tr>
++                    <tr>{cc_sub_html}</tr>
++                </thead>
++                <tbody>
++                    {''.join(cc_rows_html)}
++                </tbody>
++            </table>
++            <p style="margin-top:10px; font-size:0.78rem; color:var(--text-muted);">
++                🧪 Radar v4 : probabilités scellées le matin (07h35) ou le soir, jugées aux cotes de chaque horizon.
++                Brier plus bas = mieux calibré. Lecture décisionnelle réservée à l'échéance du pré-enregistrement
++                (clé project_memory.preregistration_pont_radar_v4) : rien n'est promis avant.
++            </p>
++        </div>
++
+         <!-- Section 3: Interactive Results Cockpit with 1-Click Modal Inspector -->
+         <div class="card">
+             <div class="card-header">
+diff --git a/turf_lab/radar_bridge.py b/turf_lab/radar_bridge.py
+new file mode 100644
+index 0000000..b692276
+--- /dev/null
++++ b/turf_lab/radar_bridge.py
+@@ -0,0 +1,225 @@
++"""Pont RADAR_V4 — les probabilités scellées de Radar (journal `v4-labels`)
++entrent dans le banc de mesure comme un QUATRIÈME moteur, verrouillé aux
++mêmes horizons et jugé par le même banc que NEW_VALUE_ENGINE, ETPE_ENGINE
++et MARKET_BASELINE. Aucun moteur existant n'est modifié.
++
++Règles absolues :
++  - Aucune fuite temporelle : une ligne Radar n'alimente un verrou que si
++    son `scelle_a` est antérieur ou égal à l'instant du verrou (`as_of_utc`).
++  - Même porte de fraîcheur que les autres moteurs (priced_ratio ≥ 0.90),
++    appliquée par l'appelant (daily_sync._lock_radar).
++  - Radar reste fermé : l'accès passe par la fonction `fn_journal_du_jour`,
++    protégée par un jeton de pont (RADAR_BRIDGE_TOKEN). Rien en clair dans
++    le dépôt : URL, clé publiable et jeton viennent des secrets GitHub.
++  - Si la configuration manque, le pont est DÉSACTIVÉ proprement
++    (log RADAR_BRIDGE_DISABLED) : aucun verrou RADAR_V4, rien d'autre ne change.
++"""
++
++import gzip
++import json
++import os
++import ssl
++import urllib.error
++import urllib.request
++from datetime import datetime
++from typing import Any, Dict, List, Optional, Tuple
++
++ENGINE_NAME = "RADAR_V4"
++MIN_COVERAGE = 0.90
++ENV_URL = "RADAR_SUPABASE_URL"
++ENV_KEY = "RADAR_PUBLISHABLE_KEY"
++ENV_TOKEN = "RADAR_BRIDGE_TOKEN"
++
++
++def bridge_config() -> Optional[Dict[str, str]]:
++    """Configuration par variables d'environnement ; None si incomplète."""
++    url = (os.environ.get(ENV_URL) or "").strip().rstrip("/")
++    key = (os.environ.get(ENV_KEY) or "").strip()
++    token = (os.environ.get(ENV_TOKEN) or "").strip()
++    if not url or not key or not token:
++        return None
++    return {"url": url, "key": key, "token": token}
++
++
++def _parse_ts(value: Any) -> Optional[datetime]:
++    """timestamptz PostgREST ('2026-09-07T07:35:00.123456+00:00') → datetime naïf UTC."""
++    if not value:
++        return None
++    s = str(value).strip().replace("Z", "+00:00")
++    try:
++        dt = datetime.fromisoformat(s)
++    except ValueError:
++        return None
++    if dt.tzinfo is not None:
++        dt = (dt - dt.utcoffset()).replace(tzinfo=None)
++    return dt
++
++
++class RadarBridgeClient:
++    """Client HTTP minimal (urllib, comme daily_sync.get_json) avec cache
++    mémoire par date : UNE requête par date et par passe, jamais par course."""
++
++    def __init__(self, config: Optional[Dict[str, str]], timeout: int = 10):
++        self.config = config
++        self.timeout = timeout
++        self._cache: Dict[str, List[Dict[str, Any]]] = {}
++
++    @property
++    def enabled(self) -> bool:
++        return self.config is not None
++
++    def _post(self, date_iso: str) -> Optional[List[Dict[str, Any]]]:
++        assert self.config is not None
++        url = f"{self.config['url']}/rest/v1/rpc/fn_journal_du_jour"
++        body = json.dumps({"p_date": date_iso, "p_token": self.config["token"]}).encode("utf-8")
++        headers = {
++            "apikey": self.config["key"],
++            "Authorization": f"Bearer {self.config['key']}",
++            "Content-Type": "application/json",
++            "Accept": "application/json",
++        }
++        ctx = ssl.create_default_context()
++        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
++        with urllib.request.urlopen(req, context=ctx, timeout=self.timeout) as response:
++            data = response.read()
++            if response.info().get("Content-Encoding") == "gzip":
++                data = gzip.decompress(data)
++            payload = json.loads(data.decode("utf-8"))
++            return payload if isinstance(payload, list) else None
++
++    def fetch_radar_journal(self, date_iso: str) -> List[Dict[str, Any]]:
++        """Lignes du journal Radar pour la date (AAAA-MM-JJ). Une tentative + un
++        retry ; en cas d'échec, liste vide et log RADAR_BRIDGE_ERROR (jamais
++        d'exception vers la synchronisation)."""
++        if not self.enabled:
++            return []
++        if date_iso in self._cache:
++            return self._cache[date_iso]
++        rows: List[Dict[str, Any]] = []
++        last_error = ""
++        for attempt in (1, 2):
++            try:
++                payload = self._post(date_iso)
++                if payload is not None:
++                    rows = payload
++                    break
++                last_error = "reponse inattendue"
++            except urllib.error.HTTPError as e:
++                last_error = f"HTTP {e.code}"
++                if e.code in (400, 401, 403, 404, 422):
++                    break  # jeton / date hors fenêtre : inutile de réessayer
++            except Exception as e:  # réseau, timeout, JSON
++                last_error = repr(e)
++        if not rows and last_error:
++            print("RADAR_BRIDGE_ERROR " + json.dumps({"date": date_iso, "error": last_error}))
++        self._cache[date_iso] = rows
++        return rows
++
++    def clear_cache(self) -> None:
++        self._cache.clear()
++
++
++def fetch_radar_journal(date_iso: str) -> List[Dict[str, Any]]:
++    """Raccourci sans cache partagé (usage script / debug)."""
++    return RadarBridgeClient(bridge_config()).fetch_radar_journal(date_iso)
++
++
++class RadarV4Engine:
++    """Quatrième moteur du banc : sélection et probabilités = journal Radar.
++    Même contrat que MarketOddsEngine.predict(race, runners), plus `as_of_utc`."""
++
++    def __init__(self, client: Optional[RadarBridgeClient] = None, engine_name: str = ENGINE_NAME):
++        self.engine_name = engine_name
++        self.client = client if client is not None else RadarBridgeClient(bridge_config())
++        if not self.client.enabled:
++            print("RADAR_BRIDGE_DISABLED " + json.dumps({
++                "missing": [v for v in (ENV_URL, ENV_KEY, ENV_TOKEN) if not (os.environ.get(v) or "").strip()]
++            }))
++
++    @property
++    def enabled(self) -> bool:
++        return self.client.enabled
++
++    @staticmethod
++    def _absent(engine_name: str, coverage: float, reason: str) -> Dict[str, Any]:
++        return {
++            "engine_name": engine_name, "selection": [], "bases": [], "outsider_num": None,
++            "probabilities": {},
++            "metadata": {"type": "radar_v4", "status": "ABSENT", "coverage": round(coverage, 3), "reason": reason},
++        }
++
++    def predict(self, race: Dict[str, Any], runners: List[Dict[str, Any]],
++                as_of_utc: Optional[datetime] = None,
++                journal_rows: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
++        """`journal_rows` permet d'injecter les lignes (tests) ; sinon elles
++        sont lues via le client (cache par date)."""
++        if as_of_utc is None:
++            as_of_utc = datetime.utcnow()
++        active = [r for r in runners if not r.get("is_non_partant", False)]
++        if not active:
++            return self._absent(self.engine_name, 0.0, "NO_RUNNERS")
++
++        date_iso = str(race.get("date", ""))
++        rows = journal_rows if journal_rows is not None else self.client.fetch_radar_journal(date_iso)
++        if not rows:
++            return self._absent(self.engine_name, 0.0, "NO_JOURNAL")
++
++        r_num = int(race.get("meeting_number", 0))
++        c_num = int(race.get("race_number", 0))
++        # Appariement (num_reunion, num_course, num_pmu) ; garde anti-fuite sur scelle_a.
++        by_num: Dict[int, Dict[str, Any]] = {}
++        for row in rows:
++            try:
++                if int(row.get("num_reunion")) != r_num or int(row.get("num_course")) != c_num:
++                    continue
++            except (TypeError, ValueError):
++                continue
++            scelle_a = _parse_ts(row.get("scelle_a"))
++            if scelle_a is None or scelle_a > as_of_utc:
++                continue
++            if row.get("p_win") is None:
++                continue
++            try:
++                by_num[int(row.get("num_pmu"))] = row
++            except (TypeError, ValueError):
++                continue
++
++        matched = [r for r in active if int(r["num"]) in by_num]
++        coverage = len(matched) / len(active)
++        if coverage < MIN_COVERAGE:
++            return self._absent(self.engine_name, coverage, "COVERAGE")
++
++        # Probabilités renormalisées sur les partants actifs appariés.
++        raw = {int(r["num"]): float(by_num[int(r["num"])]["p_win"]) for r in matched}
++        total = sum(raw.values()) or 1.0
++        probs = {str(n): round(p / total, 4) for n, p in raw.items()}
++        ordered = sorted(raw.keys(), key=lambda n: (-raw[n], n))
++        selection = ordered[:8]
++        bases = ordered[:2]
++        outsider = ordered[7] if len(ordered) >= 8 else None
++
++        odds_now = {int(r["num"]): r.get("odds_t15", r.get("final_odds")) for r in matched}
++        value_indices = {}
++        for n in ordered:
++            o = odds_now.get(n)
++            if o is not None and float(o) > 1.0:
++                value_indices[str(n)] = round(probs[str(n)] * float(o), 2)
++
++        sample = by_num[ordered[0]]
++        return {
++            "engine_name": self.engine_name,
++            "selection": selection,
++            "bases": bases,
++            "outsider_num": outsider,
++            "probabilities": probs,
++            "metadata": {
++                "type": "radar_v4",
++                "status": "OK",
++                "edition": sample.get("edition"),
++                "scelle_a": sample.get("scelle_a"),
++                "modele": sample.get("modele"),
++                "coverage": round(coverage, 3),
++                "as_of_utc": as_of_utc.isoformat(),
++                "value_indices": value_indices,
++            },
++        }
+-- 
+2.43.0
+
