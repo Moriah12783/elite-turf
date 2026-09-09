@@ -43,7 +43,14 @@ export default function RenvoyerConfirmationButton({
         return;
       }
       setEtat("ok");
-      setMessage(`${data.palier} · jusqu'au ${data.expire_le}`);
+      // `journalise: false` = l'e-mail est bien parti mais la trace a échoué.
+      // On le dit : un envoi non journalisé est invisible dans l'historique,
+      // et c'est précisément ce trou qu'on vient de combler.
+      setMessage(
+        data.journalise === false
+          ? `${data.palier} · jusqu'au ${data.expire_le} — ⚠ non journalisé`
+          : `${data.palier} · jusqu'au ${data.expire_le}`,
+      );
     } catch {
       setEtat("erreur");
       setMessage("Erreur réseau");
