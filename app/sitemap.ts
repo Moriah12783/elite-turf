@@ -131,6 +131,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Dates [-30j, +7j] qui ont un Quinté+ désigné. /quinte-plus/[date] est en
+  // noindex sans Quinté+ (même règle que /programme) → ne pas soumettre ces jours.
+  const datesAvecQuinte: Record<string, true> = {};
+  let quinteConnu = false;
+  try {
+    const debutQ = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const finQ   = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const { data: quintes, error: errQ } = await createServiceClient()
+      .from("courses")
+      .select("date_course")
+      .gte("date_course", debutQ)
+      .lte("date_course", finQ)
+      .contains("paris_disponibles", ["QUINTE_PLUS"]);
+    if (!errQ) {
+      quinteConnu = true;
+      for (const r of (quintes ?? []) as { date_course: string }[]) datesAvecQuinte[r.date_course] = true;
+    }
+  } catch {
+    // Échec : quinteConnu reste false → aucune date exclue.
+  }
+
   for (let i = -30; i <= 7; i++) {
     const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000)
       .toISOString().split("T")[0];
@@ -148,13 +169,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
-    // /quinte-plus/[date] — fort levier SEO ("quinté+ du jour" #1 turf FR)
-    temporalUrls.push({
-      url: `${APP_URL}/quinte-plus/${d}`,
-      lastModified: now,
-      changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "weekly",
-      priority: isTodayDate ? 0.95 : isFutureDate ? 0.8 : 0.7,
-    });
+    // /quinte-plus/[date] — fort levier SEO ("quinté+ du jour" #1 turf FR).
+    // Omise quand la date n'a pas de Quinté+ (page en noindex).
+    if (!quinteConnu || datesAvecQuinte[d]) {
+      temporalUrls.push({
+        url: `${APP_URL}/quinte-plus/${d}`,
+        lastModified: now,
+        changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "weekly",
+        priority: isTodayDate ? 0.95 : isFutureDate ? 0.8 : 0.7,
+      });
+    }
 
     // /arrivees/[date] — pas indexable dans le futur (pas de résultats)
     if (!isFutureDate) {
