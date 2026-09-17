@@ -4,7 +4,7 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Politique de Confidentialité — Elite Turf",
+  title: "Politique de Confidentialité",
   description: "Politique de confidentialité et protection des données personnelles (RGPD) — Elite Turf, exploité par TSALACH VENTURES LLC.",
   alternates: { canonical: `${APP_URL}/confidentialite` },
   robots: { index: false, follow: false },

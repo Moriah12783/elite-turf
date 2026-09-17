@@ -5,7 +5,7 @@ import {
   Edit2, Calendar, ChevronLeft, ChevronRight, ListOrdered, Filter,
 } from "lucide-react";
 
-export const metadata = { title: "Courses — Admin Elite Turf" };
+export const metadata = { title: "Courses — Admin" };
 
 const STATUT_CONFIG: Record<string, { label: string; classes: string }> = {
   PROGRAMME: { label: "Programmé", classes: "bg-bg-elevated text-text-muted border-border" },

@@ -12,7 +12,9 @@
  */
 
 import { Metadata } from "next";
+import { cache } from "react";
 import { isCourseEligible, hasPariNational, isHippodromePrioritaire } from "@/lib/turf/course-eligibility";
+import { sortPageProgramme } from "@/lib/seo/programme-fenetre";
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,6 +32,40 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 
 interface PageProps { params: { date: string } }
 
+/**
+ * Courses AFFICHABLES d'une date (après filtre d'éligibilité) — c'est ce
+ * nombre, et lui seul, qui décide du sort de la page (cf. programme-fenetre.ts).
+ *
+ * `cache()` : generateMetadata (pour poser ou non le noindex) et la page (pour
+ * le rendu et le 404) ont besoin du même résultat dans la même requête — une
+ * seule interrogation de Supabase au lieu de deux.
+ */
+const chargerCoursesProgramme = cache(async (date: string) => {
+  const supabase = createServiceClient();
+  const { data: rawCourses } = await supabase
+    .from("courses")
+    .select(`
+      id, numero_reunion, numero_course, libelle,
+      date_course, heure_depart, distance_metres,
+      categorie, terrain, nb_partants, statut, paris_disponibles,
+      hippodrome:hippodromes(id, nom, pays, ville),
+      pronostics(id, niveau_acces, publie)
+    `)
+    .eq("date_course", date)
+    .neq("statut", "ANNULE")
+    .order("heure_depart", { ascending: true });
+
+  return (rawCourses || []).map((c: any) => ({
+    ...c,
+    hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
+  })).filter((c: any) => isCourseEligible({
+    hippodromeNom: c.hippodrome?.nom,
+    nbPartants:    c.nb_partants,
+    aPronostic:    c.pronostics?.some((p: any) => p.publie),
+    aPariNational: hasPariNational(c.paris_disponibles),
+  }));
+});
+
 export async function generateStaticParams() {
   return generateDateRangeParams();
 }
@@ -37,7 +73,16 @@ export async function generateStaticParams() {
 // ISR dynamique selon la position temporelle de la date
 export const dynamicParams = true; // dates hors-fenêtre rendues à la volée
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isValidDateParam(params.date)) return { title: "Date invalide — Elite Turf" };
+  // Titres SANS « Elite Turf » : le gabarit de app/layout.tsx (« %s | Elite
+  // Turf ») l'ajoute déjà. L'écrire ici produisait « … | Elite Turf | Elite Turf »
+  // dans les résultats Google. openGraph.title, lui, ne reçoit pas le gabarit :
+  // il garde sa marque.
+  if (!isValidDateParam(params.date)) return { title: "Date invalide" };
+
+  if (isToday(params.date)) noStore();
+  const courses = await chargerCoursesProgramme(params.date);
+  const sort    = sortPageProgramme(params.date, todayParis(), courses.length);
+
   const dateLong    = formatDateLong(params.date);
   const dateCompact = formatDateCompact(params.date);
   const today       = isToday(params.date);
@@ -60,7 +105,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
              : "Résultats et arrivées";
 
   return {
-    title: `${emoji} Programme PMU ${today ? "du jour" : dateCompact} · ${titleSuffix} | Elite Turf`,
+    title: `${emoji} Programme PMU ${today ? "du jour" : dateCompact} · ${titleSuffix}`,
+    // Journée sans course affichable : la page reste servie (la navigation par
+    // date fonctionne) mais Google ne l'indexe pas — ces pages vides, quasi
+    // identiques d'un jour à l'autre, étaient classées « page en double ».
+    ...(sort === "noindex" ? { robots: { index: false, follow: true } } : {}),
     description: `${emoji} Toutes les courses PMU ${verb} (${dateLong}) : Vincennes, Longchamp, Cagnes-sur-Mer, Casablanca, Abidjan. Horaires, partants, cotes et pronostics gratuits Elite Turf.`,
     alternates: { canonical: `${APP_URL}/programme/${params.date}` },
     openGraph: {
@@ -80,37 +129,15 @@ export default async function ProgrammePage({ params }: PageProps) {
   // Past/futur restent en ISR 600s (programme stable, résultats figés).
   if (isToday(params.date)) noStore();
 
-  // Fenêtre de validité raisonnable : -90j à +30j (hors plage = 404 SEO-friendly)
-  const today    = todayParis();
-  const minDate  = new Date(new Date(today).getTime() - 90 * 24 * 3600 * 1000)
-    .toISOString().split("T")[0];
-  const maxDate  = new Date(new Date(today).getTime() + 30 * 24 * 3600 * 1000)
-    .toISOString().split("T")[0];
-  if (params.date < minDate || params.date > maxDate) notFound();
+  // Le CONTENU décide du sort de la page, plus la distance à aujourd'hui.
+  // L'ancienne fenêtre fixe [J-90, J+30] renvoyait 404 sur 142 journées passées
+  // qui AVAIENT des courses, et servait en 200 des journées futures vides.
+  // Règle et historique complets : lib/seo/programme-fenetre.ts.
+  const today   = todayParis();
+  const courses = await chargerCoursesProgramme(params.date);
+  if (sortPageProgramme(params.date, today, courses.length) === "introuvable") notFound();
 
   const supabase = createServiceClient();
-  const { data: rawCourses } = await supabase
-    .from("courses")
-    .select(`
-      id, numero_reunion, numero_course, libelle,
-      date_course, heure_depart, distance_metres,
-      categorie, terrain, nb_partants, statut, paris_disponibles,
-      hippodrome:hippodromes(id, nom, pays, ville),
-      pronostics(id, niveau_acces, publie)
-    `)
-    .eq("date_course", params.date)
-    .neq("statut", "ANNULE")
-    .order("heure_depart", { ascending: true });
-
-  const courses = (rawCourses || []).map((c: any) => ({
-    ...c,
-    hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
-  })).filter((c: any) => isCourseEligible({
-    hippodromeNom: c.hippodrome?.nom,
-    nbPartants:    c.nb_partants,
-    aPronostic:    c.pronostics?.some((p: any) => p.publie),
-    aPariNational: hasPariNational(c.paris_disponibles),
-  }));
 
   // ── Dates avec programme disponible (pour pastilles ✓ de la nav) ────
   // Pour /programme, presque toutes les dates ont des courses (programme PMU

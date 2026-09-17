@@ -10,7 +10,7 @@ import { currentWeekISO, currentMonth as currentMonthFn } from "@/lib/blog-auto/
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Blog PMU — Analyses, Guides & Stratégies pour les parieurs francophones | Elite Turf",
+  title: "Blog PMU — Analyses, Guides & Stratégies pour les parieurs francophones",
   description:
     "Guides et analyses PMU rédigés par des experts hippiques : Quinté+, Tiercé, déferrage, lecture de la musique, gestion de bankroll. Pour les parieurs de Côte d'Ivoire, Sénégal, Maroc et France.",
   keywords: [

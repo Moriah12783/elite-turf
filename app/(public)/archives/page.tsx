@@ -12,7 +12,7 @@ import { BET_TYPE_LABELS } from "@/types";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export const metadata: Metadata = {
-  title: "Archives — Historique Complet des Résultats | Elite Turf",
+  title: "Archives — Historique Complet des Résultats",
   description:
     "Consultez l'historique complet des pronostics Elite Turf : arrivées officielles, rapports PMU et taux de réussite par période. Réservé aux abonnés.",
   alternates: { canonical: `${APP_URL}/archives` },

@@ -21,7 +21,7 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Mon ROI — Suivez vos gains théoriques | Elite Turf",
+  title: "Mon ROI — Suivez vos gains théoriques",
   description: "Tableau de bord personnel : ROI cumulé, victoires, top performers. Réservé aux membres Elite Turf.",
   alternates: { canonical: `${APP_URL}/espace-membre/mon-roi` },
   // Page privée — ne pas indexer

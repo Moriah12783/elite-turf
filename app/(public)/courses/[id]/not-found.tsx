@@ -20,7 +20,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Star, AlertCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Course retirée — Elite Turf",
+  title: "Course retirée",
   description: "Cette course n'est plus disponible. Consultez le programme du jour.",
   robots: { index: false, follow: false },
 };

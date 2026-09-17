@@ -18,7 +18,7 @@ import AnnulerRenouvellement from "@/components/membre/AnnulerRenouvellement";
 import GuideUtilisation from "@/components/membre/GuideUtilisation";
 
 export const metadata: Metadata = {
-  title: "Mon Espace Membre — Elite Turf",
+  title: "Mon Espace Membre",
   description: "Gérez votre abonnement, consultez vos pronostics et suivez vos statistiques.",
   // Page privée — ne pas indexer sur Google
   robots: { index: false, follow: false },

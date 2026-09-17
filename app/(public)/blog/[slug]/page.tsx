@@ -23,7 +23,10 @@ export async function generateMetadata({
   if (!article) return { title: "Article introuvable" };
 
   return {
-    title: article.titre,
+    // Deux articles portent déjà « Elite Turf » dans leur titre éditorial :
+    // on court-circuite alors le template du root layout pour éviter
+    // « … Elite Turf | Elite Turf » dans Google.
+    title: /Elite Turf/.test(article.titre) ? { absolute: article.titre } : article.titre,
     description: article.description,
     keywords: article.keywords,
     alternates: { canonical: `${APP_URL}/blog/${article.slug}` },

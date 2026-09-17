@@ -5,7 +5,7 @@ import {
   Target, Star, Crown, Zap, Coins, CheckCircle2, AlertTriangle
 } from "lucide-react";
 
-export const metadata: Metadata = { title: "Statistiques — Admin Elite Turf" };
+export const metadata: Metadata = { title: "Statistiques — Admin" };
 export const dynamic = "force-dynamic";
 
 const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];

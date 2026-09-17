@@ -25,7 +25,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const revalidate = 86400; // 24h — page statique éditoriale
 
 export const metadata: Metadata = {
-  title: "Arnaques de pronostics PMU : les pièges à repérer | Elite Turf",
+  title: "Arnaques de pronostics PMU : les pièges à repérer",
   description:
     "Faux bilans, « 100 % de réussite », coupons « sûrs », paiement WhatsApp sans recours : apprenez à repérer une arnaque de pronostics PMU et à payer en sécurité.",
   keywords: [

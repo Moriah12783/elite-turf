@@ -21,7 +21,7 @@ export const revalidate = 3600; // index hippo bouge rarement
 
 // CTR boost Sprint A : emoji 📍 (signal "lieu" → local SEO bonus)
 export const metadata: Metadata = {
-  title: "📍 Hippodromes PMU — Longchamp, Vincennes, Abidjan & + | Elite Turf",
+  title: "📍 Hippodromes PMU — Longchamp, Vincennes, Abidjan & +",
   description:
     "📍 Tous les hippodromes PMU : Longchamp, Vincennes, Chantilly, Cagnes-sur-Mer, Abidjan… Programme du jour, partants, arrivées et pronostics par hippodrome.",
   alternates: { canonical: `${APP_URL}/hippodromes` },

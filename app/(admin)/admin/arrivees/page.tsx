@@ -21,7 +21,7 @@ import { todayParisISO, parisDateISOPlusDays } from "@/lib/paris-date";
 import ArriveesAdminClient from "./ArriveesAdminClient";
 import BatchPrefillButton from "./BatchPrefillButton";
 
-export const metadata = { title: "Arrivées & Rapports — Admin Elite Turf" };
+export const metadata = { title: "Arrivées & Rapports — Admin" };
 export const dynamic   = "force-dynamic"; // toujours frais (admin)
 
 // ── Hippodromes prestige (manuel pour avoir un contrôle fin) ─────────────────

@@ -6,7 +6,7 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Équipe Rédactionnelle & Politique Éditoriale — Elite Turf",
+  title: "Équipe Rédactionnelle & Politique Éditoriale",
   description:
     "Découvrez l'équipe rédactionnelle d'Elite Turf, notre processus éditorial, nos sources, notre politique de corrections et notre charte de transparence.",
   alternates: { canonical: `${APP_URL}/equipe-redactionnelle` },

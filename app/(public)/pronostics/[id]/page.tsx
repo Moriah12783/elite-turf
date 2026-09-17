@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq("id", params.id)
     .single();
 
-  if (!data) return { title: "Pronostic — Elite Turf" };
+  if (!data) return { title: "Pronostic" };
   const course = data.course as any;
   const hippoName = course?.hippodrome?.nom || "";
   const libelle   = course?.libelle || "Pronostic";
@@ -59,8 +59,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   // Titre : reste court, met le résultat en évidence si terminé
   const title = resultLabel
-    ? `${resultLabel} — ${libelle} ${hippoName} | Pronostic ${typePari} Elite Turf`
-    : `${niveauEmoji} Pronostic ${typePari} ${libelle} — ${hippoName} | Elite Turf`;
+    ? `${resultLabel} — ${libelle} ${hippoName} · Pronostic${typePari ? ` ${typePari}` : ""}`
+    : `${niveauEmoji} Pronostic ${typePari} ${libelle} — ${hippoName}`;
 
   // Description : utiliser analyse_courte mais préfixer avec contexte chiffré
   const prefix = nbChevaux > 0

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { XCircle, MessageCircle, ArrowLeft, CreditCard } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Paiement échoué — Elite Turf",
+  title: "Paiement échoué",
   robots: { index: false, follow: false },
 };
 

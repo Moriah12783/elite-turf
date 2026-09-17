@@ -47,7 +47,10 @@ export async function generateMetadata({
   if (!evt) return {};
 
   const nom = cleanName(evt);
-  const title = `${nom} 2026 — Date, Hippodrome & Pronostic | Elite Turf`;
+  // Pas de marque ici : le template du root layout l'ajoute au <title>.
+  // OG et Twitter ne reçoivent pas le template → marque rajoutée à la main.
+  const title = `${nom} 2026 — Date, Hippodrome & Pronostic`;
+  const socialTitle = `${title} | Elite Turf`;
   const description = buildMetaDescription(evt);
   const url = `https://www.elite-turf.fr/calendrier/${evt.slug}`;
 
@@ -56,14 +59,14 @@ export async function generateMetadata({
     description,
     alternates: { canonical: url },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       url,
       type: "article",
       siteName: "Elite Turf",
       locale: "fr_FR",
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", title: socialTitle, description },
   };
 }
 

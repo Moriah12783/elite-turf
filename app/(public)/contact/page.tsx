@@ -8,7 +8,7 @@ import { whatsappUrl } from "@/lib/constants/whatsapp";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Contact — Elite Turf",
+  title: "Contact",
   description:
     "Contactez l'équipe Elite Turf par WhatsApp ou email. Réponse prioritaire pour nos membres.",
   alternates: { canonical: `${APP_URL}/contact` },

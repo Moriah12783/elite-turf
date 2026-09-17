@@ -51,7 +51,7 @@ export const dynamicParams = true;
 export const revalidate = 600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isValidDateParam(params.date)) return { title: "Date invalide — Elite Turf" };
+  if (!isValidDateParam(params.date)) return { title: "Date invalide" };
   const dateLong    = formatDateLong(params.date);
   const dateCompact = formatDateCompact(params.date);
   const today       = isToday(params.date);
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (future) {
     return {
-      title: `Arrivées PMU du ${dateCompact} — pas encore disponibles | Elite Turf`,
+      title: `Arrivées PMU du ${dateCompact} — pas encore disponibles`,
       description: `Les arrivées du ${dateLong} ne sont pas encore disponibles. Consultez le programme.`,
       alternates: { canonical: `${APP_URL}/arrivees/${params.date}` },
       robots: { index: false, follow: true }, // pas indexable dans le futur

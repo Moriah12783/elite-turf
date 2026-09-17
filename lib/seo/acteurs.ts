@@ -433,7 +433,9 @@ export function formatSexeCheval(sexe: string | null | undefined): string {
  *   - Emoji visuel SERP (signal coloré dans résultats Google)
  *   - Qualificatif PMU (Cheval/Jockey/Entraîneur) → match intent recherche
  *   - Chiffres concrets ET cas "0 victoires" enrichi avec mot "Analyse"
- *   - Brand "| Elite Turf" en fin pour reconnaissance + bouton retour
+ *   - PAS de marque en fin : le template du root layout ("%s | Elite Turf")
+ *     l'ajoute déjà au <title>. Les appelants la rajoutent eux-mêmes au
+ *     titre OpenGraph, qui ne reçoit pas le template.
  * Limite cible : 50-65 chars (Google tronque ~580px ≈ 65 chars desktop).
  *
  * Audit GSC 18/05/2026 : CTR site 3,1% à pos 10,2. Objectif : +1pt CTR via
@@ -456,10 +458,10 @@ export function buildActeurTitle(
       const winrate = stats.taux_victoire !== null && stats.nb_courses_terminees >= 3
         ? ` · ${stats.taux_victoire.toFixed(0)}%`
         : "";
-      return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+      return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate}`;
     }
     // Cas "thin" : pas encore de victoire → mot "Analyse" + qualif (CTR boost)
-    return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} — Analyse PMU & musique | Elite Turf`;
+    return `${emoji} ${nomCap}${qualif ? ` — ${qualif}` : ""} — Analyse PMU & musique`;
   }
 
   if (type === "jockeys") {
@@ -467,9 +469,9 @@ export function buildActeurTitle(
       const winrate = stats.taux_victoire !== null
         ? ` · ${stats.taux_victoire.toFixed(0)}%`
         : "";
-      return `${emoji} ${nomCap} — Jockey PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+      return `${emoji} ${nomCap} — Jockey PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate}`;
     }
-    return `${emoji} ${nomCap} — Jockey PMU : analyse, montes & forme récente | Elite Turf`;
+    return `${emoji} ${nomCap} — Jockey PMU : analyse, montes & forme récente`;
   }
 
   // entraineurs
@@ -477,9 +479,9 @@ export function buildActeurTitle(
     const winrate = stats.taux_victoire !== null
       ? ` · ${stats.taux_victoire.toFixed(0)}%`
       : "";
-    return `${emoji} ${nomCap} — Entraîneur PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate} | Elite Turf`;
+    return `${emoji} ${nomCap} — Entraîneur PMU : ${stats.nb_courses_terminees}c · ${stats.nb_victoires}V${winrate}`;
   }
-  return `${emoji} ${nomCap} — Entraîneur PMU : analyse, chevaux & forme | Elite Turf`;
+  return `${emoji} ${nomCap} — Entraîneur PMU : analyse, chevaux & forme`;
 }
 
 /**
