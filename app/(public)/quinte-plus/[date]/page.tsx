@@ -30,6 +30,7 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
+import { sortPageProgramme } from "@/lib/seo/programme-fenetre";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import TrackPageView from "@/components/analytics/TrackPageView";
@@ -57,20 +58,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Récupérer libellé Quinté+ pour titre encore plus précis si possible
   let quinteTitle = "";
   let hippoName   = "";
+  // null = requête en échec → on ne pose aucun noindex par prudence.
+  let quinteTrouve: boolean | null = null;
   try {
     const supabase = createServiceClient();
-    const { data: c } = await supabase
+    const { data: c, error } = await supabase
       .from("courses")
       .select("libelle, hippodrome:hippodromes(nom)")
       .eq("date_course", params.date)
       .contains("paris_disponibles", ["QUINTE_PLUS"])
       .limit(1)
-      .single();
+      .maybeSingle();
+    if (!error) quinteTrouve = !!c;
     if (c) {
       quinteTitle = c.libelle || "";
       hippoName   = (c.hippodrome as any)?.nom || "";
     }
   } catch {}
+
+  // Même règle que /programme/[date] : un Quinté+ connu → indexable quelle
+  // que soit la date ; aucun Quinté+ → page servie mais masquée à Google.
+  const sort = quinteTrouve === null
+    ? "indexable"
+    : sortPageProgramme(params.date, todayParis(), quinteTrouve ? 1 : 0);
 
   const titleSuffix = quinteTitle && hippoName
     ? ` — ${quinteTitle}, ${hippoName}`
@@ -86,6 +96,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? `🏆 Pronostic Quinté+ du ${dateLong} : ${quinteTitle} à ${hippoName}. Sélection Elite Turf, partants, cotes en direct, arrivée officielle et rapports PMU.`
       : `🏆 Pronostic Quinté+ gratuit du ${dateLong} : partants, cotes probables, arrivée officielle et rapports. Sélection experte Elite Turf publiée avant le départ.`,
     alternates: { canonical: `${APP_URL}/quinte-plus/${params.date}` },
+    ...(sort === "noindex" ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: `🏆 Quinté+ ${dateCompact}${titleSuffix} — Pronostic Elite Turf`,
       description: `Pronostic + partants + arrivée du Quinté+ du ${dateLong}.`,
@@ -103,15 +114,10 @@ export default async function QuintePlusPage({ params }: PageProps) {
   if (isToday(params.date)) noStore();
 
   const today    = todayParis();
-  const minDate  = new Date(new Date(today).getTime() - 90 * 24 * 3600 * 1000)
-    .toISOString().split("T")[0];
-  const maxDate  = new Date(new Date(today).getTime() + 30 * 24 * 3600 * 1000)
-    .toISOString().split("T")[0];
-  if (params.date < minDate || params.date > maxDate) notFound();
 
   const supabase = createServiceClient();
 
-  const { data: course } = await supabase
+  const { data: course, error: courseError } = await supabase
     .from("courses")
     .select(`
       id, numero_reunion, numero_course, libelle,
@@ -131,9 +137,15 @@ export default async function QuintePlusPage({ params }: PageProps) {
     .eq("date_course", params.date)
     .contains("paris_disponibles", ["QUINTE_PLUS"])
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const c = course as any;
+
+  // AVANT : 404 pour toute date hors [J-90, J+30], même avec un vrai Quinté+
+  // (et page vide en 200 pour les dates futures). Désormais le contenu
+  // décide : cf. lib/seo/programme-fenetre.ts. Une requête en échec ne
+  // produit jamais de 404 (on retombe sur l'écran « pas de Quinté+ »).
+  if (!courseError && sortPageProgramme(params.date, today, c ? 1 : 0) === "introuvable") notFound();
 
   // ── Dates avec Quinté+ disponibles (30 derniers jours) ──────────────
   // Pour la nav : pastille ✓ sur les jours qui ont au moins 1 course Quinté+.
