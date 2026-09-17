@@ -46,13 +46,15 @@ const STEPS: Array<{
     type:     "LEAD_UPGRADE_J2",
     minHours: 48,
     maxHours: 72,
-    render:   (l, u) => templateLeadUpgradeJ2({ prenom: l.prenom || "Turfiste", unsubscribeUrl: u }),
+    // `email` alimente le lien « créer mon compte » (pré-remplissage) — le
+    // prospect a déjà donné son adresse, la lui redemander est une friction.
+    render:   (l, u) => templateLeadUpgradeJ2({ prenom: l.prenom || "Turfiste", email: l.email, unsubscribeUrl: u }),
   },
   {
     type:     "LEAD_PROOF_J5",
     minHours: 120,
     maxHours: 144,
-    render:   (l, u) => templateLeadProofJ5({ prenom: l.prenom || "Turfiste", unsubscribeUrl: u }),
+    render:   (l, u) => templateLeadProofJ5({ prenom: l.prenom || "Turfiste", email: l.email, unsubscribeUrl: u }),
   },
 ];
 

@@ -6,10 +6,13 @@ import { emailBase, emailButton, emailDivider } from "../base";
  * strict : aucune stat/taux/garantie. Renvoie vers /performances et /arnaques-pronostics.
  */
 export function templateLeadProofJ5(
-  { prenom, unsubscribeUrl }: { prenom: string; unsubscribeUrl: string },
+  { prenom, email, unsubscribeUrl }: { prenom: string; email?: string; unsubscribeUrl: string },
 ): { subject: string; html: string } {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr";
   const p = prenom?.trim() || "Turfiste";
+  // Voir lead-upgrade-j2 : lien d'inscription pré-rempli, la relance ne
+  // proposait jusqu'ici que /performances et /abonnements.
+  const lienInscription = `${appUrl}/inscription${email ? `?email=${encodeURIComponent(email)}` : ""}`;
 
   const content = `
     <h2 style="margin:0 0 16px 0;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1E3A5F;line-height:1.3;">
@@ -32,6 +35,12 @@ export function templateLeadProofJ5(
     </ul>
 
     ${emailButton(`${appUrl}/performances`, "Voir nos performances publiques")}
+
+    <p style="margin:14px 0 0 0;color:#6B7280;font-size:13px;text-align:center;line-height:1.6;">
+      Pas encore de compte ?
+      <a href="${lienInscription}" style="color:#C9A84C;font-weight:600;">Créez-le gratuitement →</a><br/>
+      Accès au pronostic gratuit du jour et aux résultats vérifiés, sans engagement.
+    </p>
 
     ${emailDivider}
 

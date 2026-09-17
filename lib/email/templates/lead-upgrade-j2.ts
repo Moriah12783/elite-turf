@@ -5,10 +5,13 @@ import { emailBase, emailButton, emailDivider } from "../base";
  * Anti-fabrication strict : aucune stat/taux/garantie. Offre + pronostic gratuit.
  */
 export function templateLeadUpgradeJ2(
-  { prenom, unsubscribeUrl }: { prenom: string; unsubscribeUrl: string },
+  { prenom, email, unsubscribeUrl }: { prenom: string; email?: string; unsubscribeUrl: string },
 ): { subject: string; html: string } {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr";
   const p = prenom?.trim() || "Turfiste";
+  // Lien d'inscription pré-rempli : 66 % des prospects n'avaient jamais créé
+  // de compte (mesuré le 25/08/2026), et aucune relance ne le leur proposait.
+  const lienInscription = `${appUrl}/inscription${email ? `?email=${encodeURIComponent(email)}` : ""}`;
 
   const content = `
     <h2 style="margin:0 0 16px 0;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1E3A5F;line-height:1.3;">
@@ -40,7 +43,13 @@ export function templateLeadUpgradeJ2(
       les formules restent flexibles, sans engagement.
     </p>
 
-    ${emailButton(`${appUrl}/abonnements`, "Découvrir les formules")}
+    ${emailButton(lienInscription, "Créer mon compte gratuit")}
+
+    <p style="margin:14px 0 0 0;color:#6B7280;font-size:13px;text-align:center;line-height:1.6;">
+      Gratuit et sans engagement — le compte donne accès au pronostic gratuit du
+      jour et aux résultats vérifiés.<br/>
+      <a href="${appUrl}/abonnements" style="color:#C9A84C;">Ou voir directement les formules →</a>
+    </p>
 
     <p style="margin:20px 0 0 0;color:#6B7280;font-size:13px;line-height:1.6;">
       Vous préférez d'abord observer ?

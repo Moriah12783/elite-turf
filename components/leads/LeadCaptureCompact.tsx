@@ -19,6 +19,7 @@
 import { useState } from "react";
 import { BookOpen, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/track";
+import CreerCompteCTA from "@/components/leads/CreerCompteCTA";
 
 export default function LeadCaptureCompact({ source }: { source: string }) {
   const [email, setEmail] = useState("");
@@ -49,15 +50,22 @@ export default function LeadCaptureCompact({ source }: { source: string }) {
 
   if (done) {
     return (
-      <div className="mt-8 p-5 rounded-2xl bg-gold-faint border border-gold-primary/40 flex items-center gap-3">
-        <CheckCircle2 className="w-6 h-6 text-gold-primary flex-shrink-0" />
-        <div>
-          <p className="text-text-primary text-sm font-semibold">
-            Guide envoyé ! Vérifiez votre boîte mail.
-          </p>
-          <p className="text-text-muted text-xs">
-            Pensez à regarder les spams si besoin — expéditeur EliteTurf.
-          </p>
+      <div className="mt-8 p-5 rounded-2xl bg-gold-faint border border-gold-primary/40">
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="w-6 h-6 text-gold-primary flex-shrink-0" />
+          <div>
+            <p className="text-text-primary text-sm font-semibold">
+              Guide envoyé ! Vérifiez votre boîte mail.
+            </p>
+            <p className="text-text-muted text-xs">
+              Pensez à regarder les spams si besoin — expéditeur EliteTurf.
+            </p>
+          </div>
+        </div>
+        {/* Cet encart ne proposait RIEN après l'envoi — le lecteur repartait
+            avec son PDF et sortait du parcours. */}
+        <div className="mt-4">
+          <CreerCompteCTA email={email} compact />
         </div>
       </div>
     );

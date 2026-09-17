@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BookOpen, CheckCircle2, ArrowRight, Loader2, Lock, TrendingUp, Users, BarChart2 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import { trackEvent } from "@/lib/analytics/track";
+import CreerCompteCTA from "@/components/leads/CreerCompteCTA";
 
 const SECRETS = [
   { num: "01", titre: "Décrypter la Musique du Cheval", texte: "Au-delà des chiffres — comment lire un CV de cheval comme un pro." },
@@ -174,6 +175,11 @@ export default function GuideInitieClient({
                   Voir les pronostics du jour
                   <ArrowRight className="w-4 h-4" />
                 </Link>
+
+                {/* Le prospect vient de donner son adresse et d'obtenir son
+                    guide : c'est le point d'intérêt maximal du parcours, et
+                    c'était le seul écran à ne rien lui proposer ensuite. */}
+                <CreerCompteCTA email={email} nom={nom} />
               </div>
             ) : (
               <div className="card-base p-7">
