@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmailDetailed } from "@/lib/email";
 import { templateConfirmationPack } from "@/lib/email/templates/confirmation-pack";
+
+/**
+ * Type journalisé dans `email_sent_log`. Distinct des types des crons
+ * (WELCOME_*, LEAD_*) pour que l'historique reste lisible : on voit d'un coup
+ * d'œil ce qui a été envoyé à la main et ce qui est parti tout seul.
+ */
+const TYPE_JOURNAL = "CONFIRMATION_ABONNEMENT";
 
 /**
  * POST /api/admin/renvoyer-confirmation   { "email": "client@exemple.com" }
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const { data: profil, error } = await admin
     .from("profiles")
-    .select("nom_complet, email, statut_abonnement, date_expiration_abonnement")
+    .select("id, nom_complet, email, statut_abonnement, date_expiration_abonnement")
     .eq("email", email)
     .single();
   if (error || !profil) {
@@ -78,9 +85,47 @@ export async function POST(req: NextRequest) {
     nbAlertes,
   });
 
-  const envoye = await sendEmail({ to: profil.email, subject, html });
-  if (!envoye) {
-    return NextResponse.json({ error: "Envoi refusé par le fournisseur d'e-mail" }, { status: 502 });
+  const envoi = await sendEmailDetailed({ to: profil.email, subject, html });
+
+  /**
+   * JOURNALISATION — ajoutée le 29/08/2026.
+   *
+   * Cette route envoyait sans laisser AUCUNE trace : impossible de savoir qui
+   * avait reçu sa confirmation. Steph pensait l'avoir envoyée à un abonné, le
+   * journal n'en gardait rien — exactement le motif « du code qui agit sans le
+   * dire » corrigé trois fois cette semaine ailleurs.
+   *
+   * 🔴 UPSERT et non INSERT : `email_sent_log` porte UNIQUE(email, type) ET
+   * UNIQUE(user_id, type) — des garde-fous d'idempotence conçus pour des crons
+   * « une fois et jamais plus ». Un INSERT ferait donc échouer tout SECOND
+   * envoi, alors que renvoyer est précisément la raison d'être de cette route.
+   * On conserve une ligne par (utilisateur, type), portant le DERNIER envoi.
+   * Ne pas relâcher ces contraintes : les crons welcome et lead-sequence s'en
+   * servent pour ne pas spammer.
+   *
+   * L'échec de journalisation n'annule PAS l'envoi : l'e-mail est parti, le
+   * dire serait plus faux que de perdre une ligne de journal. Mais il est
+   * remonté à l'appelant, qui l'affiche.
+   */
+  const { error: logErr } = await admin
+    .from("email_sent_log")
+    .upsert(
+      {
+        user_id: profil.id,
+        email:   profil.email,
+        type:    TYPE_JOURNAL,
+        status:  envoi.ok ? "SENT" : "FAILED",
+        error:   envoi.error ?? null,
+        sent_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,type" },
+    );
+
+  if (!envoi.ok) {
+    return NextResponse.json(
+      { error: `Envoi refusé par le fournisseur d'e-mail : ${envoi.error ?? "raison inconnue"}` },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({
@@ -89,5 +134,7 @@ export async function POST(req: NextRequest) {
     palier: planNom,
     expire_le: String(profil.date_expiration_abonnement).slice(0, 10),
     subject,
+    journalise: !logErr,
+    ...(logErr ? { avertissement: `E-mail envoyé, mais non journalisé : ${logErr.message}` } : {}),
   });
 }
