@@ -32,10 +32,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isValidWeekParam(params.semaine)) return { title: "Semaine invalide — Elite Turf" };
+  if (!isValidWeekParam(params.semaine)) return { title: "Semaine invalide" };
   const human = formatWeekHumanLong(params.semaine);
   return {
-    title: `Top performers PMU — ${human} | Elite Turf`,
+    title: `Top performers PMU — ${human}`,
     description: `Bilan hebdomadaire des courses PMU : top jockeys, meilleurs chevaux, Quinté+ marquants — ${human}.`,
     alternates: { canonical: `${APP_URL}/blog/top-semaine/${params.semaine}` },
     openGraph: {

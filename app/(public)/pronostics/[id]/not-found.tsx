@@ -12,7 +12,7 @@ import Link from "next/link";
 import { ArrowLeft, Star, Calendar, AlertCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Pronostic retiré — Elite Turf",
+  title: "Pronostic retiré",
   description: "Ce pronostic n'est plus disponible. Consultez les pronostics du jour.",
   robots: { index: false, follow: false },
 };

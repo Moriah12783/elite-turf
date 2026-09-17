@@ -5,7 +5,7 @@ import {
   TrendingUp, Download, AlertCircle,
 } from "lucide-react";
 
-export const metadata: Metadata = { title: "Paiements — Admin Elite Turf" };
+export const metadata: Metadata = { title: "Paiements — Admin" };
 export const dynamic = "force-dynamic";
 
 const STATUT_CONFIG = {

@@ -31,10 +31,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isValidMonthParam(params.mois)) return { title: "Mois invalide — Elite Turf" };
+  if (!isValidMonthParam(params.mois)) return { title: "Mois invalide" };
   const human = formatMonthHuman(params.mois);
   return {
-    title: `Bilan PMU — ${human} | Statistiques mensuelles | Elite Turf`,
+    title: `Bilan PMU — ${human} | Statistiques mensuelles`,
     description: `Récap PMU complet de ${human} : top jockeys, chevaux gagnants, Quinté+ marquants, hippodromes les plus actifs.`,
     alternates: { canonical: `${APP_URL}/blog/bilan-mensuel/${params.mois}` },
     openGraph: {

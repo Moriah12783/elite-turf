@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   robots: { index: false, follow: false },
-  title: "Paiement sandbox — Elite Turf",
+  title: "Paiement sandbox",
 };
 
 export default async function SandboxLayout({

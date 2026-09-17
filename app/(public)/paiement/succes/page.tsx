@@ -8,7 +8,7 @@ import { verifyAndActivateStripe } from "@/lib/stripe/activate";
 import { fetchPaystackTransaction, activateSubscriptionFromPaystack } from "@/lib/paystack/activate";
 
 export const metadata: Metadata = {
-  title: "Paiement réussi — Elite Turf",
+  title: "Paiement réussi",
   description: "Votre abonnement Elite Turf est maintenant actif.",
   robots: { index: false, follow: false },
 };

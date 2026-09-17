@@ -40,7 +40,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const revalidate = 300; // 5 minutes
 
 export const metadata: Metadata = {
-  title:       "🎁 Pronostic Gratuit du jour — Elite Turf",
+  title:       "🎁 Pronostic Gratuit du jour",
   description: "Découvrez gratuitement le pronostic PMU du jour (Tiercé / Quinté+) sélectionné par Elite Turf. Analyse complète, sélection en clair, aucun engagement.",
   alternates:  { canonical: `${APP_URL}/pronostics/gratuit` },
   openGraph: {

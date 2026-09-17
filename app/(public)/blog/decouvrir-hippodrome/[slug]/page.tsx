@@ -34,9 +34,9 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const stats = await getHippodromeStats(params.slug);
-  if (!stats) return { title: "Hippodrome introuvable — Elite Turf" };
+  if (!stats) return { title: "Hippodrome introuvable" };
   return {
-    title: `Découvrir l'hippodrome de ${stats.nom} — Guide & statistiques | Elite Turf`,
+    title: `Découvrir l'hippodrome de ${stats.nom} — Guide & statistiques`,
     description: `Tout savoir sur l'hippodrome de ${stats.nom} (${stats.ville}, ${stats.pays}) : ${stats.nb_courses_total}+ courses analysées, top jockeys, chevaux fréquents. Guide complet du turf local.`,
     alternates: { canonical: `${APP_URL}/blog/decouvrir-hippodrome/${params.slug}` },
     openGraph: {

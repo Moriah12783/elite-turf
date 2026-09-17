@@ -54,8 +54,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // Title : emoji + date + nb courses + hippos. Pattern qui marche déjà sur /courses/[id].
   const title = nbCoursesJour && nbCoursesJour > 0
-    ? `🏇 Programme PMU ${dateFr} — ${nbCoursesJour} courses${topHippos ? ` (${topHippos})` : ""} | Elite Turf`
-    : `🏇 Programme PMU ${dateFr} — Tiercé, Quarté+, Quinté+ | Elite Turf`;
+    ? `🏇 Programme PMU ${dateFr} — ${nbCoursesJour} courses${topHippos ? ` (${topHippos})` : ""}`
+    : `🏇 Programme PMU ${dateFr} — Tiercé, Quarté+, Quinté+`;
 
   const description = nbCoursesJour && nbCoursesJour > 0
     ? `🏇 ${nbCoursesJour} courses PMU le ${dateFr} : programme complet, partants live, cotes, pronostics Elite Turf. Tiercé, Quarté+, Quinté+ analysés.`

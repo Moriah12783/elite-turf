@@ -49,7 +49,7 @@ export const dynamicParams = true;
 export const revalidate    = 600;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  if (!isValidDateParam(params.date)) return { title: "Date invalide — Elite Turf" };
+  if (!isValidDateParam(params.date)) return { title: "Date invalide" };
   const dateLong    = formatDateLong(params.date);
   const dateCompact = formatDateCompact(params.date);
   const today       = isToday(params.date);
@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Emoji 🏆 = signal "championnat" → ⭐ pour le pronostic Elite Turf.
   // Mention explicite "gratuit" = lève la friction d'achat.
   return {
-    title: `🏆 Quinté+ ${today ? "du jour" : `du ${dateCompact}`}${titleSuffix} : pronostic gratuit | Elite Turf`,
+    title: `🏆 Quinté+ ${today ? "du jour" : `du ${dateCompact}`}${titleSuffix} : pronostic gratuit`,
     description: quinteTitle
       ? `🏆 Pronostic Quinté+ du ${dateLong} : ${quinteTitle} à ${hippoName}. Sélection Elite Turf, partants, cotes en direct, arrivée officielle et rapports PMU.`
       : `🏆 Pronostic Quinté+ gratuit du ${dateLong} : partants, cotes probables, arrivée officielle et rapports. Sélection experte Elite Turf publiée avant le départ.`,

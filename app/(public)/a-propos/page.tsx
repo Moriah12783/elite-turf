@@ -6,7 +6,7 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "À Propos — Elite Turf",
+  title: "À Propos",
   description:
     "Fondé par Stéphane Y., Elite Turf offre aux parieurs francophones une approche rigoureuse et stratégique des courses hippiques, alliant IA et expertise humaine.",
   alternates: { canonical: `${APP_URL}/a-propos` },

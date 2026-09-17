@@ -27,7 +27,7 @@ import { ArrowRight, AlertTriangle, Download } from "lucide-react";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
 export const metadata: Metadata = {
-  title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",
+  title: { absolute: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium" },
   description:
     "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays. Mobile Money bientôt.",
   alternates: { canonical: APP_URL },

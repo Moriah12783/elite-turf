@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select("libelle, date_course, heure_depart, nb_partants, categorie, distance_metres, statut, hippodrome:hippodromes(nom, pays)")
     .eq("id", params.id)
     .single();
-  if (!c) return { title: "Course — Elite Turf" };
+  if (!c) return { title: "Course" };
   const hippoName = (c.hippodrome as any)?.nom || "";
   const dateFr = c.date_course
     ? new Date(c.date_course + "T12:00:00").toLocaleDateString("fr-FR", {
@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Titre court (max ~60 chars idéal en SERP). Garde le libellé + hippo + indice.
   const title = isTermine
     ? `🏆 ${c.libelle} — ${hippoName} ${dateFr} : arrivée & rapports`
-    : `🏇 ${c.libelle} — ${hippoName} ${heureCourte ? `${heureCourte} ` : ""}| Pronostic Elite Turf`;
+    : `🏇 ${c.libelle} — ${hippoName}${heureCourte ? ` ${heureCourte}` : ""} · Pronostic`;
 
   // Description riche (max ~155 chars). Concentre l'info utile au visiteur.
   const description = isTermine

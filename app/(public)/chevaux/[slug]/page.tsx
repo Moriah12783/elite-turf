@@ -27,7 +27,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const e = await getEntiteBySlug("chevaux", params.slug);
-  if (!e) return { title: "Cheval introuvable — Elite Turf" };
+  if (!e) return { title: "Cheval introuvable" };
 
   // ── Phase 1 : stats calculées à la volée depuis l'historique courses ──
   // Plus fiable que les colonnes BDD `nb_victoires`/`nb_places` qui sont
@@ -46,9 +46,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? { index: true,  follow: true }
       : { index: false, follow: true },
     openGraph: {
-      title:       buildActeurTitle("chevaux", e, stats),
+      // OG ne reçoit pas le template du root layout → marque rajoutée ici.
+      title:       `${buildActeurTitle("chevaux", e, stats)} | Elite Turf`,
       description: buildActeurDescription("chevaux", e, stats),
-      url:         `${APP_URL}/chevaux/${params.slug}`,
+      url:        `${APP_URL}/chevaux/${params.slug}`,
       type:        "profile",
     },
   };

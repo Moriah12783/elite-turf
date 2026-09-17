@@ -51,7 +51,7 @@ async function resolveHippo(slug: string) {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const hippo = await resolveHippo(params.slug);
-  if (!hippo) return { title: "Hippodrome introuvable — Elite Turf" };
+  if (!hippo) return { title: "Hippodrome introuvable" };
 
   // ── CTR boost Sprint A 21/05/2026 ──
   // Récupère le nombre de courses programmées sur 7j pour enrichir le title
@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const nbStr = nbCoursesFutures && nbCoursesFutures > 0
     ? ` : ${nbCoursesFutures} course${nbCoursesFutures > 1 ? "s" : ""} à venir`
     : "";
-  const title = `📍 Hippodrome de ${hippo.nom}${nbStr} — Programme PMU | Elite Turf`;
+  const title = `📍 Hippodrome de ${hippo.nom}${nbStr} — Programme PMU`;
 
   const description = nbCoursesFutures && nbCoursesFutures > 0
     ? `🏇 Hippodrome de ${hippo.nom} (${hippo.ville}, ${hippo.pays}) : ${nbCoursesFutures} course${nbCoursesFutures > 1 ? "s" : ""} programmée${nbCoursesFutures > 1 ? "s" : ""} sur 7j, partants live, arrivées récentes. Pronostics Elite Turf.`
@@ -84,7 +84,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: description.slice(0, 160),
     alternates: { canonical: `${APP_URL}/hippodromes/${params.slug}` },
     openGraph: {
-      title,
+      title: `${title} | Elite Turf`,
       description: description.slice(0, 160),
       url: `${APP_URL}/hippodromes/${params.slug}`,
       type: "website",

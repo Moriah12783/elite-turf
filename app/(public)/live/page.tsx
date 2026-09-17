@@ -8,7 +8,7 @@ import LiveBoard from "@/components/live/LiveBoard";
 import ReplaySection, { type Replay } from "@/components/live/ReplaySection";
 
 export const metadata: Metadata = {
-  title: "Le Direct — Arrivées en temps réel & bilan live | Elite Turf",
+  title: "Le Direct — Arrivées en temps réel & bilan live",
   description:
     "Suivez les arrivées des courses PMU en direct et le bilan en temps réel de nos pronostics Elite Turf. Replays officiels (Equidia, France Galop, Le Trot).",
   alternates: { canonical: "https://www.elite-turf.fr/live" },

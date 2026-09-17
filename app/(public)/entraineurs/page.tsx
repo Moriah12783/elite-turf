@@ -8,7 +8,7 @@ export const revalidate = 1800;
 
 // CTR boost Sprint A : emoji visuel SERP + signal "Top 200"
 export const metadata: Metadata = {
-  title: "⭐ Entraîneurs PMU — Top 200 stats, écuries & forme | Elite Turf",
+  title: "⭐ Entraîneurs PMU — Top 200 stats, écuries & forme",
   description: "⭐ Top 200 entraîneurs PMU France & Afrique : taux de victoire, chevaux entraînés, courses récentes, hippodromes favoris. Profils complets Elite Turf.",
   alternates: { canonical: `${APP_URL}/entraineurs` },
 };

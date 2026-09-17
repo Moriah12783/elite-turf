@@ -11,7 +11,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { todayParisISO } from "@/lib/paris-date";
 import { PlayCircle, Trash2, Plus, CheckCircle2, AlertCircle } from "lucide-react";
 
-export const metadata: Metadata = { title: "Replays — Admin Elite Turf" };
+export const metadata: Metadata = { title: "Replays — Admin" };
 export const dynamic = "force-dynamic";
 
 const INPUT =

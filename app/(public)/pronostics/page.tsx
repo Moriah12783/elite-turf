@@ -74,8 +74,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const tauxReussite = totalTermines > 0 ? Math.round((totalGagnants / totalTermines) * 100) : 0;
 
   const title = totalTermines >= 20
-    ? `🎯 Pronostics PMU — ${tauxReussite}% réussite sur ${totalTermines} courses | Elite Turf`
-    : `🎯 Pronostics PMU du Jour — Tiercé, Quarté+, Quinté+ | Elite Turf`;
+    ? `🎯 Pronostics PMU — ${tauxReussite}% réussite sur ${totalTermines} courses`
+    : `🎯 Pronostics PMU du Jour — Tiercé, Quarté+, Quinté+`;
 
   const description = totalTermines >= 20
     ? `🎯 ${tauxReussite}% de pronostics gagnants sur ${totalTermines} courses publiées. Tiercé, Quarté+, Quinté+ analysés. 1 pronostic gratuit/jour. Résultats vérifiables sur Geny.`

@@ -26,7 +26,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const e = await getEntiteBySlug("entraineurs", params.slug);
-  if (!e) return { title: "Entraîneur introuvable — Elite Turf" };
+  if (!e) return { title: "Entraîneur introuvable" };
 
   const rows = await getCoursesForEntite("entraineurs", e.nom, 50);
   const stats = computeRichStats("entraineurs", rows);
@@ -39,9 +39,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? { index: true,  follow: true }
       : { index: false, follow: true },
     openGraph: {
-      title:       buildActeurTitle("entraineurs", e, stats),
+      // OG ne reçoit pas le template du root layout → marque rajoutée ici.
+      title:       `${buildActeurTitle("entraineurs", e, stats)} | Elite Turf`,
       description: buildActeurDescription("entraineurs", e, stats),
-      url:         `${APP_URL}/entraineurs/${params.slug}`,
+      url:        `${APP_URL}/entraineurs/${params.slug}`,
       type:        "profile",
     },
   };

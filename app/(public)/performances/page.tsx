@@ -25,7 +25,7 @@ import { resolvePeriode, buildPeriodeTabs, filterByPeriode, moisLabel } from "@/
 
 // CTR boost Sprint A : emoji 📈 (signal data) + brand
 export const metadata: Metadata = {
-  title: "📈 Performances Pronostics PMU — Stats vérifiables Tiercé/Quinté+ | Elite Turf",
+  title: "📈 Performances Pronostics PMU — Stats vérifiables Tiercé/Quinté+",
   description:
     "📈 Historique complet et vérifiable des pronostics Elite Turf : taux de réussite par type de pari (Tiercé, Quarté+, Quinté+), gains cumulés et stats détaillées. Transparence totale.",
   alternates: { canonical: `${APP_URL}/performances` },

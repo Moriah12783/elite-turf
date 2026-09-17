@@ -107,19 +107,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Volume : 38 dates × ~3 pages = ~114 URLs (négligeable, fort levier SEO).
   const temporalUrls: MetadataRoute.Sitemap = [];
   const todayStr = now.toISOString().split("T")[0];
+
+  // Dates FUTURES qui ont déjà au moins une course. Depuis le 17/09/2026,
+  // /programme/[date] passe en noindex quand la journée n'a aucune course
+  // (lib/seo/programme-fenetre.ts). Soumettre ces pages au sitemap ferait
+  // apparaître l'avertissement Search Console « URL envoyée marquée noindex ».
+  // Le passé n'est pas filtré : il y a des courses quasiment tous les jours.
+  const datesFuturesAvecCourses: Record<string, true> = {};
+  try {
+    const finFenetre = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const { data: futures } = await createServiceClient()
+      .from("courses")
+      .select("date_course")
+      .gt("date_course", todayStr)
+      .lte("date_course", finFenetre)
+      .neq("statut", "ANNULE");
+    for (const r of (futures ?? []) as { date_course: string }[]) datesFuturesAvecCourses[r.date_course] = true;
+  } catch {
+    // En cas d'échec on n'exclut rien : mieux vaut un avertissement bénin
+    // qu'un sitemap amputé des pages du jour et du lendemain.
+    for (let i = 1; i <= 7; i++) {
+      datesFuturesAvecCourses[new Date(now.getTime() + i * 24 * 60 * 60 * 1000).toISOString().split("T")[0]] = true;
+    }
+  }
+
   for (let i = -30; i <= 7; i++) {
     const d = new Date(now.getTime() + i * 24 * 60 * 60 * 1000)
       .toISOString().split("T")[0];
     const isFutureDate = d > todayStr;
     const isTodayDate  = d === todayStr;
 
-    // /programme/[date] — toujours indexable (programme passé/présent/futur)
-    temporalUrls.push({
-      url: `${APP_URL}/programme/${d}`,
-      lastModified: now,
-      changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "monthly",
-      priority: isTodayDate ? 0.9 : isFutureDate ? 0.7 : 0.6,
-    });
+    // /programme/[date] — omise si la journée future n'a encore aucune course
+    // (elle est alors en noindex, cf. plus haut).
+    if (!isFutureDate || datesFuturesAvecCourses[d]) {
+      temporalUrls.push({
+        url: `${APP_URL}/programme/${d}`,
+        lastModified: now,
+        changeFrequency: isFutureDate ? "daily" : isTodayDate ? "hourly" : "monthly",
+        priority: isTodayDate ? 0.9 : isFutureDate ? 0.7 : 0.6,
+      });
+    }
 
     // /quinte-plus/[date] — fort levier SEO ("quinté+ du jour" #1 turf FR)
     temporalUrls.push({

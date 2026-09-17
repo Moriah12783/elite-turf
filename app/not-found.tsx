@@ -8,7 +8,7 @@ import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 // — on signale explicitement la désindexation pour accélérer le nettoyage.
 // Voir diagnostic GSC du 14/05/2026 (51 pages 404 réparties en 3 patterns).
 export const metadata: Metadata = {
-  title: "Page introuvable — Elite Turf",
+  title: "Page introuvable",
   robots: { index: false, follow: false },
 };
 

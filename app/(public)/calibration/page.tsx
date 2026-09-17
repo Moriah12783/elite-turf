@@ -23,7 +23,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Calibration du moteur — probabilité annoncée contre réalité | Elite Turf",
+  title: "Calibration du moteur — probabilité annoncée contre réalité",
   description:
     "Chaque semaine, la justesse des probabilités de notre moteur face aux cotes du matin, par tranche de cote, sur la semaine écoulée et depuis le début du journal scellé. Les bonnes semaines comme les mauvaises.",
   alternates: { canonical: `${APP_URL}/calibration` },

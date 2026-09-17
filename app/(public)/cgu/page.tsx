@@ -4,7 +4,7 @@ import PageHero from "@/components/layout/PageHero";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
 export const metadata: Metadata = {
-  title: "Conditions Générales d'Utilisation — Elite Turf",
+  title: "Conditions Générales d'Utilisation",
   description: "CGU Elite Turf — Conditions générales d'utilisation de la plateforme de pronostics PMU. Exploité par TSALACH VENTURES LLC.",
   alternates: { canonical: `${APP_URL}/cgu` },
   robots: { index: false, follow: false },
