@@ -30,6 +30,36 @@ export function todayParis(): string {
   }).format(new Date()).split("/").reverse().join("-");
 }
 
+/**
+ * Heure GMT (« HH:MM ») d'une heure de départ exprimée à l'heure de Paris.
+ *
+ * Les heures de course en base sont à l'heure de Paris (Geny, PMU) ; les
+ * abonnés d'Afrique de l'Ouest — et le flux LONACI — raisonnent en GMT.
+ * Ex. 25/09/2026 : Prix Austria = 20:15 Paris = 18:15 GMT.
+ *
+ * null si la date ou l'heure est illisible : jamais une heure devinée.
+ */
+export function heureGmtDepuisParis(date: string, heureParis: string | null | undefined): string | null {
+  if (!isValidDateParam(date) || !heureParis) return null;
+  const m = /^(\d{2}):(\d{2})/.exec(heureParis);
+  if (!m) return null;
+  // Instant « comme si » l'heure de Paris était déjà en UTC, puis correction du
+  // décalage réel de Paris à cet instant (1 h l'hiver, 2 h l'été).
+  const naif = Date.parse(date + "T" + m[1] + ":" + m[2] + ":00Z");
+  if (isNaN(naif)) return null;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(naif));
+  const val = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const heure = val("hour") === "24" ? "00" : val("hour");
+  const vueDeParis = Date.parse(val("year") + "-" + val("month") + "-" + val("day") + "T" + heure + ":" + val("minute") + ":00Z");
+  const gmt = new Date(naif - (vueDeParis - naif));
+  const deux = (n: number) => (n < 10 ? "0" : "") + n;
+  return deux(gmt.getUTCHours()) + ":" + deux(gmt.getUTCMinutes());
+}
+
 /** "samedi 4 mai 2026" */
 export function formatDateLong(date: string): string {
   const d = new Date(date + "T12:00:00");
