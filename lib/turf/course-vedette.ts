@@ -7,8 +7,9 @@
  * prioritaires de course-eligibility.
  *
  * Constat data (2026-06) : il y a exactement 1 Quinté+ par jour dans le
- * programme → repère fiable. Les colonnes `jouable_afrique`/`nationale`
- * existent mais ne sont PAS peuplées → on ne s'appuie pas dessus.
+ * programme → repère fiable. (Mise à jour 09/2026 : `jouable_afrique` et
+ * `nationale` sont désormais alimentés par la LONACI — `pickQuinteDuJour`
+ * s'en sert ; `pickCoursesVedettes` est inchangé.)
  */
 import { isHippodromePrioritaire } from "./course-eligibility";
 
@@ -107,4 +108,55 @@ export function pickCoursesVedettes(courses: CourseForVedette[], limit = 2): Cou
 export function pickCourseVedette(courses: CourseForVedette[]): CourseVedette | null {
   const v = pickCoursesVedettes(courses, 1);
   return v.length > 0 ? v[0] : null;
+}
+
+export interface CourseQuinteCandidate {
+  id: string;
+  heure_depart?: string | null;
+  paris_disponibles?: string[] | null;
+  /** Étiquette LONACI : 1 = Nationale 1 = le Quinté+ PMU relayé en Afrique. */
+  nationale?: number | null;
+  jouable_afrique?: boolean | null;
+  statut?: string | null;
+}
+
+/**
+ * LE Quinté+ PMU du jour — la course vedette, jouable par les abonnés
+ * français (PMU) comme africains (LONACI : « Nationale 1 »).
+ *
+ * Mesuré sur 60 jours (25/09/2026) :
+ *   - `nationale = 1` : jamais plus d'une par jour. C'est le repère le plus
+ *     sûr, et le seul quand les paris de la course sont incomplets (13/09,
+ *     23/09 : Quinté+ réel, paris = SIMPLE_GAGNANT/PLACÉ seulement).
+ *   - `QUINTE_PLUS` : présent en double 10 jours sur 60 (2 sources créent la
+ *     même course, la copie avec 2 h de décalage). La copie n'est jamais
+ *     marquée jouable Afrique ; à défaut, la plus tôt est la bonne (10/10).
+ *   - « QUINTE » SEUL = quinté marocain (SOREC) : ce n'est PAS le Quinté+.
+ *
+ * Ordre : Nationale 1 > Quinté+ jouable Afrique > Quinté+ ; à égalité, le plus
+ * tôt. Aucun candidat → null : l'appelant n'affiche alors pas de vedette plutôt
+ * qu'une course prise au hasard.
+ */
+export function pickQuinteDuJour<T extends CourseQuinteCandidate>(courses: T[]): T | null {
+  let best: T | null = null;
+  let bestRang = 0;
+  for (let i = 0; i < courses.length; i++) {
+    const c = courses[i];
+    if (c.statut === "ANNULE") continue;
+    const rang = rangQuinte(c);
+    if (rang === 0) continue;
+    const plusTot = best !== null && (c.heure_depart ?? "99") < (best.heure_depart ?? "99");
+    if (best === null || rang > bestRang || (rang === bestRang && plusTot)) {
+      best = c;
+      bestRang = rang;
+    }
+  }
+  return best;
+}
+
+function rangQuinte(c: CourseQuinteCandidate): number {
+  if (c.nationale === 1) return 3;
+  const quintePlus = Array.isArray(c.paris_disponibles) && c.paris_disponibles.indexOf("QUINTE_PLUS") !== -1;
+  if (!quintePlus) return 0;
+  return c.jouable_afrique === true ? 2 : 1;
 }
