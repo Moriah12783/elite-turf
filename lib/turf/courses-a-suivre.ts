@@ -15,7 +15,7 @@
  *
  * PUR, ES5-safe (pas de Map/Set), testé.
  */
-import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
+import { estNomHippodromeMarocain } from "@/lib/sync/hippodrome-pays";
 
 export interface CourseASuivreCandidate {
   id: string;
@@ -33,20 +33,10 @@ export interface CourseASuivre<T> {
   etiquette: EtiquetteCourse;
 }
 
-/**
- * Hippodromes marocains (SOREC). Nécessaire : la LONACI n'en reconnaît que
- * quelques-uns, les autres (Settat, Khemisset, Meknès…) sont enregistrés
- * « France » en base.
- */
-const HIPPODROMES_MAROCAINS: Record<string, true> = {
-  anfa: true, casablanca: true, casablancaanfa: true, settat: true, khemisset: true,
-  meknes: true, marrakech: true, rabat: true, eljadida: true, kenitra: true,
-};
-
+/** Le pays en base, ou à défaut le nom (fiches encore enregistrées « France »). */
 export function estHippodromeMarocain(h: { nom?: string | null; pays?: string | null } | null | undefined): boolean {
   if (!h) return false;
-  if (h.pays === "Maroc") return true;
-  return Object.prototype.hasOwnProperty.call(HIPPODROMES_MAROCAINS, canonicalHippodrome(h.nom ?? ""));
+  return h.pays === "Maroc" || estNomHippodromeMarocain(h.nom);
 }
 
 /** Même règle que la home : une course est « courue » 40 min après son départ. */
