@@ -12,7 +12,7 @@
  *
  * PUR → bundlable Node (fallback appelé par la CLI GitHub Actions).
  */
-import { fetchLonaciProgramme, normalizeLonaciReunions } from "@/lib/lonaci-api";
+import { fetchLonaciProgramme, normalizeLonaciReunions, type NormalizedLonaciCourse } from "@/lib/lonaci-api";
 import { upsertProgrammeCourses, type ProgrammeCourse } from "./programme-upsert";
 
 export interface LonaciProgrammeSyncResult {
@@ -39,28 +39,61 @@ export function augmentParisFromNationale(paris: string[], nationale: number): s
 }
 
 /**
+ * LONACI publie ses heures en GMT (heure d'Abidjan) ; la base, elle, est à
+ * l'heure de Paris comme Geny et le PMU. Vérifié le 25/09/2026 sur l'API
+ * officielle PMU : Prix Austria = 20:15 heure de Paris, 18:15 dans le flux
+ * LONACI. Écrire l'heure brute décalait chaque course insérée de 1 à 2 h.
+ *
+ * PUR. « 00:00:00 » = heure absente du flux (cf. normalizeLonaciReunions) :
+ * laissée telle quelle plutôt que transformée en une fausse heure.
+ */
+export function gmtVersParis(dateISO: string, heureGmt: string): { date: string; heure: string } {
+  const inchange = { date: dateISO, heure: heureGmt };
+  if (heureGmt === "00:00:00") return inchange;
+  const instant = new Date(dateISO + "T" + heureGmt + "Z");
+  if (isNaN(instant.getTime())) return inchange;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(instant);
+  const val = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const heure = val("hour") === "24" ? "00" : val("hour");
+  return {
+    date:  val("year") + "-" + val("month") + "-" + val("day"),
+    heure: heure + ":" + val("minute") + ":" + val("second"),
+  };
+}
+
+/** PUR : courses LONACI normalisées → lignes du programme (heure de Paris). */
+export function lonaciVersProgramme(normalized: NormalizedLonaciCourse[], dateISO: string): ProgrammeCourse[] {
+  return normalized
+    .filter((c) => (c.pays === "France" || c.pays === "Maroc") && c.dateCourse === dateISO)
+    .map((c) => {
+      const paris = gmtVersParis(c.dateCourse, c.heureDepart);
+      return {
+        hippodromeName:   c.hippodrome,
+        hippodromePays:   c.pays,
+        dateCourse:       paris.date,
+        heureDepart:      paris.heure,
+        numeroReunion:    c.nReunion,
+        numeroCourse:     c.numeroCourse,
+        libelle:          c.libelle,
+        distanceMetres:   c.distance,
+        categorie:        "PLAT" as const, // LONACI ne fournit pas la discipline (fallback)
+        nbPartants:       c.nbPartants,
+        parisDisponibles: augmentParisFromNationale(c.parisDisponibles, c.nationale),
+      };
+    });
+}
+
+/**
  * Charge le programme LONACI d'une date (France + Maroc) et l'upsert dans `courses`.
  * @param dateISO "YYYY-MM-DD"
  */
 export async function runLonaciProgrammeSync(dateISO: string): Promise<LonaciProgrammeSyncResult> {
   const reunions = await fetchLonaciProgramme();
-  const normalized = normalizeLonaciReunions(reunions);
-
-  const courses: ProgrammeCourse[] = normalized
-    .filter((c) => (c.pays === "France" || c.pays === "Maroc") && c.dateCourse === dateISO)
-    .map((c) => ({
-      hippodromeName:   c.hippodrome,
-      hippodromePays:   c.pays,
-      dateCourse:       c.dateCourse,
-      heureDepart:      c.heureDepart,
-      numeroReunion:    c.nReunion,
-      numeroCourse:     c.numeroCourse,
-      libelle:          c.libelle,
-      distanceMetres:   c.distance,
-      categorie:        "PLAT" as const, // LONACI ne fournit pas la discipline (fallback)
-      nbPartants:       c.nbPartants,
-      parisDisponibles: augmentParisFromNationale(c.parisDisponibles, c.nationale),
-    }));
+  const courses = lonaciVersProgramme(normalizeLonaciReunions(reunions), dateISO);
 
   const r = await upsertProgrammeCourses(courses);
   const reunionsCount = Array.from(new Set(courses.map((c) => c.numeroReunion))).length;

@@ -140,7 +140,7 @@ export default async function PronosticsSection() {
   // ── 3. LA vedette = le Quinté+ du jour (Nationale 1), jouable France + Afrique.
   // AVANT (jusqu'au 25/09/2026) : sans pronostic publié, la vedette était la 1re
   // des 3 prochaines courses → le matin, une course à simple gagnant quelconque
-  // (ex. Prix d'Arles, 11h00) au lieu du Quinté+ de 18h15. Cf. pickQuinteDuJour.
+  // (ex. Prix d'Arles, 11h00) au lieu du Quinté+ du soir. Cf. pickQuinteDuJour.
   const quinte: any = pickQuinteDuJour(todayCourses);
   const idCoursePronostic = (p: any) =>
     (Array.isArray(p.course) ? p.course[0] : p.course)?.id;

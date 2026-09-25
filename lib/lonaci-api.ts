@@ -11,6 +11,8 @@
  * avec le champ int_National_Number = 1|2|3 pour les Nationales.
  */
 
+import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
+
 const LONACI_URL =
   "https://api.lonacionline.flexbet-software.com:14443" +
   "/sport-gateway/v1/hippique/get_active_games" +
@@ -89,6 +91,32 @@ function getPays(hippodrome: string): string {
   return "France";
 }
 
+/**
+ * Noms d'hippodromes LONACI → nom de RÉFÉRENCE en base (celui de Geny/PMU).
+ *
+ * Sans ce rapprochement, la LONACI ne retrouvait pas la réunion existante :
+ *   - la voie de secours du programme créait une COPIE de chaque course
+ *     (à l'heure GMT) — mesuré le 25/09/2026 : 117 courses « Paris-Vincennes »,
+ *     22 « Pornichet », 16 « Mauquenchy », toutes en double ;
+ *   - l'enrichissement posait « Nationale » et « jouable Afrique » sur la copie,
+ *     et marquait la VRAIE course non jouable (le Quinté+ de Vincennes compris).
+ *
+ * Table courte et explicite, comme ALIAS_HIPPODROME (sync/hippodrome-cle.ts) :
+ * clé = canonicalHippodrome(nom LONACI), valeur = nom exact de la fiche en base.
+ */
+export const HIPPODROME_LONACI_VERS_REFERENCE: Record<string, string> = {
+  parisvincennes: "Vincennes",
+  pornichet:      "Pornichet-La Baule",
+  mauquenchy:     "Rouen-Mauquenchy",
+};
+
+export function nomHippodromeReference(nomLonaci: string): string {
+  const cle = canonicalHippodrome(nomLonaci);
+  return Object.prototype.hasOwnProperty.call(HIPPODROME_LONACI_VERS_REFERENCE, cle)
+    ? HIPPODROME_LONACI_VERS_REFERENCE[cle]
+    : nomLonaci;
+}
+
 function normalizeHippoName(name: string): string {
   // Capitalise correctement : "SAINT-CLOUD" → "Saint-Cloud"
   return name
@@ -127,7 +155,7 @@ export function normalizeLonaciReunions(
   const result: NormalizedLonaciCourse[] = [];
 
   for (const r of reunions) {
-    const hippoNom = normalizeHippoName(r.libelle);
+    const hippoNom = nomHippodromeReference(normalizeHippoName(r.libelle));
     const pays     = getPays(r.libelle);
 
     for (const c of r.races ?? []) {

@@ -51,16 +51,18 @@ describe("pickCoursesVedettes", () => {
 // Extraits RÉELS de la base (heures, paris, étiquettes LONACI), anonymisés en id.
 describe("pickQuinteDuJour — la vedette est TOUJOURS le Quinté+ PMU (= Nationale 1)", () => {
   // 25/09/2026 : le cas qui a motivé la correction. La home affichait la 1re
-  // course du jour (Prix d'Arles, 11h00, « SIMPLE_GAGNANT ») au lieu du Quinté+.
+  // course du jour (Prix d'Arles, 11h00, « SIMPLE_GAGNANT ») au lieu du Quinté+
+  // (Prix Austria : 20:15 heure de Paris = 18:15 GMT). État APRÈS le correctif
+  // LONACI : la Nationale 1 est sur la vraie course, la copie l'a perdue.
   const jour25: CourseQuinteCandidate[] = [
     { id: "arles",   heure_depart: "11:00:00", paris_disponibles: ["SIMPLE_GAGNANT", "SIMPLE_PLACE"], nationale: null, jouable_afrique: false },
     { id: "kervegan", heure_depart: "15:10:00", paris_disponibles: ["SIMPLE_GAGNANT", "SIMPLE_PLACE"], nationale: 2, jouable_afrique: true },
     // Quinté MAROCAIN (SOREC, Anfa) : « QUINTE » sans « QUINTE_PLUS ».
     { id: "anfa",    heure_depart: "17:20:00", paris_disponibles: ["TRIO", "QUARTE", "QUINTE", "TIERCE", "MULTI"], nationale: 3, jouable_afrique: true },
-    // LE Quinté+ : R1C4 Paris-Vincennes, Prix Austria, Nationale 1.
-    { id: "austria", heure_depart: "18:15:00", paris_disponibles: ["QUARTE_PLUS", "QUINTE", "TIERCE", "QUINTE_PLUS"], nationale: 1, jouable_afrique: true },
-    // Doublon d'une 2e source (hippodrome « Vincennes », heure décalée de 2 h).
-    { id: "austria-doublon", heure_depart: "20:15:00", paris_disponibles: ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE"], nationale: null, jouable_afrique: false },
+    // Copie LONACI (« Paris-Vincennes », heure GMT), démarquée par l'enrichissement.
+    { id: "austria-copie", heure_depart: "18:15:00", paris_disponibles: ["QUARTE_PLUS", "QUINTE", "TIERCE", "QUINTE_PLUS"], nationale: null, jouable_afrique: false },
+    // LE Quinté+ : R1C4 Vincennes, Prix Austria, 20:15 heure de Paris, Nationale 1.
+    { id: "austria", heure_depart: "20:15:00", paris_disponibles: ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE"], nationale: 1, jouable_afrique: true },
   ];
 
   it("25/09 : élit le Prix Austria (Nationale 1), pas la 1re course du jour", () => {
@@ -68,11 +70,11 @@ describe("pickQuinteDuJour — la vedette est TOUJOURS le Quinté+ PMU (= Nation
   });
 
   it("ne confond jamais le quinté marocain (« QUINTE ») avec le Quinté+ PMU", () => {
-    const sansQuintePlus = jour25.filter((c) => c.id !== "austria" && c.id !== "austria-doublon");
+    const sansQuintePlus = jour25.filter((c) => c.id !== "austria" && c.id !== "austria-copie");
     expect(pickQuinteDuJour(sansQuintePlus)).toBeNull();
   });
 
-  it("l'ordre des lignes ne change rien (le doublon listé avant reste écarté)", () => {
+  it("l'ordre des lignes ne change rien : la Nationale 1 bat la copie non étiquetée, plus tôt", () => {
     expect(pickQuinteDuJour(jour25.slice().reverse())?.id).toBe("austria");
   });
 
