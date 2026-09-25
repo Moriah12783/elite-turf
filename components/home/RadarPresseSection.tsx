@@ -197,7 +197,7 @@ export default function RadarPresseSection({ data }: { data: RadarVedette }) {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <span className="text-text-muted text-xs max-w-[17rem] leading-relaxed">
-                <b className="text-text-secondary font-semibold">3 pronostics experts</b> chaque jour ·
+                <b className="text-text-secondary font-semibold">Pronostics experts</b> chaque jour ·
                 1<sup>er</sup> pronostic perdant = 7 jours offerts.
               </span>
             </div>

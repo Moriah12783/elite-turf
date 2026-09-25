@@ -260,12 +260,12 @@ export default async function PronosticsSection() {
                     <p className="text-text-secondary text-sm font-medium mb-1 break-words">
                       📍 R{c.numero_reunion}C{c.numero_course} — {c.libelle} — {c.hippodrome?.nom}
                     </p>
-                    <p className="text-sm">
-                      <span className="text-gold-light font-semibold">{(c.heure_depart || "").substring(0, 5)}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                      <HeuresParisGmt date={today} heure={c.heure_depart} />
                       {/* Gardes > 0 : un 0 en base veut dire « inconnu », pas « zéro ». */}
-                      {c.nb_partants > 0 && <span className="text-text-secondary"> · {c.nb_partants} partants</span>}
-                      {c.distance_metres > 0 && <span className="text-text-secondary"> · {Number(c.distance_metres).toLocaleString("fr-FR")} m</span>}
-                    </p>
+                      {c.nb_partants > 0 && <span className="text-text-secondary">· {c.nb_partants} partants</span>}
+                      {c.distance_metres > 0 && <span className="text-text-secondary">· {Number(c.distance_metres).toLocaleString("fr-FR")} m</span>}
+                    </div>
                   </div>
                   <Link href="/abonnements" className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-semibold text-xs rounded-lg transition-colors shadow-gold">
                     <Lock className="w-3.5 h-3.5" />
