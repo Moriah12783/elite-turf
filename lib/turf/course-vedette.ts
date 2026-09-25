@@ -128,14 +128,16 @@ export interface CourseQuinteCandidate {
  *   - `nationale = 1` : jamais plus d'une par jour. C'est le repère le plus
  *     sûr, et le seul quand les paris de la course sont incomplets (13/09,
  *     23/09 : Quinté+ réel, paris = SIMPLE_GAGNANT/PLACÉ seulement).
- *   - `QUINTE_PLUS` : présent en double 10 jours sur 60 (2 sources créent la
- *     même course, la copie avec 2 h de décalage). La copie n'est jamais
- *     marquée jouable Afrique ; à défaut, la plus tôt est la bonne (10/10).
+ *   - `QUINTE_PLUS` : présent en double certains jours — la voie de secours
+ *     LONACI créait une COPIE de la course (« Paris-Vincennes », heure GMT)
+ *     à côté de la vraie (« Vincennes », heure de Paris). Corrigé à la source
+ *     le 25/09/2026 (lib/lonaci-api.ts) : les drapeaux Nationale / jouable
+ *     Afrique vont désormais sur la vraie course, et la copie les perd.
  *   - « QUINTE » SEUL = quinté marocain (SOREC) : ce n'est PAS le Quinté+.
  *
  * Ordre : Nationale 1 > Quinté+ jouable Afrique > Quinté+ ; à égalité, le plus
- * tôt. Aucun candidat → null : l'appelant n'affiche alors pas de vedette plutôt
- * qu'une course prise au hasard.
+ * tôt (simple règle déterministe). Aucun candidat → null : l'appelant n'affiche
+ * alors pas de vedette plutôt qu'une course prise au hasard.
  */
 export function pickQuinteDuJour<T extends CourseQuinteCandidate>(courses: T[]): T | null {
   let best: T | null = null;
