@@ -8,6 +8,9 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
+import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
+
+const LABEL_QUINTE = "Nationale 1 — Quinté+";
 
 /** Retourne 1 si Nationale 1, 2 si Nat2, 3 si Nat3, 0 sinon */
 function getNatNum(paris: string[]): number {
@@ -120,40 +123,51 @@ export default async function PronosticsSection() {
   });
 
   const displayList = pronosWithStatus.slice(0, 3);
+  const aDesPronos  = pronosWithStatus.length > 0;
 
-  // Vedette = parmi les NON terminés : Quinté+ > Quarté+ > Tiercé > premier
+  // ── 2. Courses du jour (TOUTES : le Quinté+ part souvent en fin d'après-midi)
+  const { data: todayCoursesRaw } = await supabase
+    .from("courses")
+    .select(`
+      id, libelle, heure_depart, numero_reunion, numero_course,
+      paris_disponibles, nationale, jouable_afrique, statut,
+      hippodrome:hippodromes(nom)
+    `)
+    .eq("date_course", today)
+    .order("heure_depart", { ascending: true });
+  const todayCourses = (todayCoursesRaw || []) as any[];
+
+  // ── 3. LA vedette = le Quinté+ du jour (Nationale 1), jouable France + Afrique.
+  // AVANT (jusqu'au 25/09/2026) : sans pronostic publié, la vedette était la 1re
+  // des 3 prochaines courses → le matin, une course à simple gagnant quelconque
+  // (ex. Prix d'Arles, 11h00) au lieu du Quinté+ de 18h15. Cf. pickQuinteDuJour.
+  const quinte: any = pickQuinteDuJour(todayCourses);
+  const idCoursePronostic = (p: any) =>
+    (Array.isArray(p.course) ? p.course[0] : p.course)?.id;
+
+  // Carte vedette « pronostic » : celui publié sur le Quinté+ s'il existe.
+  // Pas de Quinté+ identifiable (données incomplètes) → ancien choix, parmi les
+  // pronostics publiés : Quinté+ > Quarté+ > premier à venir.
   const aVenir = pronosWithStatus.filter((p: any) => !p._terminee);
-  const vedetteProno: any =
-    aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
-    aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 2) ||
-    aVenir[0] ||
-    // fallback : même une terminée si plus rien à venir
-    pronosWithStatus.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
-    pronosWithStatus[0] ||
-    null;
+  const vedetteProno: any = quinte
+    ? pronosWithStatus.find((p: any) => idCoursePronostic(p) === quinte.id) || null
+    : aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
+      aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 2) ||
+      aVenir[0] ||
+      pronosWithStatus.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
+      pronosWithStatus[0] ||
+      null;
 
-  // ── 2. Placeholder : courses à venir si pas de pronostic ───────────
-  let placeholderCourses: any[] = [];
-  if (!vedetteProno) {
-    const { data: todayCourses } = await supabase
-      .from("courses")
-      .select(`
-        id, libelle, heure_depart, numero_reunion, numero_course,
-        paris_disponibles,
-        hippodrome:hippodromes(nom)
-      `)
-      .eq("date_course", today)
-      .order("heure_depart", { ascending: true })
-      .limit(10);
-
-    // Ne garder que les courses non terminées
-    placeholderCourses = ((todayCourses || []) as any[])
-      .filter((c: any) => !isCourseTerminee(c.heure_depart, nowMins))
-      .slice(0, 3);
-  }
+  // Placeholder (aucun pronostic publié) : les 3 prochaines courses, hors Quinté+
+  // (déjà mis en avant dans la carte vedette).
+  const placeholderCourses: any[] = aDesPronos
+    ? []
+    : todayCourses
+        .filter((c: any) => !isCourseTerminee(c.heure_depart, nowMins) && c.id !== quinte?.id)
+        .slice(0, 3);
 
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────
-  if (!vedetteProno && !placeholderCourses.length) {
+  if (!aDesPronos && !quinte && !placeholderCourses.length) {
     return (
       <section className="py-16 sm:py-20 bg-bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-10">
@@ -177,32 +191,14 @@ export default async function PronosticsSection() {
   }
 
   // ── CASE B : Courses du jour mais pas encore de pronostics publiés ──
-  if (!vedetteProno && placeholderCourses.length > 0) {
-    const nat1Course: any = placeholderCourses.find((c: any) =>
-      getNatNum(c.paris_disponibles || []) === 1
-    ) || placeholderCourses[0];
-
+  if (!aDesPronos) {
     return (
       <section className="py-16 sm:py-20 bg-bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Vedette "à venir" */}
-          <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
-            <div className="relative z-10 p-6 sm:p-8">
-              <div className="flex flex-wrap items-center gap-3 mb-5">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-primary text-bg-primary rounded-full font-bold text-xs uppercase tracking-widest shadow-gold">
-                  <Zap className="w-3.5 h-3.5" fill="currentColor" />
-                  Vedette du Jour
-                </div>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
-                  {getNationaleLabel(nat1Course.paris_disponibles || []) || nat1Course.paris_disponibles?.[0]}
-                </span>
-              </div>
-              <p className="font-serif text-xl font-bold text-text-primary mb-1">{nat1Course.libelle}</p>
-              <div className="flex items-center gap-4 text-sm text-text-secondary mb-4">
-                <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gold-primary" />{nat1Course.hippodrome?.nom}</span>
-                <span className="flex items-center gap-1.5 text-gold-light font-semibold"><Clock className="w-3.5 h-3.5" />{(nat1Course.heure_depart || "").substring(0, 5)}</span>
-              </div>
+          {/* Vedette "à venir" = le Quinté+. Introuvable → pas de carte plutôt
+              qu'une course quelconque présentée comme la vedette. */}
+          {quinte && (
+            <QuinteVedetteCard course={quinte}>
               {/* État honnête basé sur la donnée réelle + fenêtre GMT (audit P7) :
                   avant/pendant la fenêtre → « publication en cours » ; après →
                   pas de vedette aujourd'hui, on oriente vers la sélection gratuite. */}
@@ -230,20 +226,21 @@ export default async function PronosticsSection() {
                   </Link>
                 </>
               )}
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
-          </div>
+            </QuinteVedetteCard>
+          )}
 
           {/* Bannière */}
           <BannerImage count={placeholderCourses.length} />
 
           {/* Liste des courses du jour */}
+          {placeholderCourses.length > 0 && (
           <div className="flex items-center justify-between mb-6">
             <p className="text-text-secondary text-sm">Courses disponibles aujourd&apos;hui</p>
             <Link href="/pronostics" className="hidden sm:flex items-center gap-1 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors">
               Tous les pronostics <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
+          )}
           <div className="space-y-4">
             {placeholderCourses.map((c: any) => (
               <div key={c.id} className="card-base p-5 relative overflow-hidden">
@@ -303,7 +300,21 @@ export default async function PronosticsSection() {
     <section id="pronostics" className="py-16 sm:py-20 bg-bg-card/30 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── CARTE VEDETTE DU JOUR ── */}
+        {/* ── CARTE VEDETTE DU JOUR ── pronostic publié sur le Quinté+, sinon
+            le Quinté+ lui-même (nos pronostics du jour sont alors juste dessous). */}
+        {!vedette && quinte && (
+          <QuinteVedetteCard course={quinte}>
+            <p className="text-text-secondary text-sm mb-4">
+              Partants, cotes et arrivée du Quinté+ sur sa page dédiée. Nos pronostics experts du jour sont juste en dessous.
+            </p>
+            <Link href={`/quinte-plus/${today}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+              <Trophy className="w-4 h-4" />
+              Voir le Quinté+ du jour
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </QuinteVedetteCard>
+        )}
+        {vedette && (
         <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
           <div className="absolute inset-0 z-0">
             <Image
@@ -329,7 +340,9 @@ export default async function PronosticsSection() {
                 Confiance max
               </span>
               <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
-                {getNationaleLabel(vCourse?.paris_disponibles || []) || vedette.type_pari}
+                {quinte && vCourse?.id === quinte.id
+                  ? LABEL_QUINTE
+                  : getNationaleLabel(vCourse?.paris_disponibles || []) || vedette.type_pari}
               </span>
             </div>
 
@@ -414,6 +427,7 @@ export default async function PronosticsSection() {
 
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
         </div>
+        )}
 
         {/* Bannière visuelle */}
         <BannerImage count={displayList.length} />
@@ -545,6 +559,36 @@ export default async function PronosticsSection() {
 }
 
 // ── Sous-composants ────────────────────────────────────────────────────
+
+/** Carte « Vedette du Jour » d'une COURSE (le Quinté+), sans pronostic. */
+function QuinteVedetteCard({ course, children }: { course: any; children: React.ReactNode }) {
+  return (
+    <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
+      <div className="relative z-10 p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-primary text-bg-primary rounded-full font-bold text-xs uppercase tracking-widest shadow-gold">
+            <Zap className="w-3.5 h-3.5" fill="currentColor" />
+            Vedette du Jour
+          </div>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
+            {LABEL_QUINTE}
+          </span>
+        </div>
+        <p className="font-serif text-xl font-bold text-text-primary mb-1">{course.libelle}</p>
+        <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mb-4">
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-gold-primary" />
+            {course.hippodrome?.nom}{course.numero_reunion ? ` — R${course.numero_reunion}C${course.numero_course}` : ""}
+          </span>
+          <span className="flex items-center gap-1.5 text-gold-light font-semibold"><Clock className="w-3.5 h-3.5" />{(course.heure_depart || "").substring(0, 5)}</span>
+        </div>
+        {children}
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
+    </div>
+  );
+}
 
 function BannerImage({ count }: { count: number }) {
   return (
