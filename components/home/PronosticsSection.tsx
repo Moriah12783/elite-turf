@@ -9,6 +9,7 @@ import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
+import { heureGmtDepuisParis } from "@/lib/seo/dates";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
 
@@ -198,7 +199,7 @@ export default async function PronosticsSection() {
           {/* Vedette "à venir" = le Quinté+. Introuvable → pas de carte plutôt
               qu'une course quelconque présentée comme la vedette. */}
           {quinte && (
-            <QuinteVedetteCard course={quinte}>
+            <QuinteVedetteCard course={quinte} date={today}>
               {/* État honnête basé sur la donnée réelle + fenêtre GMT (audit P7) :
                   avant/pendant la fenêtre → « publication en cours » ; après →
                   pas de vedette aujourd'hui, on oriente vers la sélection gratuite. */}
@@ -303,7 +304,7 @@ export default async function PronosticsSection() {
         {/* ── CARTE VEDETTE DU JOUR ── pronostic publié sur le Quinté+, sinon
             le Quinté+ lui-même (nos pronostics du jour sont alors juste dessous). */}
         {!vedette && quinte && (
-          <QuinteVedetteCard course={quinte}>
+          <QuinteVedetteCard course={quinte} date={today}>
             <p className="text-text-secondary text-sm mb-4">
               Partants, cotes et arrivée du Quinté+ sur sa page dédiée. Nos pronostics experts du jour sont juste en dessous.
             </p>
@@ -386,10 +387,7 @@ export default async function PronosticsSection() {
                     <MapPin className="w-3.5 h-3.5 text-gold-primary flex-shrink-0" />
                     {vCourse?.hippodrome?.nom} — R{vCourse?.numero_reunion}C{vCourse?.numero_course}
                   </div>
-                  <div className="flex items-center gap-1.5 text-gold-light font-semibold">
-                    <Clock className="w-3.5 h-3.5" />
-                    {(vCourse?.heure_depart || "").substring(0, 5)}
-                  </div>
+                  <HeuresParisGmt date={vCourse?.date_course || today} heure={vCourse?.heure_depart} />
                 </div>
 
                 {vedette.analyse_courte && (
@@ -560,8 +558,32 @@ export default async function PronosticsSection() {
 
 // ── Sous-composants ────────────────────────────────────────────────────
 
+/**
+ * Heure de départ à l'heure de Paris ET en GMT : la base est à l'heure de
+ * Paris, les abonnés d'Afrique de l'Ouest (et la LONACI) lisent l'heure GMT.
+ */
+function HeuresParisGmt({ date, heure }: { date: string; heure: string | null | undefined }) {
+  const paris = (heure || "").substring(0, 5);
+  const gmt = heureGmtDepuisParis(date, heure);
+  if (!paris) return null;
+  return (
+    <span className="flex items-center gap-1.5 text-gold-light font-semibold">
+      <Clock className="w-3.5 h-3.5" />
+      {paris}
+      <span className="text-text-secondary font-normal">Paris</span>
+      {gmt && (
+        <>
+          <span className="text-text-muted font-normal">·</span>
+          {gmt}
+          <span className="text-text-secondary font-normal">GMT</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 /** Carte « Vedette du Jour » d'une COURSE (le Quinté+), sans pronostic. */
-function QuinteVedetteCard({ course, children }: { course: any; children: React.ReactNode }) {
+function QuinteVedetteCard({ course, date, children }: { course: any; date: string; children: React.ReactNode }) {
   return (
     <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
@@ -581,7 +603,7 @@ function QuinteVedetteCard({ course, children }: { course: any; children: React.
             <MapPin className="w-3.5 h-3.5 text-gold-primary" />
             {course.hippodrome?.nom}{course.numero_reunion ? ` — R${course.numero_reunion}C${course.numero_course}` : ""}
           </span>
-          <span className="flex items-center gap-1.5 text-gold-light font-semibold"><Clock className="w-3.5 h-3.5" />{(course.heure_depart || "").substring(0, 5)}</span>
+          <HeuresParisGmt date={date} heure={course.heure_depart} />
         </div>
         {children}
       </div>

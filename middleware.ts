@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { redirectionHippodromeFusionne } from "@/lib/seo/hippodromes-fusionnes";
 
 /**
  * Routes qui doivent rester accessibles MÊME pour un user authentifié
@@ -172,6 +173,16 @@ export async function middleware(request: NextRequest) {
     pathname.includes(":%2F%2F")
   ) {
     return NextResponse.redirect(new URL("/", request.url), 301);
+  }
+
+  // ── Fiches d'hippodromes fusionnées (doublons LONACI, 25/09/2026) ─────
+  // /hippodromes/paris-vincennes → /hippodromes/vincennes, etc. Adresses déjà
+  // soumises à Google : 301 plutôt que 404. Voir lib/seo/hippodromes-fusionnes.ts.
+  const cibleHippodrome = redirectionHippodromeFusionne(pathname);
+  if (cibleHippodrome) {
+    const url = request.nextUrl.clone();
+    url.pathname = cibleHippodrome;
+    return NextResponse.redirect(url, 301);
   }
 
   // ── Routes exclues du middleware (pas de vérification auth) ──
