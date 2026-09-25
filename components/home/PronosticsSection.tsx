@@ -9,6 +9,7 @@ import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
+import { pickCoursesASuivre, type CourseASuivre } from "@/lib/turf/courses-a-suivre";
 import { heureGmtDepuisParis } from "@/lib/seo/dates";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
@@ -132,7 +133,8 @@ export default async function PronosticsSection() {
     .select(`
       id, libelle, heure_depart, numero_reunion, numero_course,
       paris_disponibles, nationale, jouable_afrique, statut,
-      hippodrome:hippodromes(nom)
+      nb_partants, distance_metres,
+      hippodrome:hippodromes(nom, pays)
     `)
     .eq("date_course", today)
     .order("heure_depart", { ascending: true });
@@ -159,13 +161,12 @@ export default async function PronosticsSection() {
       pronosWithStatus[0] ||
       null;
 
-  // Placeholder (aucun pronostic publié) : les 3 prochaines courses, hors Quinté+
-  // (déjà mis en avant dans la carte vedette).
-  const placeholderCourses: any[] = aDesPronos
+  // Placeholder (aucun pronostic publié) : les courses qui intéressent les
+  // abonnés, comme sur la LONACI — Nationale 2, Nationale 3, une course du Maroc
+  // (hors Quinté+, déjà en vedette). Avant : les 3 premières courses du jour.
+  const placeholderCourses: CourseASuivre<any>[] = aDesPronos
     ? []
-    : todayCourses
-        .filter((c: any) => !isCourseTerminee(c.heure_depart, nowMins) && c.id !== quinte?.id)
-        .slice(0, 3);
+    : pickCoursesASuivre(todayCourses, { exclureId: quinte?.id, maintenantMinutesParis: nowMins });
 
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────
   if (!aDesPronos && !quinte && !placeholderCourses.length) {
@@ -243,15 +244,25 @@ export default async function PronosticsSection() {
           </div>
           )}
           <div className="space-y-4">
-            {placeholderCourses.map((c: any) => (
+            {placeholderCourses.map(({ course: c, etiquette }) => (
               <div key={c.id} className="card-base p-5 relative overflow-hidden">
                 <div className="absolute inset-0 shimmer-bg pointer-events-none" />
-                <div className="relative z-10 flex items-center justify-between">
-                  <div>
-                    <p className="text-text-secondary text-sm font-medium mb-1">
+                <div className="relative z-10 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    {etiquette && (
+                      <span className="inline-block mb-2 text-xs px-2.5 py-0.5 rounded-full bg-gold-faint border border-gold-primary/30 text-gold-light font-semibold">
+                        {etiquette}
+                      </span>
+                    )}
+                    <p className="text-text-secondary text-sm font-medium mb-1 break-words">
                       📍 R{c.numero_reunion}C{c.numero_course} — {c.libelle} — {c.hippodrome?.nom}
                     </p>
-                    <p className="text-gold-light text-sm font-semibold">{(c.heure_depart || "").substring(0, 5)}</p>
+                    <p className="text-sm">
+                      <span className="text-gold-light font-semibold">{(c.heure_depart || "").substring(0, 5)}</span>
+                      {/* Gardes > 0 : un 0 en base veut dire « inconnu », pas « zéro ». */}
+                      {c.nb_partants > 0 && <span className="text-text-secondary"> · {c.nb_partants} partants</span>}
+                      {c.distance_metres > 0 && <span className="text-text-secondary"> · {Number(c.distance_metres).toLocaleString("fr-FR")} m</span>}
+                    </p>
                   </div>
                   <Link href="/abonnements" className="flex items-center gap-2 px-4 py-2 bg-gold-primary hover:bg-gold-dark text-bg-primary font-semibold text-xs rounded-lg transition-colors shadow-gold">
                     <Lock className="w-3.5 h-3.5" />
