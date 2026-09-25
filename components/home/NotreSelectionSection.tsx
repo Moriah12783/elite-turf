@@ -4,7 +4,8 @@ import { Sparkles, ArrowRight, Check } from "lucide-react";
 /**
  * Section d'accueil « Une sélection gratuite sur chaque course ».
  * Positionnement : Elite Turf accompagne TOUS les parieurs (gratuitement),
- * au-delà des 3 pronostics premium du jour. Statique, sans donnée par course.
+ * au-delà des pronostics premium du jour. Statique, sans donnée par course.
+ * (Pas de nombre : il varie — 2 par jour en septembre 2026, Elite + Pro.)
  */
 export default function NotreSelectionSection() {
   const points = ["Sur toutes les courses", "100 % gratuite", "Sans inscription"];
@@ -28,7 +29,7 @@ export default function NotreSelectionSection() {
               Une sélection gratuite sur <span className="text-gold-light">chaque course</span>
             </h2>
             <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-2xl mx-auto mb-3">
-              Nos 3 pronostics experts du jour sont réservés aux abonnés. Mais Elite Turf ne s&apos;arrête
+              Nos pronostics experts du jour sont réservés aux abonnés. Mais Elite Turf ne s&apos;arrête
               pas là : sur <span className="text-text-primary font-semibold">chaque course</span> du
               programme, vous trouvez{" "}
               <span className="text-gold-light font-semibold">la Sélection stats gratuite</span> — une lecture
