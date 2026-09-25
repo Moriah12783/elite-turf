@@ -83,3 +83,25 @@ describe("enrichissement : la Nationale 1 atterrit sur la VRAIE course", () => {
     expect(updates).toContainEqual({ id: "copie", jouable_afrique: false, nationale: null });
   });
 });
+
+describe("normalizeLonaciReunions — pays des hippodromes", () => {
+  // Settat, Khemisset, Meknès : enregistrés « France » avant le 25/09/2026.
+  it("Settat, Khemisset, Meknès, El Jadida → Maroc", () => {
+    const out = normalizeLonaciReunions([
+      reunion("SETTAT", 9, "2026-09-18 16:40:00", 3),
+      reunion("KHEMISSET", 9, "2026-09-23 16:57:00", 3),
+      reunion("MEKNES", 9, "2026-09-24 17:00:00", 3),
+      reunion("EL JADIDA", 9, "2026-09-26 16:00:00"),
+      reunion("Anfa", 9, "2026-09-25 17:20:00", 3),
+    ]);
+    expect(out.map((c) => c.pays)).toEqual(["Maroc", "Maroc", "Maroc", "Maroc", "Maroc"]);
+  });
+
+  it("les réunions françaises et les autres pays ne bougent pas", () => {
+    const out = normalizeLonaciReunions([
+      reunion("PARIS-VINCENNES", 1, "2026-09-25 18:15:00", 1),
+      reunion("DAKAR", 1, "2026-09-25 16:00:00"),
+    ]);
+    expect(out.map((c) => c.pays)).toEqual(["France", "Sénégal"]);
+  });
+});

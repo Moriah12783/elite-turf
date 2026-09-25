@@ -232,7 +232,10 @@ export default async function PronosticsSection() {
           )}
 
           {/* Bannière */}
-          <BannerImage count={placeholderCourses.length} />
+          {/* Aucun pronostic publié : on compte des COURSES, pas des pronostics. */}
+          <BannerImage compteur={placeholderCourses.length > 0
+            ? `${placeholderCourses.length} course${placeholderCourses.length > 1 ? "s" : ""} à suivre`
+            : null} />
 
           {/* Liste des courses du jour */}
           {placeholderCourses.length > 0 && (
@@ -439,7 +442,7 @@ export default async function PronosticsSection() {
         )}
 
         {/* Bannière visuelle */}
-        <BannerImage count={displayList.length} />
+        <BannerImage compteur={`${displayList.length} pronostic${displayList.length > 1 ? "s" : ""} ce jour`} />
 
         {/* En-tête liste */}
         <div className="flex items-center justify-between mb-6">
@@ -623,7 +626,7 @@ function QuinteVedetteCard({ course, date, children }: { course: any; date: stri
   );
 }
 
-function BannerImage({ count }: { count: number }) {
+function BannerImage({ compteur }: { compteur: string | null }) {
   return (
     <div className="relative rounded-2xl overflow-hidden mb-12 h-48">
       <Image
@@ -649,10 +652,12 @@ function BannerImage({ count }: { count: number }) {
           <span className="text-gold-light">Résultats publiés chaque jour.</span>
         </p>
         <div className="flex items-center gap-3 mt-4">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
-            <Flame className="w-3.5 h-3.5 text-gold-primary" />
-            <span className="text-gold-light text-xs font-semibold">{count} pronostic{count > 1 ? "s" : ""} ce jour</span>
-          </div>
+          {compteur && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-primary/70 backdrop-blur-sm border border-gold-primary/30 rounded-full">
+              <Flame className="w-3.5 h-3.5 text-gold-primary" />
+              <span className="text-gold-light text-xs font-semibold">{compteur}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-status-win/20 backdrop-blur-sm border border-status-win/30 rounded-full">
             <Trophy className="w-3.5 h-3.5 text-status-win" />
             <span className="text-status-win text-xs font-semibold">Analyses expertes</span>

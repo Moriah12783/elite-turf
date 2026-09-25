@@ -12,6 +12,7 @@
  */
 
 import { canonicalHippodrome } from "@/lib/sync/hippodrome-canonical";
+import { estNomHippodromeMarocain } from "@/lib/sync/hippodrome-pays";
 
 const LONACI_URL =
   "https://api.lonacionline.flexbet-software.com:14443" +
@@ -69,12 +70,10 @@ export interface NormalizedLonaciCourse {
   parisLonaciCodes:    string[]; // codes bruts LONACI
 }
 
-// ── Hippodromes africains connus (non-français) ──────────────────────────
+// ── Hippodromes non français connus ───────────────────────────────────────
+// Maroc : voir estNomHippodromeMarocain (source unique, les 7 hippodromes SOREC).
 const PAYS_HIPPO: Record<string, string> = {
-  "MARRAKECH":        "Maroc",
   "DAKAR":            "Sénégal",
-  "CASABLANCA":       "Maroc",
-  "ANFA":             "Maroc",       // Hippodrome d'Anfa = Casablanca
   "ABIDJAN":          "Côte d'Ivoire",
   "TUNIS":            "Tunisie",
   "SOUSSE":           "Tunisie",
@@ -84,6 +83,7 @@ const PAYS_HIPPO: Record<string, string> = {
 };
 
 function getPays(hippodrome: string): string {
+  if (estNomHippodromeMarocain(hippodrome)) return "Maroc";
   const upper = hippodrome.toUpperCase();
   for (const [key, pays] of Object.entries(PAYS_HIPPO)) {
     if (upper.includes(key)) return pays;
