@@ -23,6 +23,8 @@ export interface Fait<T> {
   verifiePar: Verificateur;
   /** Citation exacte de la source qui établit le fait (contrôle de relecture). */
   extrait?: string;
+  /** Sources secondaires (une citation chacune) quand le fait en combine plusieurs. */
+  preuves?: { source: string; extrait: string }[];
 }
 
 export type ModeDeJeu = "guichet" | "en-ligne" | "mobile";
@@ -85,8 +87,16 @@ export function anomaliesFiche(f: FichePays): string[] {
     ["reunionsProposees", f.reunionsProposees], ["parisLocaux", f.parisLocaux], ["vocabulaire", f.vocabulaire],
   ];
   for (let i = 0; i < faits.length; i++) {
-    if (faits[i][1] !== undefined && !estPubliable(faits[i][1])) {
+    const x = faits[i][1];
+    if (x === undefined) continue;
+    if (!estPubliable(x)) {
       anomalies.push(`${f.slug} : fait « ${faits[i][0]} » sans source http(s) ou date valide`);
+    }
+    const preuves = x.preuves || [];
+    for (let j = 0; j < preuves.length; j++) {
+      if (!/^https?:\/\/[^\s]+\.[^\s]+/.test(preuves[j].source) || !preuves[j].extrait.trim()) {
+        anomalies.push(`${f.slug} : preuve n° ${j + 1} de « ${faits[i][0]} » sans URL ou sans citation`);
+      }
     }
   }
   for (let i = 0; i < f.faq.length; i++) {
