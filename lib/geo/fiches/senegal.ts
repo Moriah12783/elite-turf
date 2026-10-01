@@ -1,9 +1,10 @@
 /**
  * Fiche Sénégal — registre de faits sourcés (cf. ./types.ts).
  *
- * Recherche documentaire du 01/10/2026 (verifiePar: "recherche") : sources
+ * Recherche documentaire du 01/10/2026 (verifiePar: "recherche"),
+ * validée fait par fait par Steph le 01/10/2026 (verifiePar: "steph") : sources
  * officielles uniquement — site de la LONASE (lonase.sn), sa plateforme en
- * ligne LONASE.BET, programmes PDF officiels. À valider par Steph.
+ * ligne LONASE.BET, programmes PDF officiels.
  *
  * Non publié faute de source : heure limite de prise des paris (les
  * programmes ne donnent que l'heure de départ), USSD / Mobile Money, sens des
@@ -24,7 +25,7 @@ export const senegal: FichePays = {
     source: "https://www.lonase.sn/presentation/",
     extrait: "La Loterie Nationale Sénégalaise (LONASE) est une entreprise publique chargée de l'exploitation et de la commercialisation des jeux de loterie et de hasard sur la totalité du territoire sénégalais.",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
     preuves: [
       { source: "https://www.lonase.sn/presentation/", extrait: "elle exploite en monopole les jeux de hasard, loteries et jeux assimilés sur le territoire national" },
       { source: "https://www.lonase.sn/resultats-pmu/", extrait: "Les résultats des paris hippiques (PMU Sénégal) sont mis à jour après les courses." },
@@ -37,7 +38,7 @@ export const senegal: FichePays = {
     source: "https://www.lonase.sn/jeux/pmu/",
     extrait: "Validez votre ticket dans le réseau LONASE, puis consultez les résultats et rapports publiés.",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
     preuves: [
       { source: "https://www.lonase.sn/faq/", extrait: "La LONASE dispose d'un réseau de points de vente partout au Sénégal." },
       { source: "https://lonase.bet/about/faq", extrait: "Cliquez sur Hippique dans le menu principal. Sélectionnez la course sur laquelle vous souhaitez parier." },
@@ -50,7 +51,7 @@ export const senegal: FichePays = {
     source: "https://www.lonase.sn/la-lonase-dans-lala-en-negociation-a-abidjan-vers-un-partenariat-plus-equitable-avec-le-pmu-france/",
     extrait: "le PMU France, principal partenaire technique et commercial dans le domaine des paris hippiques.",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
     preuves: [
       { source: "https://www.lonase.sn/jeux/pmu/", extrait: "le Prix des Perdrix servira de support à l’ALR2 du jeudi à Cabourg" },
       { source: "https://lonase.bet/horseracing/race/R5C8", extrait: "France […] R1 - AUTEUIL R4 - ARGENTAN R5 - CABOURG" },
@@ -81,7 +82,7 @@ export const senegal: FichePays = {
     source: "https://lonase.bet/horseracing/about/bettypes-guide",
     extrait: "Masse de l'ensemble des enjeux collectés par LONASE",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
     preuves: [
       { source: "https://www.lonase.sn/wp-content/uploads/2026/10/ALR1-DU-JEUDI-01-OCTOBRE-2026.pdf", extrait: "ALR1-Tiercé Quarté Quinté+ Multi" },
       { source: "https://lonase.bet/about/content/gcu", extrait: "Le montant maximum est en fonction des paris, soit entre 20 prises par combinaisons pour la masse séparée et 1 000 000 FCFA pour la masse commune internationale." },
@@ -99,7 +100,7 @@ export const senegal: FichePays = {
     source: "https://www.lonase.sn/jeux/pmu/",
     extrait: "Sélectionnez la formule adaptée : ALR, PLR, Couplé, Tiercé, Quarté ou Quinté selon la course.",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
     preuves: [
       { source: "https://www.lonase.sn/wp-content/uploads/2025/11/ALR2-DU-LUNDI-17-MARS-2025.pdf", extrait: "la commercialisation de la Masse Commune Internationale (MCI) sur la course événementielle ALR1 sera arrêtée." },
       { source: "https://www.lonase.sn/wp-content/uploads/2025/11/ALR2-DU-LUNDI-17-MARS-2025.pdf", extrait: "Toutefois, au PLR, les prises de paris pourront se faire tant pour la Masse séparée que pour la Masse Commune Internationale." },
@@ -108,5 +109,23 @@ export const senegal: FichePays = {
   },
 
   editionGuichet: false,
-  faq: [],
+  // FAQ validée par Steph le 01/10/2026. « à confirmer » : requête exacte
+  // attendue de l'export Search Console de référence.
+  faq: [
+    { q: "Comment jouer au PMU au Sénégal ?",
+      a: "Avec la LONASE (Loterie Nationale Sénégalaise) : dans son réseau de points de vente, sur sa plateforme en ligne LONASE.BET ou avec son application Android. Nous sommes un service indépendant d'analyse, sans lien avec la LONASE.",
+      requeteSource: "pmu senegal" },
+    { q: "À quelle heure publiez-vous vos pronostics pour le Sénégal ?",
+      a: "Chaque matin entre 8 h 30 et 9 h 30, heure de Dakar.",
+      requeteSource: "pronostic pmu senegal" },
+    { q: "Que sont l'ALR 1, l'ALR 2 et l'ALR 3 de la LONASE ?",
+      a: "Les courses supports des programmes PMU de la LONASE ; l'ALR 1 est la course événementielle. Les paris PLR, eux, se jouent sur toutes les courses.",
+      requeteSource: "à confirmer (export Search Console)" },
+    { q: "Couplé ou Jumelé : quelle différence à la LONASE ?",
+      a: "Le pari sur les deux premiers s'appelle Couplé en ALR et Jumelé en PLR.",
+      requeteSource: "à confirmer (export Search Console)" },
+    { q: "À quelle heure part le Quinté+ du jour, à l'heure de Dakar ?",
+      a: "L'heure de départ, à l'heure de Dakar, est affichée en haut de cette page avec la course du jour.",
+      requeteSource: "… dakar (à confirmer (export Search Console))" },
+  ],
 };

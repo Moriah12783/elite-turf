@@ -1,9 +1,10 @@
 /**
  * Fiche Burkina Faso — registre de faits sourcés (cf. ./types.ts).
  *
- * Recherche documentaire du 01/10/2026 (verifiePar: "recherche") : site de la
+ * Recherche documentaire du 01/10/2026 (verifiePar: "recherche"),
+ * validée fait par fait par Steph le 01/10/2026 (verifiePar: "steph") : site de la
  * LONAB (lonab.bf), Journal hippique PMU'B (PDF officiels), presse nationale
- * (Sidwaya, repris par allAfrica). À valider par Steph, qui connaît le terrain.
+ * (Sidwaya, repris par allAfrica).
  *
  * Non publié faute de source :
  * - jeu PMU'B en ligne ou sur mobile (LONABET = paris sportifs et jeux
@@ -32,7 +33,7 @@ export const burkinaFaso: FichePays = {
     source: "https://www.lonab.bf/fr/node/4626",
     extrait: "la Loterie Nationale Burkinabè (LONAB) a le plaisir d’informer son aimable clientèle qu’elle offre une superbe cagnotte au PMU’B",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   modesDeJeu: {
@@ -40,7 +41,7 @@ export const burkinaFaso: FichePays = {
     source: "https://www.lonab.bf/fr/pmub",
     extrait: "Bien vérifier l’exactitude de vos tickets avant de quitter les points de vente.",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   heureLimite: {
@@ -48,7 +49,7 @@ export const burkinaFaso: FichePays = {
     source: "https://www.lonab.bf/sites/default/files/2026-09/JH_PMU_DU_01-10-2026.pdf",
     extrait: "ARRÊT DES JEUX EST FIXÉ : 11h 45mn DÉPART DE LA COURSE : 11h 55mn",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   reunionsProposees: {
@@ -56,7 +57,7 @@ export const burkinaFaso: FichePays = {
     source: "https://www.lonab.bf/en/node/42",
     extrait: "sur l’hippodrome d’Auteuil en France, les courses de la réunion N 1 du dimanche 24 avril 2022 sont annulées. Par conséquent, elle invite les parieurs ECD et PMU’B",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   parisLocaux: {
@@ -70,7 +71,7 @@ export const burkinaFaso: FichePays = {
     source: "https://www.lonab.bf/fr/pmub",
     extrait: "Les mises de bases : Tiercé et Quarté : 200 FCFA 4+1: 300 FCFA Couplé : 500 FCFA",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   vocabulaire: {
@@ -78,9 +79,27 @@ export const burkinaFaso: FichePays = {
     source: "https://fr.allafrica.com/stories/202601120327.html",
     extrait: "a misé la somme de 1 200 F CFA au 4+1 (Quinté) du 24 décembre 2025",
     verifieLe: LE,
-    verifiePar: "recherche",
+    verifiePar: "steph",
   },
 
   editionGuichet: false,
-  faq: [],
+  // FAQ validée par Steph le 01/10/2026. « à confirmer » : requête exacte
+  // attendue de l'export Search Console de référence.
+  faq: [
+    { q: "Qui organise le PMU au Burkina Faso ?",
+      a: "La Loterie Nationale Burkinabè (LONAB), avec le PMU'B. Les paris se prennent dans ses points de vente. Nous sommes un service indépendant d'analyse, sans lien avec la LONAB.",
+      requeteSource: "burkina faso pmu" },
+    { q: "Quelles formules peut-on jouer au PMU'B ?",
+      a: "La LONAB propose des combinaisons simples (de 3 à 12 chevaux au Tiercé, de 4 à 12 au Quarté, de 5 à 12 au 4+1, de 2 à 6 au Couplé), des combinaisons complètes et des jeux en champ total ou réduit.",
+      requeteSource: "formule sur pmu burkina" },
+    { q: "Existe-t-il un pari PMU'B à 1 000 F ?",
+      a: "La page PMU'B de la LONAB n'en présente pas : les mises de base y sont de 200 FCFA au Tiercé et au Quarté, 300 FCFA au 4+1 et 500 FCFA au Couplé.",
+      requeteSource: "pmu burkina 1000" },
+    { q: "À quelle heure publiez-vous vos pronostics pour le Burkina ?",
+      a: "Chaque matin entre 8 h 30 et 9 h 30, heure de Ouagadougou. Au PMU'B, le pari sur les cinq premiers de la course s'appelle le 4+1.",
+      requeteSource: "pronostic pmu burkina faso" },
+    { q: "Quelles courses peut-on jouer au PMU'B ?",
+      a: "Des courses hippiques françaises, avec les paris PMU'B et ECD de la LONAB.",
+      requeteSource: "burkina faso turf" },
+  ],
 };
