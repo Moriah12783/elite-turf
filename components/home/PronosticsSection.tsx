@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Lock, Star, ChevronRight, Eye, Trophy, Flame,
-  MapPin, Clock, TrendingUp, Zap, Globe2,
+  MapPin, Clock, TrendingUp, Zap, Globe2, CheckCircle2, Hourglass,
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
@@ -10,7 +10,9 @@ import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
 import { pickCoursesASuivre, type CourseASuivre } from "@/lib/turf/courses-a-suivre";
+import { aUneArrivee } from "@/lib/turf/arrivee-vedette";
 import { heureGmtDepuisParis } from "@/lib/seo/dates";
+import { ArriveeVedette } from "@/components/home/ArriveeVedette";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
 
@@ -140,7 +142,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
     .select(`
       id, libelle, heure_depart, numero_reunion, numero_course,
       paris_disponibles, nationale, jouable_afrique, statut,
-      nb_partants, distance_metres,
+      nb_partants, distance_metres, categorie, arrivee_officielle,
       hippodrome:hippodromes(nom, pays)
     `)
     .eq("date_course", today)
@@ -175,6 +177,36 @@ export default async function PronosticsSection({ personnalise = true }: { perso
     ? []
     : pickCoursesASuivre(todayCourses, { exclureId: quinte?.id, maintenantMinutesParis: nowMins });
 
+  // ── 4. Quinté+ couru : son arrivée officielle et un résumé remplacent la
+  // carte d'avant-course jusqu'à minuit, heure de Paris (demande du 01/10/2026).
+  // Course partie depuis plus de 40 min sans arrivée en base → « en attente »
+  // (la synchro des arrivées passe environ 1 h 15 après le départ).
+  let carteApresCourse: React.ReactNode = null;
+  if (quinte && aUneArrivee(quinte.arrivee_officielle)) {
+    const { data: partantsQuinte } = await supabase
+      .from("partants")
+      .select("numero, nom_cheval, jockey, entraineur, non_partant")
+      .eq("course_id", quinte.id);
+    carteApresCourse = (
+      <QuinteVedetteCard course={quinte} date={today} etat="arrivee">
+        <ArriveeVedette course={quinte} date={today} partants={partantsQuinte || []} />
+      </QuinteVedetteCard>
+    );
+  } else if (quinte && isCourseTerminee(quinte.heure_depart, nowMins)) {
+    carteApresCourse = (
+      <QuinteVedetteCard course={quinte} date={today} etat="attente">
+        <p className="text-text-secondary text-sm mb-4">
+          L&apos;arrivée officielle s&apos;affichera ici dès sa publication.
+        </p>
+        <Link href={`/quinte-plus/${today}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+          <Trophy className="w-4 h-4" />
+          Voir le Quinté+ du jour
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </QuinteVedetteCard>
+    );
+  }
+
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────
   if (!aDesPronos && !quinte && !placeholderCourses.length) {
     return (
@@ -206,7 +238,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Vedette "à venir" = le Quinté+. Introuvable → pas de carte plutôt
               qu'une course quelconque présentée comme la vedette. */}
-          {quinte && (
+          {carteApresCourse || (quinte && (
             <QuinteVedetteCard course={quinte} date={today}>
               {/* État honnête basé sur la donnée réelle + fenêtre GMT (audit P7) :
                   avant/pendant la fenêtre → « publication en cours » ; après →
@@ -236,7 +268,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
                 </>
               )}
             </QuinteVedetteCard>
-          )}
+          ))}
 
           {/* Bannière */}
           {/* Aucun pronostic publié : on compte des COURSES, pas des pronostics. */}
@@ -296,7 +328,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
 
   // ── 3. Favori automatique : cheval avec la cote la plus basse (PMU) ──
   let favoriAuto: { nom: string; cote: number; numero: number } | null = null;
-  if (vCourse) {
+  if (vCourse && !carteApresCourse) {
     try {
       const dateStrFav = (vCourse.date_course || today).replace(/-/g, "");
       const participants = await fetchPmuPartants(
@@ -322,9 +354,11 @@ export default async function PronosticsSection({ personnalise = true }: { perso
     <section id="pronostics" className="py-16 sm:py-20 bg-bg-card/30 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* ── CARTE VEDETTE DU JOUR ── pronostic publié sur le Quinté+, sinon
-            le Quinté+ lui-même (nos pronostics du jour sont alors juste dessous). */}
-        {!vedette && quinte && (
+        {/* ── CARTE VEDETTE DU JOUR ── Quinté+ couru : son arrivée. Sinon le
+            pronostic publié sur le Quinté+, ou à défaut le Quinté+ lui-même
+            (nos pronostics du jour sont alors juste dessous). */}
+        {carteApresCourse}
+        {!carteApresCourse && !vedette && quinte && (
           <QuinteVedetteCard course={quinte} date={today}>
             <p className="text-text-secondary text-sm mb-4">
               Partants, cotes et arrivée du Quinté+ sur sa page dédiée. Nos pronostics experts du jour sont juste en dessous.
@@ -336,7 +370,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
             </Link>
           </QuinteVedetteCard>
         )}
-        {vedette && (
+        {!carteApresCourse && vedette && (
         <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
           <div className="absolute inset-0 z-0">
             <Image
@@ -603,8 +637,16 @@ function HeuresParisGmt({ date, heure }: { date: string; heure: string | null | 
   );
 }
 
-/** Carte « Vedette du Jour » d'une COURSE (le Quinté+), sans pronostic. */
-function QuinteVedetteCard({ course, date, children }: { course: any; date: string; children: React.ReactNode }) {
+/**
+ * Carte « Vedette du Jour » d'une COURSE (le Quinté+), sans pronostic.
+ * `etat` : pastille d'après-course (arrivée officielle, ou en attente).
+ */
+function QuinteVedetteCard({ course, date, etat, children }: {
+  course: any;
+  date: string;
+  etat?: "arrivee" | "attente";
+  children: React.ReactNode;
+}) {
   return (
     <div className="relative rounded-2xl overflow-hidden mb-10 border border-gold-primary/40 bg-gradient-to-br from-bg-card via-[#1A1610] to-bg-card shadow-gold">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary to-transparent" />
@@ -617,6 +659,18 @@ function QuinteVedetteCard({ course, date, children }: { course: any; date: stri
           <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
             {LABEL_QUINTE}
           </span>
+          {etat === "arrivee" && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-status-win/10 border border-status-win/25 text-status-win text-xs font-semibold rounded-full">
+              <CheckCircle2 className="w-3 h-3" />
+              Course courue
+            </span>
+          )}
+          {etat === "attente" && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-bg-elevated border border-border text-text-secondary text-xs font-semibold rounded-full">
+              <Hourglass className="w-3 h-3" />
+              Arrivée en attente
+            </span>
+          )}
         </div>
         <p className="font-serif text-xl font-bold text-text-primary mb-1">{course.libelle}</p>
         <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary mb-4">
