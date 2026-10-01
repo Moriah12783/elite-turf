@@ -90,10 +90,10 @@ export default async function Footer() {
               <h3 className="font-serif font-semibold text-text-primary mb-4">Pronostics PMU</h3>
               <ul className="space-y-2">
                 {[
-                  { label: "Quinté+ du jour",      href: "/pronostics?type=quinte" },
+                  { label: "Quinté+ du jour",      href: "/quinte-plus" },
                   { label: "Tiercé & Quarté+",     href: "/pronostics?type=tierce" },
                   { label: "Pronostic Vincennes",   href: "/pronostics?hippodrome=vincennes" },
-                  { label: "Programme du jour",     href: "/courses" },
+                  { label: "Programme du jour",     href: "/programme" },
                   { label: "Nos performances",      href: "/performances" },
                   { label: "📥 Guide Gratuit",       href: "/guide-initie"  },
                 ].map((link) => (
