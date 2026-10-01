@@ -247,6 +247,26 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Accueil (B3) ─────────────────────────────────────────────────────
+  // « / » est servi depuis le cache serveur (ISR) aux visiteurs et à Google.
+  // Un membre connecté reçoit /accueil-membre, à la même adresse : Radar
+  // masqué aux abonnés payants, pronostics déverrouillés. OpenNext ne sert
+  // le cache qu'APRÈS ce middleware : la réécriture l'en écarte.
+  if (pathname === "/") {
+    if (user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/accueil-membre";
+      const reecriture = NextResponse.rewrite(url, { request });
+      supabaseResponse.cookies.getAll().forEach((c) => reecriture.cookies.set(c));
+      return reecriture;
+    }
+    // Cache côté serveur seulement. La réponse en cache annonce un
+    // stale-while-revalidate d'un mois, que Chrome sait exploiter : un
+    // visiteur qui se connecte pourrait se voir resservir la version
+    // visiteur. Le navigateur garde donc l'en-tête d'avant B3.
+    supabaseResponse.headers.set("Cache-Control", "private, no-cache, no-store, max-age=0, must-revalidate");
+  }
+
   return supabaseResponse;
 }
 

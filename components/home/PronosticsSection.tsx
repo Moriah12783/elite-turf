@@ -67,19 +67,26 @@ function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boo
   return nowMins - (h * 60 + m) > 40;
 }
 
-export default async function PronosticsSection() {
+/**
+ * @param personnalise lire la session pour déverrouiller les pronostics de
+ *   l'abonné. `false` sur l'accueil visiteur mis en cache (B3) : la page en
+ *   cache ne doit dépendre d'aucune session.
+ */
+export default async function PronosticsSection({ personnalise = true }: { personnalise?: boolean } = {}) {
   const supabase  = createServiceClient();
 
   // Lire l'abonnement utilisateur pour déverrouiller les pronostics Pro/Elite
   let userSubscription = "GRATUIT";
-  try {
-    const supabaseClient = await createClient();
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (user) {
-      userSubscription = await resolveUserSubscription(supabase, user.id);
+  if (personnalise) {
+    try {
+      const supabaseClient = await createClient();
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        userSubscription = await resolveUserSubscription(supabase, user.id);
+      }
+    } catch {
+      // Non authentifié
     }
-  } catch {
-    // Non authentifié
   }
 
   const today     = getTodayParis();
