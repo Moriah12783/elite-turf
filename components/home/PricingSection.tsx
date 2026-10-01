@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Check, Zap, Star, Crown, Shield, Flame } from "lucide-react";
+import { Zap, Star, Crown, Shield, Flame } from "lucide-react";
 import { PLAN_CONFIG } from "@/types";
 import { PROMO } from "@/lib/promo";
+import CasesFormule from "@/components/abonnements/CasesFormule";
+import { ACCROCHES, prixParJour, type IdFormule } from "@/lib/abonnements/comparatif";
 
 const PACK_NAMES: Record<string, string> = {
   Free:    "GRATUIT",
@@ -19,40 +21,28 @@ const PLAN_STYLES = {
     iconBg:  "bg-bg-elevated border-border",
     iconTx:  "text-text-secondary",
     price:   "text-text-primary",
-    bar:     "bg-status-win",
-    barW:    "50%",
     btn:     "bg-bg-elevated hover:bg-bg-hover text-text-primary border border-border",
-    stars:   1,
   },
   Starter: {
     border:  "border-border",
     iconBg:  "bg-bg-elevated border-border",
     iconTx:  "text-text-secondary",
     price:   "text-text-primary",
-    bar:     "bg-status-win",
-    barW:    "70%",
     btn:     "bg-bg-elevated hover:bg-bg-hover text-text-primary border border-border",
-    stars:   3,
   },
   Pro: {
     border:  "border-gold-primary/60",
     iconBg:  "bg-gold-faint border-gold-primary/40",
     iconTx:  "text-gold-primary",
     price:   "text-gold-primary",
-    bar:     "bg-gold-primary",
-    barW:    "82%",
     btn:     "bg-gold-primary hover:bg-gold-dark text-bg-primary",
-    stars:   4,
   },
   Elite: {
     border:  "border-purple-500/40",
     iconBg:  "bg-purple-500/10 border-purple-500/30",
     iconTx:  "text-purple-400",
     price:   "text-purple-400",
-    bar:     "bg-purple-400",
-    barW:    "92%",
     btn:     "bg-purple-600 hover:bg-purple-700 text-white",
-    stars:   5,
   },
 };
 
@@ -119,45 +109,20 @@ export default function PricingSection() {
                 <Shield className="w-6 h-6 text-status-win" />
               </div>
               <h3 className="font-serif font-bold text-xl text-text-primary mb-1">FREE</h3>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-status-win/80 mb-1">Accès gratuit permanent</p>
-              <p className="text-text-secondary text-sm mb-3">Essayer avant de s&apos;engager</p>
-
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-text-muted">Niveau de filtrage</span>
-                  <span className="text-xs font-bold text-status-win">Découverte</span>
-                </div>
-                <div className="w-full bg-bg-elevated rounded-full h-1.5">
-                  <div className="h-1.5 rounded-full bg-status-win/60" style={{ width: "20%" }} />
-                </div>
-                <div className="flex mt-1 gap-0.5">
-                  {[1,2,3,4,5].map(s => (
-                    <span key={s} className={`text-xs ${s === 1 ? "text-status-win" : "text-text-muted"}`}>◆</span>
-                  ))}
-                </div>
-              </div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-status-win/80 mb-1">{ACCROCHES.free}</p>
+              <p className="text-text-secondary text-sm mb-3 sm:min-h-[2.5rem]">Essayer avant de s&apos;engager</p>
 
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold font-serif text-status-win">0</span>
                 <span className="text-text-muted text-sm font-medium">€</span>
               </div>
-              <p className="text-text-muted text-xs mt-0.5">Sans engagement · Permanent</p>
+              <p className="text-text-muted text-xs mt-0.5">Permanent · sans carte bancaire</p>
+              <p className="text-text-muted text-xs">Inscription en 30 secondes</p>
             </div>
 
-            <ul className="space-y-2.5 mb-7 flex-1">
-              {[
-                "Sélection stats sur chaque course du jour",
-                "Lecture statistique pour structurer vos paris",
-                "Accès aux résultats publics",
-                "Sans carte bancaire",
-                "Inscription en 30 secondes",
-              ].map((f, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
-                  <span className="text-text-secondary text-sm">{f}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="mb-7 flex-1 pt-5 border-t border-border/50">
+              <CasesFormule formule="free" />
+            </div>
 
             <Link
               href="/inscription"
@@ -181,7 +146,7 @@ export default function PricingSection() {
                 {plan.populaire && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                     <span className="px-4 py-1 bg-gold-primary text-bg-primary text-[11px] font-bold rounded-full whitespace-nowrap shadow-gold">
-                      ⭐ LE PLUS POPULAIRE
+                      ⭐ MEILLEUR PRIX PAR JOUR
                     </span>
                   </div>
                 )}
@@ -194,25 +159,12 @@ export default function PricingSection() {
                   <h3 className="font-serif font-bold text-xl text-text-primary mb-1">
                     {PACK_NAMES[plan.nom]}
                   </h3>
-                  <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
-
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-text-muted">Niveau de filtrage</span>
-                      <span className={`text-xs font-bold ${styles.price}`}>
-                        {plan.nom === "Starter" ? "Standard" : plan.nom === "Pro" ? "Optimisé" : "Expert"}
-                      </span>
-                    </div>
-                    <div className="w-full bg-bg-elevated rounded-full h-1.5">
-                      <div className={`h-1.5 rounded-full ${styles.bar}`}
-                        style={{ width: plan.nom === "Starter" ? "45%" : plan.nom === "Pro" ? "75%" : "100%" }} />
-                    </div>
-                    <div className="flex mt-1 gap-0.5">
-                      {[1,2,3,4,5].map(s => (
-                        <span key={s} className={`text-xs ${s <= styles.stars ? styles.price : "text-text-muted"}`}>◆</span>
-                      ))}
-                    </div>
-                  </div>
+                  <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${
+                    plan.nom === "Pro" ? "text-gold-primary/80" : plan.nom === "Elite" ? "text-purple-400/80" : "text-text-muted/80"
+                  }`}>
+                    {ACCROCHES[plan.id as IdFormule]}
+                  </p>
+                  <p className="text-text-secondary text-sm mb-3 sm:min-h-[2.5rem]">{plan.description}</p>
 
                   {PROMO.actif && plan.nom in PROMO.prixReduits ? (
                     <div>
@@ -243,18 +195,17 @@ export default function PricingSection() {
                     </div>
                   )}
                   <p className="text-text-muted text-xs mt-0.5">
-                    {plan.duree_jours} jours · ≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA
+                    {plan.duree_jours} jours
+                    {!PROMO.actif && <> · soit {prixParJour(plan.prix_eur, plan.duree_jours)}</>}
                   </p>
+                  {!PROMO.actif && (
+                    <p className="text-text-muted text-xs">≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA</p>
+                  )}
                 </div>
 
-                <ul className="space-y-2.5 mb-7 flex-1">
-                  {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${styles.price}`} />
-                      <span className="text-text-secondary text-sm">{f}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mb-7 flex-1 pt-5 border-t border-border/50">
+                  <CasesFormule formule={plan.id as IdFormule} />
+                </div>
 
                 <Link
                   href={`/abonnements#${plan.id}`}
