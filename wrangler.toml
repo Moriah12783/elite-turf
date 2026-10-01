@@ -19,9 +19,12 @@ routes = [
 # Bucket R2 des pages mises en cache. Les clés sont préfixées par l'identifiant
 # de build : chaque déploiement a son propre cache, l'ancien n'est jamais resservi.
 # ⚠️ Le bucket doit exister AVANT le déploiement, sinon `wrangler deploy` échoue.
+# Bucket DÉDIÉ au site principal, en Europe de l'Ouest (WEUR), au plus près des
+# visiteurs français et africains. Ne pas réutiliser `elite-turf-cache` : il
+# appartient au projet prono.elite-turf.fr.
 [[r2_buckets]]
 binding = "NEXT_INC_CACHE_R2_BUCKET"
-bucket_name = "elite-turf-cache"
+bucket_name = "elite-turf-www-cache"
 
 # Le Worker s'appelle lui-même pour régénérer une page périmée en arrière-plan.
 [[services]]
