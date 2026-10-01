@@ -7,6 +7,13 @@ import { heureLocaleDepuisParis, instantDepuisParis } from "./heure-locale";
 const AVANT = "2026-10-24";
 const APRES = "2026-10-26";
 
+// Le Maroc est repassé à l'heure UTC permanente le 20/09/2026 (base horaire
+// IANA 2026c, 08/07/2026). Une base plus ancienne — Node 24.14 embarque la
+// 2025c — calcule encore UTC+1 : le cas marocain n'est vérifié qu'avec une base
+// à jour, il est sauté sinon (plutôt qu'affirmer une heure fausse).
+const BASE_HORAIRE = process.versions.tz ?? "";
+const BASE_A_JOUR = BASE_HORAIRE >= "2026c";
+
 describe("heureLocaleDepuisParis — départ à 15:15, heure de Paris", () => {
   const cas: [string, string, string, string][] = [
     // fuseau,               avant 25/10, après 25/10, pays
@@ -15,7 +22,6 @@ describe("heureLocaleDepuisParis — départ à 15:15, heure de Paris", () => {
     ["Africa/Dakar",         "13:15",     "14:15",     "Sénégal (UTC+0)"],
     ["Africa/Ndjamena",      "14:15",     "15:15",     "Tchad (UTC+1)"],
     ["Africa/Douala",        "14:15",     "15:15",     "Cameroun (UTC+1)"],
-    ["Africa/Casablanca",    "14:15",     "15:15",     "Maroc hors Ramadan (UTC+1)"],
     ["Indian/Antananarivo",  "16:15",     "17:15",     "Madagascar (UTC+3)"],
     ["Indian/Reunion",       "17:15",     "18:15",     "La Réunion (UTC+4)"],
   ];
@@ -39,10 +45,13 @@ describe("cas particuliers", () => {
       .toEqual({ heure: "02:30", date: "2026-10-27", autreJour: true });
   });
 
-  it("Maroc pendant le Ramadan 2027 : UTC+0, même heure que l'Afrique de l'Ouest", () => {
-    // 20/02/2027 : Paris en UTC+1 ; Maroc en UTC+0 pendant le Ramadan (tzdata).
-    expect(heureLocaleDepuisParis("2027-02-20", "15:00", "Africa/Casablanca")?.heure).toBe("14:00");
-    expect(heureLocaleDepuisParis("2027-02-20", "15:00", "Africa/Dakar")?.heure).toBe("14:00");
+  it.runIf(BASE_A_JOUR)(`Maroc : UTC+0 permanent depuis le 20/09/2026 (base horaire ${BASE_HORAIRE})`, () => {
+    // Même heure que l'Afrique de l'Ouest, avant comme après le 25/10, et en 2027.
+    expect(heureLocaleDepuisParis(AVANT, "15:15", "Africa/Casablanca")?.heure).toBe("13:15");
+    expect(heureLocaleDepuisParis(APRES, "15:15", "Africa/Casablanca")?.heure).toBe("14:15");
+    expect(heureLocaleDepuisParis("2027-06-15", "15:00", "Africa/Casablanca")?.heure).toBe("13:00");
+    // Avant le changement, le Maroc était en UTC+1 : 15:00 Paris (UTC+2) = 14:00.
+    expect(heureLocaleDepuisParis("2026-09-01", "15:00", "Africa/Casablanca")?.heure).toBe("14:00");
   });
 
   it("jamais d'heure devinée : date, heure ou fuseau illisibles → null", () => {

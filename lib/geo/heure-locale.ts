@@ -5,9 +5,14 @@
  * Les heures de course en base sont à l'heure de PARIS. Le décalage avec un
  * pays africain change deux fois par an — quand la France passe à l'heure
  * d'été ou d'hiver (le 25/10/2026, tous les départs reculent d'une heure en
- * Afrique) — et, pour le Maroc, pendant le Ramadan. On ne l'écrit donc jamais
- * en dur : on passe par l'instant réel (UTC) puis par le fuseau IANA du pays
- * (`Intl`), qui connaît ces règles.
+ * Afrique) — et les règles locales changent aussi : le Maroc est repassé à
+ * l'heure UTC permanente le 20/09/2026 (base horaire IANA 2026c ; avant, UTC+1
+ * sauf pendant le Ramadan). On ne l'écrit donc jamais en dur : on passe par
+ * l'instant réel (UTC) puis par le fuseau IANA du pays (`Intl`).
+ *
+ * ⚠️ Le résultat n'est juste que si la base horaire de l'environnement est à
+ * jour (≥ 2026c pour le Maroc ; Node 24.14 embarque la 2025c). Vérifier celle
+ * du Worker Cloudflare avant d'afficher une heure marocaine.
  *
  * null si la date ou l'heure est illisible : jamais une heure devinée.
  */
