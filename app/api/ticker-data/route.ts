@@ -1,164 +1,60 @@
 // GET /api/ticker-data
-// Retourne un mix : arrivées réelles, courses du jour, pronostics publiés, messages marketing
+// Bandeau défilant : données RÉELLES du jour (arrivées, prochains départs,
+// pronostics publiés) puis messages Elite Turf exacts. Construction pure et
+// testée : lib/ticker/bandeau.ts (brief SEO du 01/10/2026, B4).
+//
+// Avant : les requêtes « courses du jour » demandaient des colonnes qui
+// n'existent pas (`nom_course`, `nombre_partants`) et échouaient en silence ;
+// les pronostics Elite et Pro d'une même course apparaissaient en double.
 
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { todayParis } from "@/lib/seo/dates";
+import { construireBandeau, MESSAGES_ELITE_TURF, type CourseBandeau } from "@/lib/ticker/bandeau";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 900; // 15 min
 
-const BET_LABELS: Record<string, string> = {
-  QUINTE_PLUS: "Quinté+",
-  QUARTE:      "Quarté+",
-  TIERCE:      "Tiercé",
-  SIMPLE:      "Simple",
-  COUPLE:      "Couplé",
-  TRIO:        "Trio",
-};
-
-const MARKETING_ITEMS = [
-  { label: "🏇 Elite Turf",  result: "Pronostics PMU experts — Abonnez-vous dès 65€", status: "pending" as const },
-  { label: "💡 Conseil",     result: "Nos experts analysent chaque Quinté+ pour vous",     status: "pending" as const },
-  { label: "⭐ Pro",         result: "Accédez au Quarté+ et Quinté+ — Rejoignez l'élite",  status: "pending" as const },
-  { label: "📋 Arrivées",    result: "Consultez les arrivées du jour en temps réel",        status: "pending" as const },
-  { label: "📅 Courses",     result: "Programme complet des courses du jour disponible",    status: "pending" as const },
-];
+/** Minutes écoulées depuis minuit, heure de Paris (heures de course en base). */
+function minutesParis(): number {
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date());
+  const val = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  return (val("hour") % 24) * 60 + val("minute");
+}
 
 export async function GET() {
-  const supabase = createServiceClient();
-  const today = new Date().toISOString().split("T")[0];
-  const items: { label: string; result: string; status: "win" | "partial" | "pending" }[] = [];
-
   try {
-    // ── 1. Arrivées réelles du jour (via table arrivees) ─────────────────────
-    const { data: arrivees } = await supabase
-      .from("arrivees")
-      .select(`
-        ordre_arrivee,
-        course:course_id(
-          numero_reunion, numero_course, heure_depart,
-          hippodrome:hippodromes(nom)
-        )
-      `)
-      .gte("horodatage", `${today}T00:00:00`)
-      .order("horodatage", { ascending: false })
-      .limit(8);
+    const supabase = createServiceClient();
+    const today = todayParis();
 
-    if (arrivees?.length) {
-      arrivees.forEach((a: any) => {
-        const nums = Array.isArray(a.ordre_arrivee)
-          ? a.ordre_arrivee.slice(0, 5).join(" - ")
-          : a.ordre_arrivee;
-        items.push({
-          label:  `R${a.course?.numero_reunion}C${a.course?.numero_course} ${a.course?.hippodrome?.nom || "PMU"}`,
-          result: `🏁 Arrivée : ${nums}`,
-          status: "win",
-        });
-      });
-    }
+    const [coursesRes, pronosRes] = await Promise.all([
+      supabase
+        .from("courses")
+        .select("id, numero_reunion, numero_course, heure_depart, statut, arrivee_officielle, nb_partants, hippodrome:hippodromes(nom)")
+        .eq("date_course", today)
+        .neq("statut", "ANNULE"),
+      supabase
+        .from("pronostics")
+        .select("course_id, type_pari, resultat, date_publication")
+        .eq("publie", true)
+        .gte("date_publication", `${today}T00:00:00`)
+        .order("date_publication", { ascending: false })
+        .limit(20),
+    ]);
 
-    // ── 1b. Courses terminées du jour (statut TERMINE, avec arrivée dans courses) ──
-    const { data: coursesTerminees } = await supabase
-      .from("courses")
-      .select(`
-        numero_reunion, numero_course, heure_depart, nom_course,
-        arrivee_officielle,
-        hippodrome:hippodromes(nom)
-      `)
-      .eq("date_course", today)
-      .eq("statut", "TERMINE")
-      .not("arrivee_officielle", "is", null)
-      .order("heure_depart", { ascending: false })
-      .limit(8);
+    const courses: CourseBandeau[] = ((coursesRes.data ?? []) as any[]).map((c) => ({
+      ...c,
+      hippodrome: Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome,
+    }));
+    const items = construireBandeau({
+      courses,
+      pronostics: (pronosRes.data ?? []) as any[],
+      maintenantMinutesParis: minutesParis(),
+    });
 
-    if (coursesTerminees?.length) {
-      coursesTerminees.forEach((c: any) => {
-        const nums = Array.isArray(c.arrivee_officielle)
-          ? c.arrivee_officielle.slice(0, 5).join(" - ")
-          : c.arrivee_officielle;
-        // Eviter les doublons avec la table arrivees
-        const dejaDans = items.some(
-          i => i.label.includes(`R${c.numero_reunion}C${c.numero_course}`)
-        );
-        if (!dejaDans) {
-          items.push({
-            label:  `R${c.numero_reunion}C${c.numero_course} ${c.hippodrome?.nom || "PMU"}`,
-            result: `🏁 Arrivée : ${nums}`,
-            status: "win",
-          });
-        }
-      });
-    }
-
-    // ── 2. Courses du jour (programmées / en cours) ───────────────────────────
-    const { data: courses } = await supabase
-      .from("courses")
-      .select(`
-        numero_reunion, numero_course, heure_depart, nom_course, nombre_partants,
-        hippodrome:hippodromes(nom, pays)
-      `)
-      .eq("date_course", today)
-      .in("statut", ["PROGRAMME", "EN_COURS"])
-      .order("heure_depart", { ascending: true })
-      .limit(12);
-
-    if (courses?.length) {
-      courses.forEach((c: any) => {
-        const heure = c.heure_depart ? c.heure_depart.slice(0, 5) : "";
-        const pays = c.hippodrome?.pays && c.hippodrome.pays !== "France"
-          ? ` (${c.hippodrome.pays})`
-          : "";
-        const partants = c.nombre_partants ? ` · ${c.nombre_partants} partants` : "";
-        const statut = c.statut === "EN_COURS" ? "🟢 En cours" : `🕐 ${heure}`;
-        items.push({
-          label:  `R${c.numero_reunion}C${c.numero_course} ${c.hippodrome?.nom || "PMU"}${pays}`,
-          result: `${statut}${partants}`,
-          status: c.statut === "EN_COURS" ? "win" : "pending",
-        });
-      });
-    }
-
-    // ── 3. Pronostics publiés (avec sélection) ────────────────────────────────
-    const { data: pronostics } = await supabase
-      .from("pronostics")
-      .select(`
-        type_pari, selection, arrivee_reelle, resultat,
-        course:courses(
-          numero_reunion, date_course,
-          hippodrome:hippodromes(nom)
-        )
-      `)
-      .eq("publie", true)
-      .gte("date_publication", `${today}T00:00:00`)
-      .order("date_publication", { ascending: false })
-      .limit(6);
-
-    if (pronostics?.length) {
-      pronostics.forEach((p: any) => {
-        const bet = BET_LABELS[p.type_pari] || p.type_pari;
-        const arrivee = Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle.slice(0, 5).join(" - ") : null;
-        const sel = Array.isArray(p.selection) ? p.selection.slice(0, 5).join(" - ") : "—";
-        items.push({
-          label:  `⭐ R${p.course?.numero_reunion} ${p.course?.hippodrome?.nom || "PMU"}`,
-          result: arrivee
-            ? `${bet} · Arrivée : ${arrivee}`
-            : `${bet} · Pronostic réservé aux abonnés`,
-          status: p.resultat === "GAGNANT" ? "win" : p.resultat === "PARTIEL" ? "partial" : "pending",
-        });
-      });
-    }
-
-    // ── 4. Toujours ajouter les messages marketing ────────────────────────────
-    MARKETING_ITEMS.forEach(m => items.push(m));
-
-    // Retourner un minimum de données
-    if (items.length === 0) {
-      return NextResponse.json(MARKETING_ITEMS);
-    }
-
-    return NextResponse.json(items);
-
+    return NextResponse.json([...items, ...MESSAGES_ELITE_TURF]);
   } catch {
-    return NextResponse.json(MARKETING_ITEMS);
+    return NextResponse.json(MESSAGES_ELITE_TURF);
   }
 }
