@@ -11,9 +11,12 @@ import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import { whatsappUrl } from "@/lib/constants/whatsapp";
-import { OFFRE_PRONOSTICS_EXPERTS } from "@/lib/pricing";
 import TrackPageView from "@/components/analytics/TrackPageView";
 import { offreEliteStarterActive, libelleFinOffre } from "@/lib/promo/offre-elite-starter";
+import CasesFormule from "@/components/abonnements/CasesFormule";
+import { ACCROCHES, prixParJour, type IdFormule } from "@/lib/abonnements/comparatif";
+
+const FORMULES_A_CASES: Record<string, IdFormule> = { starter: "starter", pro: "pro", elite: "elite" };
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
@@ -32,7 +35,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
     answer:
-      "Le pack Starter donne accès aux pronostics Pro (Tiercé, Quarté+). Le pack Pro ajoute le Quinté+ premium et l'historique 30 jours. Le pack Elite inclut tout cela + l'accès aux analyses Elite Top Selection avec score composite, les notifications WhatsApp prioritaires et le support direct sous 2h. Les tarifs commencent à 65€ pour 7 jours d'accès Starter.",
+      "Starter et Pro donnent accès au même pronostic expert : celui du Quinté+, en 8 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le pronostic Elite, une sélection resserrée en 6 chevaux.",
   },
   {
     question: "Quel plan choisir si je suis débutant ?",
@@ -92,7 +95,7 @@ export const metadata: Metadata = {
   // ("%s | Elite Turf") l'ajoute déjà (audit Sprint 1, P6 : title doublé).
   title: "💎 Abonnements Pronostics PMU — Free, Starter 65€, Pro 152€, Elite",
   description:
-    "💎 Pronostics PMU Elite Turf : Free avec la Sélection stats sur chaque course, Starter 65€, Pro 152€ (Quinté+ premium), Elite 208€. Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays.",
+    "💎 Pronostics PMU Elite Turf : Free avec la Sélection stats sur chaque course, Starter 65€ (7 jours) et Pro 152€ (30 jours) avec le pronostic expert du Quinté+, Elite 208€. Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays.",
   alternates: { canonical: `${APP_URL}/abonnements` },
 };
 
@@ -359,53 +362,20 @@ export default async function AbonnementsPage() {
                 </div>
                 <h2 className="font-serif font-bold text-2xl text-text-primary mb-1">FREE</h2>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-status-win/80 mb-1">
-                  Accès gratuit permanent
+                  {ACCROCHES.free}
                 </p>
-                <p className="text-text-secondary text-sm mb-4">Essayer avant de s&apos;engager</p>
-
-                {/* Niveau */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-text-muted">Niveau de filtrage</span>
-                    <span className="text-xs font-bold text-status-win">Découverte</span>
-                  </div>
-                  <div className="w-full bg-bg-elevated rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-status-win/60" style={{ width: "20%" }} />
-                  </div>
-                  <div className="flex mt-1 gap-0.5">
-                    {[1,2,3,4,5].map(s => (
-                      <span key={s} className={`text-xs ${s === 1 ? "text-status-win" : "text-text-muted"}`}>◆</span>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-text-secondary text-sm mb-4 sm:min-h-[2.5rem]">Essayer avant de s&apos;engager</p>
 
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold font-serif text-status-win">0</span>
                   <span className="text-text-muted text-sm">€</span>
                 </div>
-                <p className="text-text-muted text-xs mt-1">Sans engagement · Permanent</p>
+                <p className="text-text-muted text-xs mt-1">Permanent · sans carte bancaire</p>
+                <p className="text-text-muted text-xs">Inscription en 30 secondes</p>
               </div>
 
-              <div className="flex-1 mb-8">
-                <ul className="space-y-3">
-                  {[
-                    "Sélection stats sur chaque course du jour",
-                    "Lecture statistique pour structurer vos paris",
-                    "Accès aux résultats publics",
-                    "Sans carte bancaire",
-                    "Inscription en 30 secondes",
-                  ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
-                      <span className="text-text-secondary text-sm">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-text-muted text-[11px] italic leading-snug mt-4 border-t border-border/40 pt-3">
-                  Sélection stats ≠ nos pronostics du jour : c&apos;est notre lecture
-                  statistique pour comprendre la course. L&apos;analyse experte reste
-                  réservée aux abonnés Starter / Pro / Elite.
-                </p>
+              <div className="flex-1 mb-8 pt-5 border-t border-border/50">
+                <CasesFormule formule="free" />
               </div>
 
               {currentPlan === "GRATUIT" ? (
@@ -453,7 +423,7 @@ export default async function AbonnementsPage() {
                   {plan.populaire && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
                       <span className="px-4 py-1.5 bg-gold-primary text-bg-primary text-[11px] font-bold rounded-full whitespace-nowrap shadow-gold">
-                        ⭐ LE PLUS POPULAIRE
+                        ⭐ MEILLEUR PRIX PAR JOUR
                       </span>
                     </div>
                   )}
@@ -489,47 +459,14 @@ export default async function AbonnementsPage() {
                         toute sa durée, sans supplément.
                       </p>
                     )}
-                    {plan.nom === "Starter" && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted/80 mb-1">
-                        Le galop d&apos;essai
+                    {FORMULES_A_CASES[plan.id] && (
+                      <p className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${
+                        plan.nom === "Pro" ? "text-gold-primary/80" : plan.nom === "Elite" ? "text-purple-400/80" : "text-text-muted/80"
+                      }`}>
+                        {ACCROCHES[FORMULES_A_CASES[plan.id]]}
                       </p>
                     )}
-                    {plan.nom === "Pro" && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gold-primary/80 mb-1">
-                        Le choix de la majorité
-                      </p>
-                    )}
-                    {plan.nom === "Elite" && (
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400/80 mb-1">
-                        La sélection dans la sélection
-                      </p>
-                    )}
-                    <p className="text-text-secondary text-sm mb-3">{plan.description}</p>
-
-                    {/* Niveau de filtrage */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-text-muted">Niveau de filtrage</span>
-                        <span className={`text-xs font-bold ${plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"}`}>
-                          {plan.nom === "Starter" ? "Standard" : plan.nom === "Pro" ? "Optimisé" : "Expert"}
-                        </span>
-                      </div>
-                      <div className="w-full bg-bg-elevated rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${plan.nom === "Elite" ? "bg-purple-400" : plan.populaire ? "bg-gold-primary" : "bg-status-win"}`}
-                          style={{ width: plan.nom === "Starter" ? "45%" : plan.nom === "Pro" ? "75%" : "100%" }}
-                        />
-                      </div>
-                      <div className="flex mt-1 gap-0.5">
-                        {[1,2,3,4,5].map(s => (
-                          <span key={s} className={`text-xs ${
-                            (plan.nom === "Starter" && s <= 2) || (plan.nom === "Pro" && s <= 4) || plan.nom === "Elite"
-                              ? plan.nom === "Elite" ? "text-purple-400" : plan.populaire ? "text-gold-primary" : "text-status-win"
-                              : "text-text-muted"
-                          }`}>◆</span>
-                        ))}
-                      </div>
-                    </div>
+                    <p className="text-text-secondary text-sm mb-4 sm:min-h-[2.5rem]">{plan.description}</p>
 
                     {PROMO.actif && plan.nom in PROMO.prixReduits ? (
                       <div>
@@ -560,18 +497,32 @@ export default async function AbonnementsPage() {
                       </div>
                     )}
                     <p className="text-text-muted text-xs mt-1">
-                      {plan.duree_jours} jours · Carte bancaire (toutes cartes, tous pays)
+                      {plan.duree_jours} jours
+                      {!PROMO.actif && <> · soit {prixParJour(plan.prix_eur, plan.duree_jours)}</>}
                     </p>
+                    {!PROMO.actif && (
+                      <p className="text-text-muted text-xs">≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA</p>
+                    )}
                   </div>
 
-                  <ul className="space-y-3 mb-8 flex-1">
-                    {plan.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2.5">
-                        <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.populaire ? "text-gold-primary" : plan.nom === "Elite" ? "text-purple-400" : "text-status-win"}`} />
-                        <span className="text-text-secondary text-sm">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {FORMULES_A_CASES[plan.id] ? (
+                    <div className="mb-8 flex-1 pt-5 border-t border-border/50">
+                      <CasesFormule
+                        formule={FORMULES_A_CASES[plan.id]}
+                        offreEliteJusquau={offreEliteActive ? libelleFinOffre() : null}
+                      />
+                    </div>
+                  ) : (
+                    // Plan de test (révélé à l'admin seulement) : liste d'origine.
+                    <ul className="space-y-3 mb-8 flex-1">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <Check className="w-4 h-4 mt-0.5 flex-shrink-0 text-status-win" />
+                          <span className="text-text-secondary text-sm">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {isCurrentPlan ? (
                     <div className="w-full py-3 rounded-xl text-center text-sm font-semibold bg-status-win/10 text-status-win border border-status-win/20">
@@ -614,66 +565,6 @@ export default async function AbonnementsPage() {
           <div className="mt-5 flex items-center justify-center gap-2 text-text-muted text-xs">
             <Clock className="w-3.5 h-3.5" />
             Activation de l&apos;accès en moins de 2 minutes après paiement
-          </div>
-        </div>
-
-        {/* ── TABLEAU COMPARATIF ── */}
-        <div className="card-base overflow-hidden">
-          <div className="p-5 border-b border-border">
-            <h2 className="font-serif font-bold text-text-primary text-lg text-center">Comparaison détaillée</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-bg-elevated">
-                  <th className="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider w-1/3">Fonctionnalité</th>
-                  {[
-                    { label: "Free",    color: "text-status-win"  },
-                    { label: "Starter", color: "text-text-muted"  },
-                    { label: "Pro",     color: "text-gold-light"  },
-                    { label: "Elite",   color: "text-purple-400"  },
-                  ].map(({ label, color }) => (
-                    <th key={label} className={`px-4 py-3 text-center text-xs font-bold uppercase tracking-wider ${color}`}>
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {[
-                  { label: "Durée",                       values: ["Permanent",      "7 jours",        "30 jours",             "30 jours"]          },
-                  { label: "Sélection stats", values: ["✓ chaque course", "✓",            "✓",                    "✓"]                 },
-                  { label: "Pronostics experts du jour",  values: [OFFRE_PRONOSTICS_EXPERTS.free, OFFRE_PRONOSTICS_EXPERTS.starter, OFFRE_PRONOSTICS_EXPERTS.pro, OFFRE_PRONOSTICS_EXPERTS.elite] },
-                  { label: "Pronostics Tiercé / Quarté",  values: ["—",              "✓",              "✓",                    "✓"]                 },
-                  { label: "Pronostics Quinté+",          values: ["—",              "—",              "✓",                    "✓"]                 },
-                  { label: "Couplé / Trio",               values: ["—",              "—",              "✓",                    "✓"]                 },
-                  { label: "Type de sélection",           values: ["Tiercé simple",  "Base + appuis",  "8 chevaux hiérarchisés", "6 chevaux (filtrée)"]},
-                  { label: "Niveau de filtrage",          values: ["Découverte",     "Standard",       "Optimisé",             "Expert"]            },
-                  { label: "Analyse incluse",             values: ["—",              "Argumentée",     "Claire & structurée",  "Filtrée & exigeante"]},
-                  { label: "Alerte Dernière Minute",      values: ["—",              "—",              "Email",                "WhatsApp"]          },
-                  { label: "Gestion de mise",             values: ["—",              "Suggérée",       "Détaillée",            "Personnalisée"]     },
-                  { label: "Alertes SMS / Push",          values: ["—",              "5 / mois",       "20 / mois",            "Illimitées"]        },
-                  { label: "Statistiques",                values: ["—",              "Bilan hebdo",    "Complètes + ROI",      "Export Excel / PDF"]},
-                  { label: "Support WhatsApp",            values: ["—",              "—",              "48h",                  "Prioritaire"]       },
-                  { label: "Résiliable à tout moment",    values: ["—",              "✓",              "✓",                    "✓"]                 },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-bg-hover transition-colors">
-                    <td className="px-5 py-3 text-text-secondary text-sm">{row.label}</td>
-                    {row.values.map((v, j) => (
-                      <td key={j} className={`px-4 py-3 text-center text-sm font-medium ${
-                        v === "—" ? "text-text-muted" :
-                        j === 0 ? "text-status-win" :
-                        j === 2 ? "text-gold-light" :
-                        j === 3 ? "text-purple-400" :
-                        "text-text-secondary"
-                      }`}>
-                        {v}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
 
