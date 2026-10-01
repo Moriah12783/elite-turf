@@ -163,19 +163,25 @@ export async function upsertProgrammeCourses(
   const courseKey = (hipId: string, date: string, reunion: number, course: number) =>
     `${hipId}|${date}|${reunion}|${course}`;
 
-  const existingCourseMap = new Map<string, string>();
+  // Ligne existante COMPLÈTE : ses colonnes NOT NULL sont renvoyées telles
+  // quelles dans l'UPSERT (voir plus bas).
+  interface CourseExistante {
+    id: string; hippodrome_id: string; date_course: string; numero_reunion: number; numero_course: number;
+    heure_depart: string; distance_metres: number | null; libelle: string | null; nb_partants: number | null;
+  }
+  const existingCourseMap = new Map<string, CourseExistante>();
   if (hipIds.length > 0 && dates.length > 0) {
     const exRes = await supabase
       .from("courses")
-      .select("id, hippodrome_id, date_course, numero_reunion, numero_course")
+      .select("id, hippodrome_id, date_course, numero_reunion, numero_course, heure_depart, distance_metres, libelle, nb_partants")
       .in("hippodrome_id", hipIds)
       .in("date_course", dates);
     // Sans remontée : `data: null` → aucune course connue → tout repart en
     // INSERT, y compris les courses déjà en base (doublons).
     assertOk("SELECT des courses existantes", exRes);
-    const existing = (exRes.data ?? []) as Array<{ id: string; hippodrome_id: string; date_course: string; numero_reunion: number; numero_course: number }>;
+    const existing = (exRes.data ?? []) as CourseExistante[];
     for (const c of existing) {
-      existingCourseMap.set(courseKey(c.hippodrome_id, c.date_course, c.numero_reunion, c.numero_course), c.id);
+      existingCourseMap.set(courseKey(c.hippodrome_id, c.date_course, c.numero_reunion, c.numero_course), c);
     }
   }
 
@@ -194,17 +200,36 @@ export async function upsertProgrammeCourses(
       continue;
     }
 
-    const existingId = existingCourseMap.get(
+    const existante = existingCourseMap.get(
       courseKey(hippodromeId, c.dateCourse, c.numeroReunion, c.numeroCourse),
     );
 
-    if (existingId) {
-      // Course déjà là (ex. insérée par Geny ou à la main) : on NE touche PAS à
-      // la catégorie/heure existantes, on rafraîchit juste nb_partants/libellé/paris.
+    if (existante) {
+      // Course déjà là (ex. insérée par GenyBet la veille) : on rafraîchit les
+      // PARIS (ex. la LONACI pose QUINTE_PLUS sur la Nationale 1), sans dégrader
+      // le reste.
+      //
+      // ⚠️ Un UPSERT PostgREST est un INSERT … ON CONFLICT : la ligne proposée
+      // doit respecter TOUS les NOT NULL, même si elle finit en UPDATE. Avant le
+      // 01/10/2026 on n'envoyait que {id, nb_partants, libelle, paris} → « null
+      // value in column hippodrome_id » : la synchro du matin a échoué TOUS LES
+      // JOURS depuis début août, et le marqueur Quinté+ n'était jamais posé.
+      // On renvoie donc les colonnes obligatoires avec leurs valeurs EN BASE.
+      const libelleEnBase = (existante.libelle ?? "").trim();
       toUpsert.push({
-        id: existingId,
-        nb_partants: c.nbPartants,
-        libelle: c.libelle,
+        id:              existante.id,
+        hippodrome_id:   existante.hippodrome_id,
+        date_course:     existante.date_course,
+        numero_reunion:  existante.numero_reunion,
+        numero_course:   existante.numero_course,
+        heure_depart:    existante.heure_depart,
+        // Distance : on complète une distance inconnue (0), jamais l'inverse.
+        distance_metres: (existante.distance_metres ?? 0) > 0 ? existante.distance_metres : (c.distanceMetres || 0),
+        // Libellé : celui en base est gardé (les sources de secours écrivent en
+        // MAJUSCULES : « PRIX AUSTRIA » au lieu de « Prix Austria »).
+        libelle:         libelleEnBase || c.libelle,
+        // Partants : 0 = inconnu à la source, jamais « zéro partant ».
+        nb_partants:     c.nbPartants > 0 ? c.nbPartants : (existante.nb_partants ?? 0),
         paris_disponibles: c.parisDisponibles,
       });
     } else {

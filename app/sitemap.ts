@@ -131,8 +131,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // Dates [-30j, +7j] qui ont un Quinté+ désigné. /quinte-plus/[date] est en
-  // noindex sans Quinté+ (même règle que /programme) → ne pas soumettre ces jours.
+  // Dates [-30j, +7j] qui ont un Quinté+ identifié (Nationale 1 LONACI ou
+  // QUINTE_PLUS — même détection que la page). Les dates PASSÉES sont toujours
+  // soumises : un Quinté+ se court chaque jour, la page reste indexable même si
+  // nos données ne l'ont pas rattaché (sortPageQuinte). Aujourd'hui et le futur
+  // sans Quinté+ connu sont en noindex → non soumis.
   const datesAvecQuinte: Record<string, true> = {};
   let quinteConnu = false;
   try {
@@ -143,7 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("date_course")
       .gte("date_course", debutQ)
       .lte("date_course", finQ)
-      .contains("paris_disponibles", ["QUINTE_PLUS"]);
+      .or("nationale.eq.1,paris_disponibles.cs.{QUINTE_PLUS}");
     if (!errQ) {
       quinteConnu = true;
       for (const r of (quintes ?? []) as { date_course: string }[]) datesAvecQuinte[r.date_course] = true;
@@ -170,8 +173,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     // /quinte-plus/[date] — fort levier SEO ("quinté+ du jour" #1 turf FR).
-    // Omise quand la date n'a pas de Quinté+ (page en noindex).
-    if (!quinteConnu || datesAvecQuinte[d]) {
+    // Omise seulement aujourd'hui/futur sans Quinté+ connu (page en noindex).
+    if (!quinteConnu || datesAvecQuinte[d] || d < todayStr) {
       temporalUrls.push({
         url: `${APP_URL}/quinte-plus/${d}`,
         lastModified: now,

@@ -47,3 +47,26 @@ export function sortPageProgramme(
   const dansFenetre = ecart >= -FENETRE_PASSE_JOURS && ecart <= FENETRE_FUTUR_JOURS;
   return dansFenetre ? "noindex" : "introuvable";
 }
+
+/**
+ * Sort d'une page `/quinte-plus/[date]`.
+ *
+ * Garde-fou (brief SEO du 01/10/2026, bug B1) : un Quinté+ se court CHAQUE
+ * jour. Une date passée qui a eu des courses a donc eu son Quinté+ : s'il
+ * n'est pas identifié, c'est un trou de NOS données, pas une absence. La page
+ * reste indexable plutôt que d'être retirée de Google (14 dates l'avaient été
+ * entre le 28/08 et le 30/09, dont le 02/09 qui avait fait 110 clics).
+ *
+ * @param quinteIdentifie  le Quinté+ du jour est connu (cf. pickQuinteDuJour)
+ * @param nbCoursesDuJour  courses françaises en base pour cette date
+ */
+export function sortPageQuinte(
+  date: string,
+  aujourdhui: string,
+  quinteIdentifie: boolean,
+  nbCoursesDuJour: number,
+): SortPageProgramme {
+  if (quinteIdentifie) return "indexable";
+  if (ecartJours(aujourdhui, date) < 0 && nbCoursesDuJour > 0) return "indexable";
+  return sortPageProgramme(date, aujourdhui, 0);
+}
