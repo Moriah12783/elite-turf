@@ -18,6 +18,12 @@
 /** Phrase officielle de l'offre Starter (FAQ, contenus rédactionnels). */
 export const STARTER_OFFRE_LABEL = "1 pronostic expert par jour (Tiercé / Quarté+)";
 
+/** Phrase officielle de l'offre Pro — reprise de PLAN_CONFIG (features). */
+export const PRO_OFFRE_LABEL = "1 pronostic expert chaque jour, Quinté+ inclus";
+
+/** Phrase officielle de l'offre Elite — reprise de PLAN_CONFIG (features). */
+export const ELITE_OFFRE_LABEL = "Tout le Pack Pro inclus + 1 pronostic quotidien Elite minimum";
+
 /** Ligne « Pronostics experts du jour » du tableau comparatif /abonnements. */
 export const OFFRE_PRONOSTICS_EXPERTS = {
   free:    "—",

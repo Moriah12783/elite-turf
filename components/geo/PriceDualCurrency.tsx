@@ -4,8 +4,10 @@
  * 2 modes selon le contexte :
  *
  *  mode="local-primary" (pages géo /pronostics-pmu-[pays]) :
- *    Devise locale en GROS + EUR en petit en référence
- *    Ex sur /pronostics-pmu-cote-d-ivoire : "42 500 FCFA" en gros + "≈ 65 €" en petit
+ *    Équivalent local en GROS, marqué « ≈ » (arrondi indicatif), + prix facturé
+ *    en EUR en petit. Ex. sur /pronostics-pmu-cote-d-ivoire : "≈ 42 500 FCFA"
+ *    en gros + "65 € facturés" en petit. (Avant le 01/10/2026, le « ≈ » portait
+ *    sur l'euro, alors que c'est le montant exact débité et le FCFA l'arrondi.)
  *
  *  mode="eur-primary" (homepage, /abonnements — pages neutres) :
  *    EUR en GROS + équivalent local en petit selon le pays détecté
@@ -60,17 +62,17 @@ export default function PriceDualCurrency({
   const localFormatted = formatPrice(eur, country.devise);
 
   if (mode === "local-primary") {
-    // Devise locale en gros, EUR en référence en petit
+    // Équivalent local (arrondi) en gros, prix réellement facturé en EUR en petit
     return (
       <span className={`inline-flex flex-col items-baseline ${className}`}>
         <span className="inline-flex items-baseline gap-1">
           <span className={`font-serif font-bold ${sizes.primary}`}>
-            {localFormatted}
+            ≈ {localFormatted}
           </span>
           {perMonth && <span className="text-text-muted text-xs">/mois</span>}
         </span>
         <span className={`text-text-muted ${sizes.secondary} mt-0.5`}>
-          ≈ {eur} €
+          {eur.toLocaleString("fr-FR")} € facturés
         </span>
       </span>
     );

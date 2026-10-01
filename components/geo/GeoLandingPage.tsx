@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import { createServiceClient } from "@/lib/supabase/server";
-import { type Country, formatPrice, COUNTRIES } from "@/lib/geo/countries";
-import { GEO_INTRO, buildGeoFaq } from "@/lib/geo/content";
+import { type Country, COUNTRIES } from "@/lib/geo/countries";
+import { GEO_INTRO, buildGeoFaq, nomApresDepuis } from "@/lib/geo/content";
 import PriceDualCurrency from "@/components/geo/PriceDualCurrency";
+import { PLAN_CONFIG, type Plan } from "@/types";
+import { STARTER_OFFRE_LABEL, PRO_OFFRE_LABEL, ELITE_OFFRE_LABEL } from "@/lib/pricing";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -69,6 +71,22 @@ export default async function GeoLandingPage({ country }: Props) {
     },
   };
 
+  // Formules : prix et durées lus dans PLAN_CONFIG, libellés dans lib/pricing
+  // (source unique — la page affichait « 65 €/mois » et un Starter « Quinté+
+  // du jour », tous deux faux : le Starter dure 7 jours, Tiercé / Quarté+).
+  const formules: { plan: Plan; desc: string; color: string }[] = [];
+  for (const f of [
+    { id: "starter", desc: STARTER_OFFRE_LABEL, color: "bg-status-win/10 border-status-win/30 text-status-win" },
+    { id: "pro",     desc: PRO_OFFRE_LABEL,     color: "bg-gold-faint border-gold-primary/40 text-gold-primary" },
+    { id: "elite",   desc: ELITE_OFFRE_LABEL,   color: "bg-purple-500/10 border-purple-500/30 text-purple-400" },
+  ]) {
+    const plan = PLAN_CONFIG.find((p) => p.id === f.id);
+    if (plan) formules.push({ plan, desc: f.desc, color: f.color });
+  }
+  const starter = PLAN_CONFIG.find((p) => p.id === "starter");
+  const depuis = nomApresDepuis(country);
+  const nomDevise = country.devise === "MAD" ? "dirhams" : "francs CFA";
+
   const faq = buildGeoFaq(country);
   const faqLd = {
     "@context": "https://schema.org",
@@ -113,9 +131,10 @@ export default async function GeoLandingPage({ country }: Props) {
 
         {/* ── Intro éditoriale ───────────────────────────────────── */}
         <section className="mb-12">
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
+          {/* h2 : le H1 de la page est le titre du bandeau (PageHero) — deux H1 auparavant. */}
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary mb-4 leading-tight">
             Pronostic PMU {country.nom} {country.drapeau}
-          </h1>
+          </h2>
           {GEO_INTRO[country.code] && (
             <p className="text-text-secondary text-base sm:text-lg leading-relaxed mb-4">
               {GEO_INTRO[country.code]}
@@ -123,7 +142,7 @@ export default async function GeoLandingPage({ country }: Props) {
           )}
           <p className="text-text-secondary text-base sm:text-lg leading-relaxed mb-4">
             Elite Turf publie chaque jour des analyses détaillées des courses PMU France
-            jouables depuis le {country.nom} via{" "}
+            jouables depuis {depuis} via{" "}
             {country.operateurOfficiel ? (
               <a href={country.operateurOfficiel.site} target="_blank" rel="noopener noreferrer" className="text-gold-primary hover:text-gold-light underline">
                 {country.operateurOfficiel.nom}
@@ -148,11 +167,14 @@ export default async function GeoLandingPage({ country }: Props) {
         <section className="mb-12">
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-3 flex items-center gap-2">
             <Shield className="w-6 h-6 text-gold-primary" />
-            Comment payer depuis le {country.nom}
+            Comment payer depuis {depuis}
           </h2>
+          {/* Seule la carte est proposée aujourd'hui (Mobile Money : PAYSTACK_AVAILABLE
+              = false, lib/promo.ts) — même discours que /abonnements. */}
           <p className="text-text-secondary text-sm mb-6">
-            Tarification adaptée en {country.devise === "MAD" ? "Dirhams" : country.devise === "EUR" ? "Euros" : "Francs CFA"} ({formatPrice(65, country.devise)} pour le pack Starter).
-            Paiement instantané via les opérateurs mobiles que vous utilisez tous les jours :
+            Paiement par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays
+            sont acceptées, y compris les cartes prépayées. Les prix sont facturés en euros
+            {country.devise !== "EUR" ? `, avec l'équivalent indicatif en ${nomDevise}` : ""}.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {country.paiements.map((p) => (
@@ -175,9 +197,8 @@ export default async function GeoLandingPage({ country }: Props) {
           </div>
           {country.paiements.some((p) => p.bientot) && (
             <p className="text-gold-primary text-xs italic mt-4">
-              🟡 Les paiements Mobile Money marqués <strong>« Bientôt »</strong> seront
-              activés très prochainement. En attendant, vous pouvez payer par carte
-              bancaire (Visa/Mastercard acceptées sans frais cachés).
+              🟡 Les moyens de paiement marqués <strong>« Bientôt »</strong> ne sont pas encore
+              disponibles. En attendant, le paiement se fait par carte bancaire.
             </p>
           )}
           <p className="text-text-muted text-xs italic mt-4">
@@ -189,25 +210,22 @@ export default async function GeoLandingPage({ country }: Props) {
         <section className="mb-12">
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-6 flex items-center gap-2">
             <Trophy className="w-6 h-6 text-gold-primary" />
-            Nos abonnements en {country.devise === "MAD" ? "Dirhams" : country.devise === "EUR" ? "Euros" : "FCFA"}
+            Nos abonnements
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { plan: "Starter", eur: 65,  desc: "Quinté+ du jour + Tiercé/Quarté",         color: "bg-status-win/10 border-status-win/30 text-status-win" },
-              { plan: "Pro",     eur: 152, desc: "+ Pronostics PRO + analyses complètes",   color: "bg-gold-faint border-gold-primary/40 text-gold-primary" },
-              { plan: "Elite",   eur: 208, desc: "+ Pronostics ELITE + WhatsApp",           color: "bg-purple-500/10 border-purple-500/30 text-purple-400" },
-            ].map(({ plan, eur, desc, color }) => (
-              <div key={plan} className="card-base p-5">
+            {formules.map(({ plan, desc, color }) => (
+              <div key={plan.id} className="card-base p-5">
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${color} mb-3`}>
-                  Pack {plan}
+                  Pack {plan.nom}
                 </div>
                 <PriceDualCurrency
-                  eur={eur}
+                  eur={plan.prix_eur}
                   country={country}
                   mode="local-primary"
                   size="lg"
-                  className="mb-3"
+                  className="mb-1"
                 />
+                <p className="text-text-muted text-xs mb-3">pour {plan.duree_jours} jours</p>
                 <p className="text-text-secondary text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -346,15 +364,16 @@ export default async function GeoLandingPage({ country }: Props) {
             Rejoignez la communauté Elite Turf {country.drapeau}
           </h3>
           <p className="text-text-secondary text-sm sm:text-base mb-5 max-w-xl mx-auto">
-            Pronostics analysés par notre équipe experte, paiement en {country.devise === "MAD" ? "DH" : country.devise === "EUR" ? "EUR" : "FCFA"}, support WhatsApp.
-            Tout pour parier malin depuis le {country.nom}.
+            Pronostics analysés par notre équipe experte, paiement par carte bancaire, support WhatsApp.
+            Tout pour parier malin depuis {depuis}.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/abonnements"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all"
             >
-              <Trophy className="w-4 h-4" /> S&apos;abonner — {formatPrice(65, country.devise)}/mois
+              <Trophy className="w-4 h-4" /> S&apos;abonner
+              {starter ? ` — dès ${starter.prix_eur} € les ${starter.duree_jours} jours` : ""}
             </Link>
             <Link
               href="/pronostics"

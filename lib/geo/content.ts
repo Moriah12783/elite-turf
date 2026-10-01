@@ -21,7 +21,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-tu
  * C'est le principal levier de dé-duplication SEO.
  */
 export const GEO_INTRO: Record<string, string> = {
-  CI: "En Côte d'Ivoire, les courses PMU comptent parmi les paris les plus populaires, d'Abidjan à Bouaké et Yamoussoukro. La LONACI (PMU-CI) opère les paris hippiques sur le territoire, avec les grandes courses françaises comme référence. Elite Turf décrypte chaque jour ces réunions pour les turfistes ivoiriens : cheval de base, outsiders à valeur et conseil de mise.",
+  CI: "En Côte d'Ivoire, les courses PMU comptent parmi les paris les plus populaires, d'Abidjan à Bouaké et Yamoussoukro. La LONACI opère les paris hippiques sur le territoire avec son produit PMU, avec les grandes courses françaises comme référence. Elite Turf décrypte chaque jour ces réunions pour les turfistes ivoiriens : cheval de base, outsiders à valeur et conseil de mise.",
   SN: "Au Sénégal, le PMU réunit une large communauté de parieurs, de Dakar à Thiès et Touba. La LONASE est l'opérateur national qui propose les paris sur les courses françaises. Elite Turf publie chaque matin des analyses détaillées — Quinté+, Tiercé, Quarté+ — pensées pour les turfistes sénégalais qui jouent via la LONASE.",
   CM: "Au Cameroun, le PMUC anime les paris hippiques de Yaoundé à Douala et Bafoussam. Les grandes courses françaises restent la référence des parieurs camerounais. Elite Turf analyse chaque jour partants, jockeys et cotes pour aider les turfistes du Cameroun à bâtir leurs Quinté+, Tiercé et Quarté+.",
   MA: "Au Maroc, le pari hippique repose sur la MDJS et la SOREC, qui organise aussi les courses nationales (hippodromes de Casablanca-Anfa et de Rabat). Les parieurs marocains suivent à la fois le turf local et les grandes courses françaises. Elite Turf livre des analyses quotidiennes pour les turfistes du Royaume, de Casablanca à Rabat et Marrakech.",
@@ -52,7 +52,7 @@ export const GEO_META_DESC: Record<string, string> = {
 };
 
 /** Nom du pays avec son article correct après « depuis / au » (grammaire FR). */
-function nomApresDepuis(c: Country): string {
+export function nomApresDepuis(c: Country): string {
   if (c.code === "CI") return `la ${c.nom}`; // depuis la Côte d'Ivoire
   if (c.code === "RE" || c.code === "MG") return c.nom; // depuis La Réunion / Madagascar
   return `le ${c.nom}`; // depuis le Sénégal…

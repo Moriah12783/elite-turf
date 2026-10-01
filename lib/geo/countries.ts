@@ -71,16 +71,23 @@ export const COUNTRIES: Country[] = [
     drapeau:    "🇨🇮",
     devise:     "XOF",
     capitale:   "Abidjan",
+    // pmu.ci n'existe pas (NXDOMAIN au 01/10/2026) et « PMU-CI » n'apparaît sur
+    // aucune page officielle : le site officiel est www.lonaci.ci, le jeu en
+    // ligne passe par la plateforme PMU LONACI (cf. lib/geo/fiches/cote-d-ivoire.ts).
     operateurOfficiel: {
-      nom:    "PMU-CI / LONACI",
-      site:   "https://www.pmu.ci",
+      nom:    "LONACI",
+      site:   "https://www.lonaci.ci",
       courte: "Loterie Nationale de Côte d'Ivoire — opérateur officiel",
     },
+    // Mobile Money (via Paystack) : désactivé tant que PAYSTACK_AVAILABLE = false
+    // (lib/promo.ts). Ne retirer « bientot » qu'une méthode à la fois, une fois
+    // son paiement vérifié par un vrai paiement test.
     paiements: [
-      { nom: "Orange Money CI", description: "Paiement instantané via mobile",      icon: "🟧" },
-      { nom: "MTN MoMo",        description: "MTN Mobile Money — opérateur Telecel", icon: "🟨" },
-      { nom: "Wave",            description: "Wave Money — frais réduits",          icon: "🌊" },
-      { nom: "Moov Money",      description: "Moov Africa Mobile Money",            icon: "🟥" },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard — toutes cartes", icon: "💳" },
+      { nom: "Orange Money CI", description: "Orange Money Côte d'Ivoire",        icon: "🟧", bientot: true },
+      { nom: "MTN MoMo",        description: "MTN Mobile Money",                  icon: "🟨", bientot: true },
+      { nom: "Wave",            description: "Wave Money",                        icon: "🌊", bientot: true },
+      { nom: "Moov Money",      description: "Moov Africa Mobile Money",          icon: "🟥", bientot: true },
     ],
     motsCles: [
       "pronostic PMU Côte d'Ivoire",
@@ -92,8 +99,8 @@ export const COUNTRIES: Country[] = [
     ],
     accroche: "Pronostics PMU France et courses LONACI analysés par notre équipe experte pour les parieurs de Côte d'Ivoire.",
     liensPMU: [
-      { label: "PMU-CI / LONACI",     href: "https://www.pmu.ci" },
-      { label: "Hippodrome de la Riviera (Abidjan)", href: "https://www.lonaci.ci" },
+      { label: "PMU LONACI",          href: "https://www.lonaci.ci/pmu/" },
+      { label: "PMU LONACI en ligne", href: "https://pmu.lonacionline.ci/" },
     ],
   },
   {
@@ -171,10 +178,9 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.mdjs.ma",
       courte: "Marocaine des Jeux et Sports + Société Royale d'Encouragement du Cheval",
     },
+    // Seule la carte est proposée (pas de CMI, Cash Plus ni Wafacash).
     paiements: [
-      { nom: "Carte bancaire MA",  description: "CMI / paiement carte",   icon: "💳" },
-      { nom: "Cash Plus",          description: "Solution paiement cash", icon: "💵" },
-      { nom: "Wafacash",           description: "Wafacash transfert",     icon: "🟦" },
+      { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
     ],
     motsCles: [
       "pronostic PMU Maroc",
@@ -394,10 +400,9 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.pmu.fr",
       courte: "PMU France — opérateur officiel (La Réunion = département français)",
     },
+    // Seule la carte est proposée (pas de virement SEPA ni de PayPal).
     paiements: [
-      { nom: "Carte bancaire", description: "Visa / Mastercard / CB française", icon: "💳" },
-      { nom: "Virement SEPA",  description: "Virement bancaire européen",       icon: "🏦" },
-      { nom: "PayPal",         description: "Paiement sécurisé PayPal",         icon: "🟦" },
+      { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
     ],
     motsCles: [
       "pronostic PMU Réunion",
