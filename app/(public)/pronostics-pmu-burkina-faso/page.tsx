@@ -1,12 +1,17 @@
-import GeoLandingPage from "@/components/geo/GeoLandingPage";
-import { COUNTRY_BY_SLUG } from "@/lib/geo/countries";
-import { buildGeoMetadata } from "@/lib/geo/content";
-
-const country = COUNTRY_BY_SLUG["burkina-faso"];
+/**
+ * /pronostics-pmu-burkina-faso — page pays migrée (brief « pages pays », vague 1).
+ * Contenu : components/geo/pays/PagePays.tsx (registre de faits validé + données
+ * du jour). Les pages des autres pays gardent GeoLandingPage jusqu'à leur vague.
+ */
+import PagePays from "@/components/geo/pays/PagePays";
+import { metadataPagePays } from "@/lib/geo/metadata-pays";
 
 export const revalidate = 3600;
-export const metadata = buildGeoMetadata(country);
+
+export function generateMetadata() {
+  return metadataPagePays("burkina-faso");
+}
 
 export default function GeoCountryPage() {
-  return <GeoLandingPage country={country} />;
+  return <PagePays slug="burkina-faso" />;
 }
