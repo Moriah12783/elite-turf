@@ -76,11 +76,15 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.pmu.ci",
       courte: "Loterie Nationale de Côte d'Ivoire — opérateur officiel",
     },
+    // Mobile Money (via Paystack) : désactivé tant que PAYSTACK_AVAILABLE = false
+    // (lib/promo.ts). Ne retirer « bientot » qu'une méthode à la fois, une fois
+    // son paiement vérifié par un vrai paiement test.
     paiements: [
-      { nom: "Orange Money CI", description: "Paiement instantané via mobile",      icon: "🟧" },
-      { nom: "MTN MoMo",        description: "MTN Mobile Money — opérateur Telecel", icon: "🟨" },
-      { nom: "Wave",            description: "Wave Money — frais réduits",          icon: "🌊" },
-      { nom: "Moov Money",      description: "Moov Africa Mobile Money",            icon: "🟥" },
+      { nom: "Carte bancaire",  description: "Visa / Mastercard — toutes cartes", icon: "💳" },
+      { nom: "Orange Money CI", description: "Orange Money Côte d'Ivoire",        icon: "🟧", bientot: true },
+      { nom: "MTN MoMo",        description: "MTN Mobile Money",                  icon: "🟨", bientot: true },
+      { nom: "Wave",            description: "Wave Money",                        icon: "🌊", bientot: true },
+      { nom: "Moov Money",      description: "Moov Africa Mobile Money",          icon: "🟥", bientot: true },
     ],
     motsCles: [
       "pronostic PMU Côte d'Ivoire",
@@ -171,10 +175,9 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.mdjs.ma",
       courte: "Marocaine des Jeux et Sports + Société Royale d'Encouragement du Cheval",
     },
+    // Seule la carte est proposée (pas de CMI, Cash Plus ni Wafacash).
     paiements: [
-      { nom: "Carte bancaire MA",  description: "CMI / paiement carte",   icon: "💳" },
-      { nom: "Cash Plus",          description: "Solution paiement cash", icon: "💵" },
-      { nom: "Wafacash",           description: "Wafacash transfert",     icon: "🟦" },
+      { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
     ],
     motsCles: [
       "pronostic PMU Maroc",
@@ -394,10 +397,9 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.pmu.fr",
       courte: "PMU France — opérateur officiel (La Réunion = département français)",
     },
+    // Seule la carte est proposée (pas de virement SEPA ni de PayPal).
     paiements: [
-      { nom: "Carte bancaire", description: "Visa / Mastercard / CB française", icon: "💳" },
-      { nom: "Virement SEPA",  description: "Virement bancaire européen",       icon: "🏦" },
-      { nom: "PayPal",         description: "Paiement sécurisé PayPal",         icon: "🟦" },
+      { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
     ],
     motsCles: [
       "pronostic PMU Réunion",

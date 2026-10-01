@@ -52,7 +52,7 @@ export const GEO_META_DESC: Record<string, string> = {
 };
 
 /** Nom du pays avec son article correct après « depuis / au » (grammaire FR). */
-function nomApresDepuis(c: Country): string {
+export function nomApresDepuis(c: Country): string {
   if (c.code === "CI") return `la ${c.nom}`; // depuis la Côte d'Ivoire
   if (c.code === "RE" || c.code === "MG") return c.nom; // depuis La Réunion / Madagascar
   return `le ${c.nom}`; // depuis le Sénégal…
