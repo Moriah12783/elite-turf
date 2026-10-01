@@ -162,6 +162,11 @@ const CRON_MAP: Record<string, string> = {
   // ── Monitoring & SEO ──────────────────────────────────────────────
   "*/30 * * * *": "/api/cron/health-alerter",
   "45 3 * * *":   "/api/cron/seo-etl",
+  // Accueil mis en cache (ISR, brief SEO du 01/10/2026, B3) : délai de 4 min,
+  // appelé toutes les 5 min → chaque appel déclenche la régénération, même
+  // sans visiteur. La version servie n'a jamais plus de ~5 min, y compris la
+  // nuit et au changement de jour.
+  "*/5 * * * *":  "/",
   "40 9 * * 1":   "/api/cron/calibration-hebdo",  // lundi : calibration Radar de la semaine précédente (write-once)
 
   // ── Notifications utilisateurs ────────────────────────────────────
@@ -258,13 +263,18 @@ async function triggerEndpoint(
   start: number,
 ): Promise<{ ok: boolean; status: number; duration: number; error?: string }> {
   try {
+    const headers: Record<string, string> = {
+      "X-Cron-Trigger":  cronPattern,
+      "User-Agent":      "elite-turf-crons (Cloudflare Worker)",
+    };
+    // Le secret ne part que vers les routes /api/ : l'appel de l'accueil
+    // (« / », rafraîchissement du cache) n'en a pas besoin.
+    if (new URL(url).pathname.startsWith("/api/")) {
+      headers["Authorization"] = `Bearer ${env.CRON_SECRET}`;
+    }
     const res = await fetch(url, {
       method: "GET",
-      headers: {
-        "Authorization":   `Bearer ${env.CRON_SECRET}`,
-        "X-Cron-Trigger":  cronPattern,
-        "User-Agent":      "elite-turf-crons (Cloudflare Worker)",
-      },
+      headers,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
@@ -273,6 +283,8 @@ async function triggerEndpoint(
       console.log(
         `[cron OK] ${cronPattern} → ${url} → HTTP ${res.status} (${duration}ms)`,
       );
+      // Corps non lu (la page d'accueil fait ~360 Ko) : on le libère.
+      await res.body?.cancel();
       return { ok: true, status: res.status, duration };
     }
 

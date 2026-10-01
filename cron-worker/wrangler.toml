@@ -16,7 +16,7 @@
 #   2. Deploy le worker :
 #      $ npx wrangler deploy --config cron-worker/wrangler.toml
 #   3. Vérifier dans Cloudflare dashboard → elite-turf-crons → Triggers
-#      que les 36 crons sont bien actifs.
+#      que les 41 crons sont bien actifs.
 #
 # Mise à jour des schedules :
 #   - Modifier la liste `[triggers].crons` ci-dessous
@@ -24,7 +24,7 @@
 #   - Re-deploy : `npx wrangler deploy --config cron-worker/wrangler.toml`
 #
 # Coût : Cloudflare Workers Paid plan (5 USD/mois) déjà actif. Les Cron
-# Triggers sont gratuits jusqu'à 100/worker. On en a 36, OK.
+# Triggers sont gratuits jusqu'à 100/worker. On en a 41, OK.
 
 # Last redeploy : 2026-05-16 (GitHub Action auto-deploy activée — PR fix/auto-deploy-cron-worker)
 # Cette ligne sert à forcer le premier trigger de la workflow GitHub Action
@@ -134,6 +134,7 @@ crons = [
   # ── Monitoring & SEO ────────────────────────────────────────────────
   "*/30 * * * *",    # health-alerter (toutes les 30 min)
   "45 3 * * *",      # seo-etl (sitemap + canonicals 3h45 nuit)
+  "*/5 * * * *",     # accueil mis en cache (B3) : appel de « / » → régénération, jamais plus de ~5 min
   "40 9 * * 1",      # calibration-hebdo (lundi 9h40 UTC : scellé write-once de la semaine précédente, Radar)
 
   # ── Notifications utilisateurs ──────────────────────────────────────
