@@ -60,9 +60,6 @@ export function ArriveeVedette({
           <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
-      <p className="mt-4 text-text-muted text-xs">
-        Nos pronostics sont publiés chaque matin entre 8h30 et 9h30 (heure GMT).
-      </p>
     </>
   );
 }
