@@ -278,7 +278,7 @@ export default async function MonRoiPage() {
         {statut === "STARTER" && (
           <UpgradeCTA
             title="Passez au pack Pro"
-            text="Le pack Pro débloque les pronostics Pro avec analyse complète. ROI moyen sur 90j de nos abonnés Pro : +45-60 %."
+            text="Le même pronostic expert, sur 30 jours au lieu de 7 : 152 €, soit 5,07 € par jour au lieu de 9,29 € avec Starter."
             href="/abonnements#pro"
             cta="Découvrir le pack Pro"
           />
@@ -287,7 +287,7 @@ export default async function MonRoiPage() {
         {statut === "PRO" && (
           <UpgradeCTA
             title="Devenez membre Elite"
-            text="Le pack Elite vous donne accès aux pronostics ELITE (3-4 publications/jour) + WhatsApp direct avec nos experts. Réservé aux passionnés."
+            text="Le pack Elite ajoute chaque jour le pronostic Elite, une sélection resserrée en 6 chevaux, + WhatsApp direct avec nos experts. Réservé aux passionnés."
             href="/abonnements#elite"
             cta="Découvrir le pack Elite"
           />
