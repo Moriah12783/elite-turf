@@ -109,8 +109,8 @@ export const senegal: FichePays = {
   },
 
   editionGuichet: false,
-  // FAQ validée par Steph le 01/10/2026. « à confirmer » : requête exacte
-  // attendue de l'export Search Console de référence.
+  // FAQ validée par Steph le 01/10/2026. Requêtes vérifiées dans l'export
+  // Search Console du 01/10 (docs/search-console-reference-pages-pays.md).
   faq: [
     { q: "Comment jouer au PMU au Sénégal ?",
       a: "Avec la LONASE (Loterie Nationale Sénégalaise) : dans son réseau de points de vente, sur sa plateforme en ligne LONASE.BET ou avec son application Android. Nous sommes un service indépendant d'analyse, sans lien avec la LONASE.",
@@ -120,12 +120,12 @@ export const senegal: FichePays = {
       requeteSource: "pronostic pmu senegal" },
     { q: "Que sont l'ALR 1, l'ALR 2 et l'ALR 3 de la LONASE ?",
       a: "Les courses supports des programmes PMU de la LONASE ; l'ALR 1 est la course événementielle. Les paris PLR, eux, se jouent sur toutes les courses.",
-      requeteSource: "à confirmer (export Search Console)" },
+      requeteSource: "aucune requête dans l'export du 01/10/2026 (top 1 000 du site) — vocabulaire local" },
     { q: "Couplé ou Jumelé : quelle différence à la LONASE ?",
       a: "Le pari sur les deux premiers s'appelle Couplé en ALR et Jumelé en PLR.",
-      requeteSource: "à confirmer (export Search Console)" },
+      requeteSource: "aucune requête dans l'export du 01/10/2026 (top 1 000 du site) — vocabulaire local" },
     { q: "À quelle heure part le Quinté+ du jour, à l'heure de Dakar ?",
       a: "L'heure de départ, à l'heure de Dakar, est affichée en haut de cette page avec la course du jour.",
-      requeteSource: "… dakar (à confirmer (export Search Console))" },
+      requeteSource: "prono prono prono prono pronostic pmu senegal dakar" },
   ],
 };

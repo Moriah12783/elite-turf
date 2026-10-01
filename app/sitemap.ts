@@ -62,7 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${APP_URL}/pronostics-pmu-burkina-faso`,      lastModified: now, changeFrequency: "weekly", priority: 0.75 },
     { url: `${APP_URL}/pronostics-pmu-tchad`,             lastModified: now, changeFrequency: "weekly", priority: 0.7  },
     { url: `${APP_URL}/pronostics-pmu-gabon`,             lastModified: now, changeFrequency: "weekly", priority: 0.75 },
-    { url: `${APP_URL}/pronostics-pmu-togo`,              lastModified: now, changeFrequency: "weekly", priority: 0.7  },
+    // Togo : noindex et hors sitemap tant qu'aucune fiche vérifiée n'existe
+    // (brief « pages pays » du 01/10/2026, §6).
     { url: `${APP_URL}/pronostics-pmu-congo-brazzaville`, lastModified: now, changeFrequency: "weekly", priority: 0.7  },
     { url: `${APP_URL}/pronostics-pmu-madagascar`,        lastModified: now, changeFrequency: "weekly", priority: 0.8  },
     { url: `${APP_URL}/pronostics-pmu-reunion`,           lastModified: now, changeFrequency: "weekly", priority: 0.85 },
