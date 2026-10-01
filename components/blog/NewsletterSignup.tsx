@@ -47,7 +47,7 @@ export default function NewsletterSignup({ context }: Props) {
           Bienvenue dans l'élite ! 🏆
         </h3>
         <p className="text-text-secondary text-sm">
-          Votre pronostic gratuit du lendemain vous sera envoyé avant 8h00 (heure de Paris).
+          C&apos;est noté : vous recevrez nos prochains e-mails.
         </p>
       </div>
     );
@@ -74,7 +74,7 @@ export default function NewsletterSignup({ context }: Props) {
       {/* Promesses */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         {[
-          { emoji: "🎯", text: "Pronostic gratuit chaque jour" },
+          { emoji: "🎯", text: "Sélection stats sur chaque course" },
           { emoji: "📊", text: "Analyse des partants incluse" },
           { emoji: "🔒", text: "Sans spam, désinscription libre" },
         ].map((item) => (
@@ -117,7 +117,7 @@ export default function NewsletterSignup({ context }: Props) {
       )}
 
       <p className="text-text-muted text-xs mt-3 text-center">
-        Déjà <strong className="text-gold-light">+2 400 parieurs</strong> reçoivent nos conseils chaque matin.
+        Déjà <strong className="text-gold-light">+2 400 parieurs</strong> profitent de nos analyses gratuites.
       </p>
     </div>
   );

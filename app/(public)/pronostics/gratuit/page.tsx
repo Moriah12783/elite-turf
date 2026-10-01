@@ -29,7 +29,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Gift, Star, ArrowRight, Clock, Trophy } from "lucide-react";
+import { Gift, Sparkles, ArrowRight, Trophy } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 
@@ -41,11 +41,11 @@ export const revalidate = 300; // 5 minutes
 
 export const metadata: Metadata = {
   title:       "🎁 Pronostic Gratuit du jour",
-  description: "Découvrez gratuitement le pronostic PMU du jour (Tiercé / Quinté+) sélectionné par Elite Turf. Analyse complète, sélection en clair, aucun engagement.",
+  description: "Pronostic gratuit du jour : le Radar de la presse résume ce que pronostiquent les journaux, et la Sélection stats éclaire chaque course du programme. En accès libre, sans inscription.",
   alternates:  { canonical: `${APP_URL}/pronostics/gratuit` },
   openGraph: {
     title:       "🎁 Pronostic Gratuit du jour — Elite Turf",
-    description: "Le pronostic PMU offert par Elite Turf. Analyse complète, sélection en clair, mis à jour quotidiennement.",
+    description: "Le Radar de la presse et la Sélection stats d'Elite Turf, en accès libre et sans inscription.",
     url:         `${APP_URL}/pronostics/gratuit`,
     type:        "article",
   },
@@ -91,55 +91,55 @@ export default async function PronosticGratuitPage() {
     redirect(`/pronostics/${gratuitId}`);
   }
 
-  // ── 2. Aucun pronostic gratuit disponible → page "bientôt" ──────────
+  // ── 2. Aucun pronostic gratuit → l'offre gratuite réelle ────────────
+  // Depuis juillet 2026, plus de pronostic gratuit quotidien : le Radar de la
+  // presse et la Sélection stats l'ont remplacé (décision de Steph, rappelée
+  // le 01/10/2026). Avant cette date, la page promettait un pronostic gratuit
+  // « chaque jour » qui n'arrivait plus.
   return (
     <div className="min-h-screen bg-bg-primary">
       <PageHero
         image="/images/heroes/hero-pronostics.jpg"
-        titre="Pronostic Gratuit du jour"
-        sousTitre="Notre cadeau quotidien pour les passionnés du turf — analysé par notre équipe experte"
+        titre="L'offre gratuite Elite Turf"
+        sousTitre="Ce qu'Elite Turf vous offre, sans inscription"
       />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
 
-        {/* ── Carte centrale : "Bientôt disponible" ── */}
+        {/* ── Carte centrale : l'offre gratuite ── */}
         <section className="card-base p-8 sm:p-10 text-center">
           <div className="w-20 h-20 rounded-3xl bg-gold-faint border border-gold-primary/30 flex items-center justify-center mx-auto mb-6">
             <Gift className="w-10 h-10 text-gold-primary" />
           </div>
 
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-text-primary mb-3">
-            Pronostic gratuit du jour bientôt disponible
+            Notre offre gratuite
           </h1>
 
           <p className="text-text-secondary text-base leading-relaxed max-w-xl mx-auto mb-6">
-            Notre équipe publie chaque jour, <strong className="text-text-primary">avant le départ</strong>,
-            {" "}une sélection gratuite de l&apos;une des courses majeures du jour —
-            Tiercé, Quarté+ ou Quinté+ selon le programme.
+            Le pronostic gratuit quotidien a laissé la place à deux outils en accès libre :
+            le <strong className="text-text-primary">Radar de la presse</strong>, qui résume ce que
+            pronostiquent les journaux, et la <strong className="text-text-primary">Sélection stats</strong>,
+            notre lecture statistique de chaque course du programme.
           </p>
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bg-elevated border border-border text-text-muted text-sm">
-            <Clock className="w-4 h-4 text-gold-primary" />
-            Revenez d&apos;ici quelques heures
-          </div>
         </section>
 
         {/* ── CTAs ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
-            href="/pronostics"
+            href="/courses"
             className="card-base p-6 group hover:border-gold-primary/40 transition-all"
           >
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-gold-faint border border-gold-primary/20 flex items-center justify-center flex-shrink-0">
-                <Star className="w-5 h-5 text-gold-primary" />
+                <Sparkles className="w-5 h-5 text-gold-primary" />
               </div>
               <div className="flex-1">
                 <h3 className="font-serif font-bold text-text-primary mb-1 group-hover:text-gold-light transition-colors">
-                  Voir tous les pronostics
+                  La Sélection stats du jour
                 </h3>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  Explorez nos analyses du jour et de la semaine
+                  Sur chaque course du programme, en accès libre
                 </p>
               </div>
               <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-gold-primary transition-colors mt-1" />
@@ -156,10 +156,10 @@ export default async function PronosticGratuitPage() {
               </div>
               <div className="flex-1">
                 <h3 className="font-serif font-bold text-text-primary mb-1 group-hover:text-gold-light transition-colors">
-                  Abonnements Premium
+                  Les pronostics experts
                 </h3>
                 <p className="text-text-muted text-sm leading-relaxed">
-                  Accès à tous nos pronostics Pro et Elite
+                  Tiercé, Quarté+, Quinté+ : dès 65 € pour 7 jours
                 </p>
               </div>
               <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-gold-primary transition-colors mt-1" />
@@ -169,15 +169,8 @@ export default async function PronosticGratuitPage() {
 
         {/* ── Note rassurante ── */}
         <p className="text-text-muted text-xs text-center leading-relaxed">
-          🎯 Le pronostic gratuit est publié quotidiennement par notre équipe d&apos;analystes.
-          Il est sélectionné sur la course la plus jouée du jour, généralement à Vincennes,
-          Auteuil, Longchamp ou ParisLongchamp.
-          <br />
-          Partagez ce lien :{" "}
-          <code className="px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-text-secondary">
-            elite-turf.fr/pronostics/gratuit
-          </code>
-          {" "}— il pointe toujours vers le pronostic le plus récent.
+          🎯 Le Radar de la presse s&apos;affiche sur la page d&apos;accueil, la Sélection stats
+          sur la page de chaque course. Les deux sont gratuits et sans inscription.
         </p>
       </div>
     </div>

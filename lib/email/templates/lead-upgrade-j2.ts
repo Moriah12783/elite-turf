@@ -46,8 +46,8 @@ export function templateLeadUpgradeJ2(
     ${emailButton(lienInscription, "Créer mon compte gratuit")}
 
     <p style="margin:14px 0 0 0;color:#6B7280;font-size:13px;text-align:center;line-height:1.6;">
-      Gratuit et sans engagement — le compte donne accès au pronostic gratuit du
-      jour et aux résultats vérifiés.<br/>
+      Gratuit et sans engagement — le compte donne accès à votre espace membre
+      et aux résultats vérifiés.<br/>
       <a href="${appUrl}/abonnements" style="color:#C9A84C;">Ou voir directement les formules →</a>
     </p>
 

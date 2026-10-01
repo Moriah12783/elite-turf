@@ -269,7 +269,7 @@ export default async function MonRoiPage() {
         {statut === "GRATUIT" && (
           <UpgradeCTA
             title="Débloquez tous les pronostics"
-            text="Avec le pack Starter (65 €/mois), vous avez accès à TOUS les pronostics, pas uniquement le gratuit du jour. ROI théorique typique : +30 à +80 %."
+            text="Avec le pack Starter (65 € pour 7 jours), vous accédez au pronostic expert du jour : Tiercé, Quarté+ et Quinté+, avec l'analyse."
             href="/abonnements"
             cta="Voir les offres"
           />
@@ -278,7 +278,7 @@ export default async function MonRoiPage() {
         {statut === "STARTER" && (
           <UpgradeCTA
             title="Passez au pack Pro"
-            text="Le pack Pro débloque les pronostics Pro avec analyse complète. ROI moyen sur 90j de nos abonnés Pro : +45-60 %."
+            text="Le même pronostic expert, sur 30 jours au lieu de 7 : 152 €, soit 5,07 € par jour au lieu de 9,29 € avec Starter."
             href="/abonnements#pro"
             cta="Découvrir le pack Pro"
           />
@@ -287,7 +287,7 @@ export default async function MonRoiPage() {
         {statut === "PRO" && (
           <UpgradeCTA
             title="Devenez membre Elite"
-            text="Le pack Elite vous donne accès aux pronostics ELITE (3-4 publications/jour) + WhatsApp direct avec nos experts. Réservé aux passionnés."
+            text="Le pack Elite ajoute chaque jour le pronostic Elite, une sélection resserrée en 6 chevaux, + WhatsApp direct avec nos experts. Réservé aux passionnés."
             href="/abonnements#elite"
             cta="Découvrir le pack Elite"
           />

@@ -22,7 +22,7 @@ const PRONOSTICS_FAQ = [
   {
     question: "Les pronostics Elite Turf sont-ils gratuits ?",
     answer:
-      "Oui, Elite Turf publie chaque jour un pronostic gratuit (Tiercé ou Quarté+) accessible sans inscription. Les pronostics Quinté+ premium et Elite sont réservés aux abonnés (dès 65€). Tous les pronostics gratuits suivent la même méthode rigoureuse que nos analyses premium.",
+      "Nos pronostics experts sont réservés aux abonnés, dès 65 € pour 7 jours. En accès libre, sans inscription : le Radar de la presse, qui résume ce que pronostiquent les journaux, et la Sélection stats, notre lecture statistique de chaque course du programme.",
   },
   {
     question: "Quand les pronostics du jour sont-ils publiés ?",
@@ -78,8 +78,8 @@ export async function generateMetadata(): Promise<Metadata> {
     : `🎯 Pronostics PMU du Jour — Tiercé, Quarté+, Quinté+`;
 
   const description = totalTermines >= 20
-    ? `🎯 ${tauxReussite}% de pronostics gagnants sur ${totalTermines} courses publiées. Tiercé, Quarté+, Quinté+ analysés. 1 pronostic gratuit/jour. Résultats vérifiables sur Geny.`
-    : `🎯 Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Analyses hippiques pour parieurs francophones (FR + Afrique). Résultats vérifiables sur Geny — 1 pronostic gratuit/jour.`;
+    ? `🎯 ${tauxReussite}% de pronostics gagnants sur ${totalTermines} courses publiées. Tiercé, Quarté+, Quinté+ analysés. Sélection stats gratuite sur chaque course. Résultats vérifiables sur Geny.`
+    : `🎯 Pronostics Tiercé, Quarté+, Quinté+ par nos experts. Analyses hippiques pour parieurs francophones (FR + Afrique). Résultats vérifiables sur Geny — Sélection stats gratuite sur chaque course.`;
 
   return {
     title,
