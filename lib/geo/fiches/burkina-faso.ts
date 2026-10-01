@@ -83,8 +83,8 @@ export const burkinaFaso: FichePays = {
   },
 
   editionGuichet: false,
-  // FAQ validée par Steph le 01/10/2026. « à confirmer » : requête exacte
-  // attendue de l'export Search Console de référence.
+  // FAQ validée par Steph le 01/10/2026. Requêtes vérifiées dans l'export
+  // Search Console du 01/10 (docs/search-console-reference-pages-pays.md).
   faq: [
     { q: "Qui organise le PMU au Burkina Faso ?",
       a: "La Loterie Nationale Burkinabè (LONAB), avec le PMU'B. Les paris se prennent dans ses points de vente. Nous sommes un service indépendant d'analyse, sans lien avec la LONAB.",

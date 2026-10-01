@@ -104,8 +104,8 @@ export const coteDIvoire: FichePays = {
   },
 
   editionGuichet: false,
-  // FAQ validée par Steph le 01/10/2026. « à confirmer » : requête exacte
-  // attendue de l'export Search Console de référence.
+  // FAQ validée par Steph le 01/10/2026. Requêtes vérifiées dans l'export
+  // Search Console du 01/10 (docs/search-console-reference-pages-pays.md).
   faq: [
     { q: "pmu.ci est-il le site officiel du PMU ivoirien ?",
       a: "Non. Le domaine pmu.ci ne répondait pas au 1er octobre 2026. Le PMU ivoirien est un produit de la LONACI (www.lonaci.ci), et le jeu en ligne passe par sa plateforme officielle PMU LONACI.",
@@ -121,6 +121,6 @@ export const coteDIvoire: FichePays = {
       requeteSource: "lonaci pmu pronostic" },
     { q: "Que veulent dire ALR et PLR ?",
       a: "Paris Avant La Réunion et Paris Pendant La Réunion : ce sont les définitions de la LONACI.",
-      requeteSource: "à confirmer (export Search Console)" },
+      requeteSource: "aucune requête dans l'export du 01/10/2026 (top 1 000 du site) — vocabulaire local" },
   ],
 };
