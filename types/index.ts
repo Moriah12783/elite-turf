@@ -221,7 +221,7 @@ export const PLAN_CONFIG: Plan[] = [
     description: "L'essai loyal : 7 jours pour juger la méthode",
     features: [
       "Accès complet pendant 7 jours — une vraie semaine pour juger la méthode",
-      "1 pronostic expert par jour (Tiercé / Quarté+) — pas la sélection gratuite",
+      "1 pronostic expert par jour (Tiercé, Quarté+, Quinté+) — pas la sélection gratuite",
       "Sélection hiérarchisée : votre cheval d'appui (la base) en tête",
       "Analyse argumentée : forme, driver / entraîneur, terrain",
       "Conseil de mise simple suggéré pour chaque pronostic",

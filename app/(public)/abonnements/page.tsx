@@ -35,7 +35,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
     answer:
-      "Starter et Pro donnent accès au même pronostic expert : celui du Quinté+, en 8 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le pronostic Elite, une sélection resserrée en 6 chevaux.",
+      "Starter et Pro donnent accès au même pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+ : 8 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le pronostic Elite, une sélection resserrée en 6 chevaux.",
   },
   {
     question: "Quel plan choisir si je suis débutant ?",
@@ -55,7 +55,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quand est-ce que j'accède aux pronostics ?",
     answer:
-      "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar), et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
+      "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés avant le départ de la course concernée, et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
     question: "Que se passe-t-il si mon premier pronostic expert est perdant ?",
@@ -263,12 +263,12 @@ export default async function AbonnementsPage() {
         </div>
       </div>
 
-      {/* ── HORAIRE DE PUBLICATION + ALERTES ─────────────────────────────
+      {/* ── PUBLICATION + ALERTES ────────────────────────────────────────
           Pose une attente claire AVANT les prix : "quand vais-je recevoir
-          mon pronostic du jour, et comment le saurai-je ?". L'horaire est
-          donné en GMT (= heure locale d'Abidjan/Dakar, audience principale)
-          et calé sur le créneau réel de publication (cron IA ~9h30 UTC).
-          Bandeau pleine largeur, juste sous le hero = bien visible. */}
+          mon pronostic du jour, et comment le saurai-je ?". Pas d'heure
+          précise (décision de Steph du 01/10/2026) : l'ancienne fenêtre
+          « 8h30-9h30 GMT » n'a été tenue pour aucun des 128 pronostics
+          publiés depuis juillet. */}
       <div className="border-b border-gold-primary/20 bg-gradient-to-r from-bg-card via-gold-faint/50 to-bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-7 text-center sm:text-left">
@@ -277,9 +277,8 @@ export default async function AbonnementsPage() {
                 <Clock className="w-5 h-5 text-gold-primary" />
               </div>
               <p className="text-sm text-text-primary font-semibold leading-snug">
-                Pronostics du jour publiés{" "}
-                <span className="text-gold-light">chaque jour entre 8h30 et 9h30</span>
-                <span className="text-text-muted font-normal"> (heure GMT · Abidjan / Dakar)</span>
+                Pronostic du jour publié{" "}
+                <span className="text-gold-light">avant le départ de la course</span>
               </p>
             </div>
             <span className="hidden sm:block w-px h-9 bg-border" aria-hidden="true" />

@@ -63,8 +63,8 @@ export function fichesFormules(offreEliteJusquau: string | null = null): GroupeF
         },
         {
           id: "pronostic-expert",
-          libelle: "Le pronostic expert du Quinté+",
-          detail: "8 chevaux classés par ordre de confiance, avec l'analyse",
+          libelle: "Le pronostic expert du jour",
+          detail: "Tiercé, Quarté+, Quinté+ : 8 chevaux classés par confiance, avec l'analyse",
           cases: ABONNES,
         },
         {

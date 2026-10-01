@@ -129,7 +129,7 @@ const STEPS = [
   {
     icon: Eye,
     title: "4. Publication transparente",
-    text: "Chaque pronostic est publié AVANT le départ de la course (généralement 7h pour le Quinté+, 9h pour Tiercé/Quarté). Une fois la course terminée, l'arrivée officielle est mise à jour automatiquement et le résultat est visible publiquement — gagnant, partiel ou perdant. Pas de réécriture après coup.",
+    text: "Chaque pronostic est publié AVANT le départ de la course. Une fois la course terminée, l'arrivée officielle est mise à jour automatiquement et le résultat est visible publiquement — gagnant, partiel ou perdant. Pas de réécriture après coup.",
     bullets: [
       "Publication horodatée (date_publication non modifiable)",
       "Résultat affiché GAGNANT / PARTIEL / PERDANT visible par tous",

@@ -4,30 +4,27 @@
  * Libellés marketing OFFICIELS de l'offre par plan — SOURCE UNIQUE.
  * Voir docs/audit-sprint1.md P2.
  *
- * Décision Sprint 1 : l'offre Starter officielle = « 1 pronostic expert par
- * jour (Tiercé / Quarté+) » pendant les 7 jours du pack. Les anciennes
- * formulations « 7 pronostics/semaine » (FAQ) et « 3 pronostics/semaine »
- * (seed DB legacy) sont retirées des surfaces utilisateur.
+ * Décision de Steph du 01/10/2026 : Starter = Pro sur 7 jours, avec le même
+ * pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+.
+ * L'ancien libellé Starter « Tiercé / Quarté+ » sous-vendait l'offre, puisque
+ * Starter accède au niveau PRO (lib/auth/access.ts), et le pronostic PRO du
+ * jour EST le Quinté+.
  *
  * PLAN_CONFIG (types/index.ts) reste la config structurée (prix, durées,
  * features détaillées des cartes). Ce fichier porte les libellés COURTS
- * partagés (FAQ, tableau comparatif…) pour empêcher toute nouvelle divergence :
- * toute surface qui décrit la cadence de pronostics DOIT importer d'ici.
+ * partagés (FAQ, pages pays, e-mails…) pour empêcher toute nouvelle
+ * divergence : toute surface qui décrit la cadence de pronostics DOIT
+ * importer d'ici.
  */
 
-/** Phrase officielle de l'offre Starter (FAQ, contenus rédactionnels). */
-export const STARTER_OFFRE_LABEL = "1 pronostic expert par jour (Tiercé / Quarté+)";
+/** Pronostic expert du jour, identique pour Starter et Pro. */
+const PRONOSTIC_EXPERT_DU_JOUR = "1 pronostic expert par jour (Tiercé, Quarté+, Quinté+)";
 
-/** Phrase officielle de l'offre Pro — reprise de PLAN_CONFIG (features). */
-export const PRO_OFFRE_LABEL = "1 pronostic expert chaque jour, Quinté+ inclus";
+/** Phrase officielle de l'offre Starter (FAQ, pages pays, e-mail R3). */
+export const STARTER_OFFRE_LABEL = PRONOSTIC_EXPERT_DU_JOUR;
+
+/** Phrase officielle de l'offre Pro : la même que Starter, sur 30 jours. */
+export const PRO_OFFRE_LABEL = PRONOSTIC_EXPERT_DU_JOUR;
 
 /** Phrase officielle de l'offre Elite — reprise de PLAN_CONFIG (features). */
 export const ELITE_OFFRE_LABEL = "Tout le Pack Pro inclus + 1 pronostic quotidien Elite minimum";
-
-/** Ligne « Pronostics experts du jour » du tableau comparatif /abonnements. */
-export const OFFRE_PRONOSTICS_EXPERTS = {
-  free:    "—",
-  starter: "1 / jour",
-  pro:     "1+ quotidien",
-  elite:   "1+ premium",
-} as const;

@@ -72,8 +72,8 @@ export default async function GeoLandingPage({ country }: Props) {
   };
 
   // Formules : prix et durées lus dans PLAN_CONFIG, libellés dans lib/pricing
-  // (source unique — la page affichait « 65 €/mois » et un Starter « Quinté+
-  // du jour », tous deux faux : le Starter dure 7 jours, Tiercé / Quarté+).
+  // (source unique — la page affichait « 65 €/mois », faux : le Starter dure
+  // 7 jours). Depuis le 01/10/2026, Starter = Pro sur 7 jours, Quinté+ inclus.
   const formules: { plan: Plan; desc: string; color: string }[] = [];
   for (const f of [
     { id: "starter", desc: STARTER_OFFRE_LABEL, color: "bg-status-win/10 border-status-win/30 text-status-win" },

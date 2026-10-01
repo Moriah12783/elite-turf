@@ -50,7 +50,7 @@ export function templateNewsletterLancement(data: NewsletterLancementData): {
 
   // Calcul des prix réduits
   const plans = [
-    { nom: "Starter", prixBase: 65,  devise: "€", acces: "Tiercés + analyses" },
+    { nom: "Starter", prixBase: 65,  devise: "€", acces: "Tiercé · Quarté+ · Quinté+ + analyses" },
     { nom: "Pro",     prixBase: 152, devise: "€", acces: "Quinté+ · Quarté+ · 20 alertes SMS" },
     { nom: "Elite",   prixBase: 208, devise: "€", acces: "Accès total · Alertes illimitées · WhatsApp prioritaire" },
   ].map(p => ({

@@ -221,7 +221,7 @@ export default function CalendrierGrandsRendezVous() {
             Ne manquez aucune analyse des grandes épreuves
           </p>
           <p className="mx-auto mt-2 max-w-xl text-sm" style={{ color: "rgba(245,241,230,0.65)" }}>
-            Nos pronostics sont publiés chaque matin entre 8h30 et 9h30 — alertes WhatsApp pour les abonnés.
+            Nos pronostics sont publiés avant le départ des courses — alertes WhatsApp pour les abonnés.
           </p>
           <a
             href="/abonnements"

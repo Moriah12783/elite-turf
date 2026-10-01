@@ -57,7 +57,7 @@ const FILTRES = [
 
 // Maillage interne
 const MAILLAGE_LINKS = [
-  { href: "/pronostics",   label: "Pronostics du jour",         desc: "Nos sélections analysées chaque matin" },
+  { href: "/pronostics",   label: "Pronostics du jour",         desc: "Nos sélections analysées chaque jour" },
   { href: "/performances", label: "Résultats & Performances",   desc: "Historique complet de nos pronostics" },
   { href: "/abonnements",  label: "Nos formules d'abonnement",  desc: "Pack Starter, Pro et Elite" },
   { href: "/archives",     label: "Archives des courses",       desc: "Résultats PMU vérifiables" },

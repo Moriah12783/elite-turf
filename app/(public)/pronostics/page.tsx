@@ -25,9 +25,9 @@ const PRONOSTICS_FAQ = [
       "Oui, Elite Turf publie chaque jour un pronostic gratuit (Tiercé ou Quarté+) accessible sans inscription. Les pronostics Quinté+ premium et Elite sont réservés aux abonnés (dès 65€). Tous les pronostics gratuits suivent la même méthode rigoureuse que nos analyses premium.",
   },
   {
-    question: "À quelle heure les pronostics du jour sont-ils publiés ?",
+    question: "Quand les pronostics du jour sont-ils publiés ?",
     answer:
-      "Nos pronostics du jour sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Vous pouvez recevoir une alerte par email et WhatsApp dès qu'un pronostic est disponible en complétant votre profil avec votre numéro de téléphone.",
+      "Nos pronostics du jour sont publiés avant le départ de la course concernée. Vous pouvez recevoir une alerte par email et WhatsApp dès qu'un pronostic est disponible en complétant votre profil avec votre numéro de téléphone.",
   },
   {
     question: "Qu'est-ce qu'un Quinté+ et comment le jouer ?",
@@ -324,7 +324,7 @@ export default async function PronosticsPage({ searchParams }: PageProps) {
               ) : (
                 <div className="card-base p-8 text-center text-text-muted text-sm">
                   <Star className="w-8 h-8 mx-auto mb-3 text-text-muted/40" />
-                  Nos sélections du jour seront publiées entre 8h30 et 9h30 (heure GMT).
+                  Nos sélections du jour seront publiées ici avant le départ des courses.
                 </div>
               )}
             </div>
@@ -413,7 +413,7 @@ function EmptyState({ periode }: { periode?: string }) {
       <p className="text-text-secondary text-sm max-w-xs mx-auto mb-6">
         {periode
           ? "Aucun pronostic ne correspond à vos filtres pour cette période."
-          : "Aucun pronostic sur les 30 derniers jours. Revenez demain matin entre 8h30 et 9h30 (heure GMT) pour nos nouvelles analyses."}
+          : "Aucun pronostic sur les 30 derniers jours. Nos prochaines analyses seront publiées ici avant le départ des courses."}
       </p>
       {periode && (
         <a
