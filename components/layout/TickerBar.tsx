@@ -2,20 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { TrendingUp, Trophy, Minus } from "lucide-react";
+import { MESSAGES_ELITE_TURF, type TickerItem } from "@/lib/ticker/bandeau";
 
-interface TickerItem {
-  label:  string;
-  result: string;
-  status: "win" | "partial" | "pending";
-}
-
-// Données de fallback statiques si Supabase est indisponible
-const FALLBACK_ITEMS: TickerItem[] = [
-  { label: "R1 Vincennes",   result: "Quinté+ : Programme disponible à 8h00",  status: "pending" },
-  { label: "R2 Longchamp",   result: "Tiercé : Sélection à venir",             status: "pending" },
-  { label: "R3 Chantilly",   result: "Quarté+ : Nos experts analysent",        status: "pending" },
-  { label: "Elite Turf",     result: "Pronostics PMU — Abonnez-vous",          status: "pending" },
-];
+/*
+ * Bandeau défilant (brief SEO du 01/10/2026, B4).
+ *
+ * Avant : il démarrait sur une liste INVENTÉE (« R1 Vincennes — Quinté+ :
+ * Programme disponible à 8h00 ◆ R2 Longchamp… ») sous un badge « PMU Live »
+ * clignotant. Rendue côté serveur, c'est elle que Google lisait sur toutes les
+ * pages, quel que soit le jour.
+ *
+ * Désormais : rendu serveur VIDE (hauteur fixe, aucun décalage de mise en
+ * page), puis les données réelles du jour (/api/ticker-data). Badge
+ * « Aujourd'hui » — ce n'est pas un flux officiel du PMU — et point clignotant
+ * seulement quand le bandeau contient de vraies données de course.
+ */
 
 const StatusIcon = ({ status }: { status: string }) => {
   if (status === "win")     return <Trophy    className="w-3 h-3 text-status-win flex-shrink-0" />;
@@ -23,26 +24,31 @@ const StatusIcon = ({ status }: { status: string }) => {
   return                           <TrendingUp className="w-3 h-3 text-text-muted flex-shrink-0" />;
 };
 
+/** Un élément décrit une vraie course du jour (pas un message permanent). */
+const estUneCourse = (i: TickerItem) => /^(⭐ )?R\d+C\d+ /.test(i.label);
+
 export default function TickerBar() {
-  const [items, setItems] = useState<TickerItem[]>(FALLBACK_ITEMS);
+  const [items, setItems] = useState<TickerItem[]>([]);
 
   useEffect(() => {
-    async function loadArrivees() {
+    async function charger() {
       try {
-        const res = await fetch("/api/ticker-data", { next: { revalidate: 900 } });
-        if (!res.ok) return;
+        const res = await fetch("/api/ticker-data", { cache: "no-store" });
+        if (!res.ok) throw new Error(String(res.status));
         const data: TickerItem[] = await res.json();
-        if (data?.length) setItems(data);
+        setItems(Array.isArray(data) && data.length ? data : MESSAGES_ELITE_TURF);
       } catch {
-        // Utilise le fallback
+        // Messages exacts plutôt qu'un bandeau vide ; jamais de fausses courses.
+        setItems((actuels) => (actuels.length ? actuels : MESSAGES_ELITE_TURF));
       }
     }
-    loadArrivees();
+    charger();
     // Rafraîchir toutes les 15 min
-    const interval = setInterval(loadArrivees, 15 * 60 * 1000);
+    const interval = setInterval(charger, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
+  const enDirect = items.some(estUneCourse);
   const doubled = [...items, ...items];
 
   return (
@@ -52,28 +58,30 @@ export default function TickerBar() {
       {/* Right fade */}
       <div className="absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-bg-card to-transparent z-10 pointer-events-none" />
 
-      {/* Live badge */}
+      {/* Badge */}
       <div className="absolute left-3 z-20 flex items-center gap-1.5 pr-3 border-r border-gold-primary/20">
-        <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse flex-shrink-0" />
+        {enDirect && <span className="w-1.5 h-1.5 rounded-full bg-status-win animate-pulse flex-shrink-0" />}
         <span className="text-gold-primary text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-          PMU Live
+          Aujourd&apos;hui
         </span>
       </div>
 
       {/* Scrolling track */}
-      <div className="pl-[80px] overflow-hidden w-full">
-        <div className="ticker-track">
-          {doubled.map((item, i) => (
-            <div key={i} className="flex items-center gap-2 px-5 whitespace-nowrap">
-              <StatusIcon status={item.status} />
-              <span className="text-gold-light text-xs font-semibold">{item.label}</span>
-              <span className="text-text-muted text-[11px]">—</span>
-              <span className="text-text-secondary text-xs">{item.result}</span>
-              <span className="text-gold-primary/30 text-xs ml-2">◆</span>
-            </div>
-          ))}
+      {items.length > 0 && (
+        <div className="pl-[100px] overflow-hidden w-full">
+          <div className="ticker-track">
+            {doubled.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 px-5 whitespace-nowrap">
+                <StatusIcon status={item.status} />
+                <span className="text-gold-light text-xs font-semibold">{item.label}</span>
+                <span className="text-text-muted text-[11px]">—</span>
+                <span className="text-text-secondary text-xs">{item.result}</span>
+                <span className="text-gold-primary/30 text-xs ml-2">◆</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
