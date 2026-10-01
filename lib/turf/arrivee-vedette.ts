@@ -30,6 +30,11 @@ const DISCIPLINES: Record<string, string> = {
   OBSTACLE: "Course d'obstacles",
 };
 
+/** « 2026-10-01 » → « 2026-09-30 » (calcul à midi UTC : sans piège d'heure d'été). */
+export function veille(date: string): string {
+  return new Date(Date.parse(date + "T12:00:00Z") - 86400000).toISOString().slice(0, 10);
+}
+
 /** La course a-t-elle une arrivée officielle exploitable ? */
 export function aUneArrivee(arrivee: number[] | null | undefined): arrivee is number[] {
   return Array.isArray(arrivee) && arrivee.length > 0;

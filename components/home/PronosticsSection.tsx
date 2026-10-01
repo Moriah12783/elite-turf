@@ -10,9 +10,10 @@ import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
 import { pickCoursesASuivre, type CourseASuivre } from "@/lib/turf/courses-a-suivre";
-import { aUneArrivee } from "@/lib/turf/arrivee-vedette";
+import { aUneArrivee, veille } from "@/lib/turf/arrivee-vedette";
 import { heureGmtDepuisParis } from "@/lib/seo/dates";
-import { ArriveeVedette } from "@/components/home/ArriveeVedette";
+import { ArriveeVedette, QuinteHier } from "@/components/home/ArriveeVedette";
+import { chargerQuintesPeriode } from "@/app/(public)/quinte-plus/donnees";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
 
@@ -193,6 +194,14 @@ export default async function PronosticsSection({ personnalise = true }: { perso
     );
   }
 
+  // ── 5. Tant que le Quinté+ du jour n'est pas couru : l'arrivée de celui
+  // d'hier sous la carte vedette (recherche du matin « arrivée quinté d'hier »).
+  let bandeauHier: React.ReactNode = null;
+  if (!carteApresCourse) {
+    const [hier] = await chargerQuintesPeriode(veille(today), veille(today));
+    if (hier && aUneArrivee(hier.arrivee)) bandeauHier = <QuinteHier resume={{ ...hier, arrivee: hier.arrivee }} />;
+  }
+
   // ── CASE A : Aucune donnée du tout ─────────────────────────────────
   if (!aDesPronos && !quinte && !placeholderCourses.length) {
     return (
@@ -248,6 +257,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
             </QuinteVedetteCard>
           ))}
 
+          {bandeauHier}
           {/* Bannière */}
           {/* Aucun pronostic publié : on compte des COURSES, pas des pronostics. */}
           <BannerImage compteur={placeholderCourses.length > 0
@@ -459,6 +469,8 @@ export default async function PronosticsSection({ personnalise = true }: { perso
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-primary/50 to-transparent" />
         </div>
         )}
+
+        {bandeauHier}
 
         {/* Bannière visuelle */}
         <BannerImage compteur={`${displayList.length} pronostic${displayList.length > 1 ? "s" : ""} ce jour`} />

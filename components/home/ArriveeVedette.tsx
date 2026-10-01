@@ -1,7 +1,33 @@
 import Link from "next/link";
-import { Trophy, ChevronRight } from "lucide-react";
+import { Trophy, ChevronRight, History } from "lucide-react";
 import { ArriveePodium } from "@/components/arrivees/ArriveePodium";
 import { resumeCourse, type PartantNomme } from "@/lib/turf/arrivee-vedette";
+import type { QuinteDuJourResume } from "@/app/(public)/quinte-plus/donnees";
+
+/**
+ * Bandeau « Quinté+ d'hier » sous la carte vedette, tant que le Quinté+ du
+ * jour n'est pas couru : l'arrivée de la veille (5 premiers) et un lien vers
+ * sa page datée, très recherchée le matin (« arrivée quinté d'hier »).
+ */
+export function QuinteHier({ resume }: { resume: QuinteDuJourResume & { arrivee: number[] } }) {
+  return (
+    <Link
+      href={`/quinte-plus/${resume.date}`}
+      className="group -mt-7 mb-10 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-bg-card/60 px-4 py-3 text-sm transition-colors hover:border-gold-primary/40"
+    >
+      <span className="inline-flex items-center gap-1.5 text-text-muted text-xs font-semibold uppercase tracking-wider">
+        <History className="w-3.5 h-3.5" />
+        Quinté+ d&apos;hier
+      </span>
+      <span className="text-text-primary font-medium break-words">{resume.libelle}</span>
+      <span className="text-gold-light font-bold tracking-wide">{resume.arrivee.slice(0, 5).join(" - ")}</span>
+      <span className="ml-auto inline-flex items-center gap-1 text-gold-primary group-hover:text-gold-light text-xs font-medium">
+        Voir l&apos;arrivée
+        <ChevronRight className="w-3.5 h-3.5" />
+      </span>
+    </Link>
+  );
+}
 
 /**
  * Contenu de la carte « Vedette du Jour » une fois le Quinté+ couru : arrivée

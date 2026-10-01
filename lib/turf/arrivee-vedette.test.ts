@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resumeCourse, nomPersonne, aUneArrivee } from "./arrivee-vedette";
+import { resumeCourse, nomPersonne, aUneArrivee, veille } from "./arrivee-vedette";
 
 // Quinté+ réel du 01/10/2026 (base Elite Turf) : 15 partants déclarés, aucun non-partant.
 const course = { hippodrome: "Auteuil", categorie: "OBSTACLE", distance_metres: 3600, nb_partants: 15 };
@@ -46,6 +46,15 @@ describe("resumeCourse — uniquement les données de la base", () => {
     expect(resumeCourse(course, null, podium)).toBeNull();
     expect(aUneArrivee(undefined)).toBe(false);
     expect(aUneArrivee([15])).toBe(true);
+  });
+});
+
+describe("veille", () => {
+  it("jour précédent, y compris aux changements de mois, d'année et d'heure", () => {
+    expect(veille("2026-10-01")).toBe("2026-09-30");
+    expect(veille("2027-01-01")).toBe("2026-12-31");
+    expect(veille("2026-10-26")).toBe("2026-10-25"); // lendemain du passage à l'heure d'hiver
+    expect(veille("2028-03-01")).toBe("2028-02-29");
   });
 });
 
