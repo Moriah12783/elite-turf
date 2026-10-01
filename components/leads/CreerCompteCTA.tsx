@@ -53,8 +53,8 @@ export default function CreerCompteCTA({
         Pour aller plus loin — créez votre compte gratuit
       </p>
       <p className="text-text-secondary text-xs leading-relaxed mb-3">
-        Il vous donne accès au pronostic gratuit du jour, aux résultats vérifiés
-        course par course, et vous permet de vous abonner en un clic si vous le
+        Il vous donne accès à votre espace membre, aux résultats vérifiés course
+        par course, et vous permet de vous abonner en un clic si vous le
         souhaitez plus tard. C&apos;est gratuit et sans engagement.
       </p>
       <Link

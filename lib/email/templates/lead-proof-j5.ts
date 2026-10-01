@@ -39,7 +39,7 @@ export function templateLeadProofJ5(
     <p style="margin:14px 0 0 0;color:#6B7280;font-size:13px;text-align:center;line-height:1.6;">
       Pas encore de compte ?
       <a href="${lienInscription}" style="color:#C9A84C;font-weight:600;">Créez-le gratuitement →</a><br/>
-      Accès au pronostic gratuit du jour et aux résultats vérifiés, sans engagement.
+      Accès à votre espace membre et aux résultats vérifiés, sans engagement.
     </p>
 
     ${emailDivider}

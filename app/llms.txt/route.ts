@@ -65,7 +65,7 @@ export async function GET() {
   out.push("## Pronostics & courses");
   out.push("");
   out.push(link("Pronostics du jour", "/pronostics", "Pronostics du jour (Quinté+, Tiercé, Quarté+) selon le niveau d'accès."));
-  out.push(link("Pronostic gratuit du jour", "/pronostics/gratuit", "Un pronostic gratuit publié chaque jour pour tester nos analyses."));
+  out.push(link("Offre gratuite", "/pronostics/gratuit", "Le Radar de la presse et la Sélection stats sur chaque course, en accès libre et sans inscription."));
   out.push(link("Programme PMU du jour", "/programme", "Programme des courses PMU du jour, par réunion, et des prochains jours."));
   out.push(link("Pronostic Quinté+ du jour", "/quinte-plus", "Le Quinté+ du jour : partants, cotes, sélection Elite Turf, arrivée de la veille et les 30 derniers Quinté+."));
   out.push(link("Courses du jour", "/courses", "Toutes les courses du jour, avec une Sélection stats gratuite par course."));

@@ -269,7 +269,7 @@ export default async function MonRoiPage() {
         {statut === "GRATUIT" && (
           <UpgradeCTA
             title="Débloquez tous les pronostics"
-            text="Avec le pack Starter (65 €/mois), vous avez accès à TOUS les pronostics, pas uniquement le gratuit du jour. ROI théorique typique : +30 à +80 %."
+            text="Avec le pack Starter (65 € pour 7 jours), vous accédez au pronostic expert du jour : Tiercé, Quarté+ et Quinté+, avec l'analyse."
             href="/abonnements"
             cta="Voir les offres"
           />

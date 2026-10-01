@@ -24,7 +24,7 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Votre inscription a bien été confirmée pour <strong style="color:#1E3A5F;">${email}</strong>.
-      Vous avez maintenant accès aux pronostics PMU gratuits publiés chaque matin par nos analystes experts.
+      Vous avez maintenant accès à notre offre gratuite : le Radar de la presse et la Sélection stats sur chaque course du programme.
     </p>
 
     <!-- Points forts -->
@@ -37,10 +37,10 @@ export function templateBienvenue({ nomComplet, email }: BienvenueData): {
                     letter-spacing:0.5px;text-transform:uppercase;">
             ✦ Ce que vous recevez gratuitement
           </p>
-          ${["Pronostics du jour publiés avant le départ des courses",
-             "Analyse des courses à Vincennes, Longchamp, Chantilly",
-             "Statistiques de performance de nos experts",
-             "Guide PMU pour maximiser vos gains"
+          ${["Le Radar de la presse : ce que pronostiquent les journaux",
+             "La Sélection stats sur chaque course du programme",
+             "Tous nos résultats, vérifiables course par course",
+             "Notre guide : 5 secrets pour détecter les outsiders"
             ].map(f => `
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E5E7EB;">
             <tr>

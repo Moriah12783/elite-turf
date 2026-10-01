@@ -18,7 +18,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
     </h2>
 
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:15px;line-height:1.7;">
-      Vous nous suivez depuis une semaine maintenant. Vous avez vu nos pronostics gratuits,
+      Vous nous suivez depuis une semaine maintenant. Vous avez vu le Radar de la presse et la Sélection stats,
       vous savez comment on travaille. Aujourd'hui je vous propose un retour d'expérience concret —
       puis, si ça vous intéresse, un accès à toutes nos analyses.
     </p>
@@ -36,10 +36,10 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
       </ul>
 
       <p style="margin:16px 0 0 0;color:#1E3A5F;font-size:18px;font-weight:700;text-align:center;">
-        65 € / mois — sans engagement
+        65 € pour 7 jours — sans engagement
       </p>
       <p style="margin:4px 0 0 0;color:#6B7280;font-size:13px;text-align:center;">
-        ≈ 42 500 FCFA · Carte bancaire (Visa / Mastercard), toutes cartes tous pays · Mobile Money bientôt
+        ≈ 42 637 F CFA · Carte bancaire (Visa / Mastercard), toutes cartes tous pays · Mobile Money bientôt
       </p>
     </div>
 
@@ -52,7 +52,7 @@ export function templateWelcomeJ7({ nomComplet }: { nomComplet: string }): {
     </h2>
     <p style="margin:0 0 12px 0;color:#1F2937;font-size:15px;line-height:1.7;">
       Aucune pression. Vous gardez votre compte gratuit aussi longtemps que vous voulez.
-      Notre Tiercé/Quarté gratuit du jour reste accessible chaque matin.
+      La Sélection stats et le Radar de la presse restent en accès libre.
     </p>
     <p style="margin:0 0 16px 0;color:#1F2937;font-size:14px;line-height:1.7;">
       Une question ? Notre support WhatsApp répond sous 2h en moyenne —
