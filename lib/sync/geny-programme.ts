@@ -20,6 +20,7 @@ import { runLonaciProgrammeSync } from "./lonaci-programme";
 import { runGenybetProgrammeSync } from "./genybet-programme";
 import { runGenybetDisciplineSync } from "./genybet-discipline";
 import { runPmuDistanceSync } from "./pmu-distance";
+import { runPmuQuinteSync } from "./pmu-quinte";
 import { cleHippodrome } from "./hippodrome-cle";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -423,6 +424,22 @@ export async function runGenyProgrammeSync(rawDate: string = "today"): Promise<G
       );
     } catch (e) {
       console.warn(`[Programme] distance overlay KO (${e instanceof Error ? e.message : String(e)}) — distance_metres non corrigée`);
+    }
+
+    // ── Overlay Quinté+ (correctif « estimation GenyBet ») ─────────────────
+    // GenyBet marque comme Quinté+ le plus gros peloton de la réunion Quinté,
+    // à tort ~1 jour sur 2 (le 02/10/2026 : Prix Atalante au lieu du Prix
+    // Ludovica). Le programme PMU désigne la vraie course : cf. pmu-quinte.ts.
+    // Toujours APRÈS le chargement, qui a pu remettre l'estimation GenyBet.
+    try {
+      const q = await runPmuQuinteSync(dateISO);
+      console.log(
+        `[Programme] Quinté+ overlay ${dateISO} → ${q.applied} corrigées ` +
+        `(${q.quintes_pmu} Quinté+ PMU, apparié : ${q.quinte_apparie ? "oui" : "non"}, ` +
+        `${q.ignorees_lonaci} LONACI laissées)${q.raison ? ` — ${q.raison}` : ""}`,
+      );
+    } catch (e) {
+      console.warn(`[Programme] Quinté+ overlay KO (${e instanceof Error ? e.message : String(e)}) — Quinté+ non vérifié`);
     }
   }
 
