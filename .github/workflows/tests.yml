@@ -1,0 +1,46 @@
+name: Tests
+
+# ─────────────────────────────────────────────────────────────────────────
+# Tests unitaires (vitest) sur chaque PR et sur main.
+#
+# Jusqu'ici, aucun test ne tournait automatiquement : seul le build Cloudflare
+# servait de contrôle. Ajouté avec le brief « pages pays » du 01/10/2026 (§5),
+# qui exige que la CI échoue au-delà des seuils anti « doorway pages » : les
+# garde-fous du registre de faits (sources, FAQ non dupliquée, aucun nom de
+# concurrent), des heures locales et de la mesure de similarité sont des tests
+# vitest.
+#
+# Pas de build Next ni de secret : tests purs uniquement.
+#
+# ⚠️ vitest n'est pas une dépendance du projet : `npm test` le télécharge
+# (`npx -y vitest run`), en dernière version. vitest 5 exige Node ≥ 22.12 →
+# Node 24, comme sur le poste de dev (avec Node 20, la CI échouerait).
+# ─────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Tests unitaires
+        run: npm test
