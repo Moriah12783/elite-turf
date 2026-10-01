@@ -1,0 +1,170 @@
+[
+ {
+  "typePari": "E_SIMPLE_GAGNANT",
+  "miseBase": 100,
+  "rapports": [
+   {
+    "libelle": "e-Simple Gagnant",
+    "combinaison": "15",
+    "dividende": 1040,
+    "dividendePourUnEuro": 1040
+   }
+  ]
+ },
+ {
+  "typePari": "E_SIMPLE_PLACE",
+  "miseBase": 100,
+  "rapports": [
+   {
+    "libelle": "e-Simple Placé",
+    "combinaison": "15",
+    "dividende": 370,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Simple Placé",
+    "combinaison": "3",
+    "dividende": 190,
+    "dividendePourUnEuro": 190
+   },
+   {
+    "libelle": "e-Simple Placé",
+    "combinaison": "14",
+    "dividende": 360,
+    "dividendePourUnEuro": 360
+   }
+  ]
+ },
+ {
+  "typePari": "E_COUPLE_GAGNANT",
+  "miseBase": 100,
+  "rapports": [
+   {
+    "libelle": "e-Couplé Gagnant",
+    "combinaison": "15-3",
+    "dividende": 2540,
+    "dividendePourUnEuro": 2540
+   }
+  ]
+ },
+ {
+  "typePari": "E_COUPLE_PLACE",
+  "miseBase": 100,
+  "rapports": [
+   {
+    "libelle": "e-Couplé Placé",
+    "combinaison": "15-3",
+    "dividende": 1210,
+    "dividendePourUnEuro": 1210
+   },
+   {
+    "libelle": "e-Couplé Placé",
+    "combinaison": "15-14",
+    "dividende": 2400,
+    "dividendePourUnEuro": 2400
+   },
+   {
+    "libelle": "e-Couplé Placé",
+    "combinaison": "3-14",
+    "dividende": 1230,
+    "dividendePourUnEuro": 1230
+   }
+  ]
+ },
+ {
+  "typePari": "E_TIERCE",
+  "miseBase": 100,
+  "rapports": [
+   {
+    "libelle": "e-Tiercé Ordre",
+    "combinaison": "15-3-14",
+    "dividende": 64640,
+    "dividendePourUnEuro": 64640
+   },
+   {
+    "libelle": "e-Tiercé Désordre",
+    "combinaison": "15-3-14",
+    "dividende": 9850,
+    "dividendePourUnEuro": 9850
+   }
+  ]
+ },
+ {
+  "typePari": "E_QUARTE_PLUS",
+  "miseBase": 150,
+  "rapports": [
+   {
+    "libelle": "e-Quarté+ Ordre",
+    "combinaison": "15-3-14-1",
+    "dividende": 619110,
+    "dividendePourUnEuro": 412740
+   },
+   {
+    "libelle": "e-Quarté+ Désordre",
+    "combinaison": "15-3-14-1",
+    "dividende": 12285,
+    "dividendePourUnEuro": 8190
+   },
+   {
+    "libelle": "e-Bonus",
+    "combinaison": "15-3-14",
+    "dividende": 2445,
+    "dividendePourUnEuro": 1630
+   }
+  ]
+ },
+ {
+  "typePari": "E_QUINTE_PLUS",
+  "miseBase": 200,
+  "rapports": [
+   {
+    "libelle": "e-Quinté+ Ordre",
+    "combinaison": "15-3-14-1-9",
+    "dividende": 2600380,
+    "dividendePourUnEuro": 1300190
+   },
+   {
+    "libelle": "e-Quinté+ Désordre",
+    "combinaison": "15-3-14-1-9",
+    "dividende": 24800,
+    "dividendePourUnEuro": 12400
+   },
+   {
+    "libelle": "e-Bonus 4sur5",
+    "combinaison": "15-3-14-1",
+    "dividende": 740,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Bonus 4sur5",
+    "combinaison": "15-3-14-9",
+    "dividende": 740,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Bonus 4sur5",
+    "combinaison": "15-3-1-9",
+    "dividende": 740,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Bonus 4sur5",
+    "combinaison": "15-14-1-9",
+    "dividende": 740,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Bonus 4sur5",
+    "combinaison": "3-14-1-9",
+    "dividende": 740,
+    "dividendePourUnEuro": 370
+   },
+   {
+    "libelle": "e-Bonus 3",
+    "combinaison": "15-3-14",
+    "dividende": 620,
+    "dividendePourUnEuro": 310
+   }
+  ]
+ }
+]
