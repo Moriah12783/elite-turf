@@ -255,10 +255,12 @@ export default async function BlogArticlePage({
                 Pronostics du Quinté+
               </h3>
               <p className="text-text-secondary text-sm mb-4">
-                Chaque matin entre 8h30 et 9h30 (heure GMT), nos experts publient leur sélection pour Vincennes et Longchamp.
+                Chaque jour, avant le départ, nos experts publient leur sélection du Quinté+.
               </p>
               <div className="space-y-2 mb-4">
-                {["Quinté+ du jour dès 8h30 (GMT)", "Tiercé & Quarté+ inclus", "Analyse vidéo (Plan Elite)"].map((f) => (
+                {/* « Analyse vidéo (Plan Elite) » retiré le 01/10/2026 : aucune
+                    analyse vidéo n'existe. */}
+                {["Le Quinté+ du jour, avant le départ", "Tiercé & Quarté+ inclus", "Pronostic Elite en 6 chevaux (Pack Elite)"].map((f) => (
                   <div key={f} className="flex items-center gap-2 text-xs text-text-secondary">
                     <div className="w-1.5 h-1.5 rounded-full bg-status-win flex-shrink-0" />
                     {f}

@@ -40,18 +40,6 @@ function getNowParisMins(): number {
        + parseInt(parts.find(p => p.type === "minute")!.value);
 }
 
-/**
- * Heure GMT/UTC en minutes depuis minuit. La fenêtre de publication ANNONCÉE
- * (FAQ, JSON-LD) est « entre 8h30 et 9h30 heure GMT » — l'état « en attente de
- * publication » doit donc se baser sur cette fenêtre GMT, pas sur l'heure de
- * Paris ni sur des heuristiques de départ de course (audit Sprint 1, P7).
- */
-function getNowGmtMins(): number {
-  const now = new Date();
-  return now.getUTCHours() * 60 + now.getUTCMinutes();
-}
-const FIN_FENETRE_PUBLICATION_GMT = 9 * 60 + 30; // 9h30 GMT
-
 /** Date du jour en heure Paris */
 function getTodayParis(): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -93,8 +81,6 @@ export default async function PronosticsSection({ personnalise = true }: { perso
 
   const today     = getTodayParis();
   const nowMins   = getNowParisMins();
-  // Fenêtre de publication annoncée (8h30–9h30 GMT) déjà passée ?
-  const apresFenetrePublication = getNowGmtMins() > FIN_FENETRE_PUBLICATION_GMT;
   const weekAgo   = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
   // ── 1. Pronostics du JOUR publiés
@@ -214,10 +200,11 @@ export default async function PronosticsSection({ personnalise = true }: { perso
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-10">
           <Globe2 className="w-10 h-10 text-gold-primary mx-auto mb-4 opacity-60" />
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-2">Pronostics du Jour</h2>
+          {/* Pas d'heure de publication annoncée (décision de Steph du
+              01/10/2026) : la fenêtre « 8h30-9h30 GMT » n'était jamais tenue. */}
           <p className="text-text-secondary text-sm max-w-md mx-auto">
-            {apresFenetrePublication
-              ? "Aucun pronostic n'a été publié aujourd'hui. Consultez nos archives et le programme des prochaines courses."
-              : "Les pronostics du jour sont publiés entre 8h30 et 9h30 (heure GMT)."}
+            Aucun pronostic publié pour le moment : nos pronostics sont mis en ligne
+            avant le départ des courses. Consultez nos archives et le programme du jour.
           </p>
           <Link
             href="/pronostics"
@@ -240,33 +227,24 @@ export default async function PronosticsSection({ personnalise = true }: { perso
               qu'une course quelconque présentée comme la vedette. */}
           {carteApresCourse || (quinte && (
             <QuinteVedetteCard course={quinte} date={today}>
-              {/* État honnête basé sur la donnée réelle + fenêtre GMT (audit P7) :
-                  avant/pendant la fenêtre → « publication en cours » ; après →
-                  pas de vedette aujourd'hui, on oriente vers la sélection gratuite. */}
-              {apresFenetrePublication ? (
-                <>
-                  <p className="text-text-secondary text-sm mb-4">
-                    Pas de pronostic vedette aujourd&apos;hui — profitez de{" "}
-                    <span className="text-gold-light font-medium">Sélection stats gratuite</span> sur chaque course.
-                  </p>
-                  <Link href="/courses" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
-                    <Trophy className="w-4 h-4" />
-                    Voir la Sélection stats gratuite
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="text-text-secondary text-sm mb-4">
-                    Publication en cours — le pronostic expert est publié entre 8h30 et 9h30 (heure GMT).
-                  </p>
-                  <Link href="/pronostics" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
-                    <Trophy className="w-4 h-4" />
-                    S&apos;abonner pour y accéder
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </>
-              )}
+              {/* Avant la course, sans pronostic publié. AVANT le 01/10/2026,
+                  passé 9h30 GMT, la carte annonçait « Pas de pronostic vedette
+                  aujourd'hui » : faux presque chaque jour (pronostics publiés
+                  25-30 min avant le départ). Seul constat toujours vrai ici :
+                  pas encore publié. */}
+              <p className="text-text-secondary text-sm mb-4">
+                Pas encore publié : le pronostic expert du Quinté+ est mis en ligne avant le départ.
+                En attendant, la{" "}
+                <Link href="/courses" className="text-gold-light font-medium underline-offset-2 hover:underline">
+                  Sélection stats gratuite
+                </Link>{" "}
+                est disponible sur chaque course.
+              </p>
+              <Link href="/pronostics" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+                <Trophy className="w-4 h-4" />
+                S&apos;abonner pour y accéder
+                <ChevronRight className="w-4 h-4" />
+              </Link>
             </QuinteVedetteCard>
           ))}
 

@@ -31,8 +31,8 @@ const homeFaqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   mainEntity: [
-    { "@type": "Question", name: "À quelle heure les pronostics sont-ils publiés ?",
-      acceptedAnswer: { "@type": "Answer", text: "Les pronostics du jour (Quinté+, Quarté+, Tiercé) sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Si vous êtes abonné, vous recevez une alerte par email et WhatsApp dès la publication." } },
+    { "@type": "Question", name: "Quand les pronostics sont-ils publiés ?",
+      acceptedAnswer: { "@type": "Answer", text: "Les pronostics du jour (Quinté+, Quarté+, Tiercé) sont publiés avant le départ de la course concernée. Si vous êtes abonné, vous recevez une alerte par email et WhatsApp dès la publication." } },
     { "@type": "Question", name: "Faut-il créer un compte pour consulter les pronostics ?",
       acceptedAnswer: { "@type": "Answer", text: "Non. Un pronostic gratuit (Tiercé) est accessible chaque jour sans inscription. Les pronostics Starter, Pro et Elite nécessitent un abonnement payant à partir de 65€." } },
     { "@type": "Question", name: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",

@@ -281,7 +281,7 @@ export const COUNTRIES: Country[] = [
       "courses PMU Tchad",
       "Quinté+ Tchad",
     ],
-    accroche: "Pronostics PMU France pour les turfistes tchadiens — analyses expertes des courses françaises livrées chaque matin.",
+    accroche: "Pronostics PMU France pour les turfistes tchadiens — analyses expertes des courses françaises livrées chaque jour.",
   },
 
   {

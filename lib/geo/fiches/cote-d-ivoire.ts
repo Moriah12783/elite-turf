@@ -114,7 +114,7 @@ export const coteDIvoire: FichePays = {
       a: "Dans les points de vente agréés de la LONACI, sur sa plateforme en ligne PMU LONACI ou par code USSD. Nous sommes un service indépendant d'analyse, sans lien avec la LONACI.",
       requeteSource: "pmu cote d'ivoire" },
     { q: "Qu'est-ce que la Nationale 1 de la LONACI ?",
-      a: "La course du PMU ALR support du Quinté+ et du Quinté. Nous publions nos pronostics du jour chaque matin entre 8 h 30 et 9 h 30, heure d'Abidjan.",
+      a: "La course du PMU ALR support du Quinté+ et du Quinté. Nous publions notre pronostic de cette course avant son départ.",
       requeteSource: "lonaci pronostic du jour" },
     { q: "Quinté+ ou Quinté à la LONACI : quelle différence ?",
       a: "Le Quinté+ (mise de base 400 FCFA) ajoute des bonus 4, 4/5 et 3. Le Quinté classique (mise de base 300 FCFA) se joue sur les cinq premiers, dans l'ordre ou dans le désordre.",

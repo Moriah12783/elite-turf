@@ -527,10 +527,10 @@ export default async function VueQuintePlus({
         {!pronosticPublie && (
           <div className="mt-8 p-5 rounded-2xl bg-gradient-to-r from-bg-card via-[#1A1610] to-bg-card border border-gold-primary/30 text-center">
             <p className="text-text-primary font-semibold text-sm mb-2">
-              Les pronostics experts Elite Turf, chaque matin
+              Les pronostics experts Elite Turf, chaque jour
             </p>
             <p className="text-text-muted text-xs mb-4">
-              Publiés entre 8h30 et 9h30 (heure GMT). Formules dès 65 € (7 jours).
+              Publiés avant le départ du Quinté+. Formules dès 65 € (7 jours).
             </p>
             <Link
               href="/abonnements"

@@ -6,8 +6,8 @@ import { STARTER_OFFRE_LABEL } from "@/lib/pricing";
 
 const FAQ_ITEMS = [
   {
-    q: "À quelle heure les pronostics sont-ils publiés ?",
-    a: "Les pronostics du jour (Quinté+, Quarté+, Tiercé) sont publiés chaque matin entre 8h30 et 9h30 (heure GMT, soit l'heure locale d'Abidjan et Dakar). Si vous êtes abonné, vous recevez une alerte par email et WhatsApp dès la publication.",
+    q: "Quand les pronostics sont-ils publiés ?",
+    a: "Les pronostics du jour (Quinté+, Quarté+, Tiercé) sont publiés avant le départ de la course concernée. Si vous êtes abonné, vous recevez une alerte par email et WhatsApp dès la publication.",
   },
   {
     q: "Que contient le guide gratuit ?",
@@ -27,7 +27,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que contient un abonnement Elite Turf ?",
-    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Le Pack Starter donne accès à ${STARTER_OFFRE_LABEL}, le Pack Pro à l'intégralité, Quinté+ inclus.`,
+    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Les Packs Starter (7 jours) et Pro (30 jours) donnent accès au même contenu : ${STARTER_OFFRE_LABEL}. Le Pack Elite y ajoute le pronostic Elite, une sélection resserrée en 6 chevaux.`,
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",

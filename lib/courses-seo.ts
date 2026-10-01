@@ -114,9 +114,9 @@ export function buildFaq(evt: GrandRendezVous): { q: string; a: string }[] {
     {
       q: `Où trouver le pronostic Elite Turf du ${nom} ?`,
       a:
-        `Notre analyse et notre sélection sont publiées à l'approche de la course, ` +
-        `chaque matin entre 8h30 et 9h30 (heure d'Abidjan). Les abonnés reçoivent ` +
-        `une alerte WhatsApp dès la publication.`,
+        `Notre analyse et notre sélection sont publiées sur Elite Turf avant le ` +
+        `départ de la course. Les abonnés reçoivent une alerte WhatsApp dès la ` +
+        `publication.`,
     },
   ];
 }
