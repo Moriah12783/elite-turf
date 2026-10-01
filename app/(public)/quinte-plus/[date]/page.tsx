@@ -15,6 +15,7 @@
  */
 
 import { Metadata } from "next";
+import { cache } from "react";
 import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,7 +31,8 @@ import {
   isValidDateParam, formatDateLong, formatDateCompact, formatDateShort,
   isToday, isFuture, todayParis, generateDateRangeParams,
 } from "@/lib/seo/dates";
-import { sortPageProgramme } from "@/lib/seo/programme-fenetre";
+import { sortPageQuinte, type SortPageProgramme } from "@/lib/seo/programme-fenetre";
+import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
 import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import TrackPageView from "@/components/analytics/TrackPageView";
@@ -49,38 +51,48 @@ export const dynamicParams = true;
 // pour que les arrivées du Quinté+ s'affichent dès la sync Geny → DB sans cache.
 export const revalidate    = 600;
 
+/**
+ * Le Quinté+ du jour, identifié comme sur la home (`pickQuinteDuJour` :
+ * Nationale 1 LONACI d'abord, puis QUINTE_PLUS). AVANT le 01/10/2026, seul
+ * QUINTE_PLUS comptait : absent 14 jours sur 35 (pages passées en noindex) et
+ * posé sur la MAUVAISE course 17 jours sur 35 (estimation GenyBet « plus gros
+ * peloton »). Mis en cache pour la requête : partagé metadata + page.
+ */
+const chargerJourQuinte = cache(async (date: string) => {
+  const { data, error } = await createServiceClient()
+    .from("courses")
+    .select("id, libelle, heure_depart, nationale, jouable_afrique, paris_disponibles, statut, hippodrome:hippodromes(nom, pays)")
+    .eq("date_course", date);
+  if (error) return { erreur: true, quinte: null as any, nbCoursesFrance: 0 };
+  const courses = (data ?? []) as any[];
+  const nbCoursesFrance = courses.filter(
+    (c) => (Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome)?.pays === "France",
+  ).length;
+  return { erreur: false, quinte: pickQuinteDuJour(courses) as any, nbCoursesFrance };
+});
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   if (!isValidDateParam(params.date)) return { title: "Date invalide" };
   const dateLong    = formatDateLong(params.date);
   const dateCompact = formatDateCompact(params.date);
   const today       = isToday(params.date);
 
-  // Récupérer libellé Quinté+ pour titre encore plus précis si possible
+  // Le Quinté+ du jour → titre précis (« — Prix X, Hippodrome »).
   let quinteTitle = "";
   let hippoName   = "";
-  // null = requête en échec → on ne pose aucun noindex par prudence.
-  let quinteTrouve: boolean | null = null;
+  // Requête en échec → aucun noindex, par prudence.
+  let sort: SortPageProgramme = "indexable";
   try {
-    const supabase = createServiceClient();
-    const { data: c, error } = await supabase
-      .from("courses")
-      .select("libelle, hippodrome:hippodromes(nom)")
-      .eq("date_course", params.date)
-      .contains("paris_disponibles", ["QUINTE_PLUS"])
-      .limit(1)
-      .maybeSingle();
-    if (!error) quinteTrouve = !!c;
-    if (c) {
-      quinteTitle = c.libelle || "";
-      hippoName   = (c.hippodrome as any)?.nom || "";
+    const jour = await chargerJourQuinte(params.date);
+    if (!jour.erreur) {
+      sort = sortPageQuinte(params.date, todayParis(), !!jour.quinte, jour.nbCoursesFrance);
+      if (jour.quinte) {
+        const h = Array.isArray(jour.quinte.hippodrome) ? jour.quinte.hippodrome[0] : jour.quinte.hippodrome;
+        quinteTitle = jour.quinte.libelle || "";
+        hippoName   = h?.nom || "";
+      }
     }
   } catch {}
-
-  // Même règle que /programme/[date] : un Quinté+ connu → indexable quelle
-  // que soit la date ; aucun Quinté+ → page servie mais masquée à Google.
-  const sort = quinteTrouve === null
-    ? "indexable"
-    : sortPageProgramme(params.date, todayParis(), quinteTrouve ? 1 : 0);
 
   const titleSuffix = quinteTitle && hippoName
     ? ` — ${quinteTitle}, ${hippoName}`
@@ -117,7 +129,10 @@ export default async function QuintePlusPage({ params }: PageProps) {
 
   const supabase = createServiceClient();
 
-  const { data: course, error: courseError } = await supabase
+  const jour = await chargerJourQuinte(params.date);
+  const { data: course, error: courseError } = !jour.quinte
+    ? { data: null, error: null }
+    : await supabase
     .from("courses")
     .select(`
       id, numero_reunion, numero_course, libelle,
@@ -134,9 +149,7 @@ export default async function QuintePlusPage({ params }: PageProps) {
         confiance, analyse_courte, publie, date_publication
       )
     `)
-    .eq("date_course", params.date)
-    .contains("paris_disponibles", ["QUINTE_PLUS"])
-    .limit(1)
+    .eq("id", jour.quinte.id)
     .maybeSingle();
 
   const c = course as any;
@@ -145,7 +158,7 @@ export default async function QuintePlusPage({ params }: PageProps) {
   // (et page vide en 200 pour les dates futures). Désormais le contenu
   // décide : cf. lib/seo/programme-fenetre.ts. Une requête en échec ne
   // produit jamais de 404 (on retombe sur l'écran « pas de Quinté+ »).
-  if (!courseError && sortPageProgramme(params.date, today, c ? 1 : 0) === "introuvable") notFound();
+  if (!jour.erreur && !courseError && sortPageQuinte(params.date, today, !!c, jour.nbCoursesFrance) === "introuvable") notFound();
 
   // ── Dates avec Quinté+ disponibles (30 derniers jours) ──────────────
   // Pour la nav : pastille ✓ sur les jours qui ont au moins 1 course Quinté+.
@@ -158,7 +171,7 @@ export default async function QuintePlusPage({ params }: PageProps) {
     .select("date_course")
     .gte("date_course", minPillDate)
     .lte("date_course", maxPillDate)
-    .contains("paris_disponibles", ["QUINTE_PLUS"]);
+    .or("nationale.eq.1,paris_disponibles.cs.{QUINTE_PLUS}");
   const datesWithQuinte = Array.from(
     new Set((rawDates ?? []).map((r: { date_course: string }) => r.date_course)),
   );
@@ -190,12 +203,16 @@ export default async function QuintePlusPage({ params }: PageProps) {
           <div className="card-base p-10">
             <Star className="w-10 h-10 text-text-muted mx-auto mb-4" />
             <h2 className="font-serif text-xl font-bold text-text-primary mb-2">
-              {isFut ? "Quinté+ pas encore publié" : "Pas de Quinté+ ce jour"}
+              {isFut ? "Quinté+ pas encore publié" : jour.nbCoursesFrance > 0 ? `Quinté+ du ${dateShort}` : "Pas de Quinté+ ce jour"}
             </h2>
             <p className="text-text-secondary text-sm mb-6 max-w-md mx-auto">
               {isFut
                 ? "Le Quinté+ de cette date sera disponible la veille à 17h45 (publication PMU)."
-                : "Aucune course n'a été désignée Quinté+ pour cette date."}
+                : jour.nbCoursesFrance > 0
+                  // Un Quinté+ se court chaque jour : s'il manque ici, c'est un
+                  // trou de NOS données — on ne prétend pas qu'il n'a pas eu lieu.
+                  ? "Le Quinté+ de cette date n'est pas encore rattaché dans nos données. Retrouvez toutes les courses du jour dans le programme."
+                  : "Aucune course n'a été désignée Quinté+ pour cette date."}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href={`/programme/${params.date}`} className="px-5 py-2.5 bg-bg-elevated border border-border rounded-xl text-text-secondary text-sm hover:border-gold-primary/40 transition-all">

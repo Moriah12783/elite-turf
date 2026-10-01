@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortPageProgramme, ecartJours, FENETRE_PASSE_JOURS, FENETRE_FUTUR_JOURS } from "./programme-fenetre";
+import { sortPageProgramme, sortPageQuinte, ecartJours, FENETRE_PASSE_JOURS, FENETRE_FUTUR_JOURS } from "./programme-fenetre";
 
 const AUJ = "2026-09-17";
 
@@ -54,5 +54,32 @@ describe("sortPageProgramme — le contenu décide, pas la date", () => {
     expect(sortPageProgramme(fin, AUJ, 0)).toBe("noindex");
     expect(sortPageProgramme(avant, AUJ, 0)).toBe("introuvable");
     expect(sortPageProgramme(apres, AUJ, 0)).toBe("introuvable");
+  });
+});
+
+// Brief SEO du 01/10/2026, bug B1 : 14 dates (28/08 → 30/09) passées en noindex
+// parce que le marqueur Quinté+ manquait en base — alors qu'un Quinté+ se court
+// chaque jour (la page du 02/09 avait fait 110 clics).
+describe("sortPageQuinte — un trou de données ne retire jamais une date passée de Google", () => {
+  const AUJ2 = "2026-10-01";
+
+  it("Quinté+ identifié → indexable, passé comme futur", () => {
+    expect(sortPageQuinte("2026-09-02", AUJ2, true, 30)).toBe("indexable");
+    expect(sortPageQuinte("2026-10-02", AUJ2, true, 31)).toBe("indexable");
+  });
+
+  it("date PASSÉE avec des courses mais Quinté+ non identifié → reste indexable (garde-fou)", () => {
+    expect(sortPageQuinte("2026-09-02", AUJ2, false, 30)).toBe("indexable");
+    expect(sortPageQuinte("2026-07-01", AUJ2, false, 44)).toBe("indexable");
+  });
+
+  it("date passée SANS aucune course en base → règle habituelle (noindex proche, 404 lointain)", () => {
+    expect(sortPageQuinte("2026-09-20", AUJ2, false, 0)).toBe("noindex");
+    expect(sortPageQuinte("2025-01-01", AUJ2, false, 0)).toBe("introuvable");
+  });
+
+  it("aujourd'hui ou futur sans Quinté+ identifié → masqué à Google, jamais présenté comme indexable", () => {
+    expect(sortPageQuinte(AUJ2, AUJ2, false, 30)).toBe("noindex");
+    expect(sortPageQuinte("2026-10-12", AUJ2, false, 0)).toBe("noindex");
   });
 });

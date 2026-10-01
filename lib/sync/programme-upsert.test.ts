@@ -43,8 +43,9 @@ interface FakeConfig {
 /** Trace des opérations réellement tentées, pour vérifier qu'on s'arrête net. */
 type CallLog = string[];
 
-function fakeSupabase(cfg: FakeConfig): { client: ProgrammeUpsertClient; calls: CallLog } {
+function fakeSupabase(cfg: FakeConfig): { client: ProgrammeUpsertClient; calls: CallLog; upserted: Record<string, unknown>[] } {
   const calls: CallLog = [];
+  const upserted: Record<string, unknown>[] = [];
   const ok: FakeResponse = { data: [], error: null, count: 0 };
 
   // Un « thenable » : `await` le résout, et il expose aussi les méthodes de
@@ -78,13 +79,14 @@ function fakeSupabase(cfg: FakeConfig): { client: ProgrammeUpsertClient; calls: 
         },
         upsert: (rows: unknown[], _options?: { count?: "exact" }) => {
           calls.push(`${table}.upsert(${rows.length})`);
+          upserted.push(...(rows as Record<string, unknown>[]));
           return chainable(cfg.coursesUpsert ?? ok);
         },
       };
     },
   };
 
-  return { client: client as unknown as ProgrammeUpsertClient, calls };
+  return { client: client as unknown as ProgrammeUpsertClient, calls, upserted };
 }
 
 // ── Données ─────────────────────────────────────────────────────────────────
@@ -109,13 +111,18 @@ function course(over: Partial<ProgrammeCourse> = {}): ProgrammeCourse {
 const VINCENNES = { id: "hip-vincennes", nom: "Vincennes", pays: "France" };
 
 /** Course déjà en base, telle que la renvoie le SELECT de `courses`. */
-function dbCourse(numeroCourse: number, id: string) {
+function dbCourse(numeroCourse: number, id: string, over: Record<string, unknown> = {}) {
   return {
     id,
-    hippodrome_id:  VINCENNES.id,
-    date_course:    "2026-07-25",
-    numero_reunion: 1,
-    numero_course:  numeroCourse,
+    hippodrome_id:   VINCENNES.id,
+    date_course:     "2026-07-25",
+    numero_reunion:  1,
+    numero_course:   numeroCourse,
+    heure_depart:    "13:50:00",
+    distance_metres: 2700,
+    libelle:         "Prix de Test",
+    nb_partants:     14,
+    ...over,
   };
 }
 
@@ -305,5 +312,67 @@ describe("upsertProgrammeCourses — courses écartées (skipped)", () => {
     expect(r.inserted).toBe(1);
     expect(r.skipped).toBe(1);
     expect(r.hippodromes).toBe(1);
+  });
+});
+
+// Bug réel : la synchro du matin échouait TOUS LES JOURS depuis début août 2026
+// (« null value in column "hippodrome_id" violates not-null constraint »). Un
+// UPSERT PostgREST est un INSERT … ON CONFLICT : la ligne proposée doit
+// respecter les NOT NULL même si elle finit en UPDATE. Conséquence : aucune
+// mise à jour des courses existantes, donc jamais de marqueur Quinté+ posé par
+// la LONACI (pages Quinté+ fausses ou en noindex).
+describe("upsertProgrammeCourses — mise à jour des courses existantes", () => {
+  const NOT_NULL = ["hippodrome_id", "date_course", "heure_depart", "numero_reunion", "numero_course", "libelle", "distance_metres"];
+
+  it("renvoie toutes les colonnes obligatoires de la ligne existante", async () => {
+    const { client, upserted } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      coursesSelect:     { data: [dbCourse(4, "c-4")], error: null },
+      coursesUpsert:     { error: null, count: 1 },
+    });
+    await upsertProgrammeCourses([course({ numeroCourse: 4 })], { client });
+    expect(upserted).toHaveLength(1);
+    for (const col of NOT_NULL) {
+      expect(upserted[0][col], col).not.toBeUndefined();
+      expect(upserted[0][col], col).not.toBeNull();
+    }
+    // Les valeurs d'identité et d'horaire sont celles déjà en base.
+    expect(upserted[0]).toMatchObject({ id: "c-4", hippodrome_id: VINCENNES.id, heure_depart: "13:50:00", numero_course: 4 });
+  });
+
+  it("rafraîchit les paris (ex. la LONACI pose QUINTE_PLUS sur la Nationale 1)", async () => {
+    const { client, upserted } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      coursesSelect:     { data: [dbCourse(4, "c-4")], error: null },
+    });
+    await upsertProgrammeCourses([course({ numeroCourse: 4, parisDisponibles: ["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE"] })], { client });
+    expect(upserted[0].paris_disponibles).toEqual(["QUINTE_PLUS", "QUARTE_PLUS", "TIERCE"]);
+  });
+
+  it("garde le libellé déjà en base (pas de « PRIX AUSTRIA » en majuscules à la place de « Prix Austria »)", async () => {
+    const { client, upserted } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      coursesSelect:     { data: [dbCourse(4, "c-4", { libelle: "Prix Austria" })], error: null },
+    });
+    await upsertProgrammeCourses([course({ numeroCourse: 4, libelle: "PRIX AUSTRIA" })], { client });
+    expect(upserted[0].libelle).toBe("Prix Austria");
+  });
+
+  it("un nombre de partants à 0 (inconnu à la source) n'écrase pas le vrai nombre", async () => {
+    const { client, upserted } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      coursesSelect:     { data: [dbCourse(4, "c-4", { nb_partants: 18 })], error: null },
+    });
+    await upsertProgrammeCourses([course({ numeroCourse: 4, nbPartants: 0 })], { client });
+    expect(upserted[0].nb_partants).toBe(18);
+  });
+
+  it("complète une distance inconnue (0) quand la source la donne", async () => {
+    const { client, upserted } = fakeSupabase({
+      hippodromesSelect: { data: [VINCENNES], error: null },
+      coursesSelect:     { data: [dbCourse(4, "c-4", { distance_metres: 0 })], error: null },
+    });
+    await upsertProgrammeCourses([course({ numeroCourse: 4, distanceMetres: 2850 })], { client });
+    expect(upserted[0].distance_metres).toBe(2850);
   });
 });
