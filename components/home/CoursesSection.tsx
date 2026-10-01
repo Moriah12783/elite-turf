@@ -119,7 +119,7 @@ export default async function CoursesSection() {
         </h2>
       </div>
       <Link
-        href="/courses"
+        href="/programme"
         className="hidden sm:flex items-center gap-1 text-gold-primary hover:text-gold-light text-sm font-medium transition-colors"
       >
         Tout voir <ChevronRight className="w-4 h-4" />
@@ -264,7 +264,7 @@ export default async function CoursesSection() {
         {/* Mobile — voir tout */}
         <div className="mt-6 sm:hidden">
           <Link
-            href="/courses"
+            href="/programme"
             className="flex items-center justify-center gap-2 w-full py-3 border border-border hover:border-gold-primary/30 rounded-xl text-text-secondary hover:text-text-primary text-sm font-medium transition-all"
           >
             Voir tout le programme <ChevronRight className="w-4 h-4" />

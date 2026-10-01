@@ -322,7 +322,7 @@ export default async function PronosticsSection() {
             <p className="text-text-secondary text-sm mb-4">
               Partants, cotes et arrivée du Quinté+ sur sa page dédiée. Nos pronostics experts du jour sont juste en dessous.
             </p>
-            <Link href={`/quinte-plus/${today}`} className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
+            <Link href="/quinte-plus" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all shadow-gold">
               <Trophy className="w-4 h-4" />
               Voir le Quinté+ du jour
               <ChevronRight className="w-4 h-4" />

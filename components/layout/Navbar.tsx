@@ -64,7 +64,11 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 lg:gap-7">
-            <NavLink href="/courses">Programme</NavLink>
+            <NavLink href="/programme">Programme</NavLink>
+            {/* Quinté+ : seulement sur grand écran (barre déjà pleine en md). */}
+            <span className="hidden lg:inline-flex">
+              <NavLink href="/quinte-plus">Quinté+</NavLink>
+            </span>
             <NavLink href="/calendrier">Calendrier</NavLink>
             <NavLink href="/pronostics">Pronostics</NavLink>
             <NavLink href="/arrivees">Arrivées</NavLink>
@@ -178,7 +182,8 @@ export default function Navbar() {
         <div className="md:hidden bg-bg-card border-t border-border animate-fade-in">
           <div className="px-4 py-4 space-y-1">
             {[
-              { href: "/courses",      label: "Programme"          },
+              { href: "/programme",    label: "Programme"          },
+              { href: "/quinte-plus",  label: "Quinté+ du jour"    },
               { href: "/calendrier",   label: "Calendrier"         },
               { href: "/pronostics",   label: "Pronostics"         },
               { href: "/arrivees",     label: "Arrivées & Rapports" },

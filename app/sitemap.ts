@@ -43,6 +43,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: APP_URL,                             lastModified: now, changeFrequency: "daily",   priority: 1.0  },
     { url: `${APP_URL}/pronostics`,             lastModified: now, changeFrequency: "daily",   priority: 0.95 },
     { url: `${APP_URL}/courses`,                lastModified: now, changeFrequency: "daily",   priority: 0.9  },
+    // Pages piliers à URL fixe (brief SEO B2) : « quinté+ du jour », « programme PMU du jour ».
+    { url: `${APP_URL}/quinte-plus`,            lastModified: now, changeFrequency: "hourly",  priority: 0.95 },
+    { url: `${APP_URL}/programme`,              lastModified: now, changeFrequency: "hourly",  priority: 0.9  },
     { url: `${APP_URL}/calendrier`,             lastModified: now, changeFrequency: "weekly",  priority: 0.75 },
     { url: `${APP_URL}/performances`,           lastModified: now, changeFrequency: "weekly",  priority: 0.8  },
     { url: `${APP_URL}/abonnements`,            lastModified: now, changeFrequency: "monthly", priority: 0.85 },
