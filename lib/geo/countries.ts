@@ -71,9 +71,12 @@ export const COUNTRIES: Country[] = [
     drapeau:    "🇨🇮",
     devise:     "XOF",
     capitale:   "Abidjan",
+    // pmu.ci n'existe pas (NXDOMAIN au 01/10/2026) et « PMU-CI » n'apparaît sur
+    // aucune page officielle : le site officiel est www.lonaci.ci, le jeu en
+    // ligne passe par la plateforme PMU LONACI (cf. lib/geo/fiches/cote-d-ivoire.ts).
     operateurOfficiel: {
-      nom:    "PMU-CI / LONACI",
-      site:   "https://www.pmu.ci",
+      nom:    "LONACI",
+      site:   "https://www.lonaci.ci",
       courte: "Loterie Nationale de Côte d'Ivoire — opérateur officiel",
     },
     // Mobile Money (via Paystack) : désactivé tant que PAYSTACK_AVAILABLE = false
@@ -96,8 +99,8 @@ export const COUNTRIES: Country[] = [
     ],
     accroche: "Pronostics PMU France et courses LONACI analysés par notre équipe experte pour les parieurs de Côte d'Ivoire.",
     liensPMU: [
-      { label: "PMU-CI / LONACI",     href: "https://www.pmu.ci" },
-      { label: "Hippodrome de la Riviera (Abidjan)", href: "https://www.lonaci.ci" },
+      { label: "PMU LONACI",          href: "https://www.lonaci.ci/pmu/" },
+      { label: "PMU LONACI en ligne", href: "https://pmu.lonacionline.ci/" },
     ],
   },
   {
