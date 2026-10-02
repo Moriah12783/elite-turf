@@ -29,7 +29,7 @@
  * PUR (aucune I/O), testé.
  */
 
-import { ROLES_SOCLE, ROLE_COUP, ROLE_CHAMP } from "./selection-roles";
+import { ROLES_SOCLE, ROLE_COUP, ROLE_CHAMP, ROLE_ASSOCIE, COUPLE_MAX } from "./selection-roles";
 
 export interface PlanDeJeuLike {
   banker?:      { number?: number | null } | null;
@@ -42,6 +42,8 @@ export interface SelectionDetailLike {
   role?:   string | null;
   /** Posé à la main par l'expert : ce cheval est le pivot du jeu. */
   pivot?:  boolean | null;
+  /** Posé à la main par l'expert : ce cheval est dans le couplé (plan de jeu Elite). */
+  couple?: boolean | null;
 }
 
 export interface PlanRadarInput {
@@ -64,6 +66,13 @@ export interface PlanRadar {
   value:  number[];
   /** Le pari d'audace : plus haute cote réelle. `null` si cote inconnue. */
   coup:   number | null;
+  /** Plan de jeu Elite : joués avec la base dans le champ réduit. */
+  associes: number[];
+  /**
+   * Plan de jeu Elite : le couplé, EXACTEMENT 2 chevaux, ou vide. Désigné
+   * par-dessus les rôles : ces chevaux figurent aussi dans leur niveau.
+   */
+  couple: number[];
   /**
    * Tout le reste de la sélection publiée.
    *
@@ -108,10 +117,11 @@ function plusHauteCote(pool: number[], cotes: Record<number, number | null | und
  * `selection` (et non depuis les rôles) : c'est la garantie structurelle
  * qu'aucun cheval payé par l'abonné ne peut manquer à l'affichage.
  */
-function resteDe(selection: number[], base: number[], value: number[], coup: number | null): number[] {
+function resteDe(selection: number[], base: number[], value: number[], coup: number | null, associes: number[] = []): number[] {
   const place: Record<number, boolean> = {};
   for (const n of base) place[n] = true;
   for (const n of value) place[n] = true;
+  for (const n of associes) place[n] = true;
   if (coup !== null) place[coup] = true;
   return selection.filter((n) => !place[n]);
 }
@@ -143,7 +153,7 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
       // dépouille jamais les value_picks choisis par l'expert.
       const placed = new Set(base.concat(value));
       const coup = plusHauteCote(selection.filter((n) => !placed.has(n)), cotes);
-      return { pivot, base, value, coup, champ: resteDe(selection, base, value, coup), source: "plan" };
+      return { pivot, base, value, coup, associes: [], couple: [], champ: resteDe(selection, base, value, coup), source: "plan" };
     }
   }
 
@@ -154,6 +164,8 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
   const socle: number[] = [];
   const autres: number[] = [];
   const champ: number[] = [];
+  const associes: number[] = [];
+  const coupleMarque: number[] = [];
   const inSelection = new Set(selection);
   const seen: Record<number, boolean> = {};
   let coupExplicite: number | null = null;
@@ -164,6 +176,7 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
     if (!Number.isFinite(n) || !inSelection.has(n) || seen[n]) continue;
     seen[n] = true;
     if (it?.pivot === true && pivotExplicite === null) pivotExplicite = n;
+    if (it?.couple === true && coupleMarque.length < COUPLE_MAX) coupleMarque.push(n);
 
     const role = String(it?.role ?? "").toUpperCase();
     if (role === ROLE_COUP) {
@@ -172,6 +185,8 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
       // un éventuel second reste en value — aucun cheval perdu.
       if (coupExplicite === null) coupExplicite = n;
       else autres.push(n);
+    } else if (role === ROLE_ASSOCIE) {
+      associes.push(n);
     } else if (role === ROLE_CHAMP) {
       // Couverture : l'expert l'a laissé dans le jeu sans le mettre en avant.
       // Ni base ni value — mais candidat au coup déduit, comme le champ d'un
@@ -183,7 +198,12 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
       autres.push(n);
     }
   }
-  if (socle.length === 0 && autres.length === 0 && coupExplicite === null) return null;
+  // Un couplé n'a de sens qu'à 2 chevaux : un seul cheval marqué ne s'affiche pas
+  // comme couplé (il reste visible dans son niveau).
+  const couple = coupleMarque.length === COUPLE_MAX
+    ? coupleMarque.slice().sort((a, b) => selection.indexOf(a) - selection.indexOf(b))
+    : [];
+  if (socle.length === 0 && autres.length === 0 && coupExplicite === null && associes.length === 0 && couple.length === 0) return null;
 
   // À défaut de coup désigné, on le déduit du tocard (plus haute cote). On le
   // cherche d'abord dans le champ ; sinon parmi les outsiders, d'où il est alors
@@ -203,7 +223,9 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
     base:  socle,
     value,
     coup,
-    champ: resteDe(selection, socle, value, coup),
+    associes,
+    couple,
+    champ: resteDe(selection, socle, value, coup, associes),
     source: "roles",
   };
 }

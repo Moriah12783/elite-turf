@@ -15,7 +15,10 @@ import type { PlanRadar } from "@/lib/pronostics/plan-radar";
  * Aucun effectif imposé : on affiche ce que l'expert a réellement défini.
  */
 const TIERS = {
+  couple: { label: "Le couplé", chip: "bg-purple-500/10 text-purple-300 border-purple-500/40", text: "text-purple-400" },
   base:  { label: "La base",  chip: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40", text: "text-emerald-400" },
+  // Associés : joués avec la base — même teal que « Chances régulières » sur la fiche.
+  associes: { label: "Les associés", chip: "bg-teal-500/10 text-teal-300 border-teal-500/40", text: "text-teal-400" },
   value: { label: "La value", chip: "bg-blue-500/10 text-blue-300 border-blue-500/40",          text: "text-blue-400" },
   coup:  { label: "Le coup",  chip: "bg-gold-faint text-gold-light border-gold-primary/50",     text: "text-gold-primary" },
   champ: { label: "Le champ", chip: "bg-bg-elevated text-text-secondary border-border",         text: "text-text-muted" },
@@ -32,7 +35,7 @@ function Ligne({
   const t = TIERS[tier];
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className={`text-[10px] uppercase tracking-wider font-bold w-[68px] flex-shrink-0 ${t.text}`}>
+      <span className={`text-[10px] uppercase tracking-wider font-bold w-[84px] flex-shrink-0 ${t.text}`}>
         {t.label}
       </span>
       {numeros.map((n) => (
@@ -51,7 +54,10 @@ function Ligne({
 export default function PlanRadarBlock({ plan }: { plan: PlanRadar }) {
   return (
     <div className="rounded-xl border border-border bg-bg-elevated/40 p-3 space-y-2">
+      {/* Plan de jeu Elite : le couplé (2 chevaux, aussi visibles dans leur niveau). */}
+      <Ligne tier="couple" numeros={plan.couple} />
       <Ligne tier="base"  numeros={plan.base}  pivot={plan.pivot} />
+      <Ligne tier="associes" numeros={plan.associes} />
       <Ligne tier="value" numeros={plan.value} />
       {plan.coup != null && <Ligne tier="coup" numeros={[plan.coup]} />}
       {/* Le reste de la sélection publiée. Ce bloc REMPLACE la liste des

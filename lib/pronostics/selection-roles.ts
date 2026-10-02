@@ -32,9 +32,26 @@ export const ROLE_COUP = "COUP";
  */
 export const ROLE_CHAMP = "CHAMP";
 
+/**
+ * Plan de jeu Elite (décision de Steph du 01/10/2026, en vigueur le 02/10) :
+ * 8 chevaux, le couplé (2 chevaux), la base de 3 pour le champ réduit ou
+ * total, les values et les associés.
+ *
+ * Associé : joué AVEC la base dans le champ réduit. Rôle exclusif, comme
+ * base / value / coup.
+ */
+export const ROLE_ASSOCIE = "ASSOCIE";
+
+/**
+ * Le couplé n'est PAS un rôle : c'est une paire désignée PAR-DESSUS les rôles
+ * (comme le pivot). Un cheval de la base peut donc aussi être dans le couplé.
+ * Stocké en `couple: true` sur les lignes de `selection_detail`.
+ */
+export const COUPLE_MAX = 2;
+
 export interface RoleChoice {
   /** Identifiant interne (clé de rendu, tests). */
-  key:   "base" | "value" | "coup";
+  key:   "base" | "value" | "associe" | "coup";
   /** Ce que l'expert lit dans l'admin. */
   label: string;
   /** Ce qui part en base dans `selection_detail.role`. */
@@ -44,12 +61,13 @@ export interface RoleChoice {
 }
 
 /**
- * Les 3 choix proposés à l'expert, dans l'ordre d'un plan de jeu.
+ * Les choix proposés à l'expert, dans l'ordre d'un plan de jeu.
  * Un cheval sans rôle reste dans la sélection mais n'apparaît dans aucun tier.
  */
 export const ROLE_CHOICES: RoleChoice[] = [
   { key: "base",  label: "Base",  role: "BASE",     hint: "Le socle du jeu" },
   { key: "value", label: "Value", role: "OUTSIDER", hint: "Cote intéressante" },
+  { key: "associe", label: "Associé", role: ROLE_ASSOCIE, hint: "Joué avec la base en champ réduit" },
   { key: "coup",  label: "Coup",  role: ROLE_COUP,  hint: "Le pari d'audace" },
 ];
 

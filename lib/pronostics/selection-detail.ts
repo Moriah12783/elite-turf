@@ -18,13 +18,15 @@
  *
  * PUR (aucune I/O), testé.
  */
-import { ROLE_CHAMP } from "./selection-roles";
+import { ROLE_CHAMP, COUPLE_MAX } from "./selection-roles";
 
 export interface SelectionDetailRow {
   number: number;
   role:   string;
   name?:  string;
   pivot?: boolean;
+  /** Dans le couplé du plan de jeu Elite (2 chevaux au plus). */
+  couple?: boolean;
 }
 
 export interface BuildSelectionDetailInput {
@@ -34,6 +36,8 @@ export interface BuildSelectionDetailInput {
   roles:     Record<number, string | undefined>;
   /** Le pivot du jeu, s'il a été désigné. */
   pivot?:    number | null;
+  /** Le couplé du plan de jeu Elite (2 chevaux au plus). */
+  couple?:   number[] | null;
   /** Noms des chevaux connus (partants), par n° de dossard. */
   noms?:     Record<number, string | null | undefined>;
 }
@@ -46,6 +50,8 @@ export interface BuildSelectionDetailInput {
 export interface ParsedSelectionRoles {
   roles: Record<number, string>;
   pivot: number | null;
+  /** Le couplé déjà stocké (2 chevaux au plus), dans l'ordre de mérite. */
+  couple: number[];
   /** Noms déjà stockés — à réinjecter au réenregistrement, sinon on les perd. */
   noms:  Record<number, string>;
 }
@@ -59,15 +65,16 @@ export interface ParsedSelectionRoles {
  * champ — une mutation de données invisible.
  */
 export function parseSelectionRoles(raw: unknown): ParsedSelectionRoles {
-  const out: ParsedSelectionRoles = { roles: {}, pivot: null, noms: {} };
+  const out: ParsedSelectionRoles = { roles: {}, pivot: null, couple: [], noms: {} };
   if (!Array.isArray(raw)) return out;
   for (const it of raw) {
-    const o = it as { number?: unknown; role?: unknown; pivot?: unknown; name?: unknown };
+    const o = it as { number?: unknown; role?: unknown; pivot?: unknown; couple?: unknown; name?: unknown };
     const n = Number(o?.number);
     if (!Number.isFinite(n)) continue;
     const role = String(o?.role ?? "").trim().toUpperCase();
     if (role && role !== ROLE_CHAMP) out.roles[n] = role;
     if (o?.pivot === true && out.pivot === null) out.pivot = n;
+    if (o?.couple === true && out.couple.length < COUPLE_MAX && out.couple.indexOf(n) === -1) out.couple.push(n);
     const nom = typeof o?.name === "string" ? o.name.trim() : "";
     if (nom) out.noms[n] = nom;
   }
@@ -83,13 +90,26 @@ export function buildSelectionDetail(input: BuildSelectionDetailInput): Selectio
   const roles = input.roles ?? {};
   const noms  = input.noms ?? {};
 
+  // Couplé : seuls les chevaux encore sélectionnés comptent, 2 au plus, dans
+  // l'ordre de mérite de la sélection (pas dans l'ordre des clics).
+  const coupleSaisi = Array.isArray(input.couple) ? input.couple.map(Number) : [];
+  const couple: Record<number, boolean> = {};
+  let nbCouple = 0;
+  for (const n of selection) {
+    if (nbCouple < COUPLE_MAX && coupleSaisi.indexOf(n) !== -1 && !couple[n]) {
+      couple[n] = true;
+      nbCouple++;
+    }
+  }
+
   // Un rôle ne compte que s'il porte sur un cheval réellement sélectionné :
-  // retirer un cheval de la sélection doit annuler sa qualification.
+  // retirer un cheval de la sélection doit annuler sa qualification. Un couplé
+  // désigné suffit aussi à structurer le pronostic.
   let qualifies = 0;
   for (const n of selection) {
     if (roles[n]) qualifies++;
   }
-  if (qualifies === 0) return null;
+  if (qualifies === 0 && nbCouple === 0) return null;
 
   const pivot = Number(input.pivot);
   const pivotValide = Number.isFinite(pivot) && selection.indexOf(pivot) !== -1;
@@ -103,6 +123,7 @@ export function buildSelectionDetail(input: BuildSelectionDetailInput): Selectio
     const nom = typeof noms[n] === "string" ? String(noms[n]).trim() : "";
     if (nom) row.name = nom;
     if (pivotValide && n === pivot) row.pivot = true;
+    if (couple[n]) row.couple = true;
     rows.push(row);
   }
   return rows;

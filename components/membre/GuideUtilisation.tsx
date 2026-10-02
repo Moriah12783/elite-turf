@@ -24,6 +24,15 @@ import { BookOpen, Star, ChevronDown, Target } from "lucide-react";
 /** Une catégorie de la sélection, avec la couleur EXACTE du pronostic. */
 const CATEGORIES = [
   {
+    cle: "couple",
+    titre: "Le couplé",
+    puce: "bg-purple-500/10 text-purple-300 border-purple-500/40",
+    texte: "text-purple-400",
+    role: "Les 2 chevaux à jouer en couplé",
+    detail:
+      "Le duo du plan de jeu Elite. Ces deux chevaux figurent aussi dans leur catégorie (souvent la base).",
+  },
+  {
     cle: "base",
     titre: "La base",
     puce: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40",
@@ -31,6 +40,15 @@ const CATEGORIES = [
     role: "Nos chevaux les plus solides",
     detail:
       "Le socle de la course. C'est parmi eux que se trouve le pivot, le cheval sur lequel appuyer tous vos tickets.",
+  },
+  {
+    cle: "associes",
+    titre: "Les associés",
+    puce: "bg-teal-500/10 text-teal-300 border-teal-500/40",
+    texte: "text-teal-400",
+    role: "À jouer avec la base",
+    detail:
+      "Dans le plan de jeu Elite, les chevaux à associer à la base de 3 en champ réduit.",
   },
   {
     cle: "value",
