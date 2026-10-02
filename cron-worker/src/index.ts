@@ -168,6 +168,9 @@ const CRON_MAP: Record<string, string> = {
   // nuit et au changement de jour.
   "*/5 * * * *":  "/",
   "40 9 * * 1":   "/api/cron/calibration-hebdo",  // lundi : calibration Radar de la semaine précédente (write-once)
+  // Sélection stats : photo figée 15 à 5 min avant chaque départ → bilan honnête
+  // (jamais recalculé sur des cotes relevées après coup). Décalé de 2 min sur « */5 » (accueil).
+  "2,7,12,17,22,27,32,37,42,47,52,57 * * * *": "/api/cron/photo-selection",
 
   // ── Notifications utilisateurs ────────────────────────────────────
   "23 * * * *":   "/api/cron/welcome-emails",
