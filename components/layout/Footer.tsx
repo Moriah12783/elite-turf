@@ -1,12 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Trophy, Mail, Phone, MessageCircle, MapPin } from "lucide-react";
+import { Trophy, Mail, Phone, MessageCircle, MapPin, Facebook, Globe, type LucideIcon } from "lucide-react";
 import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
 import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
+import { RESEAUX_SOCIAUX } from "@/lib/constants/reseaux-sociaux";
 import { COUNTRIES } from "@/lib/geo/countries";
 
 const WHATSAPP = WHATSAPP_SUPPORT_NUMBER;
+
+// Icône par réseau (Globe si un réseau est ajouté sans icône dédiée).
+const ICONES_RESEAUX: Record<string, LucideIcon> = { Facebook };
 
 export default async function Footer() {
   const supabase = await createClient();
@@ -194,10 +198,32 @@ export default async function Footer() {
           {/* Réseaux sociaux + bas de footer */}
           <div className="flex flex-col items-center gap-5">
 
-            {/* NB : le bloc « réseaux sociaux » (4 liens href="#") a été retiré
-                tant que les comptes n'existent pas — un lien mort en prod =
-                signal de site inachevé (audit Sprint 1, P4). À réintroduire via
-                des variables d'env (NEXT_PUBLIC_FACEBOOK_URL…) quand ils seront créés. */}
+            {/* Réseaux sociaux — source unique lib/constants/reseaux-sociaux.ts,
+                qui ne liste que des comptes existants (un lien mort en prod =
+                signal de site inachevé, audit Sprint 1, P4). */}
+            {RESEAUX_SOCIAUX.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <span className="text-text-muted text-xs font-medium uppercase tracking-[0.15em]">
+                  Suivez-nous
+                </span>
+                {RESEAUX_SOCIAUX.map((reseau) => {
+                  const Icone = ICONES_RESEAUX[reseau.nom] ?? Globe;
+                  return (
+                    <a
+                      key={reseau.url}
+                      href={reseau.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Elite Turf sur ${reseau.nom} (nouvel onglet)`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-elevated/60 border border-border/50 text-text-secondary hover:text-gold-light hover:border-gold-primary/40 text-xs font-medium transition-colors"
+                    >
+                      <Icone className="w-4 h-4" />
+                      {reseau.nom}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-text-muted text-xs text-center sm:text-left space-y-1">
