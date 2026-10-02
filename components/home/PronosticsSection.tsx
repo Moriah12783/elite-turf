@@ -5,7 +5,8 @@ import {
   MapPin, Clock, TrendingUp, Zap, Globe2, CheckCircle2, Hourglass,
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { isJouableAfrique, getNationaleLabel, fetchPmuPartants } from "@/lib/pmu-api";
+import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
+import { fetchCotesPmu, favoriPmu, type FavoriPmu } from "@/lib/pmu-cotes";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
@@ -93,7 +94,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
       course:courses(
         id, libelle, heure_depart, numero_reunion, numero_course, date_course,
         paris_disponibles,
-        hippodrome:hippodromes(nom)
+        hippodrome:hippodromes(nom, pays)
       )
     `)
     .eq("publie", true)
@@ -325,27 +326,21 @@ export default async function PronosticsSection({ personnalise = true }: { perso
   const vCourse: any = Array.isArray(vedette?.course) ? vedette.course[0] : vedette?.course;
   const listWithoutVedette = displayList.filter((p: any) => p.id !== vedette?.id);
 
-  // ── 3. Favori automatique : cheval avec la cote la plus basse (PMU) ──
-  let favoriAuto: { nom: string; cote: number; numero: number } | null = null;
-  if (vCourse && !carteApresCourse) {
+  // ── 3. Favori PMU : la cote directe la plus basse, seulement si le PMU parle
+  // bien de NOTRE course (mêmes chevaux) — (date, R, C) ne suffit pas.
+  // Jusqu'au 02/10/2026, fetchPmuPartants appelait un endpoint fermé (420)
+  // depuis l'été : le favori n'apparaissait plus.
+  let favoriAuto: FavoriPmu | null = null;
+  const vHippo: any = Array.isArray(vCourse?.hippodrome) ? vCourse.hippodrome[0] : vCourse?.hippodrome;
+  if (vCourse && !carteApresCourse && !(vHippo?.pays && vHippo.pays !== "France")) {
     try {
-      const dateStrFav = (vCourse.date_course || today).replace(/-/g, "");
-      const participants = await fetchPmuPartants(
-        dateStrFav,
-        vCourse.numero_reunion,
-        vCourse.numero_course,
-      );
-      const avecCote = participants
-        .filter((p) => p.coteProbable || p.coteDefinitive)
-        .map((p) => ({
-          numero: p.numPmu,
-          nom:    p.nom,
-          cote:   p.coteDefinitive ?? p.coteProbable ?? 99,
-        }))
-        .sort((a, b) => a.cote - b.cote);
-      if (avecCote.length > 0) favoriAuto = avecCote[0];
+      const [cotesPmu, { data: partantsVedette }] = await Promise.all([
+        fetchCotesPmu(vCourse.date_course || today, vCourse.numero_reunion, vCourse.numero_course, 2000),
+        supabase.from("partants").select("nom_cheval").eq("course_id", vCourse.id),
+      ]);
+      favoriAuto = favoriPmu(cotesPmu, (partantsVedette || []).map((p: any) => p.nom_cheval ?? ""));
     } catch {
-      // PMU indisponible — on n'affiche pas le favori
+      // PMU ou base indisponible : pas de favori affiché
     }
   }
 
@@ -452,16 +447,18 @@ export default async function PronosticsSection({ personnalise = true }: { perso
                   </p>
                 )}
 
-                {/* Favori automatique PMU */}
+                {/* Favori PMU, avec l'heure de sa cote : l'accueil visiteur est
+                    régénéré toutes les ~5 min, la cote affichée peut donc dater. */}
                 {favoriAuto && (
-                  <div className="flex items-center gap-3 mb-5 px-3 py-2.5 bg-bg-elevated border border-gold-primary/20 rounded-xl w-fit">
-                    <span className="text-gold-light text-xs font-semibold uppercase tracking-wider">Favori</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-5 px-3 py-2.5 bg-bg-elevated border border-gold-primary/20 rounded-xl w-fit max-w-full">
+                    <span className="text-gold-light text-xs font-semibold uppercase tracking-wider">Favori PMU</span>
                     <span className="w-px h-4 bg-border" />
                     <span className="w-6 h-6 rounded-full bg-gold-faint border border-gold-primary/40 flex items-center justify-center text-gold-primary font-bold text-xs flex-shrink-0">
                       {favoriAuto.numero}
                     </span>
                     <span className="text-text-primary font-semibold text-sm">{favoriAuto.nom}</span>
                     <span className="text-gold-light font-bold text-sm">{favoriAuto.cote.toFixed(1)}</span>
+                    {favoriAuto.coteMaj && <HeureCote ms={favoriAuto.coteMaj} />}
                   </div>
                 )}
 
@@ -613,6 +610,17 @@ export default async function PronosticsSection({ personnalise = true }: { perso
 }
 
 // ── Sous-composants ────────────────────────────────────────────────────
+
+/** Heure d'une cote PMU (horodatage en ms), à Paris et en GMT. */
+function HeureCote({ ms }: { ms: number }) {
+  const heure = (timeZone: string) =>
+    new Intl.DateTimeFormat("fr-FR", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(ms));
+  return (
+    <span className="text-text-muted text-xs">
+      cote de {heure("Europe/Paris")} Paris · {heure("UTC")} GMT
+    </span>
+  );
+}
 
 /**
  * Heure de départ à l'heure de Paris ET en GMT : la base est à l'heure de

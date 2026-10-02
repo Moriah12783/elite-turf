@@ -91,6 +91,29 @@ export function memesPartants(nomsBase: string[], nomsPmu: string[]): boolean {
   return communs / base.length >= 0.6;
 }
 
+export interface FavoriPmu {
+  numero: number;
+  nom: string;
+  cote: number;
+  /** Horodatage PMU de cette cote (ms). */
+  coteMaj: number | null;
+}
+
+/**
+ * PUR : le favori PMU = la cote directe la plus basse parmi les partants.
+ * null si le PMU n'a rien répondu, n'a publié aucune cote, ou parle d'une autre
+ * course (même contrôle d'identité que l'onglet « Côtes en direct »).
+ */
+export function favoriPmu(cotes: CotePmu[] | null, nomsBase: string[]): FavoriPmu | null {
+  if (!cotes || !memesPartants(nomsBase, cotes.map((c) => c.nom))) return null;
+  let favori: FavoriPmu | null = null;
+  for (const c of cotes) {
+    if (c.nonPartant || c.cote === null) continue;
+    if (!favori || c.cote < favori.cote) favori = { numero: c.numero, nom: c.nom, cote: c.cote, coteMaj: c.coteMaj };
+  }
+  return favori;
+}
+
 const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
 const PMU_PROXY = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
 const PMU_HEADERS = {
