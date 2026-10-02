@@ -6,6 +6,13 @@ import Image from "next/image";
 import { ArrowRight, TrendingUp, BarChart2, Award, Trophy } from "lucide-react";
 import { Analytics } from "@/lib/analytics";
 import type { HomeStats } from "@/lib/stats/home-stats";
+import { PROMESSE_MARQUE } from "@/lib/constants/marque";
+
+// Dans le titre, la promesse suit « Pronostics PMU : » → minuscule initiale.
+// Espace insécable avant le dernier mot : sur mobile, « preuves » ne reste
+// jamais seul sur sa ligne.
+const PROMESSE_TITRE = (PROMESSE_MARQUE.charAt(0).toLowerCase() + PROMESSE_MARQUE.slice(1))
+  .replace(/ (\S+)$/, " $1");
 
 export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) {
   const [scrollY,      setScrollY]      = useState(0);
@@ -155,13 +162,13 @@ export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) 
             transition: "opacity 0.8s ease 0.15s, transform 0.8s ease 0.15s",
           }}
         >
-          <span className="text-white">Analyses hippiques premium,</span>
+          <span className="text-white">Pronostics PMU :</span>
           <br />
           <span
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: "linear-gradient(135deg, #C9A84C, #F0E0B0, #A07830)" }}
           >
-            méthode, clarté, transparence
+            {PROMESSE_TITRE}
           </span>
         </h1>
 
@@ -174,11 +181,9 @@ export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) 
             transition: "opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s",
           }}
         >
-          Chaque matin, nos spécialistes décryptent les courses PMU avec rigueur —{" "}
-          <span className="text-gold-light font-medium">
-            sélections vérifiables, analyses détaillées
-          </span>{" "}
-          et résultats publiés en toute transparence.
+          Quinté+, Quarté+, Tiercé : chaque pronostic publié est confronté à
+          l&apos;arrivée officielle, et son résultat reste affiché —{" "}
+          <span className="text-gold-light font-medium">gagnant comme perdant</span>.
         </p>
 
         {/* ── CTAs ── */}
