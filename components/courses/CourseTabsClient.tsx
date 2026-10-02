@@ -10,6 +10,7 @@ import Link from "next/link";
 import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
 import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
 import TabStatsRich from "@/components/courses/TabStatsRich";
+import { delaiRafraichissement } from "@/lib/courses/cotes-live";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,9 @@ interface CoteItem {
   cote: number | null;
   jockey?: string | null;
   poids?: number | null;
+  /** « - » : cote en baisse (cheval joué) ; « + » : en hausse (délaissé). */
+  tendance?: "+" | "-" | null;
+  coteReference?: number | null;
 }
 
 interface ArriveeItem {
@@ -379,67 +383,79 @@ function TabPartants({
 
 // ── Tab : Côtes en direct ──────────────────────────────────────────────────
 
-const LIVE_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes en ms
+/** Heure dans le fuseau du visiteur (Abidjan → GMT, France → heure de Paris). */
+function heureLocale(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
 
-function TabCotes({ courseId, partants, statut }: { courseId: string; partants: Partant[]; statut: string }) {
+/** « 45s » ou « 3 min ». */
+function dansDelai(secondes: number): string {
+  return secondes >= 60 ? `${Math.ceil(secondes / 60)} min` : `${secondes}s`;
+}
+
+function TabCotes({ courseId, partants }: { courseId: string; partants: Partant[] }) {
   const [cotes,      setCotes]      = useState<CoteItem[] | null>(null);
-  const [loading,    setLoading]    = useState(false);
+  const [chargement, setChargement] = useState(true);
   const [error,      setError]      = useState<string | null>(null);
   const [apiMessage, setApiMessage] = useState<string | null>(null);
-  const [apiSource,  setApiSource]  = useState<string | null>(null);
-  const [loadedOnce, setLoadedOnce] = useState(false);
-  const [countdown,  setCountdown]  = useState<number>(LIVE_REFRESH_INTERVAL / 1000);
-  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [majPmu,     setMajPmu]     = useState<string | null>(null);
+  const [depart,     setDepart]     = useState<string | null>(null);
+  const [prochaine,  setProchaine]  = useState<number | null>(null);
+  const [maintenant, setMaintenant] = useState<number>(() => Date.now());
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Dernière heure de départ connue : un échec ne doit pas arrêter les essais.
+  const departRef = useRef<string | null>(null);
 
+  // Une actualisation, puis la suivante au rythme du PMU (cf. lib/courses/cotes-live.ts).
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    if (timerRef.current) clearTimeout(timerRef.current);
     try {
-      const res = await fetch(`/api/courses/${courseId}/cotes`);
+      const res = await fetch(`/api/courses/${courseId}/cotes`, { cache: "no-store" });
       const data = await res.json();
+      if (data.depart) departRef.current = data.depart;
       if (!res.ok) throw new Error(data.error ?? "Erreur inconnue");
       setCotes(data.cotes ?? []);
       setApiMessage(data.message ?? null);
-      setApiSource(data.source ?? null);
-      setLoadedOnce(true);
-      setCountdown(LIVE_REFRESH_INTERVAL / 1000);
+      setMajPmu(data.majPmu ?? null);
+      setDepart(data.depart ?? null);
+      setError(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Erreur inconnue");
     } finally {
-      setLoading(false);
+      setChargement(false);
+      setMaintenant(Date.now());
+    }
+    const delai = delaiRafraichissement(departRef.current);
+    if (delai !== null) {
+      setProchaine(Date.now() + delai);
+      timerRef.current = setTimeout(load, delai);
+    } else {
+      setProchaine(null);
     }
   }, [courseId]);
 
-  // Auto-refresh quand la course est EN_COURS
   useEffect(() => {
-    if (statut !== "EN_COURS") return;
-
-    // Premier chargement
+    departRef.current = null;
     load();
-
-    // Refresh toutes les 5 min
-    intervalRef.current = setInterval(load, LIVE_REFRESH_INTERVAL);
-
-    // Countdown secondes
-    countdownRef.current = setInterval(() => {
-      setCountdown((c) => (c <= 1 ? LIVE_REFRESH_INTERVAL / 1000 : c - 1));
-    }, 1000);
-
     return () => {
-      if (intervalRef.current)  clearInterval(intervalRef.current);
-      if (countdownRef.current) clearInterval(countdownRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [statut, load]);
+  }, [load]);
 
-  // Charger automatiquement à la première affichage de cet onglet (hors EN_COURS)
-  if (statut !== "EN_COURS" && !loadedOnce && !loading && !error) {
-    load();
-  }
+  // Compte à rebours de la prochaine actualisation (affichage seulement).
+  useEffect(() => {
+    if (prochaine === null) return;
+    const id = setInterval(() => setMaintenant(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [prochaine]);
 
   const maxCote = cotes?.reduce((m, c) => (c.cote && c.cote > m ? c.cote : m), 1) ?? 1;
+  const secondes = prochaine !== null ? Math.max(0, Math.ceil((prochaine - maintenant) / 1000)) : null;
 
-  if (loading) {
+  if (chargement) {
     return (
       <div className="p-8 flex flex-col items-center gap-3">
         <RefreshCw className="w-6 h-6 text-gold-primary animate-spin" />
@@ -448,53 +464,40 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 text-center">
-        <AlertCircle className="w-6 h-6 text-status-loss mx-auto mb-2" />
-        <p className="text-text-secondary text-sm mb-1">Côtes non disponibles</p>
-        <p className="text-text-muted text-xs mb-4">{error}</p>
-        <button
-          onClick={load}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Réessayer
-        </button>
-      </div>
-    );
-  }
-
   if (!cotes || cotes.length === 0) {
-    // Course LONACI/Afrique — pas de flux PMU
-    if (apiSource === "lonaci") {
-      return (
-        <div className="p-8 text-center">
-          <TrendingUp className="w-8 h-8 text-text-muted mx-auto mb-3" />
-          <p className="text-text-secondary text-sm font-medium mb-1">Côtes non disponibles en temps réel</p>
-          <p className="text-text-muted text-xs max-w-xs mx-auto">
-            Cette course est organisée par la LONACI. Les côtes en direct ne sont pas disponibles via l&apos;API PMU.
-          </p>
-          <a
-            href="https://www.lonaci.ci"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors"
-          >
-            Consulter LONACI.ci
-          </a>
-        </div>
-      );
-    }
-    // Fallback : utiliser les côtes Supabase si dispo
+    // Repli : les cotes enregistrées en base (relevées plus tôt), clairement présentées
+    // comme telles. Sert aussi quand le PMU ne répond pas.
     const withCote = partants.filter((p) => p.cote);
     if (withCote.length > 0) {
       const sorted = [...partants].sort((a, b) => (a.cote ?? 99) - (b.cote ?? 99));
+      const motif = error ?? apiMessage;
       return (
         <div>
-          <div className="px-4 pt-3 pb-1">
-            <p className="text-text-muted text-xs">Côtes issues de la base de données locale · <button onClick={load} className="text-gold-light hover:underline">Actualiser depuis PMU</button></p>
+          <div className="px-4 pt-3 pb-1 space-y-1">
+            {motif && <p className="text-text-secondary text-xs">{motif}</p>}
+            <p className="text-text-muted text-xs">
+              Cotes relevées plus tôt, non actualisées · <button onClick={load} className="text-gold-light hover:underline">Réessayer le direct PMU</button>
+              {secondes !== null && <> · nouvel essai dans {dansDelai(secondes)}</>}
+            </p>
           </div>
           <CotesBars items={sorted.map((p) => ({ numero: p.numero, nom: p.nom_cheval, cote: p.cote ?? null, jockey: p.jockey ?? null, poids: p.poids_kg ?? null }))} maxCote={maxCote} />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="p-6 text-center">
+          <AlertCircle className="w-6 h-6 text-status-loss mx-auto mb-2" />
+          <p className="text-text-secondary text-sm mb-1">Côtes non disponibles</p>
+          <p className="text-text-muted text-xs mb-4">
+            {error}{secondes !== null && <> Nouvel essai dans {dansDelai(secondes)}.</>}
+          </p>
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Réessayer
+          </button>
         </div>
       );
     }
@@ -502,28 +505,31 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
       <div className="p-8 text-center">
         <TrendingUp className="w-8 h-8 text-text-muted mx-auto mb-3" />
         <p className="text-text-secondary text-sm">Côtes non encore disponibles</p>
-        <p className="text-text-muted text-xs mt-1">{apiMessage ?? "Les côtes sont publiées la veille de la course"}</p>
-        {loadedOnce && (
-          <button onClick={load} className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Réessayer
-          </button>
-        )}
+        <p className="text-text-muted text-xs mt-1">{apiMessage ?? "Le PMU publie les cotes la veille ou le matin de la course."}</p>
+        <button onClick={load} className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Réessayer
+        </button>
       </div>
     );
   }
 
+  const heureCote = heureLocale(majPmu);
+  const departPasse = depart ? Date.parse(depart) <= maintenant : false;
+
   return (
     <div>
       <div className="px-4 pt-3 pb-2 flex items-center justify-between flex-wrap gap-2">
-        <p className="text-text-muted text-xs">Côtes PMU temps réel · triées par probabilité</p>
+        <p className="text-text-muted text-xs">
+          {heureCote ? <>Cotes PMU de <span className="text-text-secondary font-semibold">{heureCote}</span></> : "Cotes PMU"} · triées par probabilité
+        </p>
         <div className="flex items-center gap-3">
-          {statut === "EN_COURS" && (
+          {secondes !== null && (
             <span className="flex items-center gap-1.5 text-xs text-status-win font-semibold">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-win opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-status-win" />
               </span>
-              Live · actu dans {countdown}s
+              Live · actu dans {dansDelai(secondes)}
             </span>
           )}
           <button
@@ -534,6 +540,16 @@ function TabCotes({ courseId, partants, statut }: { courseId: string; partants: 
           </button>
         </div>
       </div>
+      {error && (
+        <p className="px-4 pb-2 text-status-loss text-[11px] leading-snug">
+          Actualisation impossible : {error} Cotes de la dernière lecture réussie.
+        </p>
+      )}
+      <p className="px-4 pb-2 text-text-muted text-[11px] leading-snug">
+        {departPasse
+          ? "Départ donné : les cotes se figent à la clôture des paris. La cote figée est celle qui sert au calcul des gains."
+          : "Pari mutuel : la cote bouge jusqu'au départ. Le gain se calcule sur la cote figée au départ, pas sur celle affichée au moment du pari."}
+      </p>
       <CotesBars items={cotes} maxCote={maxCote} />
     </div>
   );
@@ -567,6 +583,13 @@ function CotesBars({ items, maxCote }: { items: CoteItem[]; maxCote: number }) {
                 <p className="text-text-primary text-sm font-semibold truncate">{c.nom}</p>
                 {c.jockey && <p className="text-text-muted text-xs truncate">{c.jockey}</p>}
               </div>
+              {/* Tendance PMU : « - » = cote en baisse (cheval joué), « + » = en hausse (délaissé) */}
+              {c.tendance === "-" && (
+                <span title="Cote en baisse : cheval joué" className="flex-shrink-0 text-status-win"><ChevronDown className="w-3.5 h-3.5" /></span>
+              )}
+              {c.tendance === "+" && (
+                <span title="Cote en hausse : cheval délaissé" className="flex-shrink-0 text-text-muted"><ChevronUp className="w-3.5 h-3.5" /></span>
+              )}
               {/* Cote */}
               <span className={`font-mono font-bold text-sm flex-shrink-0 ${
                 !c.cote ? "text-text-muted" :
@@ -1044,7 +1067,7 @@ export default function CourseTabsClient({
         <TabNotreSelection items={notreSelection} />
       )}
       {activeTab === "cotes" && (
-        <TabCotes courseId={courseId} partants={partants} statut={statut} />
+        <TabCotes courseId={courseId} partants={partants} />
       )}
       {activeTab === "arrivees" && (
         <TabArrivees

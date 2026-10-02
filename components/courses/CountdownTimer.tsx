@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Clock, Flag } from "lucide-react";
+import { parisVersUtc } from "@/lib/paris-date";
 
 interface Props {
   dateCourse: string;  // "YYYY-MM-DD"
-  heureDepart: string; // "HH:MM:SS" (UTC)
+  heureDepart: string; // "HH:MM:SS" — heure de PARIS, comme en base
   /** En mode compact (ex: CourseCard), n'affiche rien si le départ est passé */
   compact?: boolean;
 }
@@ -14,8 +15,10 @@ export default function CountdownTimer({ dateCourse, heureDepart, compact = fals
   const [diff, setDiff] = useState<number | null>(null);
 
   useEffect(() => {
-    // Reconstituer le timestamp UTC de départ
-    const dep = new Date(`${dateCourse}T${heureDepart}Z`);
+    // La base stocke l'heure de PARIS : la lire comme de l'UTC décalait le
+    // compte à rebours de 2 h en été (1 h en hiver).
+    const dep = parisVersUtc(dateCourse, heureDepart);
+    if (!dep) return;
 
     const calc = () => setDiff(dep.getTime() - Date.now());
     calc();

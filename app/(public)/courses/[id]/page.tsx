@@ -11,6 +11,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import type { SubscriptionStatus } from "@/types";
 import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/geny";
 import { fetchPmuPartants } from "@/lib/pmu-api";
+import { parisVersUtc } from "@/lib/paris-date";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
@@ -246,6 +247,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   // Déterminer si on doit afficher le countdown (avant le départ)
   const isUpcoming = c.statut === "PROGRAMME" || c.statut === "EN_COURS";
+  const departUtc  = c.date_course && c.heure_depart ? parisVersUtc(c.date_course, c.heure_depart) : null;
+  const departGmt  = departUtc ? departUtc.toISOString().slice(11, 16) : null;
 
   // ── JSON-LD SportsEvent (helper centralisé) + BreadcrumbList ─────────────
   // Helper assure tous les champs recommandés Google : endDate, image,
@@ -372,9 +375,11 @@ export default async function CourseDetailPage({ params }: PageProps) {
                     </div>
                     <div className="text-right">
                       <p className="text-text-muted text-xs mb-0.5">Heure prévue</p>
+                      {/* La base stocke l'heure de Paris (l'ancien libellé « UTC » était faux). */}
                       <p className="text-gold-light font-mono font-semibold text-sm">
-                        {c.heure_depart?.slice(0, 5)} UTC
+                        {c.heure_depart?.slice(0, 5)} Paris
                       </p>
+                      {departGmt && <p className="text-text-muted font-mono text-xs">{departGmt} GMT</p>}
                     </div>
                   </div>
                 )}

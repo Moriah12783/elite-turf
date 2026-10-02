@@ -97,3 +97,35 @@ export function parisMinutesOfDay(date: Date = new Date()): number {
   const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
   return h * 60 + m;
 }
+
+const PARIS_COMPLET_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Paris",
+  hourCycle: "h23",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit",
+});
+
+/** Décalage (minutes) de l'heure de Paris sur UTC à l'instant donné : 120 en été, 60 en hiver. */
+function decalageParisMinutes(instantUtcMs: number): number {
+  const parts = PARIS_COMPLET_FMT.formatToParts(new Date(instantUtcMs));
+  const lire = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  const commeUtc = Date.UTC(lire("year"), lire("month") - 1, lire("day"), lire("hour") % 24, lire("minute"), lire("second"));
+  return Math.round((commeUtc - instantUtcMs) / 60000);
+}
+
+/**
+ * Instant exact d'une heure de Paris. La base stocke `courses.heure_depart`
+ * en heure de PARIS : la lire comme de l'UTC (`new Date(date + "T" + heure + "Z")`)
+ * décalait le compte à rebours des fiches course de 2 h en été (1 h en hiver).
+ *
+ * @example parisVersUtc("2026-10-02", "16:20:00")  // 2026-10-02T14:20:00Z
+ */
+export function parisVersUtc(dateISO: string, heure: string): Date | null {
+  const d = String(dateISO || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const h = String(heure || "").match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!d || !h) return null;
+  const naif = Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]), Number(h[1]), Number(h[2]), Number(h[3] ?? 0));
+  // Deux passes : le décalage se lit à l'instant visé (sûr autour des changements d'heure).
+  const premier = naif - decalageParisMinutes(naif) * 60000;
+  return new Date(naif - decalageParisMinutes(premier) * 60000);
+}
