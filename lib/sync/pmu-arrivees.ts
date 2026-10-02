@@ -116,20 +116,46 @@ export function cleRC(reunion: number, course: number): string {
   return `${reunion}|${course}`;
 }
 
+/** Cascade d'URL du programme du jour : proxy d'abord (l'IP du Worker est bloquée en direct). */
+function urlsProgramme(dateISO: string): string[] {
+  const d = isoVersDdmmyyyy(dateISO);
+  return [
+    `${PMU_PROXY}/rest/client/61/programme/${d}`,
+    `${PMU_DIRECT}/rest/client/61/programme/${d}`,
+    `${PMU_PROXY}/rest/client/1/programme/${d}`,
+  ];
+}
+
+/**
+ * Programme PMU BRUT du jour (arrivées, statuts, heures de départ). null si
+ * l'API est indisponible : l'appelant NE DOIT PAS en conclure « aucune course ».
+ */
+export async function fetchProgrammeDuJour(dateISO: string, timeoutMs = 15000): Promise<unknown | null> {
+  for (const url of urlsProgramme(dateISO)) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { headers: PMU_HEADERS, cache: "no-store", signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      const json = (await res.json()) as { programme?: { reunions?: unknown[] } } | null;
+      const reunions = json && json.programme ? json.programme.reunions : null;
+      if (Array.isArray(reunions) && reunions.length > 0) return json;
+    } catch {
+      clearTimeout(timer);
+      /* URL suivante */
+    }
+  }
+  return null;
+}
+
 /**
  * Récupère les arrivées définitives du jour. Un seul appel réseau.
  * Renvoie une Map indexée par `R|C`. Map VIDE si l'API est indisponible —
  * l'appelant NE DOIT PAS interpréter cela comme « aucune arrivée ».
  */
 export async function fetchPmuArriveesDuJour(dateISO: string, timeoutMs = 15000): Promise<Map<string, number[]>> {
-  const d = isoVersDdmmyyyy(dateISO);
-  const urls = [
-    `${PMU_PROXY}/rest/client/61/programme/${d}`,
-    `${PMU_DIRECT}/rest/client/61/programme/${d}`,
-    `${PMU_PROXY}/rest/client/1/programme/${d}`,
-  ];
-
-  for (const url of urls) {
+  for (const url of urlsProgramme(dateISO)) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {

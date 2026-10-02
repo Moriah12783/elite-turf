@@ -1,0 +1,60 @@
+name: rattrapage-arrivees
+
+# Rattrapage ponctuel depuis le programme PMU officiel (lib/sync/pmu-rattrapage.ts) :
+# arrivées manquantes + heures de départ enregistrées en GMT. Manuel uniquement.
+#
+# N'écrase jamais une arrivée existante (celles qui divergent du PMU sont
+# seulement signalées), ne juge aucun pronostic, n'envoie rien.
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Première date (YYYY-MM-DD)"
+        type: string
+        required: true
+      until:
+        description: "Dernière date (YYYY-MM-DD, défaut : hier)"
+        type: string
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry-run (ne rien écrire, rapport seulement)"
+        type: boolean
+        required: false
+        default: true
+
+concurrency:
+  group: rattrapage-arrivees
+  cancel-in-progress: false
+
+jobs:
+  rattrapage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # un appel PMU + une lecture par jour
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/pmu-rattrapage-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=pmu-rattrapage.mjs
+
+      - name: Rattrapage PMU
+        run: node pmu-rattrapage.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RATTRAPAGE_SINCE: ${{ inputs.since }}
+          RATTRAPAGE_UNTIL: ${{ inputs.until }}
+          RATTRAPAGE_DRY_RUN: ${{ inputs.dry_run }}
