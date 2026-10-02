@@ -12,15 +12,14 @@ import type { SubscriptionStatus } from "@/types";
 import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/geny";
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import { parisVersUtc } from "@/lib/paris-date";
-import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { fetchPmuCotesMap } from "@/lib/cotes/pmu-csv";
-import { appliquerCotesCsv, fenetreCotesDuMoment } from "@/lib/cotes/cotes-du-moment";
+import { fenetreCotesDuMoment } from "@/lib/cotes/cotes-du-moment";
+import { preparerSelection } from "@/lib/selection/preparer";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
-import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
-import { buildNotreSelection, shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
+import { shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
 import { NotreSelectionPromo } from "@/components/courses/NotreSelectionPromo";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
@@ -213,29 +212,20 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
   const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
-  // Cotes factices (LONACI « 1,2 » pour chaque cheval, masse sans pari) : jusqu'au
-  // 02/10/2026 affichées comme de vraies cotes, avec « Favori marché » sur 8 chevaux.
-  const partantsTries: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
-  const cotesFiables = cotesPlausibles(partantsTries.filter((p: any) => !p.non_partant).map((p: any) => p.cote));
-  const partantsBase: any[] = cotesFiables ? partantsTries : partantsTries.map((p: any) => ({ ...p, cote: null }));
-  // Course qui part dans l'heure : les cotes du moment (CSV PMU de l'Apps Script, rafraîchi
-  // chaque minute avant le départ) remplacent celles de la base (3 relevés par jour).
-  const departUtc  = c.date_course && c.heure_depart ? parisVersUtc(c.date_course, c.heure_depart) : null;
-  const allPartants: any[] =
-    (!c.hippodrome?.pays || c.hippodrome.pays === "France") && fenetreCotesDuMoment(departUtc)
-      ? appliquerCotesCsv(partantsBase, c.numero_reunion, c.numero_course, await fetchPmuCotesMap(c.date_course, 2500))
-      : partantsBase;
-  const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
-  const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
-
-  // ── Stats enrichies (croisement avec tables chevaux/jockeys/entraineurs) ──
-  // 3 queries Supabase parallèles via .in("slug", [...]). Coût ~50-150ms.
-  // Si une entité n'est pas encore en BDD (course très récente, cron pas passé),
-  // la UI handle gracefully avec un fallback "Données en cours de constitution".
-  const statsEnrichies = await getCourseStatsEnrichies(partants);
-  // « Sélection stats » v2 : les 8 plus petites cotes PMU (cf. lib/courses/notre-selection.ts),
-  // déterministe, calculée serveur depuis les partants enrichis. Vide sans cote fiable.
-  const notreSelection = buildNotreSelection(statsEnrichies.partants);
+  // Partants, cotes et « Sélection stats » : lib/selection/preparer.ts, source unique avec la
+  // photo prise avant le départ (cron photo-selection). Cotes factices (LONACI « 1,2 », masse
+  // sans pari) écartées ; course qui part dans l'heure → cotes du moment (CSV PMU de
+  // l'Apps Script, rafraîchi chaque minute avant le départ) au lieu de celles de la base.
+  const departUtc = c.date_course && c.heure_depart ? parisVersUtc(c.date_course, c.heure_depart) : null;
+  const courseFrance = !c.hippodrome?.pays || c.hippodrome.pays === "France";
+  const csvDuMoment = courseFrance && fenetreCotesDuMoment(departUtc) ? await fetchPmuCotesMap(c.date_course, 2500) : null;
+  const prep = await preparerSelection(c.partants || [], c, csvDuMoment);
+  const allPartants: any[] = prep.tous;
+  const partants:    any[] = prep.partants;
+  const nonPartants: any[] = prep.nonPartants;
+  // Stats enrichies (tables chevaux/jockeys/entraineurs) et sélection v2 (8 plus petites cotes PMU).
+  const statsEnrichies = prep.stats;
+  const notreSelection = prep.selection;
   const selectionIndisponible: string | null =
     partants.length === 0 || notreSelection.length > 0 ? null
     : c.hippodrome?.pays && c.hippodrome.pays !== "France"
