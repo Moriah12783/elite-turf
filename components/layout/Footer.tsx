@@ -5,6 +5,7 @@ import LogoEliteTurf from "@/components/ui/LogoEliteTurf";
 import { createClient } from "@/lib/supabase/server";
 import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
 import { RESEAUX_SOCIAUX } from "@/lib/constants/reseaux-sociaux";
+import { PROMESSE_MARQUE } from "@/lib/constants/marque";
 import { COUNTRIES } from "@/lib/geo/countries";
 
 const WHATSAPP = WHATSAPP_SUPPORT_NUMBER;
@@ -40,7 +41,7 @@ export default async function Footer() {
             <div className="w-8 h-px bg-gold-primary/60" />
           </div>
           <p className="font-serif text-xl sm:text-2xl font-bold text-text-primary drop-shadow-lg mb-4">
-            Des analyses hippiques claires et structurées,<br className="hidden sm:block" /> pour les passionnés de turf francophones
+            {PROMESSE_MARQUE}
           </p>
           {!user && (
             <Link

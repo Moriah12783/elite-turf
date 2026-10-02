@@ -5,6 +5,7 @@ import OneSignalInit from "@/components/OneSignalInit";
 import WhatsAppFloatingButton from "@/components/layout/WhatsAppFloatingButton";
 import { WHATSAPP_SUPPORT_NUMBER } from "@/lib/constants/whatsapp";
 import { RESEAUX_SOCIAUX } from "@/lib/constants/reseaux-sociaux";
+import { PROMESSE_MARQUE } from "@/lib/constants/marque";
 import Script from "next/script";
 
 // Domaine canonique. Site hébergé sur Cloudflare Workers (pas Vercel).
@@ -115,6 +116,7 @@ const organizationJsonLd = {
   image: `${APP_URL}/images/logo-v2/logo-horizontal-1000.png`,
   description:
     "Elite Turf est une marque commerciale exploitée par TSALACH VENTURES LLC, dédiée aux analyses hippiques informatives.",
+  slogan: PROMESSE_MARQUE,
   // sameAs — profils officiels de la marque (signal fort d'identification pour
   // les IA et le Knowledge Graph). Source unique : lib/constants/reseaux-sociaux.ts.
   sameAs: RESEAUX_SOCIAUX.map((r) => r.url),
