@@ -20,6 +20,17 @@ export interface FormeMusique {
   ratio: number;
 }
 
+/**
+ * PUR : le texte est bien une musique (au moins une entrée « place ou incident +
+ * discipline »), ou « Inédit » (cheval qui n'a jamais couru). Jamais un simple
+ * nombre : jusqu'au 02/10/2026, l'import GenyBet rangeait la cote de référence
+ * en musique au trot et en obstacle.
+ */
+export function estMusique(texte: string | null | undefined): boolean {
+  if (!texte) return false;
+  return /[0-9DATR][a-z]/.test(texte) || /^in[eé]dit$/i.test(texte.trim());
+}
+
 export function parseMusique(musique: string | null | undefined): FormeMusique | null {
   if (!musique) return null;
   const entrees = musique.replace(/\(\d+\)/g, " ").match(/[0-9DATR](?=[a-z])/g) ?? [];

@@ -23,6 +23,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { fetchGenyPartantsWithMeta, safeCote, safePoids, safeSmallInt, type GenyParticipant, type GenyDiscipline } from "@/lib/geny";
 import { logCronStart } from "@/lib/cron-logger";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
+import { estMusique } from "@/lib/courses/musique";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -294,7 +295,7 @@ export async function GET(req: NextRequest) {
             jockey:      g.jockey?.nom ?? null,
             entraineur:  g.entraineur?.nom ?? null,
             cote:        cotesFiables ? safeCote(g.coteProbable) : null,
-            musique:     g.musique ?? null,
+            musique:     estMusique(g.musique) ? g.musique : null, // jamais un simple nombre (cf. lib/courses/musique.ts)
             poids_kg:    safePoids(g.poids),
             place_corde: safeSmallInt(g.placeCorde, 1, 30),
             age:         safeSmallInt(g.age, 1, 30),
