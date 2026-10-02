@@ -3,6 +3,9 @@ import {
   enMinutes,
   heureCorrigee,
   lireProgrammeFrance,
+  memeCourse,
+  memesEpreuves,
+  memesHippodromes,
   planifierRattrapage,
   type CourseEnBase,
   type CoursePmuFrance,
@@ -19,9 +22,10 @@ const PROGRAMME = {
       {
         numOfficiel: 1,
         pays: { code: "FRA" },
+        hippodrome: { libelleCourt: "ENGHIEN", libelleLong: "HIPPODROME D'ENGHIEN SOISY" },
         courses: [
           {
-            numOrdre: 4, statut: "ARRIVEE_DEFINITIVE_COMPLETE", isArriveeDefinitive: true,
+            numOrdre: 4, libelle: "PRIX D'ORGEVAL", statut: "ARRIVEE_DEFINITIVE_COMPLETE", isArriveeDefinitive: true,
             heureDepart: DEPART_R1C4, timezoneOffset: 7200000,
             ordreArrivee: [[5], [13], [11], [16], [7], [2], [10], [9], [14]],
           },
@@ -57,10 +61,13 @@ describe("lireProgrammeFrance", () => {
     expect(pmu.size).toBe(3);
   });
 
-  it("aplatit l'arrivée définitive et donne l'heure de Paris", () => {
+  it("aplatit l'arrivée définitive, donne l'heure de Paris et l'identité de la course", () => {
     expect(pmu.get(cleRC(1, 4))).toEqual({
       arrivee: [5, 13, 11, 16, 7, 2, 10, 9, 14],
       depart: { paris: "15:15", decalageMin: 120 },
+      hippodrome: "ENGHIEN",
+      hippodromeLong: "HIPPODROME D'ENGHIEN SOISY",
+      libelle: "PRIX D'ORGEVAL",
     });
   });
 
@@ -69,7 +76,8 @@ describe("lireProgrammeFrance", () => {
   });
 
   it("laisse vide l'arrivée d'une course annulée, mais garde son heure", () => {
-    expect(pmu.get(cleRC(1, 6))).toEqual({ arrivee: [], depart: { paris: "16:25", decalageMin: 120 } });
+    expect(pmu.get(cleRC(1, 6))?.arrivee).toEqual([]);
+    expect(pmu.get(cleRC(1, 6))?.depart).toEqual({ paris: "16:25", decalageMin: 120 });
   });
 
   it("renvoie une carte vide sur un payload illisible", () => {
@@ -118,21 +126,51 @@ describe("heureCorrigee", () => {
   });
 });
 
+describe("identité de course", () => {
+  it("rapproche les graphies d'un même hippodrome", () => {
+    expect(memesHippodromes("Vincennes", "VINCENNES")).toBe(true);
+    expect(memesHippodromes("Paris-Vincennes", "VINCENNES")).toBe(true);           // copie de la voie de secours
+    expect(memesHippodromes("Le Lion-d'Angers", "LE LION D'ANGERS")).toBe(true);
+  });
+
+  it("sépare deux hippodromes distincts", () => {
+    expect(memesHippodromes("Compiègne", "FONTAINEBLEAU")).toBe(false);
+    expect(memesHippodromes("Enghien", "VINCENNES")).toBe(false);
+  });
+
+  it("reconnaît une même épreuve malgré la graphie", () => {
+    expect(memesEpreuves("Prix de l'Atlantique", "PRIX DE L'ATLANTIQUE")).toBe(true);
+    expect(memesEpreuves("Prix la Bate", "PRIX DE LA FORET DE FONTAINEBLEAU")).toBe(false);
+  });
+
+  it("refuse la course PMU de mêmes numéros quand ni l'hippodrome ni l'épreuve ne concordent", () => {
+    // Cas réel du 27/03/2026 R3C1 : « Prix de Diane » en base, Prix Massoud au Bouscat au PMU.
+    expect(memeCourse(
+      { hippodrome: "Chantilly", libelle: "Prix de Diane — Classique Chantilly" },
+      { hippodrome: "LE BOUSCAT", hippodromeLong: "HIPPODROME DU BOUSCAT", libelle: "QATAR PRIX MASSOUD" },
+    )).toBe(false);
+  });
+});
+
 describe("planifierRattrapage", () => {
+  const IDENTITE = { hippodrome: "ENGHIEN", hippodromeLong: "HIPPODROME D'ENGHIEN SOISY", libelle: "PRIX D'ORGEVAL" };
   const pmu = new Map<string, CoursePmuFrance>([
-    [cleRC(1, 4), { arrivee: [5, 13, 11, 16, 7, 2, 10, 9, 14], depart: { paris: "15:15", decalageMin: 120 } }],
-    [cleRC(1, 6), { arrivee: [], depart: { paris: "16:25", decalageMin: 120 } }],
+    [cleRC(1, 4), { arrivee: [5, 13, 11, 16, 7, 2, 10, 9, 14], depart: { paris: "15:15", decalageMin: 120 }, ...IDENTITE }],
+    [cleRC(1, 6), { arrivee: [], depart: { paris: "16:25", decalageMin: 120 }, ...IDENTITE, libelle: "PRIX DE LA VILLE" }],
   ]);
 
   const course = (sur: Partial<CourseEnBase>): CourseEnBase => ({
     id: "c-1",
     numero_reunion: 1,
     numero_course: 4,
+    hippodrome: "Enghien",
+    libelle: "Prix d'Orgeval",
     heure_depart: "15:15:00",
     paris_disponibles: ["QUINTE_PLUS", "TRIO"],
     arrivee_officielle: null,
     a_ligne_arrivee: false,
     partants: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16],
+    nb_pronostics: 0,
     ...sur,
   });
 
@@ -157,11 +195,23 @@ describe("planifierRattrapage", () => {
   });
 
   it("signale sans la réécrire une arrivée contredite par le PMU", () => {
-    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7] })], pmu);
+    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7], a_ligne_arrivee: true })], pmu);
     expect(plan.arrivees).toEqual([]);
     expect(plan.divergentes).toEqual([
-      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10] },
+      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10], a_ligne_arrivee: true, corrigeable: true },
     ]);
+  });
+
+  it("ne déclare jamais corrigeable une arrivée qui a pu juger un pronostic", () => {
+    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7], nb_pronostics: 1 })], pmu);
+    expect(plan.divergentes).toHaveLength(1);
+    expect(plan.divergentes[0].corrigeable).toBe(false);
+  });
+
+  it("ne corrige pas quand l'appariement est douteux (numéros PMU hors de nos partants)", () => {
+    const plan = planifierRattrapage([course({ arrivee_officielle: [4, 2, 1, 3], partants: [1, 2, 3, 4] })], pmu);
+    expect(plan.divergentes).toHaveLength(1);
+    expect(plan.divergentes[0].corrigeable).toBe(false);
   });
 
   it("refuse une arrivée dont un numéro n'est pas parmi nos partants", () => {
@@ -192,5 +242,24 @@ describe("planifierRattrapage", () => {
   it("corrige une heure GMT, même pour une course qui a déjà son arrivée", () => {
     const plan = planifierRattrapage([course({ heure_depart: "13:15:00", arrivee_officielle: [5, 13, 11] })], pmu);
     expect(plan.heures).toEqual([{ course_id: "c-1", avant: "13:15:00", apres: "15:15:00" }]);
+  });
+
+  it("n'écrit rien sur une course qui n'est pas celle du PMU (mêmes numéros, autre hippodrome, autre épreuve)", () => {
+    const plan = planifierRattrapage([
+      course({ id: "autre", hippodrome: "Vincennes", libelle: "Prix Alphonse Sourroubille", heure_depart: "13:15:00" }),
+      course({ id: "autre-arr", hippodrome: "Vincennes", libelle: "Prix Alphonse Sourroubille", arrivee_officielle: [13, 5, 11, 16, 7] }),
+    ], pmu);
+    expect(plan.arrivees).toEqual([]);
+    expect(plan.heures).toEqual([]);
+    expect(plan.divergentes).toEqual([]);
+    expect(plan.ignorees).toEqual([{ course_id: "autre", motif: "autre course au PMU" }]);
+  });
+
+  it("accepte la copie d'une source secondaire (même épreuve, hippodrome « Paris-Vincennes »)", () => {
+    const pmuVincennes = new Map<string, CoursePmuFrance>([
+      [cleRC(1, 4), { arrivee: [5, 13, 11, 16, 7, 2, 10], depart: { paris: "15:15", decalageMin: 120 }, hippodrome: "VINCENNES", hippodromeLong: "HIPPODROME DE PARIS-VINCENNES", libelle: "PRIX D'ORGEVAL" }],
+    ]);
+    const plan = planifierRattrapage([course({ hippodrome: "Paris-Vincennes" })], pmuVincennes);
+    expect(plan.arrivees).toHaveLength(1);
   });
 });

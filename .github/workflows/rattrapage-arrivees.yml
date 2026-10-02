@@ -3,8 +3,8 @@ name: rattrapage-arrivees
 # Rattrapage ponctuel depuis le programme PMU officiel (lib/sync/pmu-rattrapage.ts) :
 # arrivées manquantes + heures de départ enregistrées en GMT. Manuel uniquement.
 #
-# N'écrase jamais une arrivée existante (celles qui divergent du PMU sont
-# seulement signalées), ne juge aucun pronostic, n'envoie rien.
+# N'écrase une arrivée existante qu'avec « corriger », et seulement sur une
+# course sans aucun pronostic ; ne juge aucun pronostic, n'envoie rien.
 
 on:
   workflow_dispatch:
@@ -23,6 +23,11 @@ on:
         type: boolean
         required: false
         default: true
+      corriger:
+        description: "Remplacer par l'arrivée PMU les arrivées contredites des courses SANS pronostic"
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: rattrapage-arrivees
@@ -58,3 +63,4 @@ jobs:
           RATTRAPAGE_SINCE: ${{ inputs.since }}
           RATTRAPAGE_UNTIL: ${{ inputs.until }}
           RATTRAPAGE_DRY_RUN: ${{ inputs.dry_run }}
+          RATTRAPAGE_CORRIGER: ${{ inputs.corriger }}
