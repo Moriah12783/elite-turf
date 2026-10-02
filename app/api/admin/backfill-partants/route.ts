@@ -24,6 +24,7 @@ import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
+import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -219,11 +220,14 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
       logger.error("backfill-partants", "Bulk delete failed", { error: delErr.message });
     }
 
-    const allRows = okOutcomes.flatMap((o) =>
-      o.partants
+    // Même cote partout ou somme des probabilités > 2 = valeur par défaut
+    // (LONACI « 1,2 », masse sans pari), pas une cote.
+    const allRows = okOutcomes.flatMap((o) => {
+      const cotesFiables = cotesPlausibles(o.partants.filter((g) => !g.nonPartant).map((g) => g.coteProbable));
+      return o.partants
         .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
         .map((g) => {
-          const cote = safeCote(g.coteProbable);
+          const cote = cotesFiables ? safeCote(g.coteProbable) : null;
           return {
             course_id:   o.courseId,
             numero:      g.numPmu,
@@ -240,8 +244,8 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
             non_partant: g.nonPartant ?? false,
             scraped_at:  new Date().toISOString(),
           };
-        }),
-    );
+        });
+    });
 
     if (allRows.length > 0) {
       const { error: insErr, count } = await adminClient

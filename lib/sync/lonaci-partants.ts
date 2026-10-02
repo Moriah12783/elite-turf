@@ -13,6 +13,7 @@
  * PUR (fetch global + import lonaci-api pur) → bundlable Node sur GitHub Actions.
  */
 import { fetchLonaciProgramme, type LonaciReunion } from "@/lib/lonaci-api";
+import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 
 /** Partant façonné comme un GenyParticipant (sous-ensemble utilisé par l'insert). */
 export interface LonaciPartant {
@@ -55,6 +56,16 @@ export function normalizeLonaciPartant(raw: unknown): LonaciPartant | null {
 }
 
 /**
+ * Retire les cotes d'une course quand elles ne sont pas de vraies cotes : la
+ * LONACI renvoie « 1,2 » pour chaque cheval quand elle n'a pas de cote (93 % des
+ * courses marocaines au 02/10/2026). PURE (testable).
+ */
+export function retirerCotesFactices(partants: LonaciPartant[]): LonaciPartant[] {
+  if (cotesPlausibles(partants.filter((p) => !p.nonPartant).map((p) => p.coteProbable))) return partants;
+  return partants.map((p) => ({ ...p, coteProbable: undefined }));
+}
+
+/**
  * Récupère les partants LONACI d'une date → map `${reunion}|${course}` → partants.
  * Une seule requête pour toutes les courses. Ne throw jamais (map vide si KO).
  * @param dateISO "YYYY-MM-DD"
@@ -79,7 +90,7 @@ export async function fetchLonaciPartantsMap(dateISO: string): Promise<Map<strin
         const p = normalizeLonaciPartant(raw);
         if (p) partants.push(p);
       }
-      if (partants.length > 0) map.set(`${r.nReunion}|${c.course_number}`, partants);
+      if (partants.length > 0) map.set(`${r.nReunion}|${c.course_number}`, retirerCotesFactices(partants));
     }
   }
   return map;
