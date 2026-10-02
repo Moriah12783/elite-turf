@@ -46,7 +46,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   const cotesPmu = await fetchCotesPmu(c.date_course, c.numero_reunion, c.numero_course);
   if (cotesPmu === null) {
-    return NextResponse.json({ error: "API PMU indisponible" }, { status: 503 });
+    // `depart` permet à l'onglet de continuer à réessayer au même rythme
+    // (panne PMU réelle le 02/10 vers 15:30 GMT : 504 pendant plus de 15 min).
+    return NextResponse.json({ error: "Le PMU ne répond pas pour le moment.", depart }, { status: 503 });
   }
 
   // (date, R, C) ne suffit pas à identifier une course : on vérifie que ce
