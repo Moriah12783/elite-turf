@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { lireCotesPmu, memesPartants, nomCheval } from "./pmu-cotes";
+import { favoriPmu, lireCotesPmu, memesPartants, nomCheval, type CotePmu } from "./pmu-cotes";
 import { delaiRafraichissement, RAFRAICHISSEMENT_LOIN_MS, RAFRAICHISSEMENT_PROCHE_MS } from "./courses/cotes-live";
 
 // Extrait réel de /programme/02102026/R4/C6/participants (Saint-Cloud, 02/10/2026).
@@ -51,6 +51,37 @@ describe("identité par les partants", () => {
 
   it("ne tranche pas avec moins de 3 noms connus", () => {
     expect(memesPartants(["Zgharta"], ["ZGHARTA"])).toBe(false);
+  });
+});
+
+describe("favoriPmu (accueil)", () => {
+  const vide: CotePmu = { numero: 0, nom: "", nonPartant: false, cote: null, coteMaj: null, tendance: null, coteReference: null, jockey: null };
+
+  it("prend la cote directe la plus basse parmi nos chevaux", () => {
+    expect(favoriPmu(lireCotesPmu(PARTICIPANTS), ["Zgharta", "Kelle Beaute", "Blue Sky"]))
+      .toEqual({ numero: 4, nom: "KELLE BEAUTÉ", cote: 3.4, coteMaj: 1790949600000 });
+  });
+
+  it("écarte les non-partants et les chevaux sans cote", () => {
+    const liste: CotePmu[] = [
+      { ...vide, numero: 1, nom: "ALPHA", cote: 4.2 },
+      { ...vide, numero: 2, nom: "BRAVO", cote: 1.5, nonPartant: true },
+      { ...vide, numero: 3, nom: "CHARLIE" },
+      { ...vide, numero: 4, nom: "DELTA", cote: 2.8, coteMaj: 1 },
+    ];
+    expect(favoriPmu(liste, ["Alpha", "Bravo", "Charlie", "Delta"])).toEqual({ numero: 4, nom: "DELTA", cote: 2.8, coteMaj: 1 });
+  });
+
+  it("rien si le PMU parle d'une autre course (mêmes R et C, autres chevaux)", () => {
+    expect(favoriPmu(lireCotesPmu(PARTICIPANTS), ["Alpha", "Bravo", "Charlie", "Delta"])).toBeNull();
+  });
+
+  it("rien si le PMU ne répond pas ou n'a publié aucune cote", () => {
+    expect(favoriPmu(null, ["Zgharta", "Kelle Beaute", "Blue Sky"])).toBeNull();
+    const sansCote: CotePmu[] = [
+      { ...vide, numero: 1, nom: "ALPHA" }, { ...vide, numero: 2, nom: "BRAVO" }, { ...vide, numero: 3, nom: "CHARLIE" },
+    ];
+    expect(favoriPmu(sansCote, ["Alpha", "Bravo", "Charlie"])).toBeNull();
   });
 });
 
