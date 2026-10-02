@@ -120,3 +120,54 @@ function enumerer(items: string[]): string {
 function majuscule(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+// ── Rapports PMU définitifs (02/10/2026) ─────────────────────────────────────
+
+interface RapportsAffichables {
+  quinte_plus?: { ordre?: number; desordre?: number; bonus4?: number; bonus3?: number };
+  quarte_plus?: { ordre?: number; desordre?: number; bonus?: number };
+  tierce?: { ordre?: number; desordre?: number };
+}
+
+export interface LigneRapport {
+  pari: string;
+  /** Mise de référence du rapport (« pour 2 € »). */
+  mise: string;
+  detail: string;
+}
+
+/** 26003.8 → « 26 003,80 € » (espaces insécables, indépendant de l'ICU de la machine). */
+export function euros(n: number): string {
+  const centimes = Math.round(n * 100);
+  const entier = String(Math.floor(centimes / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const reste = String(centimes % 100);
+  return `${entier},${reste.length === 1 ? "0" + reste : reste} €`;
+}
+
+/**
+ * Lignes « Rapports PMU définitifs » de la carte d'arrivée : Quinté+ (pour 2 €),
+ * Quarté+ et Tiercé (pour 1 €), conventions de `arrivees.rapports_pmu`. Seules
+ * les valeurs présentes sont affichées ; aucune ligne sans rapport.
+ */
+export function lignesRapports(r: RapportsAffichables | null | undefined): LigneRapport[] {
+  if (!r) return [];
+  const morceaux = (paires: [string, number | undefined][]) =>
+    paires.filter((p) => typeof p[1] === "number" && (p[1] as number) > 0).map((p) => `${p[0]} ${euros(p[1] as number)}`);
+  const out: LigneRapport[] = [];
+  const q = r.quinte_plus;
+  if (q) {
+    const m = morceaux([["ordre", q.ordre], ["désordre", q.desordre], ["bonus 4/5", q.bonus4], ["bonus 3", q.bonus3]]);
+    if (m.length) out.push({ pari: "Quinté+", mise: "pour 2 €", detail: m.join(" · ") });
+  }
+  const qa = r.quarte_plus;
+  if (qa) {
+    const m = morceaux([["ordre", qa.ordre], ["désordre", qa.desordre], ["bonus", qa.bonus]]);
+    if (m.length) out.push({ pari: "Quarté+", mise: "pour 1 €", detail: m.join(" · ") });
+  }
+  const t = r.tierce;
+  if (t) {
+    const m = morceaux([["ordre", t.ordre], ["désordre", t.desordre]]);
+    if (m.length) out.push({ pari: "Tiercé", mise: "pour 1 €", detail: m.join(" · ") });
+  }
+  return out;
+}

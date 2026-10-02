@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     return redirect(`${RETOUR}?dividendes=erreur`);
   }
 
+  // Propagation coupée (ROI faux) : rien n'a été écrit, on le dit clairement.
+  if (result.coupee) return redirect(`${RETOUR}?dividendes=coupe`);
+
   const { filled, sumGains } = result.summary;
   console.log(`[Dividendes] ✓ ${filled} rapport(s) remplis (≈${sumGains}€ cumulés)`);
   return redirect(`${RETOUR}?dividendes=ok&filled=${filled}&gains=${Math.round(sumGains)}`);

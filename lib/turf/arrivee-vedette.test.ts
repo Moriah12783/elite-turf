@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resumeCourse, nomPersonne, aUneArrivee, veille } from "./arrivee-vedette";
+import { resumeCourse, nomPersonne, aUneArrivee, veille, lignesRapports, euros } from "./arrivee-vedette";
 
 // Quinté+ réel du 01/10/2026 (base Elite Turf) : 15 partants déclarés, aucun non-partant.
 const course = { hippodrome: "Auteuil", categorie: "OBSTACLE", distance_metres: 3600, nb_partants: 15 };
@@ -64,5 +64,31 @@ describe("nomPersonne", () => {
     expect(nomPersonne("K.Nabet")).toBe("K. Nabet");
     expect(nomPersonne("J.-M.BAZIRE")).toBe("J.-M. BAZIRE");
     expect(nomPersonne("  N. GEORGE &  A. ZETTERHOLM ")).toBe("N. GEORGE & A. ZETTERHOLM");
+  });
+});
+
+describe("lignesRapports — rapports PMU définitifs sur la carte d'arrivée", () => {
+  it("Quinté+ réel du 01/10/2026, puis Quarté+ et Tiercé", () => {
+    const lignes = lignesRapports({
+      quinte_plus: { ordre: 26003.8, desordre: 248, bonus4: 7.4, bonus3: 6.2 },
+      quarte_plus: { ordre: 4127.4, desordre: 81.9, bonus: 16.3 },
+      tierce: { ordre: 646.4, desordre: 98.5 },
+    });
+    expect(lignes).toEqual([
+      { pari: "Quinté+", mise: "pour 2 €", detail: "ordre 26 003,80 € · désordre 248,00 € · bonus 4/5 7,40 € · bonus 3 6,20 €" },
+      { pari: "Quarté+", mise: "pour 1 €", detail: "ordre 4 127,40 € · désordre 81,90 € · bonus 16,30 €" },
+      { pari: "Tiercé", mise: "pour 1 €", detail: "ordre 646,40 € · désordre 98,50 €" },
+    ]);
+  });
+
+  it("rien d'inventé : pas de rapports, pas de ligne ; valeurs absentes omises", () => {
+    expect(lignesRapports(null)).toEqual([]);
+    expect(lignesRapports({ tierce: {} })).toEqual([]);
+    expect(lignesRapports({ quinte_plus: { desordre: 248 } })).toEqual([{ pari: "Quinté+", mise: "pour 2 €", detail: "désordre 248,00 €" }]);
+  });
+
+  it("euros : arrondi au centime", () => {
+    expect(euros(0.5)).toBe("0,50 €");
+    expect(euros(1300190.0)).toBe("1 300 190,00 €");
   });
 });

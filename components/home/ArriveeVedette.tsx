@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Trophy, ChevronRight, History } from "lucide-react";
 import { ArriveePodium } from "@/components/arrivees/ArriveePodium";
-import { resumeCourse, type PartantNomme } from "@/lib/turf/arrivee-vedette";
+import { resumeCourse, lignesRapports, type PartantNomme } from "@/lib/turf/arrivee-vedette";
+import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 import type { QuinteDuJourResume } from "@/app/(public)/quinte-plus/donnees";
 
 /**
@@ -38,10 +39,13 @@ export function ArriveeVedette({
   course,
   date,
   partants,
+  rapports = null,
 }: {
   course: any;
   date: string;
   partants: PartantNomme[];
+  /** `arrivees.rapports_pmu` du Quinté+ (rapports PMU définitifs), s'ils sont connus. */
+  rapports?: RapportsPMU | null;
 }) {
   const hippodrome = Array.isArray(course.hippodrome) ? course.hippodrome[0] : course.hippodrome;
   const resume = resumeCourse(
@@ -54,6 +58,7 @@ export function ArriveeVedette({
     course.arrivee_officielle,
     partants,
   );
+  const rapportsAffiches = lignesRapports(rapports);
 
   return (
     <>
@@ -66,6 +71,20 @@ export function ArriveeVedette({
         <div className="mb-5">
           <p className="text-text-primary text-sm font-semibold mb-1.5">Résumé de la course</p>
           <p className="text-text-secondary text-sm leading-relaxed">{resume.join(" ")}</p>
+        </div>
+      )}
+
+      {rapportsAffiches.length > 0 && (
+        <div className="mb-5">
+          <p className="text-text-primary text-sm font-semibold mb-1.5">Rapports PMU définitifs</p>
+          <ul className="space-y-1 text-sm text-text-secondary">
+            {rapportsAffiches.map((l) => (
+              <li key={l.pari}>
+                <span className="text-text-primary font-medium">{l.pari}</span>{" "}
+                <span className="text-text-muted text-xs">({l.mise})</span> : {l.detail}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

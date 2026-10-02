@@ -1,17 +1,17 @@
 name: backfill-rapports
 
-# Backfill ONE-SHOT des rapports PMU : re-fetch des pages arrivée Geny + re-parse
-# avec le parser corrigé (lib/sync/geny-rapports-parser.ts) + UPDATE de
-# arrivees.rapports_pmu. Manuel uniquement (workflow_dispatch).
+# Remplissage ponctuel des rapports PMU définitifs dans arrivees.rapports_pmu,
+# depuis l'API PMU officielle (lib/sync/pmu-rapports.ts). Manuel uniquement.
+# Depuis le 02/10/2026 : la source Geny (403) est remplacée par le PMU.
 #
-# Sur runner GitHub (IP Azure → HTTP 200) car Geny renvoie 403 à l'IP du Worker
-# Cloudflare. Ne touche jamais ordre_arrivee — seulement rapports_pmu + commentaire.
+# N'écrase jamais un rapport existant, ne touche jamais ordre_arrivee, et
+# n'alimente pas le ROI (propagation coupée, lib/pmu-backfill-rapport-gagnant.ts).
 
 on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "Portée : quinte (vrais Quinté+, défaut) ou all (toutes les courses terminées)"
+        description: "Portée : quinte (Quinté+, défaut) ou all (toutes les courses françaises terminées)"
         type: choice
         required: true
         default: quinte
@@ -19,7 +19,7 @@ on:
           - quinte
           - all
       since:
-        description: "Borne basse date_course (YYYY-MM-DD, optionnel)"
+        description: "Borne basse date_course (YYYY-MM-DD, défaut : 30 jours en arrière)"
         type: string
         required: false
         default: ""
@@ -55,13 +55,13 @@ jobs:
 
       - name: Bundle CLI (esbuild résout les alias @/)
         run: >-
-          npx -y esbuild scripts/geny-rapports-backfill-cli.ts
+          npx -y esbuild scripts/pmu-rapports-backfill-cli.ts
           --bundle --platform=node --format=esm --target=node20
           --tsconfig=tsconfig.json --packages=external
-          --outfile=geny-rapports-backfill.mjs
+          --outfile=pmu-rapports-backfill.mjs
 
       - name: Backfill rapports PMU
-        run: node geny-rapports-backfill.mjs
+        run: node pmu-rapports-backfill.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

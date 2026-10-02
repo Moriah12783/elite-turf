@@ -13,6 +13,7 @@ import { pickCoursesASuivre, type CourseASuivre } from "@/lib/turf/courses-a-sui
 import { aUneArrivee, veille } from "@/lib/turf/arrivee-vedette";
 import { heureGmtDepuisParis } from "@/lib/seo/dates";
 import { ArriveeVedette, QuinteHier } from "@/components/home/ArriveeVedette";
+import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 import { chargerQuintesPeriode } from "@/app/(public)/quinte-plus/donnees";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
@@ -170,13 +171,23 @@ export default async function PronosticsSection({ personnalise = true }: { perso
   // (la synchro des arrivées passe environ 1 h 15 après le départ).
   let carteApresCourse: React.ReactNode = null;
   if (quinte && aUneArrivee(quinte.arrivee_officielle)) {
-    const { data: partantsQuinte } = await supabase
-      .from("partants")
-      .select("numero, nom_cheval, jockey, entraineur, non_partant")
-      .eq("course_id", quinte.id);
+    const [{ data: partantsQuinte }, { data: arriveeQuinte }] = await Promise.all([
+      supabase
+        .from("partants")
+        .select("numero, nom_cheval, jockey, entraineur, non_partant")
+        .eq("course_id", quinte.id),
+      // Rapports PMU définitifs (lib/sync/pmu-rapports.ts) : affichés comme
+      // information, ils n'alimentent pas le ROI (propagation coupée).
+      supabase.from("arrivees").select("rapports_pmu").eq("course_id", quinte.id).maybeSingle(),
+    ]);
     carteApresCourse = (
       <QuinteVedetteCard course={quinte} date={today} etat="arrivee">
-        <ArriveeVedette course={quinte} date={today} partants={partantsQuinte || []} />
+        <ArriveeVedette
+          course={quinte}
+          date={today}
+          partants={partantsQuinte || []}
+          rapports={(arriveeQuinte as { rapports_pmu?: RapportsPMU | null } | null)?.rapports_pmu ?? null}
+        />
       </QuinteVedetteCard>
     );
   } else if (quinte && isCourseTerminee(quinte.heure_depart, nowMins)) {

@@ -11,10 +11,24 @@
  * Env : SUPABASE_URL (ou NEXT_PUBLIC_SUPABASE_URL) + SUPABASE_SERVICE_ROLE_KEY.
  */
 import { runGenyArriveesSync } from "@/lib/sync/geny-arrivees";
+import { runPmuRapportsSync } from "@/lib/sync/pmu-rapports";
+import { todayParisISO } from "@/lib/paris-date";
 
 async function main(): Promise<void> {
   const result = await runGenyArriveesSync();
   console.log("✅ RESULT", JSON.stringify(result));
+
+  // Rapports PMU définitifs des courses arrivées (2 derniers jours), depuis
+  // l'API PMU officielle. Best-effort : n'affecte jamais le statut du job, et
+  // n'alimente pas le ROI (propagation coupée le 02/10/2026).
+  try {
+    const aujourdhui = todayParisISO();
+    const avantHier = new Date(Date.parse(aujourdhui + "T12:00:00Z") - 2 * 86400000).toISOString().slice(0, 10);
+    const r = await runPmuRapportsSync({ depuis: avantHier, jusqua: aujourdhui, portee: "toutes" });
+    console.log("✅ RAPPORTS", JSON.stringify(r));
+  } catch (e) {
+    console.warn(`⚠️ rapports PMU non synchronisés : ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 main().catch((e) => {
