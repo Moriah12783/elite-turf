@@ -26,6 +26,7 @@ import {
   estArriveeDefinitive,
   fetchProgrammeDuJour,
 } from "./pmu-arrivees";
+import { cleHippodrome } from "./hippodrome-cle";
 
 /** Écart toléré (minutes) entre l'heure programmée et le départ réel. */
 export const TOLERANCE_MIN = 10;
@@ -41,6 +42,62 @@ export interface CoursePmuFrance {
   /** Arrivée définitive aplatie ; [] si la course n'est pas officialisée. */
   arrivee: number[];
   depart: DepartPmu | null;
+  /** Identité de la course côté PMU : hippodrome (court, long) et nom de l'épreuve. */
+  hippodrome: string;
+  hippodromeLong: string;
+  libelle: string;
+}
+
+// ── Identité : (date, R, C) ne suffit PAS ────────────────────────────────────
+// Leçon de l'audit du bilan (28/07/2026) : 26 pronostics sur 249 étaient
+// comparés à une autre course que la leur. Une course en base n'est « la
+// même » que la course PMU de mêmes numéros que si l'HIPPODROME ou le NOM DE
+// L'ÉPREUVE concorde. Les copies d'une source secondaire (« Paris-Vincennes »
+// pour « Vincennes ») passent par l'inclusion des clés d'hippodrome.
+
+const MOTS_VIDES = ["PRIX", "DE", "DU", "LA", "LE", "LES", "D", "L", "DES", "ET", "AU", "AUX", "GRAND"];
+
+function jetonsEpreuve(nom: string | null | undefined): string[] {
+  const bruts = String(nom == null ? "" : nom)
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toUpperCase().split(/[^A-Z0-9]+/);
+  const out: string[] = [];
+  for (let i = 0; i < bruts.length; i++) {
+    const t = bruts[i];
+    if (t.length > 1 && MOTS_VIDES.indexOf(t) === -1) out.push(t);
+  }
+  return out;
+}
+
+/** Même hippodrome : clés égales, ou l'une contient l'autre (≥ 5 caractères). */
+export function memesHippodromes(a: string | null | undefined, b: string | null | undefined): boolean {
+  const ka = cleHippodrome(String(a == null ? "" : a));
+  const kb = cleHippodrome(String(b == null ? "" : b));
+  if (!ka || !kb) return false;
+  if (ka === kb) return true;
+  const court = ka.length < kb.length ? ka : kb;
+  const long = ka.length < kb.length ? kb : ka;
+  return court.length >= 5 && long.indexOf(court) !== -1;
+}
+
+/** Même épreuve : au moins 60 % des mots significatifs du nom le plus court en commun. */
+export function memesEpreuves(a: string | null | undefined, b: string | null | undefined): boolean {
+  const ta = jetonsEpreuve(a);
+  const tb = jetonsEpreuve(b);
+  if (ta.length === 0 || tb.length === 0) return false;
+  let communs = 0;
+  for (let i = 0; i < ta.length; i++) if (tb.indexOf(ta[i]) !== -1) communs++;
+  return communs / Math.min(ta.length, tb.length) >= 0.6;
+}
+
+/** La course en base est bien la course PMU de mêmes numéros. */
+export function memeCourse(
+  base: { hippodrome: string; libelle: string | null },
+  pmu: { hippodrome: string; hippodromeLong: string; libelle: string },
+): boolean {
+  return memesHippodromes(base.hippodrome, pmu.hippodrome)
+    || memesHippodromes(base.hippodrome, pmu.hippodromeLong)
+    || memesEpreuves(base.libelle, pmu.libelle);
 }
 
 function deuxChiffres(n: number): string {
@@ -91,7 +148,13 @@ export function lireProgrammeFrance(json: unknown): Map<string, CoursePmuFrance>
           decalageMin: Math.round(tz / 60000),
         };
       }
-      out.set(cleRC(numR, numC), { arrivee, depart });
+      out.set(cleRC(numR, numC), {
+        arrivee,
+        depart,
+        hippodrome: String(r.hippodrome?.libelleCourt ?? ""),
+        hippodromeLong: String(r.hippodrome?.libelleLong ?? ""),
+        libelle: String(c?.libelle ?? ""),
+      });
     }
   }
   return out;
@@ -121,6 +184,9 @@ export interface CourseEnBase {
   id: string;
   numero_reunion: number | null;
   numero_course: number | null;
+  /** Nom de l'hippodrome et de l'épreuve en base : vérification d'identité. */
+  hippodrome: string;
+  libelle: string | null;
   heure_depart: string | null;
   paris_disponibles: string[] | null;
   arrivee_officielle: number[] | null;
@@ -135,6 +201,7 @@ export interface CourseEnBase {
 export type MotifIgnoree =
   | "sans numéro"
   | "absente du PMU"
+  | "autre course au PMU"
   | "arrivée non définitive"
   | "partants inconnus"
   | "numéros hors partants";
@@ -175,7 +242,10 @@ export function planifierRattrapage(
       plan.ignorees.push({ course_id: c.id, motif: "sans numéro" });
       continue;
     }
-    const p = pmu.get(cleRC(c.numero_reunion, c.numero_course));
+    const brute = pmu.get(cleRC(c.numero_reunion, c.numero_course));
+    // Mêmes numéros ne veut pas dire même course : sans concordance
+    // d'hippodrome ou d'épreuve, la course PMU n'est pas la nôtre → rien.
+    const p = brute && memeCourse(c, brute) ? brute : undefined;
 
     // 1. Heure de départ enregistrée en GMT.
     const apres = p ? heureCorrigee(c.heure_depart, p.depart) : null;
@@ -199,7 +269,7 @@ export function planifierRattrapage(
       continue;
     }
     if (!p) {
-      plan.ignorees.push({ course_id: c.id, motif: "absente du PMU" });
+      plan.ignorees.push({ course_id: c.id, motif: brute ? "autre course au PMU" : "absente du PMU" });
       continue;
     }
     if (p.arrivee.length < 3) {
@@ -260,10 +330,11 @@ interface LigneCourse {
   id: string;
   numero_reunion: number | null;
   numero_course: number | null;
+  libelle: string | null;
   heure_depart: string | null;
   paris_disponibles: string[] | null;
   arrivee_officielle: number[] | null;
-  hippodrome: { pays: string | null } | { pays: string | null }[] | null;
+  hippodrome: { nom: string | null; pays: string | null } | { nom: string | null; pays: string | null }[] | null;
   arrivees: { id: string } | { id: string }[] | null;
   partants: { numero: number | null }[] | null;
   pronostics: { id: string }[] | null;
@@ -302,7 +373,7 @@ export async function runRattrapagePmu(opts: RattrapageOptions): Promise<Rattrap
     // mais une page pleine signalerait une lecture tronquée (limite de 1 000).
     const { data, error } = await supabase
       .from("courses")
-      .select("id, numero_reunion, numero_course, heure_depart, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(pays), arrivees(id), partants(numero), pronostics(id)")
+      .select("id, numero_reunion, numero_course, libelle, heure_depart, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(nom, pays), arrivees(id), partants(numero), pronostics(id)")
       .eq("date_course", jour)
       .order("id", { ascending: true })
       .range(0, 999);
@@ -321,6 +392,8 @@ export async function runRattrapagePmu(opts: RattrapageOptions): Promise<Rattrap
         id: l.id,
         numero_reunion: l.numero_reunion,
         numero_course: l.numero_course,
+        hippodrome: h.nom ?? "",
+        libelle: l.libelle,
         heure_depart: l.heure_depart,
         paris_disponibles: l.paris_disponibles,
         arrivee_officielle: l.arrivee_officielle,
