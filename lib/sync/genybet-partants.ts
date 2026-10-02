@@ -9,13 +9,20 @@
  * donc pas les cotes : il complète les partants LONACI (qui portent les cotes)
  * avec la forme. Fusion par numéro côté appelant (geny-enrich-cli).
  *
- * Page course : /courses/partants-pronostics/{id}. Table partants, colonnes :
- *   N° · Cheval · C(orde) · S/A(sexe-âge) · Poids · Jockey · Entraîneur · Val.
- *   · Performances(musique) · Réf. · Live
+ * Page course : /courses/partants-pronostics/{id}. Les colonnes CHANGENT selon
+ * la discipline (relevé du 02/10/2026) :
+ *   plat     : N° · Cheval · C · S/A · Poids · Jockey · Entraîneur · Val. · Performances · Réf. · Live
+ *   trot     : N° · Cheval · S/A · Dist. · Driver · Entraîneur · Gains · Performances · Réf. · Live
+ *   obstacle : N° · Cheval · S/A · Poids · Jockey · Entraîneur · Val. · Performances · Réf. · Live
+ * → elles sont lues PAR LEUR EN-TÊTE. Lues par position jusqu'au 02/10/2026 :
+ * au trot et en obstacle, l'entraîneur partait en « jockey », les gains (ou la
+ * valeur) en « entraîneur » et la cote de référence en « musique » (84 % des
+ * musiques du trot, 100 % de l'obstacle sur 30 jours).
  *
  * PUR (fetch via genybet-programme) → bundlable Node sur GitHub Actions.
  */
 import { fetchGenybetHtml, toGenybetDate } from "./genybet-programme";
+import { estMusique } from "@/lib/courses/musique";
 
 /** Champs de forme d'un partant (sous-ensemble GenyParticipant, SANS cote). */
 export interface GenybetPartant {
@@ -31,19 +38,40 @@ export interface GenybetPartant {
   nonPartant:  boolean;
 }
 
+/** Entités nommées présentes chez GenyBet (« Entra&icirc;neur », « In&eacute;dit », « N&deg; »). */
+const ENTITES: Record<string, string> = {
+  eacute: "é", egrave: "è", ecirc: "ê", euml: "ë", agrave: "à", acirc: "â",
+  icirc: "î", iuml: "ï", ocirc: "ô", ucirc: "û", ugrave: "ù", ccedil: "ç", deg: "°",
+};
+
 function decode(str: string): string {
   return str
     .replace(/&#0*39;/g, "'").replace(/&#0*34;/g, '"')
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/&([a-z]+);/gi, (m, nom) => ENTITES[nom.toLowerCase()] ?? m)
     .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
     .replace(/&#x([0-9A-Fa-f]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/’/g, "'");
 }
 
-/** Retire les balises, décode les entités, normalise les espaces. */
+/**
+ * Retire les balises, décode les entités, normalise les espaces. Les icônes de la
+ * page (police d'icônes, caractères Unicode privés U+E000-U+F8FF) sont retirées :
+ * elles s'affichaient « □□ » après les noms.
+ */
 function cellText(html: string): string {
-  return decode(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+  return decode(html.replace(/<[^>]+>/g, " ")).replace(/[-]/g, "").replace(/\s+/g, " ").trim();
+}
+
+/** « Entra&icirc;neur » → « entraineur », « N° » → « n », « S/A » → « sa ». */
+function cleEntete(texte: string): string {
+  return texte.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+}
+
+/** Un nom de personne contient des lettres (pas « 143 570 » ni « 52,5 »). */
+function estNom(texte: string): boolean {
+  return /[A-Za-zÀ-ÿ]/.test(texte);
 }
 
 /**
@@ -53,7 +81,19 @@ function cellText(html: string): string {
 export function parseGenybetPartants(html: string): GenybetPartant[] {
   const out: GenybetPartant[] = [];
   const tbodyM = html.match(/<tbody[^>]*class="[^"]*table-body[^"]*"[^>]*>([\s\S]*?)<\/tbody>/i);
-  if (!tbodyM) return out;
+  if (!tbodyM || tbodyM.index === undefined) return out;
+
+  // En-têtes du MÊME tableau : le dernier <thead> avant ce <tbody>.
+  const avant = html.slice(0, tbodyM.index);
+  const debutThead = avant.lastIndexOf("<thead");
+  if (debutThead === -1) return out; // sans en-têtes, pas de lecture à l'aveugle
+  const entetes = Array.from(avant.slice(debutThead).matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi))
+    .map((m) => cleEntete(cellText(m[1])));
+  const colonne = (...noms: string[]) => entetes.findIndex((e) => noms.indexOf(e) !== -1);
+  const iNum = colonne("n"), iNom = colonne("cheval"), iCorde = colonne("c"), iSa = colonne("sa"),
+        iPoids = colonne("poids"), iJockey = colonne("jockey", "driver"),
+        iEntraineur = colonne("entraineur"), iMusique = colonne("performances", "musique");
+  if (iNum === -1 || iNom === -1) return out;
 
   // Défensif : retire d'éventuelles sous-tables imbriquées (icônes) qui
   // casseraient le découpage des cellules.
@@ -62,25 +102,25 @@ export function parseGenybetPartants(html: string): GenybetPartant[] {
 
   for (const row of rows) {
     const cells = Array.from(row.matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi)).map((m) => m[1]);
-    if (cells.length < 7) continue;
+    const lire = (i: number) => (i >= 0 && i < cells.length ? cellText(cells[i]) : "");
 
-    const numPmu = parseInt(cellText(cells[0]), 10);
-    const nom = cellText(cells[1]);
+    const numPmu = parseInt(lire(iNum), 10);
+    const nom = lire(iNom);
     if (!Number.isFinite(numPmu) || !nom) continue;
 
-    const corde = parseInt(cellText(cells[2]), 10);
-    const sa = cellText(cells[3]).match(/([A-Za-z])\s*(\d+)/); // "M2" → M, 2
-    const poids = parseFloat(cellText(cells[4]).replace(",", "."));
-    const jockey = cellText(cells[5]);
-    const entraineur = cellText(cells[6]);
-    const musique = cells.length > 8 ? cellText(cells[8]) : "";
+    const corde = parseInt(lire(iCorde), 10);
+    const sa = lire(iSa).match(/([A-Za-z])\s*(\d+)/); // "M2" → M, 2
+    const poids = parseFloat(lire(iPoids).replace(",", "."));
+    const jockey = lire(iJockey);
+    const entraineur = lire(iEntraineur);
+    const musique = lire(iMusique);
 
     out.push({
       numPmu,
       nom,
-      jockey:      jockey ? { nom: jockey } : undefined,
-      entraineur:  entraineur ? { nom: entraineur } : undefined,
-      musique:     musique || undefined,
+      jockey:      estNom(jockey) ? { nom: jockey } : undefined,
+      entraineur:  estNom(entraineur) ? { nom: entraineur } : undefined,
+      musique:     estMusique(musique) ? musique : undefined,
       poids:       Number.isFinite(poids) && poids > 0 ? poids : undefined,
       age:         sa ? parseInt(sa[2], 10) : undefined,
       sexe:        sa ? sa[1].toUpperCase() : undefined,

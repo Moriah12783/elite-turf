@@ -36,6 +36,45 @@ describe("parseGenybetPartants — champs de forme (SANS cote, JS chez GenyBet)"
   });
 });
 
+// Les tableaux TROT et OBSTACLE n'ont pas les colonnes du plat. Lus par position
+// jusqu'au 02/10/2026 : l'entraîneur partait en « jockey », les gains (ou la
+// valeur) en « entraîneur », et la cote de référence en « musique ».
+describe("parseGenybetPartants — colonnes lues par leur en-tête (trot, obstacle)", () => {
+  it("trot (Vincennes R1C8, 02/10/2026) : driver, entraîneur, vraie musique", () => {
+    const p1 = parseGenybetPartants(loadFixture("genybet-course-trot-sample.html")).find((p) => p.numPmu === 1)!;
+    expect(p1.nom).toBe("Impérial Marandais");      // sans les icônes (□□)
+    expect(p1.jockey?.nom).toBe("F. Touchard");      // colonne « Driver »
+    expect(p1.entraineur?.nom).toBe("L. Barassin");  // et non les gains « 143 570 »
+    expect(p1.musique).toBe("7a7a9a0a");             // et non la cote de référence « 29 »
+    expect(p1.sexe).toBe("H");
+    expect(p1.age).toBe(8);
+    expect(p1.poids).toBeUndefined();
+    expect(p1.placeCorde).toBeUndefined();
+  });
+
+  it("obstacle (Dax R2C1, 02/10/2026) : jockey, entraîneur, poids, vraie musique", () => {
+    const p1 = parseGenybetPartants(loadFixture("genybet-course-obstacle-sample.html")).find((p) => p.numPmu === 1)!;
+    expect(p1.nom).toBe("Avaya");
+    expect(p1.jockey?.nom).toBe("L. Zuliani");
+    expect(p1.entraineur?.nom).toBe("H&G. Lageneste & Macaire");
+    expect(p1.musique).toBe("0h1h");                 // et non la cote de référence « 2.8 »
+    expect(p1.poids).toBe(67);
+    expect(p1.sexe).toBe("F");
+    expect(p1.age).toBe(3);
+  });
+
+  it("jamais un simple nombre en musique, jamais un nombre en jockey ou entraîneur", () => {
+    for (const fixture of ["genybet-course-trot-sample.html", "genybet-course-obstacle-sample.html", "genybet-course-sample.html"]) {
+      for (const p of parseGenybetPartants(loadFixture(fixture))) {
+        if (p.musique) expect(p.musique).toMatch(/[0-9DATR][a-z]|^Inédit$/);
+        if (p.jockey) expect(p.jockey.nom).toMatch(/[A-Za-z]/);
+        if (p.entraineur) expect(p.entraineur.nom).toMatch(/[A-Za-z]/);
+        expect(p.nom).not.toMatch(/[-]/);
+      }
+    }
+  });
+});
+
 describe("parseGenybetCourseIds — mapping réunion|course -> ID GenyBet", () => {
   it("mappe R1C1 des Sables vers son ID de course (= même ID PMU/Geny)", () => {
     const map = parseGenybetCourseIds(HTML_REUNION);

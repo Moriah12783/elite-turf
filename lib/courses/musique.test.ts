@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { parseMusique } from "./musique";
+import { estMusique, parseMusique } from "./musique";
+
+describe("estMusique — une musique, jamais un simple nombre", () => {
+  it("accepte les vraies musiques et « Inédit »", () => {
+    expect(estMusique("7a7a9a0a")).toBe(true);
+    expect(estMusique("0h1h")).toBe(true);
+    expect(estMusique("Dm0aDaDa")).toBe(true);
+    expect(estMusique("5p1p1p(25)1p")).toBe(true);
+    expect(estMusique("Inédit")).toBe(true);
+  });
+  it("refuse les nombres (cote de référence, gains, valeur) et le vide", () => {
+    for (const t of ["29", "4.6", "135", "143 570", "52,5", "", null, undefined]) expect(estMusique(t)).toBe(false);
+  });
+});
 
 describe("parseMusique — part de podiums dans la musique", () => {
   it("compte chaque course, podium ou non", () => {

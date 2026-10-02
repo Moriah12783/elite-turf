@@ -26,6 +26,7 @@ import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { fetchGenybetPartantsMap } from "@/lib/sync/genybet-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
+import { estMusique } from "@/lib/courses/musique";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -254,7 +255,7 @@ async function main(): Promise<void> {
             entraineur:  g.entraineur?.nom ?? null,
             cote,
             cote_source: coteSource(cote, !!g.coteFromPmu),
-            musique:     g.musique ?? null,
+            musique:     estMusique(g.musique) ? g.musique : null, // jamais un simple nombre (cf. lib/courses/musique.ts)
             poids_kg:    safePoids(g.poids),
             place_corde: safeSmallInt(g.placeCorde, 1, 30),
             age:         safeSmallInt(g.age, 1, 30),

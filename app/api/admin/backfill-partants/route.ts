@@ -25,6 +25,7 @@ import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticip
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
+import { estMusique } from "@/lib/courses/musique";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -236,7 +237,7 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
             entraineur:  g.entraineur?.nom ?? null,
             cote,
             cote_source: coteSource(cote, !!(g as any).coteFromPmu),
-            musique:     g.musique ?? null,
+            musique:     estMusique(g.musique) ? g.musique : null, // jamais un simple nombre (cf. lib/courses/musique.ts)
             poids_kg:    safePoids(g.poids),
             place_corde: safeSmallInt(g.placeCorde, 1, 30),
             age:         safeSmallInt(g.age, 1, 30),
