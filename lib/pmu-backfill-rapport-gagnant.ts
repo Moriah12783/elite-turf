@@ -23,6 +23,22 @@ import {
 } from "@/lib/pmu-rapports-gagnant";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
+/**
+ * 🔴 PROPAGATION COUPÉE le 02/10/2026 (décision de Steph du 01/10/2026).
+ *
+ * Le ROI du site compte 1 € de mise par pronostic, alors qu'un champ réduit
+ * de 8 chevaux en Quinté+ désordre coûte 56 combinaisons à 2 € (112 €).
+ * Simulation sur septembre 2026 avec les rapports PMU réels : +1 351 %
+ * affiché, contre −77 % (Pro) et −97 % (Elite) réels. Les rapports officiels
+ * sont stockés et AFFICHÉS comme information, mais ne nourrissent plus le ROI
+ * tant que le calcul n'est pas refait (méthode « champ réduit » : cf. l'admin
+ * « banc de mesure »).
+ *
+ * Effet : `runBackfillRapportGagnant` calcule mais n'écrit plus (dry forcé),
+ * pour le cron de 22:40 UTC comme pour le bouton admin.
+ */
+export const PROPAGATION_ROI_COUPEE = true;
+
 // ── Forme des lignes récupérées (le join course→arrivees peut arriver en
 //    objet OU en tableau selon le typage Supabase : on normalise à la lecture).
 interface BackfillArrivee {
@@ -132,6 +148,8 @@ export interface BackfillSummary {
 
 export interface BackfillResult {
   dry: boolean;
+  /** Vrai tant que la propagation vers le ROI est coupée (rien n'est écrit). */
+  coupee: boolean;
   days: number;
   includeAll: boolean;
   dateFrom: string;
@@ -157,7 +175,8 @@ export async function runBackfillRapportGagnant(
   supabase: SupabaseClient,
   opts: { days: number; dry: boolean; includeAll: boolean },
 ): Promise<BackfillResult | { error: string }> {
-  const { days, dry, includeAll } = opts;
+  const { days, includeAll } = opts;
+  const dry = opts.dry || PROPAGATION_ROI_COUPEE;
 
   const dateFrom = new Date(Date.now() - days * 24 * 3600 * 1000)
     .toISOString()
@@ -224,5 +243,5 @@ export async function runBackfillRapportGagnant(
     sumGains: Math.round(sumGains),
   };
 
-  return { dry, days, includeAll, dateFrom, summary, outcomes };
+  return { dry, coupee: PROPAGATION_ROI_COUPEE, days, includeAll, dateFrom, summary, outcomes };
 }

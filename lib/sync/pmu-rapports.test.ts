@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseRapportsDefinitifs } from "./pmu-rapports";
+import { parseRapportsDefinitifs, estCandidate } from "./pmu-rapports";
 import { computeRapportGagnant } from "@/lib/pmu-rapports-gagnant";
 
 // Vrais rapports définitifs PMU du Quinté+ du 01/10/2026 (Prix Céréaliste, Auteuil R1C1).
@@ -46,5 +46,28 @@ describe("parseRapportsDefinitifs — rien d'inventé", () => {
     expect(r.simple_place).toBeUndefined();
     expect(r.couple_place).toBeUndefined();
     expect(r.quinte_plus?.desordre).toBe(248);
+  });
+});
+
+describe("estCandidate — qui reçoit des rapports", () => {
+  const base = {
+    id: "c1", date_course: "2026-10-01", numero_reunion: 1, numero_course: 1, nationale: 1,
+    paris_disponibles: ["QUINTE_PLUS"], arrivee_officielle: [15, 3, 14, 1, 9],
+    hippodrome: { pays: "France" }, arrivees: { id: "a1", rapports_pmu: null },
+  };
+  it("Quinté+ français avec arrivée et sans rapports : oui", () => {
+    expect(estCandidate(base, "quinte")).toBe(true);
+    expect(estCandidate(base, "toutes")).toBe(true);
+  });
+  it("rapports déjà présents : jamais écrasés", () => {
+    expect(estCandidate({ ...base, arrivees: { id: "a1", rapports_pmu: { tierce: { ordre: 10 } } } }, "toutes")).toBe(false);
+  });
+  it("course marocaine ou sans arrivée : non", () => {
+    expect(estCandidate({ ...base, hippodrome: { pays: "Maroc" } }, "toutes")).toBe(false);
+    expect(estCandidate({ ...base, arrivee_officielle: null }, "toutes")).toBe(false);
+  });
+  it("portée Quinté+ : une course ordinaire est écartée", () => {
+    expect(estCandidate({ ...base, nationale: null, paris_disponibles: ["SIMPLE_GAGNANT"] }, "quinte")).toBe(false);
+    expect(estCandidate({ ...base, nationale: null, paris_disponibles: ["SIMPLE_GAGNANT"] }, "toutes")).toBe(true);
   });
 });

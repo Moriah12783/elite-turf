@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok:         true,
     dry:        result.dry,
+    coupee:     result.coupee,
     days:       result.days,
     includeAll: result.includeAll,
     dateFrom:   result.dateFrom,

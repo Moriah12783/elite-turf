@@ -154,3 +154,106 @@ export async function fetchRapportsDefinitifs(dateISO: string, R: number, C: num
   }
   return null;
 }
+
+// ── Synchro : écrit les rapports manquants dans `arrivees.rapports_pmu` ─────
+
+export interface RapportsSyncOptions {
+  /** Première date (YYYY-MM-DD) incluse. */
+  depuis: string;
+  /** Dernière date incluse (défaut : `depuis`). */
+  jusqua?: string;
+  /** « quinte » : seulement les Quinté+ ; « toutes » : toutes les courses françaises. */
+  portee?: "quinte" | "toutes";
+  /** Plafond de courses traitées (test). */
+  limite?: number;
+  dryRun?: boolean;
+}
+
+export interface RapportsSyncResult {
+  depuis: string;
+  jusqua: string;
+  portee: "quinte" | "toutes";
+  candidates: number;
+  ecrits: number;
+  /** Rapports pas encore publiés par le PMU (ou API indisponible) : retentés au passage suivant. */
+  indisponibles: number;
+  echecs: number;
+  dry_run: boolean;
+}
+
+interface CourseCandidate {
+  id: string;
+  date_course: string;
+  numero_reunion: number | null;
+  numero_course: number | null;
+  nationale: number | null;
+  paris_disponibles: string[] | null;
+  arrivee_officielle: number[] | null;
+  hippodrome: { pays: string | null } | { pays: string | null }[] | null;
+  arrivees: { id: string; rapports_pmu: unknown } | { id: string; rapports_pmu: unknown }[] | null;
+}
+
+/**
+ * Course française, arrivée officielle connue, ligne `arrivees` existante et
+ * `rapports_pmu` encore vide. PUR (testé).
+ */
+export function estCandidate(c: CourseCandidate, portee: "quinte" | "toutes"): boolean {
+  const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
+  if (!h || h.pays !== "France") return false;
+  if (!Array.isArray(c.arrivee_officielle) || c.arrivee_officielle.length < 3) return false;
+  if (!c.numero_reunion || !c.numero_course) return false;
+  const a = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
+  if (!a || a.rapports_pmu != null) return false;
+  if (portee === "quinte") {
+    const quintePlus = Array.isArray(c.paris_disponibles) && c.paris_disponibles.indexOf("QUINTE_PLUS") !== -1;
+    return c.nationale === 1 || quintePlus;
+  }
+  return true;
+}
+
+/**
+ * Récupère et écrit les rapports PMU définitifs manquants. N'écrase JAMAIS un
+ * rapport existant (`rapports_pmu IS NULL` revérifié à l'écriture). Rien
+ * d'inventé : sans rapports exploitables, la course est laissée telle quelle et
+ * retentée au passage suivant.
+ *
+ * ⚠️ N'alimente PAS le ROI : la propagation vers `pronostics.rapport_gagnant`
+ * est coupée (PROPAGATION_ROI_COUPEE, lib/pmu-backfill-rapport-gagnant.ts).
+ */
+export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<RapportsSyncResult> {
+  const { createServiceClient } = await import("@/lib/supabase/service-client");
+  const supabase = createServiceClient();
+  const jusqua = opts.jusqua || opts.depuis;
+  const portee = opts.portee || "toutes";
+  const dryRun = opts.dryRun ?? false;
+
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, date_course, numero_reunion, numero_course, nationale, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(pays), arrivees(id, rapports_pmu)")
+    .gte("date_course", opts.depuis)
+    .lte("date_course", jusqua)
+    .not("arrivee_officielle", "is", null)
+    .order("date_course", { ascending: true });
+  if (error) throw new Error(`lecture des courses : ${error.message}`);
+
+  let candidates = ((data ?? []) as unknown as CourseCandidate[]).filter((c) => estCandidate(c, portee));
+  if (opts.limite && opts.limite > 0) candidates = candidates.slice(0, opts.limite);
+
+  let ecrits = 0, indisponibles = 0, echecs = 0;
+  for (const c of candidates) {
+    const brut = await fetchRapportsDefinitifs(c.date_course, c.numero_reunion as number, c.numero_course as number);
+    const rapports = brut ? parseRapportsDefinitifs(brut, c.arrivee_officielle || []) : null;
+    if (!rapports) { indisponibles++; continue; }
+    if (dryRun) { ecrits++; continue; }
+    const a = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
+    const { error: e } = await supabase
+      .from("arrivees")
+      .update({ rapports_pmu: rapports })
+      .eq("id", (a as { id: string }).id)
+      .is("rapports_pmu", null);
+    if (e) { echecs++; console.warn(`[pmu-rapports] ${c.date_course} R${c.numero_reunion}C${c.numero_course} : ${e.message}`); }
+    else ecrits++;
+  }
+
+  return { depuis: opts.depuis, jusqua, portee, candidates: candidates.length, ecrits, indisponibles, echecs, dry_run: dryRun };
+}

@@ -110,6 +110,21 @@ export default async function StatistiquesPage({ searchParams }: Props) {
           </div>
         </div>
       )}
+      {searchParams.dividendes === "coupe" && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-status-pending/10 border border-status-pending/30">
+          <AlertTriangle className="w-5 h-5 text-status-pending flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="text-status-pending font-semibold">
+              Propagation des dividendes coupée depuis le 02/10/2026 : rien n&apos;a été écrit.
+            </p>
+            <p className="text-text-muted text-xs mt-0.5">
+              Le ROI compte 1 € par pronostic alors qu&apos;un champ réduit de 8 chevaux coûte
+              112 € (simulation septembre : +1 351 % affiché pour −77 % réel). Les rapports
+              officiels restent affichés comme information.
+            </p>
+          </div>
+        </div>
+      )}
       {searchParams.dividendes === "erreur" && (
         <div className="flex items-start gap-3 p-4 rounded-xl bg-status-loss/10 border border-status-loss/30">
           <AlertTriangle className="w-5 h-5 text-status-loss flex-shrink-0 mt-0.5" />
@@ -241,9 +256,9 @@ export default async function StatistiquesPage({ searchParams }: Props) {
               Dividendes (rapport gagnant)
             </p>
             <p className="text-text-muted text-xs mt-1 max-w-md">
-              Remplis automatiquement chaque soir (cron 22:40 UTC). Ce bouton force le
-              remplissage immédiat des 90 derniers jours → ROI et gains à jour tout de
-              suite sur /performances.
+              Coupé depuis le 02/10/2026 : ni le cron de 22:40 UTC ni ce bouton
+              n&apos;écrivent plus, tant que le calcul du ROI compte 1 € par pronostic
+              (voir lib/pmu-backfill-rapport-gagnant.ts).
             </p>
           </div>
           <form action="/api/admin/dividendes/remplir" method="POST" className="flex-shrink-0">
