@@ -4,16 +4,16 @@
  * comparer d'un coup d'œil. Utilisé par /abonnements et la section tarifs de
  * l'accueil.
  *
- * Contenu = l'offre RÉELLE au 01/10/2026, vérifiée en base sur 15 jours :
- * chaque jour, 1 pronostic PRO (le Quinté+, 8 chevaux classés, analyse) et
- * 1 pronostic ELITE (le Quinté+, 6 chevaux, analyse). Starter accède au
- * niveau PRO (lib/auth/access.ts) : Starter = Pro sur 7 jours.
+ * Offre en vigueur depuis le 02/10/2026 (décision de Steph du 01/10/2026,
+ * « dès demain ») :
+ *   - Starter, Pro et Elite : le pronostic expert du jour en 6 chevaux ;
+ *   - Elite en plus : le PLAN DE JEU — 8 chevaux, le couplé (2 chevaux), la
+ *     base de 3 chevaux pour le champ réduit ou total, les values, les
+ *     associés.
+ * Starter accède au niveau PRO (lib/auth/access.ts) : Starter = Pro sur 7 jours.
  *
- * À NE PAS ANNONCER AVANT LIVRAISON (décision de Steph du 01/10/2026) :
- *   - passage de Starter et Pro à 6 chevaux (date à fixer par Steph) ;
- *   - plan de jeu Elite : 8 chevaux, couplé en 2 chevaux, base de 3 chevaux
- *     pour champ réduit ou total, values, associés.
- * Le test « rien d'annoncé avant livraison » garde cette règle.
+ * AVANT (jusqu'au 01/10/2026) : PRO en 8 chevaux, ELITE en 6 chevaux, sans
+ * plan de jeu — les fiches ne l'annonçaient pas tant qu'il n'était pas livré.
  *
  * PUR, ES5-safe, testé.
  */
@@ -40,7 +40,7 @@ export const ACCROCHES: Record<IdFormule, string> = {
   free: "Accès gratuit permanent",
   starter: "Le galop d'essai",
   pro: "Le mois complet",
-  elite: "Le pronostic Elite en plus",
+  elite: "Le plan de jeu en plus",
 };
 
 const POUR_TOUS: Record<IdFormule, Case> = { free: true, starter: true, pro: true, elite: true };
@@ -64,13 +64,13 @@ export function fichesFormules(offreEliteJusquau: string | null = null): GroupeF
         {
           id: "pronostic-expert",
           libelle: "Le pronostic expert du jour",
-          detail: "Tiercé, Quarté+, Quinté+ : 8 chevaux classés par confiance, avec l'analyse",
+          detail: "Tiercé, Quarté+, Quinté+ : 6 chevaux classés par confiance, avec l'analyse",
           cases: ABONNES,
         },
         {
-          id: "pronostic-elite",
-          libelle: "Le pronostic Elite",
-          detail: "Une sélection resserrée en 6 chevaux, avec l'analyse",
+          id: "plan-de-jeu-elite",
+          libelle: "Le plan de jeu Elite",
+          detail: "8 chevaux : le couplé (2 chevaux), la base de 3 pour le champ réduit ou total, les values et les associés",
           cases: {
             free: false,
             starter: offreEliteJusquau ? `Offert jusqu'au ${offreEliteJusquau}` : false,

@@ -32,7 +32,7 @@ export function templateWelcomeJ1({ nomComplet }: { nomComplet: string }): {
       Chaque pronostic publié sur le site contient :
     </p>
     <ul style="margin:0 0 16px 0;padding-left:20px;color:#1F2937;font-size:15px;line-height:1.7;">
-      <li><strong>La sélection</strong> : 6 ou 8 chevaux classés par ordre de préférence</li>
+      <li><strong>La sélection</strong> : 6 chevaux classés par ordre de préférence (8 dans le plan de jeu Elite)</li>
       <li><strong>Le score de confiance</strong> : 1 à 5 étoiles, attribué par notre expert</li>
       <li><strong>L'analyse courte</strong> : 2-3 lignes pour aller à l'essentiel</li>
       <li><strong>L'analyse complète</strong> : 1-2 paragraphes détaillés, pour les abonnés Starter, Pro et Elite</li>

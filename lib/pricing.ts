@@ -27,4 +27,4 @@ export const STARTER_OFFRE_LABEL = PRONOSTIC_EXPERT_DU_JOUR;
 export const PRO_OFFRE_LABEL = PRONOSTIC_EXPERT_DU_JOUR;
 
 /** Phrase officielle de l'offre Elite — reprise de PLAN_CONFIG (features). */
-export const ELITE_OFFRE_LABEL = "Tout le Pack Pro inclus + 1 pronostic quotidien Elite minimum";
+export const ELITE_OFFRE_LABEL = "Tout le Pack Pro + le plan de jeu Elite chaque jour";

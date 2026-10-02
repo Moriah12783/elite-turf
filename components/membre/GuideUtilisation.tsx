@@ -113,8 +113,8 @@ export default function GuideUtilisation() {
       <div className="px-5 pb-6 space-y-7 border-t border-border pt-5">
         {/* ── Intro ─────────────────────────────────────────────────── */}
         <p className="text-text-secondary text-sm leading-relaxed">
-          Chaque jour, votre pronostic Elite vous propose une sélection resserrée
-          de <strong className="text-text-primary">6 chevaux</strong>, répartis en
+          Chaque jour, votre plan de jeu Elite vous propose{" "}
+          <strong className="text-text-primary">8 chevaux</strong>, répartis en
           catégories. Pour en tirer parti, la méthode que nous conseillons est de
           jouer en <strong className="text-gold-light">champ réduit</strong> ou en{" "}
           <strong className="text-gold-light">champ total</strong> : vous couvrez
