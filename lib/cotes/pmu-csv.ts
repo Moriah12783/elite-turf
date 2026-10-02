@@ -168,16 +168,17 @@ export function sameHorse(a: string, b: string): boolean {
  * Récupère le CSV PMU -> map `${reunion}|${course}|${num}` -> ligne. Une seule
  * requête. Ne throw jamais (map vide si KO).
  *
+ * @param timeoutMs Délai max (15 s pour les syncs ; court au rendu d'une page).
  * @param dateISO Si fourni ("AAAA-MM-JJ"), ne garde QUE les lignes de ce jour →
  *   garantit qu'on n'applique jamais les cotes d'un autre jour (les numéros
  *   R1C8… se répètent chaque jour). Une course d'un jour absent du CSV (ex. J+1,
  *   cotes pas encore ouvertes) donne une map vide → repli LONACI, pas d'erreur.
  */
-export async function fetchPmuCotesMap(dateISO?: string): Promise<Map<string, PmuCoteRow>> {
+export async function fetchPmuCotesMap(dateISO?: string, timeoutMs = 15_000): Promise<Map<string, PmuCoteRow>> {
   const map = new Map<string, PmuCoteRow>();
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15_000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     const res = await fetch(pmuCotesCsvUrl(), { cache: "no-store", signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) return map;

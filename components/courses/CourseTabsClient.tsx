@@ -71,6 +71,8 @@ interface Props {
   hasPublishedPronostic?: boolean;
   /** Sélection stats (≤8 chevaux) calculée serveur — onglet "Notre sélection". */
   notreSelection?: NotreSelectionItem[];
+  /** Pourquoi la sélection est vide alors que la course a des partants (pas de cote fiable…). */
+  selectionIndisponible?: string | null;
   /** Masquer entièrement "Notre sélection" (onglet) — ex. sur une course dont
    *  le visiteur a déjà le pronostic premium (anti-cannibalisation). */
   hideNotreSelection?: boolean;
@@ -929,20 +931,22 @@ function TabStats({ partants }: { partants: Partant[] }) {
 
 const SELECTION_LABEL_STYLE: Record<string, string> = {
   "Favori marché":      "bg-status-win/15 text-status-win border-status-win/30",
+  "Bonne forme":        "bg-blue-500/10 text-blue-400 border-blue-500/30",
   "Driver reconnu":     "bg-gold-faint text-gold-light border-gold-primary/30",
   "Entraîneur reconnu": "bg-gold-faint text-gold-light border-gold-primary/30",
-  "Bonne forme":        "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  "Outsider value":     "bg-purple-500/10 text-purple-400 border-purple-500/30",
-  "Régulier":           "bg-bg-elevated text-text-muted border-border",
+  "Outsider":           "bg-purple-500/10 text-purple-400 border-purple-500/30",
+  "Bien coté":          "bg-bg-elevated text-text-muted border-border",
 };
 
-function TabNotreSelection({ items }: { items: NotreSelectionItem[] }) {
+function TabNotreSelection({ items, motif }: { items: NotreSelectionItem[]; motif?: string | null }) {
   if (!items || items.length === 0) {
     return (
       <div className="p-8 text-center">
         <Sparkles className="w-8 h-8 text-text-muted mx-auto mb-3" />
-        <p className="text-text-secondary text-sm font-medium mb-1">Sélection bientôt disponible</p>
-        <p className="text-text-muted text-xs">Les partants de cette course sont en cours de chargement.</p>
+        <p className="text-text-secondary text-sm font-medium mb-1">
+          {motif ? "Pas de sélection pour cette course" : "Sélection bientôt disponible"}
+        </p>
+        <p className="text-text-muted text-xs">{motif ?? "Les partants de cette course sont en cours de chargement."}</p>
       </div>
     );
   }
@@ -954,6 +958,7 @@ function TabNotreSelection({ items }: { items: NotreSelectionItem[] }) {
         <p className="text-text-muted text-xs leading-relaxed">
           <span className="text-text-secondary font-semibold">Lecture statistique automatique</span>{" "}
           — ce n&apos;est pas notre pronostic du jour, réservé aux 3 courses analysées par nos experts.
+          Classement par la cote PMU ; la forme et les acteurs sont indiqués en étiquette.
         </p>
       </div>
 
@@ -978,7 +983,7 @@ function TabNotreSelection({ items }: { items: NotreSelectionItem[] }) {
             </div>
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap ${
-                SELECTION_LABEL_STYLE[s.label] ?? SELECTION_LABEL_STYLE["Régulier"]
+                SELECTION_LABEL_STYLE[s.label] ?? SELECTION_LABEL_STYLE["Bien coté"]
               }`}
             >
               {s.label}
@@ -1019,6 +1024,7 @@ export default function CourseTabsClient({
   statsEnrichies,
   hasPublishedPronostic = false,
   notreSelection = [],
+  selectionIndisponible = null,
   hideNotreSelection = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("partants");
@@ -1064,7 +1070,7 @@ export default function CourseTabsClient({
         />
       )}
       {activeTab === "selection" && (
-        <TabNotreSelection items={notreSelection} />
+        <TabNotreSelection items={notreSelection} motif={selectionIndisponible} />
       )}
       {activeTab === "cotes" && (
         <TabCotes courseId={courseId} partants={partants} />

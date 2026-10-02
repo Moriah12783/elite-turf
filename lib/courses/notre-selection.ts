@@ -1,16 +1,22 @@
 /**
  * lib/courses/notre-selection.ts
  *
- * « Notre sélection » : short-list GRATUITE et déterministe de 8 chevaux par
- * course, fondée sur les statistiques. Ce N'EST PAS le pronostic premium Elite
- * Turf (3 courses/jour, analyse senior) — c'est une aide à la lecture, présente
- * sur (presque) toutes les courses.
+ * « Sélection stats » : short-list GRATUITE et déterministe de 8 chevaux par
+ * course. Ce N'EST PAS le pronostic premium Elite Turf (3 courses/jour,
+ * analyse experte) — c'est une aide à la lecture, présente sur chaque course
+ * qui a des cotes.
  *
- * Moteur : réutilise `score_composite` déjà calculé par getCourseStatsEnrichies
- * (0.35·cote + 0.30·hist. cheval + 0.20·musique + 0.15·hist. jockey), puis
- * ajoute un bonus de réputation driver/entraîneur. Le `score_composite` gère
- * déjà l'absence de cote (composante = 0) : pas de cote dans le champ ⇒ le
- * classement se fait naturellement sur forme + historique + réputation.
+ * v2 (02/10/2026) : LE CLASSEMENT SUIT LA COTE PMU.
+ * Mesuré sur 2 108 courses françaises (juillet-septembre 2026), avec les
+ * statistiques connues AVANT chaque course : l'ancienne note composite (35 %
+ * cote, 30 % victoires du cheval, 20 % musique, 15 % jockey, bonus de
+ * réputation) faisait MOINS bien que les 8 plus petites cotes PMU — gagnant
+ * parmi les 8 : 90,7 % contre 93,7 % ; 3 premiers : 62,8 % contre 68,4 % ;
+ * 5 premiers : 33,1 % contre 37,9 %. Même en laissant la cote décider et la
+ * forme seulement départager, on ne battait pas l'ordre du marché.
+ * Donc : la cote classe, la forme et les acteurs deviennent des étiquettes
+ * d'information. Sans cote fiable (Maroc, veille de course) : pas de sélection
+ * plutôt qu'une liste au hasard.
  *
  * Pur, sans I/O, sans LLM : testable et calculable au rendu serveur.
  */
@@ -20,11 +26,11 @@ import { isEliteDriver, isRecognizedTrainer } from "@/lib/turf/reputation";
 
 export type SelectionLabel =
   | "Favori marché"
+  | "Bonne forme"
   | "Driver reconnu"
   | "Entraîneur reconnu"
-  | "Bonne forme"
-  | "Outsider value"
-  | "Régulier";
+  | "Outsider"
+  | "Bien coté";
 
 export interface NotreSelectionItem {
   rank: number;
@@ -36,59 +42,58 @@ export interface NotreSelectionItem {
 }
 
 const TARGET_SIZE = 8;
-const BONUS_DRIVER = 0.08; // grand driver/jockey : assez pour départager, pas pour renverser une vedette
-const BONUS_TRAINER = 0.05; // entraîneur reconnu
+/** « Bonne forme » : au moins la moitié de podiums sur au moins 3 courses. */
+const FORME_MIN_COURSES = 3;
+const FORME_MIN_RATIO = 0.5;
+const COTE_OUTSIDER = 10;
+
+function aUneCote(p: PartantEnrichi): p is PartantEnrichi & { cote: number } {
+  return typeof p.cote === "number" && p.cote > 0;
+}
 
 /**
- * Construit la sélection : top 8 par score (composite + réputation), ou tout le
- * champ classé si < 8 partants. Les non-partants doivent être exclus en amont.
+ * Construit la sélection : les 8 plus petites cotes (tout le champ coté s'il
+ * est plus petit), la note composite ne servant qu'à départager les cotes
+ * égales. Les non-partants doivent être exclus en amont. Vide si moins de la
+ * moitié du champ a une cote.
  */
 export function buildNotreSelection(partants: PartantEnrichi[]): NotreSelectionItem[] {
   if (!partants || partants.length === 0) return [];
+  const cotes = partants.filter(aUneCote);
+  if (cotes.length === 0 || cotes.length * 2 < partants.length) return [];
 
-  const cotes = partants
-    .map((p) => p.cote)
-    .filter((c): c is number => typeof c === "number" && c > 0);
-  const minCote = cotes.length > 0 ? Math.min(...cotes) : null;
-
-  const scored = partants
-    .map((p) => {
-      let score = p.score_composite ?? 0;
-      if (isEliteDriver(p.jockey)) score += BONUS_DRIVER;
-      if (isRecognizedTrainer(p.entraineur)) score += BONUS_TRAINER;
-      return { p, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  return scored
-    .slice(0, Math.min(TARGET_SIZE, scored.length))
-    .map(({ p }, i) => ({
+  return cotes
+    .sort((a, b) =>
+      a.cote - b.cote ||
+      (b.score_composite ?? 0) - (a.score_composite ?? 0) ||
+      a.numero - b.numero)
+    .slice(0, TARGET_SIZE)
+    .map((p, i) => ({
       rank: i + 1,
       numero: p.numero,
       nom: p.nom_cheval,
       jockey: p.jockey ?? null,
-      cote: p.cote ?? null,
-      label: pickLabel(p, minCote),
+      cote: p.cote,
+      label: i === 0 ? "Favori marché" : pickLabel(p),
     }));
 }
 
-/** Étiquette qualitative déterministe (ordre de priorité explicite). */
-function pickLabel(p: PartantEnrichi, minCote: number | null): SelectionLabel {
-  const ratio = p.forme_musique?.ratio ?? 0;
-  if (minCote !== null && p.cote === minCote) return "Favori marché";
+/** Étiquette d'information (ordre de priorité explicite). */
+function pickLabel(p: PartantEnrichi & { cote: number }): SelectionLabel {
+  const forme = p.forme_musique;
+  if (forme && forme.courses >= FORME_MIN_COURSES && forme.ratio >= FORME_MIN_RATIO) return "Bonne forme";
   if (isEliteDriver(p.jockey)) return "Driver reconnu";
   if (isRecognizedTrainer(p.entraineur)) return "Entraîneur reconnu";
-  if (ratio >= 0.5) return "Bonne forme";
-  if (p.cote != null && p.cote >= 10 && ratio >= 0.3) return "Outsider value";
-  return "Régulier";
+  if (p.cote >= COTE_OUTSIDER) return "Outsider";
+  return "Bien coté";
 }
 
 /**
- * Règle d'affichage des blocs promo « Notre sélection » (bandeau + encart).
+ * Règle d'affichage des blocs promo « Sélection stats » (bandeau + encart).
  * Visible pour TOUS dès qu'une sélection existe : c'est une plus-value (lecture
- * stats sur les 30-60+ courses du jour) y compris pour les abonnés, dont le
- * pronostic premium ne couvre que 3 courses/jour. Masqué seulement si la course
- * n'a pas (encore) de partants.
+ * des 30-60+ courses du jour) y compris pour les abonnés, dont le pronostic
+ * premium ne couvre que 3 courses/jour. Masqué si la course n'a pas de
+ * sélection (pas encore de partants, ou pas de cote fiable).
  */
 export function shouldShowNotreSelectionPromo(items: NotreSelectionItem[]): boolean {
   return !!items && items.length > 0;

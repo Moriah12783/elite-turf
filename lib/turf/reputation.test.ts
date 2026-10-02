@@ -14,7 +14,15 @@ describe("reputation", () => {
   it("reconnaît un entraîneur reconnu", () => {
     expect(isRecognizedTrainer("A. Fabre")).toBe(true);
     expect(isRecognizedTrainer("Mme C. Head")).toBe(true);
+    expect(isRecognizedTrainer("C. HEAD-MAAREK")).toBe(true);
+    expect(isRecognizedTrainer("N. Clément")).toBe(true);
     expect(isRecognizedTrainer("Personne Lambda")).toBe(false);
     expect(isRecognizedTrainer(null)).toBe(false);
+  });
+
+  it("mot entier seulement : un nom qui CONTIENT un patronyme connu n'est pas reconnu", () => {
+    expect(isRecognizedTrainer("J. WHITEHEAD")).toBe(false);
+    expect(isRecognizedTrainer("M. BARYAOUI")).toBe(false);
+    expect(isEliteDriver("A. MOOREL")).toBe(false);
   });
 });

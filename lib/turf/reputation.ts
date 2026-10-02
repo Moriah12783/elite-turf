@@ -5,8 +5,8 @@
  * reconnus). « Notre sélection » s'en sert pour valoriser les grands noms que
  * les stats BDD (jeunes, incomplètes) ne captent pas encore.
  *
- * Match par sous-chaîne, insensible à la casse : les noms en BDD sont du type
- * "J.M. BAZIRE", "M. Abrivard", "A. Fabre" — on cherche le patronyme.
+ * Match par mot entier, insensible à la casse et aux accents : les noms en BDD
+ * sont du type "J.M. BAZIRE", "M. Abrivard", "A. Fabre" — on cherche le patronyme.
  *
  * Aucune dépendance : ce module est pur et importable côté serveur comme client.
  */
@@ -33,8 +33,10 @@ export const RECOGNIZED_TRAINERS: readonly string[] = [
 
 function matches(name: string | null | undefined, list: readonly string[]): boolean {
   if (!name) return false;
-  const n = name.toLowerCase();
-  return list.some((needle) => n.includes(needle));
+  // Par mot entier, sans accents : « HEAD » ne reconnaît plus « WHITEHEAD » (avant
+  // le 02/10/2026 : sous-chaîne, d'où des « Entraîneur reconnu » au Maroc).
+  const mots = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z]+/);
+  return list.some((needle) => mots.indexOf(needle) !== -1);
 }
 
 export const isEliteDriver = (name: string | null | undefined): boolean =>

@@ -13,6 +13,8 @@ import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/g
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import { parisVersUtc } from "@/lib/paris-date";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
+import { fetchPmuCotesMap } from "@/lib/cotes/pmu-csv";
+import { appliquerCotesCsv, fenetreCotesDuMoment } from "@/lib/cotes/cotes-du-moment";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
@@ -215,7 +217,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // 02/10/2026 affichées comme de vraies cotes, avec « Favori marché » sur 8 chevaux.
   const partantsTries: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
   const cotesFiables = cotesPlausibles(partantsTries.filter((p: any) => !p.non_partant).map((p: any) => p.cote));
-  const allPartants: any[] = cotesFiables ? partantsTries : partantsTries.map((p: any) => ({ ...p, cote: null }));
+  const partantsBase: any[] = cotesFiables ? partantsTries : partantsTries.map((p: any) => ({ ...p, cote: null }));
+  // Course qui part dans l'heure : les cotes du moment (CSV PMU de l'Apps Script, rafraîchi
+  // chaque minute avant le départ) remplacent celles de la base (3 relevés par jour).
+  const departUtc  = c.date_course && c.heure_depart ? parisVersUtc(c.date_course, c.heure_depart) : null;
+  const allPartants: any[] =
+    (!c.hippodrome?.pays || c.hippodrome.pays === "France") && fenetreCotesDuMoment(departUtc)
+      ? appliquerCotesCsv(partantsBase, c.numero_reunion, c.numero_course, await fetchPmuCotesMap(c.date_course, 2500))
+      : partantsBase;
   const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
   const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
 
@@ -224,9 +233,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
   // Si une entité n'est pas encore en BDD (course très récente, cron pas passé),
   // la UI handle gracefully avec un fallback "Données en cours de constitution".
   const statsEnrichies = await getCourseStatsEnrichies(partants);
-  // « Notre sélection » : top 8 stats (favoris + drivers/entraîneurs reconnus
-  // + forme), déterministe, calculée serveur depuis les partants enrichis.
+  // « Sélection stats » v2 : les 8 plus petites cotes PMU (cf. lib/courses/notre-selection.ts),
+  // déterministe, calculée serveur depuis les partants enrichis. Vide sans cote fiable.
   const notreSelection = buildNotreSelection(statsEnrichies.partants);
+  const selectionIndisponible: string | null =
+    partants.length === 0 || notreSelection.length > 0 ? null
+    : c.hippodrome?.pays && c.hippodrome.pays !== "France"
+      ? "Pas de cote fiable pour cette course : nous préférons ne pas publier de sélection."
+      : "La sélection suit les cotes PMU : elle s'affichera dès leur publication.";
   const isSubscribed = ["STARTER", "PRO", "ELITE"].includes(userSubscription);
   // Anti-cannibalisation : si le visiteur a accès au pronostic premium publié
   // de cette course, on lui masque la « Notre sélection » gratuite (clone du
@@ -252,7 +266,6 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   // Déterminer si on doit afficher le countdown (avant le départ)
   const isUpcoming = c.statut === "PROGRAMME" || c.statut === "EN_COURS";
-  const departUtc  = c.date_course && c.heure_depart ? parisVersUtc(c.date_course, c.heure_depart) : null;
   const departGmt  = departUtc ? departUtc.toISOString().slice(11, 16) : null;
 
   // ── JSON-LD SportsEvent (helper centralisé) + BreadcrumbList ─────────────
@@ -459,6 +472,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               statsEnrichies={statsEnrichies}
               hasPublishedPronostic={!!pronosticPublie}
               notreSelection={notreSelection}
+              selectionIndisponible={selectionIndisponible}
               hideNotreSelection={viewerHasAccessiblePremiumPronostic}
             />
 

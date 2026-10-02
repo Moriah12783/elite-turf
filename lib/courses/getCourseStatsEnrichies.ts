@@ -22,6 +22,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/seo/slugs";
+import { parseMusique } from "./musique";
 import {
   MIN_COURSES_FIABLES,
   type PartantInput,
@@ -36,22 +37,6 @@ export { MIN_COURSES_FIABLES };
 export type { PartantInput, PartantEnrichi, StatsHistoriques, CourseStatsEnrichies };
 
 // ── Helpers internes ──────────────────────────────────────────────────────
-
-/**
- * Parse la musique PMU pour extraire forme récente (top-3 ratio).
- * Format musique : `1p2p3h0a5m...` où chiffre = position, lettre = discipline.
- * Note : 0 = non placé. On compte uniquement les chiffres ≥ 1 comme courses
- * valides ; les "0" sont des non-classés (peut être Da, Tb, etc.).
- */
-function parseMusique(musique: string | null | undefined): { top3: number; courses: number; ratio: number } | null {
-  if (!musique) return null;
-  const nums = (musique.match(/\d+/g) ?? [])
-    .map(Number)
-    .filter((n) => n > 0 && n < 100); // garde-fou pattern réaliste
-  if (nums.length === 0) return null;
-  const top3 = nums.filter((n) => n <= 3).length;
-  return { top3, courses: nums.length, ratio: top3 / nums.length };
-}
 
 /** Mappe row Supabase → StatsHistoriques. */
 function toStatsHistoriques(row: {

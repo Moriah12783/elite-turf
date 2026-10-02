@@ -23,57 +23,65 @@ function p(over: Partial<PartantEnrichi>): PartantEnrichi {
   };
 }
 
-describe("buildNotreSelection", () => {
-  it("retourne au plus 8 chevaux, triés par score décroissant, rangs 1..8", () => {
-    const field = Array.from({ length: 12 }, (_, i) =>
-      p({ numero: i + 1, score_composite: (12 - i) / 12, cote: i + 2 }));
+describe("buildNotreSelection — v2, classement par la cote PMU", () => {
+  it("les 8 plus petites cotes, dans l'ordre, rangs 1..8 (la note composite ne classe plus)", () => {
+    const cotes = [12, 3.5, 40, 7, 2.1, 25, 9, 5.5, 18, 31, 4.2, 15];
+    // note composite volontairement inverse de la cote : elle ne doit plus rien décider
+    const field = cotes.map((cote, i) => p({ numero: i + 1, cote, score_composite: cote / 100 }));
     const sel = buildNotreSelection(field);
-    expect(sel).toHaveLength(8);
-    expect(sel[0].numero).toBe(1); // meilleur score_composite
+    expect(sel.map((s) => s.cote)).toEqual([2.1, 3.5, 4.2, 5.5, 7, 9, 12, 15]);
     expect(sel.map((s) => s.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it("si < 8 partants, retourne tout le champ classé", () => {
+  it("à cote égale, la note composite départage", () => {
     const field = [
-      p({ numero: 1, score_composite: 0.5 }),
-      p({ numero: 2, score_composite: 0.3 }),
+      p({ numero: 1, cote: 4, score_composite: 0.2 }),
+      p({ numero: 2, cote: 4, score_composite: 0.6 }),
+      p({ numero: 3, cote: 2, score_composite: 0 }),
+      p({ numero: 4, cote: 9, score_composite: 0.9 }),
     ];
-    const sel = buildNotreSelection(field);
-    expect(sel).toHaveLength(2);
-    expect(sel[0].numero).toBe(1);
+    expect(buildNotreSelection(field).map((s) => s.numero)).toEqual([3, 2, 1, 4]);
   });
 
-  it("étiquette 'Favori marché' au cheval à la cote la plus courte", () => {
-    const field = [
-      p({ numero: 1, score_composite: 0.4, cote: 8 }),
-      p({ numero: 2, score_composite: 0.9, cote: 2.1 }),
-    ];
+  it("« Favori marché » = la plus petite cote", () => {
+    const field = [p({ numero: 1, cote: 8 }), p({ numero: 2, cote: 2.1 }), p({ numero: 3, cote: 5 }), p({ numero: 4, cote: 11 })];
     const sel = buildNotreSelection(field);
-    expect(sel.find((s) => s.numero === 2)?.label).toBe("Favori marché");
+    expect(sel[0]).toMatchObject({ numero: 2, label: "Favori marché" });
+    expect(sel.filter((s) => s.label === "Favori marché")).toHaveLength(1);
   });
 
-  it("bonus driver d'élite : remonte un cheval à score_composite égal", () => {
+  it("étiquettes d'information : forme, driver, entraîneur, outsider, sinon « Bien coté »", () => {
     const field = [
-      p({ numero: 1, score_composite: 0.5, jockey: "Inconnu" }),
-      p({ numero: 2, score_composite: 0.5, jockey: "J.M. BAZIRE" }),
+      p({ numero: 1, cote: 2 }),
+      p({ numero: 2, cote: 4, forme_musique: { top3: 3, courses: 4, ratio: 0.75 } }),
+      p({ numero: 3, cote: 5, jockey: "J.M. BAZIRE" }),
+      p({ numero: 4, cote: 6, entraineur: "A. Fabre" }),
+      p({ numero: 5, cote: 14 }),
+      p({ numero: 6, cote: 7 }),
+      p({ numero: 7, cote: 8, forme_musique: { top3: 2, courses: 2, ratio: 1 } }), // 2 courses : trop peu pour « Bonne forme »
     ];
-    const sel = buildNotreSelection(field);
-    expect(sel[0].numero).toBe(2); // Bazire passe devant
-    expect(sel[0].label).toBe("Driver reconnu");
+    const label = (n: number) => buildNotreSelection(field).find((s) => s.numero === n)?.label;
+    expect(label(2)).toBe("Bonne forme");
+    expect(label(3)).toBe("Driver reconnu");
+    expect(label(4)).toBe("Entraîneur reconnu");
+    expect(label(5)).toBe("Outsider");
+    expect(label(6)).toBe("Bien coté");
+    expect(label(7)).toBe("Bien coté");
   });
 
-  it("repli sans cote : produit quand même une sélection ordonnée", () => {
-    const field = Array.from({ length: 5 }, (_, i) =>
-      p({
-        numero: i + 1,
-        cote: null,
-        score_composite: (5 - i) / 10,
-        score_breakdown: { cote: 0, vict_cheval: 0.2, forme_musique: 0.1, vict_jockey: 0 },
-      }));
-    const sel = buildNotreSelection(field);
-    expect(sel).toHaveLength(5);
-    expect(sel[0].numero).toBe(1);
-    expect(sel[0].cote).toBeNull();
+  it("sans cote fiable (Maroc, J+1) → pas de sélection plutôt qu'une liste au hasard", () => {
+    const field = Array.from({ length: 10 }, (_, i) => p({ numero: i + 1, cote: null, score_composite: (10 - i) / 10 }));
+    expect(buildNotreSelection(field)).toEqual([]);
+  });
+
+  it("moins de la moitié du champ coté → pas de sélection", () => {
+    const field = Array.from({ length: 10 }, (_, i) => p({ numero: i + 1, cote: i < 4 ? i + 2 : null }));
+    expect(buildNotreSelection(field)).toEqual([]);
+  });
+
+  it("champ coté mais incomplet : les chevaux sans cote sont écartés", () => {
+    const field = [p({ numero: 1, cote: 3 }), p({ numero: 2, cote: null }), p({ numero: 3, cote: 6 }), p({ numero: 4, cote: 9 })];
+    expect(buildNotreSelection(field).map((s) => s.numero)).toEqual([1, 3, 4]);
   });
 
   it("champ vide → []", () => {
@@ -82,7 +90,7 @@ describe("buildNotreSelection", () => {
 });
 
 describe("shouldShowNotreSelectionPromo", () => {
-  const item = { rank: 1, numero: 6, nom: "X", jockey: null, cote: null, label: "Régulier" as const };
+  const item = { rank: 1, numero: 6, nom: "X", jockey: null, cote: 3.2, label: "Bien coté" as const };
   it("affiche dès qu'une sélection existe (visible pour tous, abonnés inclus)", () => {
     expect(shouldShowNotreSelectionPromo([item])).toBe(true);
   });
