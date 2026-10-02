@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchGenyPartantsWithMeta, safeCote, safePoids, safeSmallInt, type GenyParticipant, type GenyDiscipline } from "@/lib/geny";
 import { logCronStart } from "@/lib/cron-logger";
+import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { logger } from "@/lib/observability/logger";
 
 export const dynamic     = "force-dynamic";
@@ -281,8 +282,10 @@ export async function GET(req: NextRequest) {
       }
 
       // Bulk insert : 1 subrequest pour tous les partants
-      const allRows = okOutcomes.flatMap((o) =>
-        o.partants
+      // Même cote partout ou somme des probabilités > 2 = valeur par défaut, pas une cote.
+      const allRows = okOutcomes.flatMap((o) => {
+        const cotesFiables = cotesPlausibles(o.partants.filter((g) => !g.nonPartant).map((g) => g.coteProbable));
+        return o.partants
           .filter((g) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
           .map((g) => ({
             course_id:   o.courseId,
@@ -290,7 +293,7 @@ export async function GET(req: NextRequest) {
             nom_cheval:  g.nom,
             jockey:      g.jockey?.nom ?? null,
             entraineur:  g.entraineur?.nom ?? null,
-            cote:        safeCote(g.coteProbable),
+            cote:        cotesFiables ? safeCote(g.coteProbable) : null,
             musique:     g.musique ?? null,
             poids_kg:    safePoids(g.poids),
             place_corde: safeSmallInt(g.placeCorde, 1, 30),
@@ -298,8 +301,8 @@ export async function GET(req: NextRequest) {
             sexe:        g.sexe ?? null,
             non_partant: g.nonPartant ?? false,
             scraped_at:  new Date().toISOString(),
-          })),
-      );
+          }));
+      });
       if (allRows.length > 0) {
         const { error: insErr, count } = await supabase
           .from("partants")

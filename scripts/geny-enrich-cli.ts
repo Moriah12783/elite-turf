@@ -25,6 +25,7 @@ import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
 import { fetchGenybetPartantsMap } from "@/lib/sync/genybet-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
+import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -235,11 +236,16 @@ async function main(): Promise<void> {
   if (okIds.length > 0) {
     await supabase.from("partants").delete().in("course_id", okIds);
 
-    const rows = ok.flatMap((o) =>
-      o.partants
+    // Dernier filet, toutes sources confondues : même cote partout ou somme des
+    // probabilités > 2 = valeur par défaut (LONACI « 1,2 », masse sans pari).
+    let coursesCotesFactices = 0;
+    const rows = ok.flatMap((o) => {
+      const cotesFiables = cotesPlausibles(o.partants.filter((g: any) => !g.nonPartant).map((g: any) => g.coteProbable));
+      if (!cotesFiables) coursesCotesFactices++;
+      return o.partants
         .filter((g: any) => !g.nom?.toUpperCase().includes("NON_PARTANT"))
         .map((g: any) => {
-          const cote = safeCote(g.coteProbable);
+          const cote = cotesFiables ? safeCote(g.coteProbable) : null;
           return {
             course_id:   o.c.id,
             numero:      g.numPmu,
@@ -256,8 +262,9 @@ async function main(): Promise<void> {
             non_partant: g.nonPartant ?? false,
             scraped_at:  new Date().toISOString(),
           };
-        }),
-    );
+        });
+    });
+    if (coursesCotesFactices > 0) console.log(`🚫 Cotes factices ignorées (1,2 LONACI, masse sans pari) : ${coursesCotesFactices} course(s)`);
 
     if (rows.length > 0) {
       const { error: insErr, count } = await supabase

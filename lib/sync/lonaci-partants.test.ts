@@ -1,5 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { normalizeLonaciPartant } from "./lonaci-partants";
+import { normalizeLonaciPartant, retirerCotesFactices, type LonaciPartant } from "./lonaci-partants";
+
+describe("retirerCotesFactices — le « 1,2 » LONACI n'est pas une cote", () => {
+  const partant = (numPmu: number, coteProbable?: number, nonPartant = false): LonaciPartant =>
+    ({ numPmu, nom: `CHEVAL ${numPmu}`, coteProbable, nonPartant });
+
+  it("1,2 pour chaque cheval → plus aucune cote", () => {
+    const course = Array.from({ length: 12 }, (_, i) => partant(i + 1, 1.2));
+    expect(retirerCotesFactices(course).every((p) => p.coteProbable === undefined)).toBe(true);
+  });
+
+  it("vraies cotes → inchangées (même objet)", () => {
+    const course = [partant(1, 2.5), partant(2, 4), partant(3, 7.5), partant(4, 12), partant(5, 1.2, true)];
+    expect(retirerCotesFactices(course)).toBe(course);
+  });
+
+  it("le jugement ignore les non-partants", () => {
+    const course = [partant(1, 1.2), partant(2, 1.2), partant(3, 1.2), partant(4, 1.2), partant(5, 9, true)];
+    expect(retirerCotesFactices(course).every((p) => p.coteProbable === undefined)).toBe(true);
+  });
+});
 
 describe("normalizeLonaciPartant — partant LONACI → forme GenyParticipant", () => {
   it("mappe nom, driver (jocker), entraîneur (coach), cote LIVE, corde", () => {

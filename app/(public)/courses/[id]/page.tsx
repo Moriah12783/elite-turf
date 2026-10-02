@@ -12,6 +12,7 @@ import type { SubscriptionStatus } from "@/types";
 import { buildGenyUrl, buildGenyUrlFromStored, fetchGenyPartants } from "@/lib/geny";
 import { fetchPmuPartants } from "@/lib/pmu-api";
 import { parisVersUtc } from "@/lib/paris-date";
+import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import CountdownTimer from "@/components/courses/CountdownTimer";
 import CourseTabsClient from "@/components/courses/CourseTabsClient";
 import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
@@ -210,7 +211,11 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
   const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
-  const allPartants: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
+  // Cotes factices (LONACI « 1,2 » pour chaque cheval, masse sans pari) : jusqu'au
+  // 02/10/2026 affichées comme de vraies cotes, avec « Favori marché » sur 8 chevaux.
+  const partantsTries: any[] = (c.partants || []).sort((a: any, b: any) => a.numero - b.numero);
+  const cotesFiables = cotesPlausibles(partantsTries.filter((p: any) => !p.non_partant).map((p: any) => p.cote));
+  const allPartants: any[] = cotesFiables ? partantsTries : partantsTries.map((p: any) => ({ ...p, cote: null }));
   const partants:    any[] = allPartants.filter((p: any) => !p.non_partant);
   const nonPartants: any[] = allPartants.filter((p: any) =>  p.non_partant);
 
