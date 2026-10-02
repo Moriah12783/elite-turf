@@ -48,7 +48,7 @@ export default function PaywallBanner({ niveau, compact = false }: PaywallBanner
       </h3>
       <p className="text-text-secondary text-sm mb-5 max-w-xs mx-auto">
         {isVip
-          ? "Ce pronostic Elite est réservé aux membres du Plan Elite. Accès complet + analyses vidéo."
+          ? "Ce plan de jeu est réservé aux membres du Plan Elite : 8 chevaux, le couplé, la base de 3 chevaux, les values et les associés."
           : "Abonnez-vous à partir de 65€ pour accéder à l'analyse complète et à la sélection."}
       </p>
 

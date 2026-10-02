@@ -19,9 +19,9 @@ describe("fiches à cases des formules", () => {
     for (const l of lignes()) expect(l.cases.starter).toEqual(l.cases.pro);
   });
 
-  it("Elite inclut tout ce qu'inclut Pro, et le pronostic Elite en plus", () => {
+  it("Elite inclut tout ce qu'inclut Pro, et le plan de jeu en plus", () => {
     for (const l of lignes()) if (l.cases.pro !== false) expect(l.cases.elite).not.toBe(false);
-    const elite = lignes().find((l) => l.id === "pronostic-elite")!;
+    const elite = lignes().find((l) => l.id === "plan-de-jeu-elite")!;
     expect(elite.cases).toEqual({ free: false, starter: false, pro: false, elite: true });
   });
 
@@ -32,17 +32,20 @@ describe("fiches à cases des formules", () => {
   });
 
   it("offre « Starter = accès Elite » : précisée dans la case Starter", () => {
-    const elite = lignes("27 août").find((l) => l.id === "pronostic-elite")!;
+    const elite = lignes("27 août").find((l) => l.id === "plan-de-jeu-elite")!;
     expect(elite.cases.starter).toBe("Offert jusqu'au 27 août");
   });
 
-  it("rien d'annoncé avant livraison : ni plan de jeu Elite, ni 6 chevaux pour Starter / Pro", () => {
-    const texte = lignes().map((l) => `${l.libelle} ${l.detail}`).join(" ").toLowerCase();
-    for (const mot of ["plan de jeu", "couplé", "champ réduit", "value", "associé"]) {
-      expect(texte).not.toContain(mot);
-    }
+  it("offre du 02/10/2026 : 6 chevaux pour tous, plan de jeu complet pour Elite seulement", () => {
     const expert = lignes().find((l) => l.id === "pronostic-expert")!;
-    expect(expert.detail).toContain("8 chevaux");
+    expect(expert.detail).toContain("6 chevaux");
+    const plan = lignes().find((l) => l.id === "plan-de-jeu-elite")!;
+    for (const element of ["8 chevaux", "couplé (2 chevaux)", "base de 3", "champ réduit ou total", "values", "associés"]) {
+      expect(plan.detail).toContain(element);
+    }
+    // Le plan de jeu n'est annoncé nulle part ailleurs que sur sa propre ligne.
+    const autres = lignes().filter((l) => l.id !== "plan-de-jeu-elite").map((l) => `${l.libelle} ${l.detail}`).join(" ").toLowerCase();
+    expect(autres).not.toContain("plan de jeu");
   });
 });
 

@@ -260,7 +260,7 @@ export default async function BlogArticlePage({
               <div className="space-y-2 mb-4">
                 {/* « Analyse vidéo (Plan Elite) » retiré le 01/10/2026 : aucune
                     analyse vidéo n'existe. */}
-                {["Le Quinté+ du jour, avant le départ", "Tiercé & Quarté+ inclus", "Pronostic Elite en 6 chevaux (Pack Elite)"].map((f) => (
+                {["Le Quinté+ du jour, avant le départ", "Tiercé & Quarté+ inclus", "Le plan de jeu Elite (Pack Elite)"].map((f) => (
                   <div key={f} className="flex items-center gap-2 text-xs text-text-secondary">
                     <div className="w-1.5 h-1.5 rounded-full bg-status-win flex-shrink-0" />
                     {f}

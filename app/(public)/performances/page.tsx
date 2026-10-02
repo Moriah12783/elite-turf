@@ -504,8 +504,8 @@ export default async function PerformancesPage({
                     // Pro doré, Elite violet. Title attribute explique le sens.
                     const niveauConfig: Record<string, { label: string; classes: string; title: string }> = {
                       GRATUIT: { label: "Gratuit", classes: "bg-status-win/10 text-status-win border-status-win/20",     title: "Pronostic gratuit accessible à tous" },
-                      STARTER: { label: "Starter", classes: "bg-bg-elevated text-text-secondary border-border",          title: "Pronostic du pack Starter (8 chevaux)" },
-                      PRO:     { label: "Pro",     classes: "bg-gold-faint text-gold-light border-gold-primary/30",      title: "Pronostic du pack Pro (8 chevaux + analyse experte)" },
+                      STARTER: { label: "Starter", classes: "bg-bg-elevated text-text-secondary border-border",          title: "Pronostic du pack Starter" },
+                      PRO:     { label: "Pro",     classes: "bg-gold-faint text-gold-light border-gold-primary/30",      title: "Pronostic du pack Pro (analyse experte)" },
                       ELITE:   { label: "Elite",   classes: "bg-purple-500/10 text-purple-400 border-purple-500/30",     title: "Pronostic du pack Elite (sélection top 6 filtrée)" },
                     };
                     const niveau = niveauConfig[p.niveau_acces as string] || niveauConfig.STARTER;
