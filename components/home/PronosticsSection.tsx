@@ -2,11 +2,12 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Lock, Star, ChevronRight, Eye, Trophy, Flame,
-  MapPin, Clock, TrendingUp, Zap, Globe2, CheckCircle2, Hourglass,
+  MapPin, Clock, Zap, Globe2, CheckCircle2, Hourglass,
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
 import { fetchCotesPmu, favoriPmu, type FavoriPmu } from "@/lib/pmu-cotes";
+import { niveauConfiance } from "@/lib/pronostics/confiance";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
@@ -324,6 +325,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
   const vedette: any = vedetteProno;
   // Normaliser la relation "course" qui peut être un objet ou un tableau (Supabase inference)
   const vCourse: any = Array.isArray(vedette?.course) ? vedette.course[0] : vedette?.course;
+  const confVedette = niveauConfiance(vedette?.confiance);
   const listWithoutVedette = displayList.filter((p: any) => p.id !== vedette?.id);
 
   // ── 3. Favori PMU : la cote directe la plus basse, seulement si le PMU parle
@@ -385,10 +387,8 @@ export default async function PronosticsSection({ personnalise = true }: { perso
                 <Zap className="w-3.5 h-3.5" fill="currentColor" />
                 Vedette du Jour
               </div>
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-status-win/10 border border-status-win/25 text-status-win text-xs font-semibold rounded-full">
-                <TrendingUp className="w-3 h-3" />
-                Confiance max
-              </span>
+              {/* AVANT le 02/10/2026 : badge « Confiance max » écrit en dur, alors que
+                  les pronostics sont notés « Élevé » (3 sur 4). Le niveau réel est sous le titre. */}
               <span className="text-xs px-2.5 py-1 rounded-full bg-bg-elevated border border-border text-text-secondary font-medium">
                 {quinte && vCourse?.id === quinte.id
                   ? LABEL_QUINTE
@@ -413,19 +413,21 @@ export default async function PronosticsSection({ personnalise = true }: { perso
                   <h3 className="font-serif text-xl sm:text-2xl font-bold text-text-primary leading-tight break-words">
                     {vCourse?.libelle || "Course du jour"}
                   </h3>
-                  <div className="flex items-center gap-0.5 mt-1 flex-wrap">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-3.5 h-3.5"
-                        fill={i < (vedette.confiance || 3) ? "#C9A84C" : "transparent"}
-                        color={i < (vedette.confiance || 3) ? "#C9A84C" : "#3A3A50"}
-                      />
-                    ))}
-                    <span className="text-gold-light text-xs ml-1 font-medium">
-                      {vedette.confiance >= 5 ? "Confiance max" : `Confiance ${vedette.confiance}/5`}
-                    </span>
-                  </div>
+                  {confVedette && (
+                    <div className="flex items-center gap-0.5 mt-1 flex-wrap">
+                      {[...Array(confVedette.max)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className="w-3.5 h-3.5"
+                          fill={i < confVedette.etoiles ? "#C9A84C" : "transparent"}
+                          color={i < confVedette.etoiles ? "#C9A84C" : "#3A3A50"}
+                        />
+                      ))}
+                      <span className="text-gold-light text-xs ml-1 font-medium">
+                        Confiance : {confVedette.label}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -526,15 +528,17 @@ export default async function PronosticsSection({ personnalise = true }: { perso
                         🌍 {natLabel.split(" — ")[0]}
                       </span>
                     )}
-                    <div className="flex items-center gap-0.5 ml-auto">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5"
-                          fill={i < (p.confiance || 3) ? "#C9A84C" : "transparent"}
-                          color={i < (p.confiance || 3) ? "#C9A84C" : "#3A3A50"}
-                        />
-                      ))}
-                      <span className="text-text-muted text-xs ml-1.5">Confiance</span>
-                    </div>
+                    {niveauConfiance(p.confiance) && (
+                      <div className="flex items-center gap-0.5 ml-auto" title={`Confiance : ${niveauConfiance(p.confiance)!.label}`}>
+                        {[...Array(4)].map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5"
+                            fill={i < niveauConfiance(p.confiance)!.etoiles ? "#C9A84C" : "transparent"}
+                            color={i < niveauConfiance(p.confiance)!.etoiles ? "#C9A84C" : "#3A3A50"}
+                          />
+                        ))}
+                        <span className="text-text-muted text-xs ml-1.5">Confiance</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Course */}

@@ -32,6 +32,7 @@ import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import TrackPageView from "@/components/analytics/TrackPageView";
 import LeadCaptureCompact from "@/components/leads/LeadCaptureCompact";
 import { chargerJourQuinte } from "./donnees";
+import { niveauConfiance } from "@/lib/pronostics/confiance";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -348,9 +349,9 @@ export default async function VueQuintePlus({
               <h2 className="font-serif font-bold text-text-primary text-base">
                 Pronostic Elite Turf
               </h2>
-              {pronosticPublie.confiance && (
+              {niveauConfiance(pronosticPublie.confiance) && (
                 <span className="ml-auto text-xs px-2 py-0.5 rounded bg-gold-primary/20 text-gold-light font-semibold">
-                  Confiance {pronosticPublie.confiance}/5
+                  Confiance : {niveauConfiance(pronosticPublie.confiance)!.label}
                 </span>
               )}
             </div>
