@@ -35,18 +35,19 @@ export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) 
 
   const parallaxY = scrollY * 0.35;
 
-  /* ── Stats grid : valeurs réelles (SSR) avec fallback chiffré — jamais « … » ── */
+  /* ── Stats grid : valeurs réelles (SSR). Si la lecture échoue : « — »,
+        jamais un chiffre inventé (règle anti-fabrication). ── */
   const stats = [
     {
       icon: TrendingUp,
-      value: liveStats.tauxGlobal > 0 ? `${liveStats.tauxGlobal}%` : "57%",
+      value: liveStats.tauxGlobal > 0 ? `${liveStats.tauxGlobal}%` : "—",
       label:    "Taux de réussite",
       sublabel: "historique prouvé",
       color:    "text-status-win",
     },
     {
       icon: BarChart2,
-      value: liveStats.coursesAnalysees > 0 ? `${liveStats.coursesAnalysees}+` : "100+",
+      value: liveStats.coursesAnalysees > 0 ? `${liveStats.coursesAnalysees}+` : "—",
       label:    "Courses analysées",
       sublabel: "programmes PMU",
       color:    "text-gold-primary",
@@ -55,20 +56,21 @@ export default function HeroSection({ stats: liveStats }: { stats: HomeStats }) 
       // Tuile « 5 ans d'expertise » retirée (claim non vérifiable — audit S1.5
       // Q1) → remplacée par une métrique réelle : gagnants des 14 derniers jours.
       icon: Award,
-      value: liveStats.gagnantsRecents > 0 ? `${liveStats.gagnantsRecents}` : "10+",
+      value: liveStats.gagnantsRecents > 0 ? `${liveStats.gagnantsRecents}` : "—",
       label:    "Gagnants",
       sublabel: "14 derniers jours",
       color:    "text-gold-light",
     },
     {
+      // Tuile « Meilleur rapport » retirée le 02/10/2026 : elle lisait
+      // pronostics.rapport_gagnant, en partie saisi à la main, et a affiché
+      // 50 000 € (la cagnotte e-Tirelire du 17/06) au lieu du désordre
+      // réellement gagné (210,40 €). Un compte de pronostics jugés ne se
+      // gonfle pas.
       icon: Trophy,
-      value: liveStats.meilleurRapport
-        ? `${liveStats.meilleurRapport.toFixed(0)}€`
-        : liveStats.totalPronostics > 0
-          ? `${liveStats.totalPronostics}`
-          : "100+",
-      label:    liveStats.meilleurRapport ? "Meilleur rapport" : "Pronostics publiés",
-      sublabel: liveStats.meilleurRapport ? "rapport gagnant réel" : "analyses experts",
+      value: liveStats.totalPronostics > 0 ? `${liveStats.totalPronostics}` : "—",
+      label:    "Pronostics publiés",
+      sublabel: "gagnants et perdants archivés",
       color:    "text-gold-primary",
     },
   ];
