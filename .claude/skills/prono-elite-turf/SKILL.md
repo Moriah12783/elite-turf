@@ -43,7 +43,8 @@ cote, non-partant, arrivée, rapport, ni analyse.
 4. **Collecter & croiser** : partants, non-partants, forme (musique),
    driver/jockey + entraîneur, terrain/corde/distance, cotes indicatives.
 5. **Hiérarchiser** une sélection de **8 chevaux** par ordre de confiance sur la
-   course vedette → en déduire base / appuis / outsiders.
+   course vedette → les **6 premiers** font le pronostic Starter/Pro, les **8**
+   le plan de jeu Elite (couplé, base de 3, associés, values).
 6. **Décliner par tier** (tableau ci-dessous) + attribuer un **indice de confiance**.
 7. **Rendre** : analyse détaillée puis blocs copier-coller par tier.
 8. Données insuffisantes → **fallback prudent**, jamais de sélection forcée.
@@ -57,7 +58,7 @@ cote, non-partant, arrivée, rapport, ni analyse.
 
 ## Structure du livrable (conforme aux formules d'abonnement)
 À partir d'**une** sélection hiérarchisée de **8 chevaux** sur la course vedette,
-décliner les **3 niveaux premium**.
+produire **deux blocs** (offre en vigueur depuis le 02/10/2026, décision de Steph).
 
 > ⚠️ **Pas de bloc « Free ».** La formule Free, c'est **« Notre sélection »** —
 > une fonctionnalité **automatique du site** affichée sur **chaque** course
@@ -67,19 +68,24 @@ décliner les **3 niveaux premium**.
 
 | Tier | Ce que tu produis |
 |------|-------------------|
-| **STARTER** — *Tiercé / Quarté+* | Le **cœur** de la sélection : **★ base + appuis** (3 à 5 chevaux) pour jouer Tiercé / Quarté+. **PAS de Quinté+.** |
-| **PRO** — *Couverture complète* | La sélection **complète en 8 chevaux** : **★ base + appuis + ◇ outsiders**. **Tous les paris** : Tiercé, Quarté+, **Quinté+**, Couplé, Trio. Gestion de mise détaillée. |
-| **ELITE** — *La sélection dans la sélection* | Les **6 chevaux resserrés** (le noyau dur des 8) : lecture plus filtrée et plus exigeante. |
+| **STARTER & PRO** — *Le pronostic expert du jour* | **6 chevaux** classés par confiance (les 6 premiers des 8) : **★ base + appuis + ◇ outsiders**. Tiercé, Quarté+, **Quinté+**. Starter = Pro sur 7 jours : **même bloc**. |
+| **ELITE** — *Le plan de jeu* | Les **8 chevaux**, avec : **🎯 le couplé** (2 chevaux), **★ la base de 3 chevaux** pour le champ réduit ou total, **🤝 les associés**, **◇ les values**. |
 
-Emboîtement : **Starter (base+appuis) ⊂ Elite (6 resserrés) ⊂ Pro (8)**.
-Elite = Pro resserré · Starter = le cœur Tiercé/Quarté.
-*(Optionnel : une 2e course vedette si une 2e course forte est validée — Pro &
-Elite ont droit à « 1+ pronostic / jour ».)*
+Emboîtement : **Starter = Pro (6 chevaux) ⊂ Elite (plan de jeu, 8 chevaux)**.
+Elite reçoit AUSSI le bloc Pro.
+
+**Saisie sur le site** (admin, éditeur « Sélection & hiérarchie ») : bouton
+**Base** sur les 3 chevaux de base, **Value** sur les values, **Associé** sur les
+associés, **Couplé** sur les 2 chevaux du couplé (marqueur à part, cumulable
+avec la base). Les chevaux non qualifiés restent en champ.
+*(Optionnel : une 2e course vedette si une 2e course forte est validée.)*
 
 ## Classification tactique — toujours nommée
 - **★ Cheval de base** (n°1, plus forte conviction) → à associer dans TOUTES les combinaisons.
 - **+ Appuis** (2e–3e choix) → les associés solides.
-- **◇ Outsiders** (chevaux à cote, *value*) → le piment qui paie, à doser. *(Pro/Elite uniquement.)*
+- **◇ Outsiders / values** (chevaux à cote, *value*) → le piment qui paie, à doser.
+- **🎯 Couplé** *(Elite)* → les 2 chevaux à jouer en couplé.
+- **🤝 Associés** *(Elite)* → les chevaux à associer à la base de 3 en champ réduit.
 
 *(Classification identique au bloc « Comment jouer la sélection » de la fiche
 pronostic du site.)*
@@ -103,18 +109,25 @@ appuis / outsiders nommés), cotes indicatives (signalées si absentes), indice 
 confiance, analyse brève argumentée, note de prudence.
 
 **(B) Blocs copier-coller par tier** (prêts WhatsApp / email, autonomes) —
-TOUJOURS les fournir, segmentés STARTER / PRO / ELITE. Modèle :
+TOUJOURS les fournir, segmentés STARTER & PRO / ELITE. Modèle :
 
 ```
 🏇 ELITE TURF — [DATE]
 [Hippodrome] · [R#C#] · [Prix / libellé exact] · [Heure] · [Discipline]
 ✅ [Validation LONACI / Afrique corroborée]
 
-[TIER] — [intitulé]
+STARTER & PRO — Le pronostic expert (6 chevaux)
 ★ Base : [n°] [NOM]
 + Appuis : [n°] [NOM], [n°] [NOM]
-◇ Outsiders : [n°] [NOM], [n°] [NOM]      (PRO / ELITE uniquement)
-🎯 Jeux : [Tiercé/Quarté+ | Quinté+, Couplé, Trio]
+◇ Outsiders : [n°] [NOM], [n°] [NOM]
+🎯 Jeux : Tiercé, Quarté+, Quinté+
+Confiance : ◆◆◆
+
+ELITE — Le plan de jeu (8 chevaux)
+🎯 Couplé : [n°] [NOM] – [n°] [NOM]
+★ Base de 3 : [n°] [NOM], [n°] [NOM], [n°] [NOM]   (champ réduit ou total)
+🤝 Associés : [n°] [NOM], [n°] [NOM]
+◇ Values : [n°] [NOM], [n°] [NOM]
 Confiance : ◆◆◆
 ⚠️ Cotes indicatives · le jeu comporte des risques, jouez responsable
 ```
@@ -129,8 +142,10 @@ pronostic (ce qui a marché / pas marché). Aucun chiffre retouché. Pas de rapp
 inventé : si le dividende n'est pas confirmé, l'indiquer.
 
 ## Publication & ton
-- Créneau : **entre 8h30 et 9h30 GMT** (heure locale Abidjan / Dakar). Abonnés
-  alertés par **email + WhatsApp**.
+- Publication : **avant le départ de la course**. Aucune heure n'est annoncée
+  aux abonnés (décision de Steph du 01/10/2026 : l'ancien créneau « 8h30-9h30
+  GMT » n'était pas tenu). Abonnés alertés par **email** (automatique à la
+  publication) **+ WhatsApp** (envoyé par Steph).
 - Ton : **français sobre, premium, concis.** Crédible, jamais vendeur ni
   superlatif creux.
 
