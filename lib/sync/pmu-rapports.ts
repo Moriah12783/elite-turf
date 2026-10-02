@@ -227,16 +227,33 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
   const portee = opts.portee || "toutes";
   const dryRun = opts.dryRun ?? false;
 
-  const { data, error } = await supabase
-    .from("courses")
-    .select("id, date_course, numero_reunion, numero_course, nationale, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(pays), arrivees(id, rapports_pmu)")
-    .gte("date_course", opts.depuis)
-    .lte("date_course", jusqua)
-    .not("arrivee_officielle", "is", null)
-    .order("date_course", { ascending: true });
-  if (error) throw new Error(`lecture des courses : ${error.message}`);
+  // Lecture PAR PAGES : la base renvoie au plus 1 000 lignes par requête. Le
+  // 02/10/2026, un remplissage sur 30 jours (≈ 1 400 courses) a ainsi perdu
+  // EN SILENCE ses derniers jours (30/09 et 01/10). Ordre stable (date, id)
+  // pour qu'aucune ligne ne saute ni ne double d'une page à l'autre.
+  const PAGE = 1000;
+  const lues: CourseCandidate[] = [];
+  for (let debut = 0; ; debut += PAGE) {
+    let requete = supabase
+      .from("courses")
+      .select("id, date_course, numero_reunion, numero_course, nationale, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(pays), arrivees(id, rapports_pmu)")
+      .gte("date_course", opts.depuis)
+      .lte("date_course", jusqua)
+      .not("arrivee_officielle", "is", null);
+    // Portée Quinté+ : filtre aussi côté base (moins de lignes à lire) ; le
+    // verdict reste celui d'estCandidate.
+    if (portee === "quinte") requete = requete.or("nationale.eq.1,paris_disponibles.cs.{QUINTE_PLUS}");
+    const { data, error } = await requete
+      .order("date_course", { ascending: true })
+      .order("id", { ascending: true })
+      .range(debut, debut + PAGE - 1);
+    if (error) throw new Error(`lecture des courses : ${error.message}`);
+    const page = (data ?? []) as unknown as CourseCandidate[];
+    for (let i = 0; i < page.length; i++) lues.push(page[i]);
+    if (page.length < PAGE) break;
+  }
 
-  let candidates = ((data ?? []) as unknown as CourseCandidate[]).filter((c) => estCandidate(c, portee));
+  let candidates = lues.filter((c) => estCandidate(c, portee));
   if (opts.limite && opts.limite > 0) candidates = candidates.slice(0, opts.limite);
 
   let ecrits = 0, indisponibles = 0, echecs = 0;
