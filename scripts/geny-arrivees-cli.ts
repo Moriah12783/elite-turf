@@ -12,7 +12,12 @@
  */
 import { runGenyArriveesSync } from "@/lib/sync/geny-arrivees";
 import { runPmuRapportsSync } from "@/lib/sync/pmu-rapports";
+import { runRattrapagePmu } from "@/lib/sync/pmu-rattrapage";
 import { todayParisISO } from "@/lib/paris-date";
+
+function decaler(iso: string, jours: number): string {
+  return new Date(Date.parse(iso + "T12:00:00Z") + jours * 86400000).toISOString().slice(0, 10);
+}
 
 async function main(): Promise<void> {
   const result = await runGenyArriveesSync();
@@ -28,6 +33,19 @@ async function main(): Promise<void> {
     console.log("✅ RAPPORTS", JSON.stringify(r));
   } catch (e) {
     console.warn(`⚠️ rapports PMU non synchronisés : ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // Rattrapage des 3 jours écoulés depuis le programme PMU (02/10/2026) : la
+  // synchro ci-dessus ne traite que le jour en cours, et une arrivée publiée
+  // trop tard restait manquante pour toujours (1 113 courses du 01/05 au
+  // 01/10). N'ajoute que des arrivées absentes (+ heures GMT), ne réécrit
+  // aucune arrivée, ne juge aucun pronostic. Best-effort.
+  try {
+    const aujourdhui = todayParisISO();
+    const r = await runRattrapagePmu({ depuis: decaler(aujourdhui, -3), jusqua: decaler(aujourdhui, -1) });
+    console.log("✅ RATTRAPAGE", JSON.stringify(r));
+  } catch (e) {
+    console.warn(`⚠️ rattrapage PMU non effectué : ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 

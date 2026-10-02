@@ -133,6 +133,7 @@ describe("planifierRattrapage", () => {
     arrivee_officielle: null,
     a_ligne_arrivee: false,
     partants: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16],
+    nb_pronostics: 0,
     ...sur,
   });
 
@@ -157,11 +158,17 @@ describe("planifierRattrapage", () => {
   });
 
   it("signale sans la réécrire une arrivée contredite par le PMU", () => {
-    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7] })], pmu);
+    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7], a_ligne_arrivee: true })], pmu);
     expect(plan.arrivees).toEqual([]);
     expect(plan.divergentes).toEqual([
-      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10] },
+      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10], a_ligne_arrivee: true, corrigeable: true },
     ]);
+  });
+
+  it("ne déclare jamais corrigeable une arrivée qui a pu juger un pronostic", () => {
+    const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7], nb_pronostics: 1 })], pmu);
+    expect(plan.divergentes).toHaveLength(1);
+    expect(plan.divergentes[0].corrigeable).toBe(false);
   });
 
   it("refuse une arrivée dont un numéro n'est pas parmi nos partants", () => {

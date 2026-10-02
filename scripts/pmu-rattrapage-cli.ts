@@ -12,6 +12,8 @@
  *   RATTRAPAGE_SINCE   YYYY-MM-DD (obligatoire)
  *   RATTRAPAGE_UNTIL   YYYY-MM-DD (défaut : hier, heure de Paris)
  *   RATTRAPAGE_DRY_RUN true = ne rien écrire
+ *   RATTRAPAGE_CORRIGER true = remplacer par l'arrivée PMU les arrivées
+ *                      contredites des courses SANS pronostic
  */
 import { runRattrapagePmu } from "@/lib/sync/pmu-rattrapage";
 import { todayParisISO } from "@/lib/paris-date";
@@ -29,7 +31,12 @@ async function main(): Promise<void> {
     ? (process.env.RATTRAPAGE_UNTIL as string)
     : veille(todayParisISO());
 
-  const result = await runRattrapagePmu({ depuis, jusqua, dryRun: process.env.RATTRAPAGE_DRY_RUN === "true" });
+  const result = await runRattrapagePmu({
+    depuis,
+    jusqua,
+    dryRun: process.env.RATTRAPAGE_DRY_RUN === "true",
+    corrigerDivergentes: process.env.RATTRAPAGE_CORRIGER === "true",
+  });
   console.log("✅ RESULT", JSON.stringify(result));
   if (result.echecs > 0) process.exit(1);
 }
