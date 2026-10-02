@@ -171,6 +171,12 @@ describe("planifierRattrapage", () => {
     expect(plan.divergentes[0].corrigeable).toBe(false);
   });
 
+  it("ne corrige pas quand l'appariement est douteux (numéros PMU hors de nos partants)", () => {
+    const plan = planifierRattrapage([course({ arrivee_officielle: [4, 2, 1, 3], partants: [1, 2, 3, 4] })], pmu);
+    expect(plan.divergentes).toHaveLength(1);
+    expect(plan.divergentes[0].corrigeable).toBe(false);
+  });
+
   it("refuse une arrivée dont un numéro n'est pas parmi nos partants", () => {
     const plan = planifierRattrapage([course({ partants: [1, 2, 3, 5, 7, 11, 13] })], pmu);
     expect(plan.arrivees).toEqual([]);

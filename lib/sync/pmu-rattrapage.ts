@@ -150,6 +150,12 @@ export interface PlanRattrapage {
   ignorees: { course_id: string; motif: MotifIgnoree }[];
 }
 
+/** Tous les numéros de l'arrivée figurent parmi nos partants : la course appariée est bien la nôtre. */
+function tousParmi(arrivee: number[], partants: number[]): boolean {
+  for (let i = 0; i < arrivee.length; i++) if (partants.indexOf(arrivee[i]) === -1) return false;
+  return true;
+}
+
 /** Les deux arrivées concordent sur leur partie commune (les longueurs varient selon l'époque). */
 function concordent(a: number[], b: number[]): boolean {
   const n = Math.min(a.length, b.length);
@@ -181,9 +187,12 @@ export function planifierRattrapage(
       if (base && p && p.arrivee.length >= 3) {
         const officielle = p.arrivee.slice(0, capPourParis(c.paris_disponibles));
         if (!concordent(base, officielle)) {
+          // Corrigeable seulement sans pronostic ET si l'appariement est sûr
+          // (mêmes garde-fous qu'un ajout : numéros PMU ⊆ nos partants).
           plan.divergentes.push({
             course_id: c.id, base, pmu: officielle,
-            a_ligne_arrivee: c.a_ligne_arrivee, corrigeable: c.nb_pronostics === 0,
+            a_ligne_arrivee: c.a_ligne_arrivee,
+            corrigeable: c.nb_pronostics === 0 && c.partants.length > 0 && tousParmi(officielle, c.partants),
           });
         }
       }
@@ -202,11 +211,7 @@ export function planifierRattrapage(
       continue;
     }
     const officielle = p.arrivee.slice(0, capPourParis(c.paris_disponibles));
-    let horsPartants = false;
-    for (let i = 0; i < officielle.length; i++) {
-      if (c.partants.indexOf(officielle[i]) === -1) horsPartants = true;
-    }
-    if (horsPartants) {
+    if (!tousParmi(officielle, c.partants)) {
       plan.ignorees.push({ course_id: c.id, motif: "numéros hors partants" });
       continue;
     }
@@ -225,8 +230,9 @@ export interface RattrapageOptions {
   dryRun?: boolean;
   /**
    * Remplace par l'arrivée PMU les arrivées contredites des courses SANS
-   * pronostic (décision de Steph du 02/10/2026). L'ancienne arrivée est
-   * gardée dans `commentaire` et ses rapports, devenus douteux, sont vidés.
+   * pronostic et à l'appariement sûr (numéros PMU ⊆ nos partants) — décision
+   * de Steph du 02/10/2026. L'ancienne arrivée est gardée dans `commentaire`
+   * et ses rapports, devenus douteux, sont vidés.
    */
   corrigerDivergentes?: boolean;
 }
@@ -332,7 +338,7 @@ export async function runRattrapagePmu(opts: RattrapageOptions): Promise<Rattrap
     for (const d of plan.divergentes) {
       if (d.corrigeable) res.divergentes_corrigeables++;
       if (res.exemples_divergentes.length < 20) {
-        res.exemples_divergentes.push(`${jour} ${d.course_id.slice(0, 8)} base ${d.base.join("-")} / PMU ${d.pmu.join("-")}${d.corrigeable ? "" : " (pronostic rattaché : non corrigeable)"}`);
+        res.exemples_divergentes.push(`${jour} ${d.course_id.slice(0, 8)} base ${d.base.join("-")} / PMU ${d.pmu.join("-")}${d.corrigeable ? "" : " (non corrigeable : pronostic rattaché ou appariement douteux)"}`);
       }
     }
 
