@@ -64,6 +64,7 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
             selection,
             roles: roles.roles,
             pivot: roles.pivot,
+            couple: roles.couple,
             // Réinjecte les noms déjà stockés : sans eux, un simple
             // réenregistrement les effacerait de la colonne.
             noms: dejaStocke.noms,

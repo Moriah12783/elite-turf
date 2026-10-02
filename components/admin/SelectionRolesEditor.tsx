@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Plus, X, Star } from "lucide-react";
-import { ROLE_CHOICES, roleChoiceOf } from "@/lib/pronostics/selection-roles";
+import { ROLE_CHOICES, roleChoiceOf, COUPLE_MAX } from "@/lib/pronostics/selection-roles";
 
 /**
- * Saisie de la sélection ET de sa hiérarchie (base / value / coup + pivot).
+ * Saisie de la sélection ET de sa hiérarchie (base / value / associé / coup +
+ * pivot + couplé). Plan de jeu Elite (02/10/2026) : 8 chevaux, le couplé
+ * (2 chevaux), la base de 3, les values et les associés.
  *
  * Pourquoi : jusqu'ici l'admin ne capturait qu'une liste de numéros. L'abonné
  * payant ne pouvait donc recevoir qu'une ligne de dossards, là où le visiteur
@@ -28,9 +30,11 @@ export interface SelectionRolesValue {
   roles: Record<number, string>;
   /** Le pivot du jeu, s'il a été désigné. */
   pivot: number | null;
+  /** Le couplé du plan de jeu Elite : 2 chevaux au plus. */
+  couple: number[];
 }
 
-export const EMPTY_SELECTION_ROLES: SelectionRolesValue = { roles: {}, pivot: null };
+export const EMPTY_SELECTION_ROLES: SelectionRolesValue = { roles: {}, pivot: null, couple: [] };
 
 interface PartantLite {
   numero: number;
@@ -105,7 +109,11 @@ export default function SelectionRolesEditor({
       const num = Number(k);
       if (num !== n) roles[num] = value.roles[num];
     }
-    onChange({ roles, pivot: value.pivot === n ? null : value.pivot });
+    onChange({
+      roles,
+      pivot: value.pivot === n ? null : value.pivot,
+      couple: value.couple.filter((x) => x !== n),
+    });
   };
 
   /** Un clic pose le rôle, un second l'enlève (le cheval retombe en champ). */
@@ -114,11 +122,22 @@ export default function SelectionRolesEditor({
     for (const k of Object.keys(value.roles)) roles[Number(k)] = value.roles[Number(k)];
     if (roles[n] === role) delete roles[n];
     else roles[n] = role;
-    onChange({ roles, pivot: value.pivot });
+    onChange({ roles, pivot: value.pivot, couple: value.couple });
   };
 
   const basculerPivot = (n: number) => {
-    onChange({ roles: value.roles, pivot: value.pivot === n ? null : n });
+    onChange({ roles: value.roles, pivot: value.pivot === n ? null : n, couple: value.couple });
+  };
+
+  /** Couplé : 2 chevaux au plus ; un 3e clic est ignoré tant qu'on n'en retire pas un. */
+  const basculerCouple = (n: number) => {
+    const dedans = value.couple.indexOf(n) !== -1;
+    if (!dedans && value.couple.length >= COUPLE_MAX) return;
+    onChange({
+      roles: value.roles,
+      pivot: value.pivot,
+      couple: dedans ? value.couple.filter((x) => x !== n) : value.couple.concat([n]),
+    });
   };
 
   const compte = (role: string) => {
@@ -235,6 +254,21 @@ export default function SelectionRolesEditor({
                   ))}
                   <button
                     type="button"
+                    title={value.couple.length >= COUPLE_MAX && value.couple.indexOf(n) === -1
+                      ? "Couplé complet (2 chevaux) : retirez-en un d'abord"
+                      : "Dans le couplé (2 chevaux)"}
+                    onClick={() => basculerCouple(n)}
+                    disabled={value.couple.length >= COUPLE_MAX && value.couple.indexOf(n) === -1}
+                    className={`px-2 py-1 rounded-lg border text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      value.couple.indexOf(n) !== -1
+                        ? "bg-purple-600 border-purple-600 text-white"
+                        : "bg-transparent border-border text-text-muted hover:text-text-primary hover:border-purple-400/50"
+                    }`}
+                  >
+                    Couplé
+                  </button>
+                  <button
+                    type="button"
                     title="Pivot du jeu"
                     onClick={() => basculerPivot(n)}
                     className={`p-1.5 rounded-lg border transition-colors ${
@@ -261,7 +295,7 @@ export default function SelectionRolesEditor({
       )}
 
       <p className="mt-2 text-text-muted text-xs">
-        {qualifies === 0 && horsVocabulaire === 0 ? (
+        {qualifies === 0 && horsVocabulaire === 0 && value.couple.length === 0 ? (
           <>Qualifiez au moins un cheval pour offrir le tableau structuré à vos abonnés — sinon
           l&apos;affichage reste une simple liste.</>
         ) : (
@@ -269,6 +303,7 @@ export default function SelectionRolesEditor({
             {ROLE_CHOICES.map((c) => `${c.label} ${compte(c.role)}`).join(" · ")}
             {horsVocabulaire > 0 ? ` · Pipeline ${horsVocabulaire}` : ""}
             {` · Champ ${selection.length - qualifies - horsVocabulaire}`}
+            {` · Couplé ${value.couple.length}/${COUPLE_MAX}`}
             {" — les chevaux non qualifiés restent dans le jeu, en couverture."}
           </>
         )}

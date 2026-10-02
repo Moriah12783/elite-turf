@@ -112,8 +112,8 @@ describe("parseSelectionRoles", () => {
   });
 
   it("tolère null, une valeur non-tableau et des entrées cassées", () => {
-    expect(parseSelectionRoles(null)).toEqual({ roles: {}, pivot: null, noms: {} });
-    expect(parseSelectionRoles("nope")).toEqual({ roles: {}, pivot: null, noms: {} });
+    expect(parseSelectionRoles(null)).toEqual({ roles: {}, pivot: null, couple: [], noms: {} });
+    expect(parseSelectionRoles("nope")).toEqual({ roles: {}, pivot: null, couple: [], noms: {} });
     expect(parseSelectionRoles([{ role: "BASE" }, { number: "x", role: "BASE" }]).roles).toEqual({});
   });
 
@@ -128,3 +128,39 @@ describe("parseSelectionRoles", () => {
     expect(relu.pivot).toBe(7);
   });
 });
+
+describe("plan de jeu Elite (02/10/2026) : couplé et associés", () => {
+  // Plan type : 8 chevaux, base de 3, couplé (2 chevaux pris dans la base), values, associés.
+  const plan = {
+    selection: [7, 2, 11, 5, 9, 14, 3, 1],
+    roles: { 7: "BASE", 2: "BASE", 11: "BASE", 5: "OUTSIDER", 9: "OUTSIDER", 14: "ASSOCIE", 3: "ASSOCIE" },
+    couple: [2, 7],
+  };
+
+  it("marque le couplé par-dessus les rôles, dans l'ordre de mérite", () => {
+    const rows = buildSelectionDetail(plan)!;
+    expect(rows.filter((r) => r.couple).map((r) => r.number)).toEqual([7, 2]);
+    expect(rows.find((r) => r.number === 7)).toMatchObject({ role: "BASE", couple: true });
+    expect(rows.find((r) => r.number === 14)).toMatchObject({ role: "ASSOCIE" });
+    expect(rows.find((r) => r.number === 1)).toMatchObject({ role: "CHAMP" });
+    expect(rows).toHaveLength(8);
+  });
+
+  it("2 chevaux au plus, et seulement parmi la sélection", () => {
+    const rows = buildSelectionDetail({ ...plan, couple: [99, 5, 9, 14] })!;
+    expect(rows.filter((r) => r.couple).map((r) => r.number)).toEqual([5, 9]);
+  });
+
+  it("un couplé seul suffit à structurer le pronostic", () => {
+    const rows = buildSelectionDetail({ selection: [4, 8, 1], roles: {}, couple: [4, 8] });
+    expect(rows).not.toBeNull();
+    expect(rows!.filter((r) => r.couple)).toHaveLength(2);
+  });
+
+  it("aller-retour sans perte : rôles, associés et couplé relus à l'identique", () => {
+    const relu = parseSelectionRoles(buildSelectionDetail(plan));
+    expect(relu.roles).toEqual(plan.roles);
+    expect(relu.couple).toEqual([7, 2]);
+  });
+});
+

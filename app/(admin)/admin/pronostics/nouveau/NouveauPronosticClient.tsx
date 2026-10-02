@@ -32,6 +32,8 @@ interface Props {
     /** Hiérarchie façon Radar pré-remplie par l'outil consensus. */
     roles?: Record<number, string>;
     pivot?: number | null;
+    /** Couplé du plan de jeu Elite (2 chevaux). */
+    couple?: number[];
   };
 }
 
@@ -49,7 +51,7 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
   const [selection, setSelection] = useState<number[]>(initialData?.selection || []);
   const [roles, setRoles] = useState<SelectionRolesValue>(
     initialData?.roles
-      ? { roles: initialData.roles, pivot: initialData.pivot ?? null }
+      ? { roles: initialData.roles, pivot: initialData.pivot ?? null, couple: initialData.couple ?? [] }
       : EMPTY_SELECTION_ROLES,
   );
 
@@ -74,6 +76,7 @@ export default function NouveauPronosticClient({ courses, initialData }: Props) 
             selection,
             roles: roles.roles,
             pivot: roles.pivot,
+            couple: roles.couple,
           }),
           publie,
           auteur_id: user?.id,

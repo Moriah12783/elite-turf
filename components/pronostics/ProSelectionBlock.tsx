@@ -1,10 +1,12 @@
 import type { RunnerRole } from "@/lib/ai-pronostics/types";
-import { ROLE_COUP, ROLE_CHAMP } from "@/lib/pronostics/selection-roles";
+import { ROLE_COUP, ROLE_CHAMP, ROLE_ASSOCIE } from "@/lib/pronostics/selection-roles";
 
 export interface SelectionDetailItem {
   number: number;
   name: string;
   role: RunnerRole | string;
+  /** Dans le couplé du plan de jeu Elite (2 chevaux). */
+  couple?: boolean;
 }
 
 interface PartantLite {
@@ -55,6 +57,12 @@ export function buildProSections(items: SelectionDetailItem[]) {
       horses: items.filter((it) => it.role === "APPUI" || it.role === "COMPLEMENT"),
     },
     {
+      label: "🤝 Associés",
+      hint: "Joués avec la base en champ réduit",
+      tone: TONES.socle,
+      horses: items.filter((it) => it.role === ROLE_ASSOCIE),
+    },
+    {
       label: "🎲 Outsiders & value",
       hint: "Cotes intéressantes pour élargir le jeu",
       tone: TONES.value,
@@ -64,7 +72,8 @@ export function buildProSections(items: SelectionDetailItem[]) {
           it.role !== "APPUI" &&
           it.role !== "COMPLEMENT" &&
           it.role !== ROLE_COUP &&
-          it.role !== ROLE_CHAMP,
+          it.role !== ROLE_CHAMP &&
+          it.role !== ROLE_ASSOCIE,
       ),
     },
     {
@@ -108,9 +117,24 @@ export function ProSelectionBlock({
 }) {
   const byNumber = new Map(partants.map((p) => [p.numero, p]));
   const sections = buildProSections(items);
+  // Le couplé n'a de sens qu'à 2 chevaux (plan de jeu Elite).
+  const couple = items.filter((it) => it.couple === true).slice(0, 2);
 
   return (
     <div className="space-y-3">
+      {couple.length === 2 && (
+        <div className="p-3 rounded-xl border border-purple-500/40 bg-purple-500/10">
+          <p className="text-xs uppercase tracking-wider mb-1 font-semibold text-purple-400">
+            🎯 Le couplé{" "}
+            <span className="normal-case font-normal text-text-muted/70">· les 2 chevaux à jouer en couplé</span>
+          </p>
+          <p className="text-text-primary text-sm font-semibold">
+            {couple
+              .map((it) => `n°${it.number} ${byNumber.get(it.number)?.nom_cheval ?? it.name ?? ""}`.trim())
+              .join("  –  ")}
+          </p>
+        </div>
+      )}
       {sections.map((section) =>
         section.horses.length === 0 ? null : (
           <div key={section.label}>

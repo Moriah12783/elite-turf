@@ -268,3 +268,49 @@ describe("buildPlanRadar — rien à afficher", () => {
     expect(buildPlanRadar({ selection: [], planDeJeu: PRONO_ELITE_REEL.planDeJeu })).toBeNull();
   });
 });
+
+describe("buildPlanRadar — plan de jeu Elite saisi par l'expert (02/10/2026)", () => {
+  const selection = [7, 2, 11, 5, 9, 14, 3, 1];
+  const detail = [
+    { number: 7, role: "BASE", couple: true },
+    { number: 2, role: "BASE", couple: true },
+    { number: 11, role: "BASE" },
+    { number: 5, role: "OUTSIDER" },
+    { number: 9, role: "OUTSIDER" },
+    { number: 14, role: "ASSOCIE" },
+    { number: 3, role: "ASSOCIE" },
+    { number: 1, role: "CHAMP" },
+  ];
+
+  it("restitue la base de 3, les values, les associés et le couplé", () => {
+    const r = buildPlanRadar({ selection, selectionDetail: detail })!;
+    expect(r.base).toEqual([7, 2, 11]);
+    expect(r.associes).toEqual([14, 3]);
+    expect(r.couple).toEqual([7, 2]);
+    expect(r.champ).toEqual([1]);
+  });
+
+  it("aucun cheval des 8 ne disparaît : chacun figure dans un niveau", () => {
+    const r = buildPlanRadar({ selection, selectionDetail: detail })!;
+    const affiches = r.base.concat(r.value, r.associes, r.champ, r.coup !== null ? [r.coup] : []);
+    expect(affiches.slice().sort((a, b) => a - b)).toEqual(selection.slice().sort((a, b) => a - b));
+  });
+
+  it("un associé n'est jamais présenté comme value", () => {
+    const r = buildPlanRadar({ selection, selectionDetail: detail })!;
+    expect(r.value).not.toContain(14);
+    expect(r.value).not.toContain(3);
+  });
+
+  it("un seul cheval marqué ne fait pas un couplé", () => {
+    const seul = detail.map((d) => (d.number === 2 ? { ...d, couple: false } : d));
+    expect(buildPlanRadar({ selection, selectionDetail: seul })!.couple).toEqual([]);
+  });
+
+  it("voie plan de jeu IA : ni associés ni couplé inventés", () => {
+    const r = buildPlanRadar({ selection, planDeJeu: { banker: { number: 7 }, quinte_plan: { base: [7, 2] }, value_picks: [{ number: 5 }] } })!;
+    expect(r.associes).toEqual([]);
+    expect(r.couple).toEqual([]);
+  });
+});
+
