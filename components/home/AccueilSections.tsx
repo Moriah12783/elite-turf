@@ -71,35 +71,39 @@ export default async function AccueilSections({
       {/* JSON-LD — FAQPage uniquement (pas de breadcrumb sur la page racine) */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }} />
 
+      {/* Ordre voulu par Steph le 03/10/2026 : la Vedette du jour juste sous le
+          hero, puis les courses du jour, le programme, les offres, la méthode,
+          la confiance et enfin les résultats. */}
+
       {/* 1 — Hero : clarté immédiate + 2 CTAs (stats en SSR via prop) */}
       <HeroSection stats={heroStats} />
 
-      {/* 1b — Le Radar de la presse : consensus de la course vedette, tout en haut
-            pour motiver l'indécis. Visiteurs + inscrits gratuits uniquement
-            (invisible pour les abonnés payants). Repli sur l'ancien bloc « Sélection
-            gratuite » tant qu'aucun consensus n'est publié pour aujourd'hui. */}
-      {!abonne && (radar ? <RadarPresseSection data={radar} /> : <NotreSelectionSection />)}
+      {/* 2 — Pronostics du jour, pilier central : la Vedette du jour, puis le
+            Radar de la presse (consensus de la course vedette ; repli sur l'ancien
+            bloc « Sélection gratuite » tant qu'aucun consensus n'est publié pour
+            aujourd'hui), puis les courses et pronostics disponibles aujourd'hui.
+            Le Radar : visiteurs + inscrits gratuits uniquement (invisible pour
+            les abonnés payants). */}
+      <PronosticsSection
+        personnalise={personnalise}
+        sousLaVedette={abonne ? null : radar ? <RadarPresseSection data={radar} /> : <NotreSelectionSection />}
+      />
 
-      {/* 2 — Réassurance rapide : 4 piliers (expertise, transparence, paiement, accès) */}
-      <WhyChooseUsSection />
-
-      {/* 3 — Pronostics du jour : pilier central */}
-      <PronosticsSection personnalise={personnalise} />
-
-      {/* 4 — Programme des courses du jour */}
+      {/* 3 — Programme des courses du jour */}
       <CoursesSection />
+
+      {/* 4 — Offres / abonnements */}
+      <PricingSection />
 
       {/* 5 — Comment ça marche : 4 étapes */}
       <HowItWorksSection />
 
-      {/* 6 — Résultats & performances */}
+      {/* 6 — Notre engagement : pourquoi faire confiance (4 piliers : expertise,
+            transparence, paiement, accès) */}
+      <WhyChooseUsSection />
+
+      {/* 7 — Nos résultats prouvés */}
       <StatsSection />
-
-      {/* 7 — Offres / abonnements */}
-      <PricingSection />
-
-      {/* 7b — Opérateurs agréés ANJ (requis certification Google Ads) */}
-      <OperateursANJ />
 
       {/* 8 — La preuve par les résultats (garanties réelles + méthode),
             remplace les témoignages inventés — audit S1.5 Lot 2 */}
@@ -139,7 +143,11 @@ export default async function AccueilSections({
         </div>
       </section>
 
-      {/* 12 — Disclaimer jeu responsable */}
+      {/* 12 — Opérateurs agréés ANJ (requis certification Google Ads), avec
+            l'avertissement jeu responsable juste dessous */}
+      <OperateursANJ />
+
+      {/* 13 — Disclaimer jeu responsable */}
       <section className="py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="rounded-xl border border-border bg-bg-elevated/60 p-5 flex items-start gap-4">
@@ -163,7 +171,7 @@ export default async function AccueilSections({
         </div>
       </section>
 
-      {/* 13 — Final CTA */}
+      {/* 14 — Final CTA */}
       <section id="final-cta" className="py-20 pb-32 md:pb-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-racing-green/10 via-transparent to-gold-faint" />
         <div className="relative max-w-3xl mx-auto px-4 text-center">

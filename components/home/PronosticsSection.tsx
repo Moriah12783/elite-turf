@@ -65,8 +65,15 @@ function isCourseTerminee(heureDepart: string | undefined, nowMins: number): boo
  * @param personnalise lire la session pour déverrouiller les pronostics de
  *   l'abonné. `false` sur l'accueil visiteur mis en cache (B3) : la page en
  *   cache ne doit dépendre d'aucune session.
+ * @param sousLaVedette bloc rendu juste sous la carte Vedette du jour (et le
+ *   bandeau du Quinté+ d'hier), avant les pronostics et courses du jour : le
+ *   Radar de la presse, ou la Sélection stats (accueil réorganisé le 03/10/2026).
+ *   `null` pour les abonnés payants.
  */
-export default async function PronosticsSection({ personnalise = true }: { personnalise?: boolean } = {}) {
+export default async function PronosticsSection({
+  personnalise = true,
+  sousLaVedette = null,
+}: { personnalise?: boolean; sousLaVedette?: React.ReactNode } = {}) {
   const supabase  = createServiceClient();
 
   // Lire l'abonnement utilisateur pour déverrouiller les pronostics Pro/Elite
@@ -219,6 +226,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
   if (!aDesPronos && !quinte && !placeholderCourses.length) {
     return (
       <section className="py-16 sm:py-20 bg-bg-card/30">
+        {sousLaVedette && <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{sousLaVedette}</div>}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-10">
           <Globe2 className="w-10 h-10 text-gold-primary mx-auto mb-4 opacity-60" />
           <h2 className="font-serif text-2xl font-bold text-text-primary mb-2">Pronostics du Jour</h2>
@@ -271,6 +279,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
           ))}
 
           {bandeauHier}
+          {sousLaVedette}
           {/* Bannière */}
           {/* Aucun pronostic publié : on compte des COURSES, pas des pronostics. */}
           <BannerImage compteur={placeholderCourses.length > 0
@@ -481,6 +490,7 @@ export default async function PronosticsSection({ personnalise = true }: { perso
         )}
 
         {bandeauHier}
+        {sousLaVedette}
 
         {/* Bannière visuelle */}
         <BannerImage compteur={`${displayList.length} pronostic${displayList.length > 1 ? "s" : ""} ce jour`} />
