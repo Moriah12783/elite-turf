@@ -76,6 +76,20 @@ export function nomCheval(nom: string | null | undefined): string {
 }
 
 /**
+ * Même cheval : noms normalisés égaux, ou l'un contient l'autre (au moins 4
+ * caractères). LONACI ajoute « AA » aux anglo-arabes : « POETE CELESTE AA » est
+ * « Poète Célèste » chez GenyBet et au PMU. Jusqu'au 03/10/2026, l'égalité
+ * stricte écartait ces courses (Dax, Mont-de-Marsan, Craon…).
+ */
+function memeNom(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const court = a.length <= b.length ? a : b;
+  const long = a.length <= b.length ? b : a;
+  return court.length >= 4 && long.indexOf(court) !== -1;
+}
+
+/**
  * Les partants PMU sont bien ceux de notre course : au moins 60 % de nos
  * chevaux s'y retrouvent. (date, R, C) ne suffit pas à identifier une course
  * (copies d'une source secondaire mal numérotées) : sans ce contrôle, la fiche
@@ -85,9 +99,9 @@ export function nomCheval(nom: string | null | undefined): string {
 export function memesPartants(nomsBase: string[], nomsPmu: string[]): boolean {
   const base = nomsBase.map(nomCheval).filter(Boolean);
   if (base.length < 3) return false;
-  const pmu = nomsPmu.map(nomCheval);
+  const pmu = nomsPmu.map(nomCheval).filter(Boolean);
   let communs = 0;
-  for (let i = 0; i < base.length; i++) if (pmu.indexOf(base[i]) !== -1) communs++;
+  for (let i = 0; i < base.length; i++) if (pmu.some((p) => memeNom(base[i], p))) communs++;
   return communs / base.length >= 0.6;
 }
 

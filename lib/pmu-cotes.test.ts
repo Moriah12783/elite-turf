@@ -52,6 +52,17 @@ describe("identité par les partants", () => {
   it("ne tranche pas avec moins de 3 noms connus", () => {
     expect(memesPartants(["Zgharta"], ["ZGHARTA"])).toBe(false);
   });
+
+  it("anglo-arabes : « POETE CELESTE AA » (LONACI) est « Poète Célèste » (GenyBet, PMU)", () => {
+    expect(memesPartants(
+      ["POETE CELESTE AA", "CHALBAYA AA", "KIRIE AA", "MORDERIRE AA"],
+      ["Poète Célèste", "Chalbaya", "Kirie", "Morderire"],
+    )).toBe(true);
+  });
+
+  it("un nom court contenu dans un autre ne suffit pas à confondre deux courses", () => {
+    expect(memesPartants(["Lisa", "Bravo", "Charlie", "Delta"], ["Lisandra", "Zgharta", "Kelle Beauté", "Blue Sky"])).toBe(false);
+  });
 });
 
 describe("favoriPmu (accueil)", () => {
