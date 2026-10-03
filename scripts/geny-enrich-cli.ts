@@ -23,7 +23,9 @@ import {
 } from "@/lib/geny";
 import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
 import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
-import { fetchGenybetPartantsMap } from "@/lib/sync/genybet-partants";
+import {
+  fetchGenybetPartantsMap, memeCourseGenybet, completerAvecGenybet, type PartantACompleter,
+} from "@/lib/sync/genybet-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { estMusique } from "@/lib/courses/musique";
@@ -56,6 +58,13 @@ interface CourseRow {
   statut: string;
   geny_url: string | null;
   date_course: string;
+  hippodrome?: { nom: string | null } | { nom: string | null }[] | null;
+}
+
+/** Nom de l'hippodrome de la course (relation Supabase : objet ou tableau). */
+function nomHippodrome(c: CourseRow): string | null {
+  const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
+  return h?.nom ?? null;
 }
 
 async function main(): Promise<void> {
@@ -154,6 +163,10 @@ async function main(): Promise<void> {
   //  (b) ENRICHISSEMENT forme des partants LONACI (qui portent la cote mais pas
   //      la musique/forme). Non destructif : ne complète que si champ manquant,
   //      ne touche JAMAIS la cote.
+  //  Dans les deux cas, la clé R|C ne garantit PAS la même course : jusqu'au
+  //  03/10/2026, la R9 Settat (Maroc) recevait les musiques de la R9 GenyBet,
+  //  Beaumont-de-Lomagne (trot). (a) exige le même hippodrome ; (b) les mêmes
+  //  chevaux (≥ 60 % des noms), puis le même nom derrière chaque dossard.
   const stillFailed = slice.filter((c) => !ok.some((o) => o.c.id === c.id));
   const needRich = ok.filter((o) => o.partants.some((g: any) => g.musique == null));
   if (stillFailed.length > 0 || needRich.length > 0) {
@@ -164,34 +177,30 @@ async function main(): Promise<void> {
       );
       const gbMap = await fetchGenybetPartantsMap(targetDate, wanted);
 
-      // (a) primaire : insère les partants GenyBet des courses sans partants
+      // (a) primaire : insère les partants GenyBet des courses sans partants —
+      // pas de noms à comparer, donc le même hippodrome est exigé.
       let gbPrimary = 0;
+      let gbAutreCourse = 0;
       for (const c of stillFailed) {
-        const parts = gbMap.get(`${c.numero_reunion}|${c.numero_course}`);
-        if (parts && parts.length > 0) { ok.push({ c, partants: parts }); gbPrimary++; }
+        const gb = gbMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!gb) continue;
+        if (!memeCourseGenybet({ hippodrome: nomHippodrome(c), noms: [] }, gb)) { gbAutreCourse++; continue; }
+        ok.push({ c, partants: gb.partants }); gbPrimary++;
       }
       if (gbPrimary > 0) console.log(`🟢 GenyBet partants (source primaire, sans cote) : ${gbPrimary}/${stillFailed.length} courses`);
 
-      // (b) enrichissement forme sur les partants LONACI existants
+      // (b) enrichissement forme sur les partants LONACI existants : mêmes
+      // chevaux exigés, puis le même nom derrière chaque dossard.
       let gbEnriched = 0;
       for (const o of needRich) {
-        const rich = gbMap.get(`${o.c.numero_reunion}|${o.c.numero_course}`);
-        if (!rich || rich.length === 0) continue;
-        const byNum = new Map(rich.map((r) => [r.numPmu, r] as const));
-        for (const g of o.partants as any[]) {
-          const r = byNum.get(g.numPmu);
-          if (!r) continue;
-          if (g.musique == null && r.musique != null) g.musique = r.musique;
-          if (g.age == null && r.age != null) g.age = r.age;
-          if (g.sexe == null && r.sexe != null) g.sexe = r.sexe;
-          if (g.poids == null && r.poids != null) g.poids = r.poids;
-          if (g.placeCorde == null && r.placeCorde != null) g.placeCorde = r.placeCorde;
-          if (!g.jockey?.nom && r.jockey) g.jockey = r.jockey;
-          if (!g.entraineur?.nom && r.entraineur) g.entraineur = r.entraineur;
-        }
+        const gb = gbMap.get(`${o.c.numero_reunion}|${o.c.numero_course}`);
+        if (!gb) continue;
+        const completes = completerAvecGenybet(o.partants as PartantACompleter[], gb, nomHippodrome(o.c));
+        if (completes === null) { gbAutreCourse++; continue; }
         gbEnriched++;
       }
       if (gbEnriched > 0) console.log(`🔬 Enrichissement GenyBet (forme) : ${gbEnriched}/${needRich.length} courses`);
+      if (gbAutreCourse > 0) console.log(`🚫 GenyBet écarté sur ${gbAutreCourse} course(s) : mêmes numéros, mais une autre course (hippodrome ou chevaux différents)`);
     } catch (e) {
       console.warn(`GenyBet KO : ${e instanceof Error ? e.message : String(e)}`);
     }

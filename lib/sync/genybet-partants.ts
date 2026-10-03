@@ -19,10 +19,19 @@
  * valeur) en « entraîneur » et la cote de référence en « musique » (84 % des
  * musiques du trot, 100 % de l'obstacle sur 30 jours).
  *
+ * IDENTITÉ DE COURSE : (date, R, C) ne suffit pas. Les réunions relayées par
+ * LONACI (Maroc) n'ont pas la numérotation de GenyBet : jusqu'au 03/10/2026, la
+ * R9 de Settat recevait les musiques de la R9 GenyBet, Beaumont-de-Lomagne
+ * (trot). GenyBet ne sert plus que si c'est la même course (memeCourseGenybet)
+ * et, cheval par cheval, le même cheval (completerAvecGenybet).
+ *
  * PUR (fetch via genybet-programme) → bundlable Node sur GitHub Actions.
  */
 import { fetchGenybetHtml, toGenybetDate } from "./genybet-programme";
 import { estMusique } from "@/lib/courses/musique";
+import { memesPartants, nomCheval } from "@/lib/pmu-cotes";
+import { sameHorse } from "@/lib/cotes/pmu-csv";
+import { memesHippodromes } from "@/lib/sync/pmu-rattrapage";
 
 /** Champs de forme d'un partant (sous-ensemble GenyParticipant, SANS cote). */
 export interface GenybetPartant {
@@ -133,6 +142,81 @@ export function parseGenybetPartants(html: string): GenybetPartant[] {
 }
 
 /**
+ * Hippodrome de la page course GenyBet, lu dans son titre « R9 - Beaumont-de-Lomagne ».
+ * PURE. null si le titre n'a pas ce format : on ne devine pas.
+ */
+export function parseGenybetHippodrome(html: string): string | null {
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (!h1) return null;
+  const m = cellText(h1[1]).match(/^R\d+\s*-\s*(.+)$/);
+  return m ? m[1].trim() : null;
+}
+
+/** Une course GenyBet : son hippodrome (titre de la page) et ses partants. */
+export interface CourseGenybet {
+  hippodrome: string | null;
+  partants: GenybetPartant[];
+}
+
+/**
+ * PUR : la course GenyBet de mêmes numéros est-elle bien la nôtre ? Nos
+ * partants connus (au moins 3 noms) → mêmes chevaux (memesPartants, ≥ 60 %) ;
+ * sinon → même hippodrome. Ni l'un ni l'autre vérifiable → false.
+ */
+export function memeCourseGenybet(
+  base: { hippodrome: string | null; noms: string[] },
+  genybet: CourseGenybet,
+): boolean {
+  if (base.noms.map(nomCheval).filter(Boolean).length >= 3) {
+    return memesPartants(base.noms, genybet.partants.map((p) => p.nom));
+  }
+  return memesHippodromes(base.hippodrome, genybet.hippodrome);
+}
+
+/** Partant à compléter (format Geny / LONACI du script d'enrichissement). */
+export interface PartantACompleter {
+  numPmu: number;
+  nom: string;
+  musique?: string | null;
+  age?: number | null;
+  sexe?: string | null;
+  poids?: number | null;
+  placeCorde?: number | null;
+  jockey?: { nom: string } | null;
+  entraineur?: { nom: string } | null;
+}
+
+/**
+ * PUR : complète la forme des partants (musique, âge, sexe, poids, corde, et le
+ * jockey ou l'entraîneur s'il manque) avec GenyBet — seulement si c'est la même
+ * course (memeCourseGenybet) et, cheval par cheval, si le même dossard porte le
+ * même nom (sameHorse). Ne remplace rien d'existant, ne touche jamais la cote.
+ * @returns le nombre de chevaux complétés, ou null si GenyBet parle d'une autre course.
+ */
+export function completerAvecGenybet(
+  partants: PartantACompleter[],
+  genybet: CourseGenybet,
+  hippodromeBase: string | null,
+): number | null {
+  if (!memeCourseGenybet({ hippodrome: hippodromeBase, noms: partants.map((p) => p.nom) }, genybet)) return null;
+  const parNumero = new Map(genybet.partants.map((r) => [r.numPmu, r] as const));
+  let completes = 0;
+  for (const g of partants) {
+    const r = parNumero.get(g.numPmu);
+    if (!r || !sameHorse(g.nom, r.nom)) continue;
+    if (g.musique == null && r.musique != null) g.musique = r.musique;
+    if (g.age == null && r.age != null) g.age = r.age;
+    if (g.sexe == null && r.sexe != null) g.sexe = r.sexe;
+    if (g.poids == null && r.poids != null) g.poids = r.poids;
+    if (g.placeCorde == null && r.placeCorde != null) g.placeCorde = r.placeCorde;
+    if (!g.jockey?.nom && r.jockey) g.jockey = r.jockey;
+    if (!g.entraineur?.nom && r.entraineur) g.entraineur = r.entraineur;
+    completes++;
+  }
+  return completes;
+}
+
+/**
  * Mappe `${reunion}|${course}` → ID de course GenyBet, depuis la page programme.
  * Nécessaire pour construire l'URL des pages course (l'ID = même que PMU/Geny).
  */
@@ -157,16 +241,18 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
  * Récupère les champs de forme GenyBet des courses voulues → map
- * `${reunion}|${course}` → partants. 1 fetch (page programme, pour les IDs) +
- * 1 fetch par course voulue. Ne throw jamais (map vide/partielle si KO).
+ * `${reunion}|${course}` → course (hippodrome + partants). 1 fetch (page
+ * programme, pour les IDs) + 1 fetch par course voulue. Ne throw jamais (map
+ * vide/partielle si KO). La clé R|C ne garantit PAS que c'est la même course :
+ * l'appelant vérifie (memeCourseGenybet, completerAvecGenybet).
  * @param dateISO "YYYY-MM-DD"
  * @param wanted  clés `${reunion}|${course}` à récupérer (limite les fetches)
  */
 export async function fetchGenybetPartantsMap(
   dateISO: string,
   wanted?: Set<string>,
-): Promise<Map<string, GenybetPartant[]>> {
-  const out = new Map<string, GenybetPartant[]>();
+): Promise<Map<string, CourseGenybet>> {
+  const out = new Map<string, CourseGenybet>();
 
   let idMap: Map<string, number>;
   try {
@@ -183,7 +269,7 @@ export async function fetchGenybetPartantsMap(
     try {
       const html = await fetchGenybetHtml(`https://www.genybet.fr/courses/partants-pronostics/${courseId}`);
       const partants = parseGenybetPartants(html);
-      if (partants.length > 0) out.set(key, partants);
+      if (partants.length > 0) out.set(key, { hippodrome: parseGenybetHippodrome(html), partants });
     } catch {
       // course KO → on continue (enrichissement best-effort)
     }
