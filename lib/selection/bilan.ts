@@ -86,7 +86,7 @@ function taux(s: Somme): Taux {
 }
 
 /** Les k plus petites cotes de la photo (à cote égale : numéro croissant). */
-function favoris(cotes: Record<string, number>, k: number): number[] {
+export function favoris(cotes: Record<string, number>, k: number): number[] {
   return Object.keys(cotes)
     .map((num) => ({ num: Number(num), cote: cotes[num] }))
     .sort((a, b) => a.cote - b.cote || a.num - b.num)

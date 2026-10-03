@@ -6,91 +6,28 @@
  *
  * Version INTERNE (décision de Steph du 02/10/2026 : mesurer d'abord, publier
  * ensuite). Les chiffres ne portent que sur des photos : jamais sur des cotes
- * relevées après le départ.
+ * relevées après le départ. Sous les bilans, le détail course par course
+ * (CourseParCourse, demande de Steph du 03/10/2026).
  */
-import { Camera, Info } from "lucide-react";
+import { Camera, Info, ArrowDown } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/server";
 import { calculerBilan, type BilanSelection, type LigneBilan, type Taux } from "@/lib/selection/bilan";
+import { periodeParDefaut, periodeValide, type PhotoSelection } from "@/lib/selection/historique";
 import { parisDateISOPlusDays } from "@/lib/paris-date";
+import { chargerPhotos, chargerPronos, type Niveau } from "./donnees";
+import CourseParCourse from "./CourseParCourse";
 
 export const dynamic = "force-dynamic";
 
-const PAGE = 1000; // PostgREST tronque à 1 000 lignes : on pagine.
-
-type Niveau = "ELITE" | "PRO";
-
-interface Photo {
-  course_id:    string;
-  numeros:      number[];
-  cotes_marche: Record<string, number> | null;
-  nb_partants:  number;
-  source_cotes: string;
-  prise_le:     string;
-  date_course:  string | null;
-  arrivee:      number[];
-}
-
-async function chargerPhotos(supabase: ReturnType<typeof createServiceClient>): Promise<Photo[]> {
-  const photos: Photo[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from("selection_photos")
-      .select("id, course_id, numeros, cotes_marche, nb_partants, source_cotes, prise_le, course:courses(date_course, arrivee_officielle)")
-      .eq("version", "v2")
-      .order("prise_le", { ascending: false })
-      .order("id")
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`selection_photos : ${error.message}`);
-    for (const p of (data ?? []) as any[]) {
-      const c = Array.isArray(p.course) ? p.course[0] : p.course;
-      photos.push({
-        course_id:    p.course_id,
-        numeros:      p.numeros ?? [],
-        cotes_marche: p.cotes_marche,
-        nb_partants:  p.nb_partants,
-        source_cotes: p.source_cotes,
-        prise_le:     p.prise_le,
-        date_course:  c?.date_course ?? null,
-        arrivee:      Array.isArray(c?.arrivee_officielle) ? c.arrivee_officielle : [],
-      });
-    }
-    if (!data || data.length < PAGE) break;
-  }
-  return photos;
-}
-
-/** Sélection du pronostic payant publié, par course et par niveau. */
-async function chargerPronos(
-  supabase: ReturnType<typeof createServiceClient>,
-  courseIds: string[],
-): Promise<Map<string, Partial<Record<Niveau, number[]>>>> {
-  const map = new Map<string, Partial<Record<Niveau, number[]>>>();
-  for (let i = 0; i < courseIds.length; i += 200) {
-    const { data, error } = await supabase
-      .from("pronostics")
-      .select("course_id, niveau_acces, selection")
-      .eq("publie", true)
-      .in("niveau_acces", ["PRO", "ELITE"])
-      .in("course_id", courseIds.slice(i, i + 200));
-    if (error) throw new Error(`pronostics : ${error.message}`);
-    for (const p of (data ?? []) as any[]) {
-      const entree = map.get(p.course_id) ?? {};
-      entree[p.niveau_acces as Niveau] = ((p.selection ?? []) as unknown[]).map(Number).filter(Number.isFinite);
-      map.set(p.course_id, entree);
-    }
-  }
-  return map;
-}
-
-function lignes(photos: Photo[], pronos: Map<string, Partial<Record<Niveau, number[]>>>, depuis: string | null, niveau?: Niveau): LigneBilan[] {
+function lignes(photos: PhotoSelection[], pronos: Map<string, Partial<Record<Niveau, number[]>>>, depuis: string | null, niveau?: Niveau): LigneBilan[] {
   return photos
-    .filter((p) => p.date_course && (!depuis || p.date_course >= depuis))
+    .filter((p) => p.date && (!depuis || p.date >= depuis))
     .map((p) => ({
       numeros:     p.numeros,
-      nbPartants:  p.nb_partants,
-      cotesMarche: p.cotes_marche ?? {},
+      nbPartants:  p.nbPartants,
+      cotesMarche: p.cotesMarche,
       arrivee:     p.arrivee,
-      pronoPayant: niveau ? pronos.get(p.course_id)?.[niveau] ?? null : null,
+      pronoPayant: niveau ? pronos.get(p.courseId)?.[niveau] ?? null : null,
     }));
 }
 
@@ -129,14 +66,25 @@ function Tableau({ titre, n, children }: { titre: string; n: number; children: R
   );
 }
 
-export default async function BilanSelectionPage() {
+export default async function BilanSelectionPage({
+  searchParams,
+}: {
+  searchParams: { periode?: string; q?: string };
+}) {
   const supabase = createServiceClient();
   const photos = await chargerPhotos(supabase);
-  const pronos = await chargerPronos(supabase, Array.from(new Set(photos.map((p) => p.course_id))));
+  const pronos = await chargerPronos(supabase, Array.from(new Set(photos.map((p) => p.courseId))));
 
   const avecArrivee = photos.filter((p) => p.arrivee.length >= 3).length;
-  const enCsv = photos.filter((p) => p.source_cotes === "csv").length;
-  const premiere = photos.length ? photos[photos.length - 1].prise_le.slice(0, 10) : null;
+  const enCsv = photos.filter((p) => p.sourceCotes === "csv").length;
+  const premiere = photos.length ? photos[photos.length - 1].priseLe.slice(0, 10) : null;
+
+  // Course par course : la période (jour, mois ou tout) et la recherche viennent de l'URL.
+  const aujourdHui = parisDateISOPlusDays(0);
+  const periode = periodeValide(searchParams.periode)
+    ? searchParams.periode
+    : periodeParDefaut(photos.map((p) => p.date), aujourdHui);
+  const recherche = (searchParams.q ?? "").trim().slice(0, 80);
 
   const periodes: Array<{ libelle: string; depuis: string | null }> = [
     { libelle: "7 derniers jours",  depuis: parisDateISOPlusDays(-7) },
@@ -167,6 +115,9 @@ export default async function BilanSelectionPage() {
           Chaque sélection est photographiée entre 15 et 5 minutes avant le départ, telle qu&apos;un visiteur
           la voit, puis confrontée à l&apos;arrivée officielle. Rien n&apos;est recalculé après coup.
         </p>
+        <a href="#courses" className="inline-flex items-center gap-1.5 mt-3 text-gold-light text-sm font-medium hover:underline">
+          <ArrowDown className="w-4 h-4" /> Voir le détail course par course
+        </a>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -205,6 +156,14 @@ export default async function BilanSelectionPage() {
           </div>
         </section>
       ))}
+
+      <CourseParCourse
+        photos={photos}
+        periode={periode}
+        recherche={recherche}
+        aujourdHui={aujourdHui}
+        hier={parisDateISOPlusDays(-1)}
+      />
     </div>
   );
 }
