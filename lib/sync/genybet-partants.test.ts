@@ -152,6 +152,24 @@ describe("completerAvecGenybet — ne complète que les mêmes chevaux de la mê
     expect(partants[2].entraineur?.nom).toBe("Entraîneur LONACI");
   });
 
+  it("anglo-arabes : le suffixe « AA » de LONACI ne fait pas écarter la course", () => {
+    const dax: CourseGenybet = {
+      hippodrome: "Dax",
+      partants: [
+        { numPmu: 1, nom: "Poète Célèste", musique: "0p", age: 3, nonPartant: false },
+        { numPmu: 2, nom: "Chalbaya", musique: "2p1p", age: 4, nonPartant: false },
+        { numPmu: 3, nom: "Kirie", musique: "5p", age: 3, nonPartant: false },
+      ],
+    };
+    const partants: PartantACompleter[] = [
+      { numPmu: 1, nom: "POETE CELESTE AA" },
+      { numPmu: 2, nom: "CHALBAYA AA" },
+      { numPmu: 3, nom: "KIRIE AA" },
+    ];
+    expect(completerAvecGenybet(partants, dax, "Dax")).toBe(3);
+    expect(partants[1]).toMatchObject({ musique: "2p1p", age: 4 });
+  });
+
   it("même course, mais un dossard porte un autre cheval : celui-là reste vide", () => {
     const partants: PartantACompleter[] = [
       { numPmu: 1, nom: "NECTAR DE MONE" },
