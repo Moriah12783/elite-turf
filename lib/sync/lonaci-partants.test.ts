@@ -1,5 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { normalizeLonaciPartant, retirerCotesFactices, type LonaciPartant } from "./lonaci-partants";
+import {
+  normalizeLonaciPartant, retirerCotesFactices, memeReunionLonaci,
+  type LonaciPartant, type CourseLonaci,
+} from "./lonaci-partants";
+
+// Le 03/10/2026, la R9 LONACI (Settat, Maroc) remplissait notre R9
+// (Beaumont-de-Lomagne, trot) de chevaux marocains.
+describe("memeReunionLonaci — mêmes numéros, même réunion ?", () => {
+  const settat: CourseLonaci = { hippodrome: "SETTAT", partants: [] };
+
+  it("la R9 LONACI (Settat) n'est pas notre R9 Beaumont-de-Lomagne", () => {
+    expect(memeReunionLonaci("Beaumont-de-Lomagne", settat)).toBe(false);
+  });
+
+  it("même hippodrome, écrit autrement (majuscules, tirets, préfixe)", () => {
+    expect(memeReunionLonaci("Settat", settat)).toBe(true);
+    expect(memeReunionLonaci("Saint-Cloud", { hippodrome: "SAINT CLOUD", partants: [] })).toBe(true);
+    expect(memeReunionLonaci("Paris-Vincennes", { hippodrome: "VINCENNES", partants: [] })).toBe(true);
+  });
+
+  it("hippodrome inconnu d'un côté ou de l'autre : on ne prend pas le risque", () => {
+    expect(memeReunionLonaci("Settat", { hippodrome: null, partants: [] })).toBe(false);
+    expect(memeReunionLonaci(null, settat)).toBe(false);
+  });
+});
 
 describe("retirerCotesFactices — le « 1,2 » LONACI n'est pas une cote", () => {
   const partant = (numPmu: number, coteProbable?: number, nonPartant = false): LonaciPartant =>

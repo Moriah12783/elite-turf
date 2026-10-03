@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, safeCote, safePoids, safeSmallInt, type GenyParticipant } from "@/lib/geny";
-import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
+import { fetchLonaciPartantsMap, memeReunionLonaci } from "@/lib/sync/lonaci-partants";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { estMusique } from "@/lib/courses/musique";
@@ -42,6 +42,7 @@ interface CourseRow {
   libelle:        string;
   geny_url:       string | null;
   date_course:    string;
+  hippodrome?:    { nom: string | null } | { nom: string | null }[] | null;
 }
 
 type ScrapeOutcome =
@@ -117,7 +118,7 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
   // Sélection
   let coursesQuery = adminClient
     .from("courses")
-    .select("id, numero_reunion, numero_course, libelle, geny_url, date_course")
+    .select("id, numero_reunion, numero_course, libelle, geny_url, date_course, hippodrome:hippodromes(nom)")
     .neq("statut", "ANNULE")
     .order("date_course", { ascending: false })
     .limit(500); // cap pour ne pas exploser le filter
@@ -173,10 +174,13 @@ async function runBackfill(req: NextRequest): Promise<NextResponse> {
     try {
       const lonaciMap = await fetchLonaciPartantsMap(todayStr);
       for (const c of failedToday) {
-        const parts = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
-        if (parts && parts.length > 0) {
-          okOutcomes.push({ courseId: c.id, status: "ok", partants: parts as unknown as GenyParticipant[] });
-        }
+        const lonaci = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!lonaci || lonaci.partants.length === 0) continue;
+        // Mêmes numéros ≠ même réunion (03/10/2026 : la R9 LONACI Settat
+        // remplissait notre R9 Beaumont-de-Lomagne) → même hippodrome exigé.
+        const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
+        if (!memeReunionLonaci(h?.nom ?? null, lonaci)) continue;
+        okOutcomes.push({ courseId: c.id, status: "ok", partants: lonaci.partants as unknown as GenyParticipant[] });
       }
     } catch (e) {
       logger.warn("backfill-partants", "Fallback LONACI KO", { error: e instanceof Error ? e.message : String(e) });

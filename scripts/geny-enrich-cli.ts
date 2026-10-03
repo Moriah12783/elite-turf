@@ -22,7 +22,7 @@ import {
   safeSmallInt,
 } from "@/lib/geny";
 import { isCourseEligible, hasPariNational } from "@/lib/turf/course-eligibility";
-import { fetchLonaciPartantsMap } from "@/lib/sync/lonaci-partants";
+import { fetchLonaciPartantsMap, memeReunionLonaci } from "@/lib/sync/lonaci-partants";
 import {
   fetchGenybetPartantsMap, memeCourseGenybet, completerAvecGenybet, type PartantACompleter,
 } from "@/lib/sync/genybet-partants";
@@ -138,17 +138,23 @@ async function main(): Promise<void> {
 
   // Fallback LONACI : combler les courses que Geny n'a pas enrichies (429, ou
   // pas de geny_url car chargées via PMU/LONACI). UNE seule requête LONACI pour
-  // toutes les courses ; match par (réunion, course). LONACI = jour courant.
+  // toutes les courses ; match par (réunion, course) ET même hippodrome :
+  // jusqu'au 03/10/2026, la R9 LONACI (Settat) remplissait notre R9
+  // Beaumont-de-Lomagne de chevaux marocains. LONACI = jour courant.
   const failed = slice.filter((c) => !ok.some((o) => o.c.id === c.id));
   if (failed.length > 0) {
     try {
       const lonaciMap = await fetchLonaciPartantsMap(targetDate);
       let filled = 0;
+      let lonaciAutreReunion = 0;
       for (const c of failed) {
-        const parts = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
-        if (parts && parts.length > 0) { ok.push({ c, partants: parts }); filled++; }
+        const lonaci = lonaciMap.get(`${c.numero_reunion}|${c.numero_course}`);
+        if (!lonaci || lonaci.partants.length === 0) continue;
+        if (!memeReunionLonaci(nomHippodrome(c), lonaci)) { lonaciAutreReunion++; continue; }
+        ok.push({ c, partants: lonaci.partants }); filled++;
       }
       if (filled > 0) console.log(`🔁 Fallback LONACI : ${filled}/${failed.length} courses comblées (cotes)`);
+      if (lonaciAutreReunion > 0) console.log(`🚫 LONACI écarté sur ${lonaciAutreReunion} course(s) : mêmes numéros, mais un autre hippodrome`);
     } catch (e) {
       console.warn(`Fallback LONACI KO : ${e instanceof Error ? e.message : String(e)}`);
     }
