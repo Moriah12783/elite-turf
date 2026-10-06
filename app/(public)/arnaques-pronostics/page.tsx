@@ -150,7 +150,7 @@ const ELITE = [
     icon: CreditCard,
     titre: "Un paiement traçable, au prix affiché",
     texte:
-      `Par carte bancaire sécurisée (toutes cartes, tous pays), avec accès activé immédiatement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, aussi par Orange Money ou Wave : au prix affiché sur notre page Abonnements, avec un numéro de paiement donné uniquement par notre WhatsApp officiel (${numeroWhatsappLisible()}), et un accès activé sur votre compte Elite Turf dès réception.`,
+      `Par carte bancaire sécurisée (toutes cartes, tous pays), avec accès activé immédiatement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, aussi par Orange Money ou Wave : au prix affiché sur notre page Abonnements, avec un numéro de paiement donné uniquement par notre WhatsApp officiel (${numeroWhatsappLisible()}), un reçu envoyé sur WhatsApp après chaque paiement et un accès activé sur votre compte Elite Turf dès réception.`,
   },
   {
     icon: Gift,

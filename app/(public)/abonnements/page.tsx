@@ -57,7 +57,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Comment payer mon abonnement Elite Turf ?",
     answer:
-      `Le paiement se fait par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit (y compris les cartes prépayées Wave et Orange Money). Votre accès est activé immédiatement après le paiement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA (${TARIFS_MOBILE_MONEY}) : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant, et votre accès est activé dès réception du paiement.`,
+      `Le paiement se fait par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit (y compris les cartes prépayées Wave et Orange Money). Votre accès est activé immédiatement après le paiement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA (${TARIFS_MOBILE_MONEY}) : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant. Dès réception du paiement, nous vous envoyons un reçu sur WhatsApp, votre accès est activé et vous recevez l'e-mail de confirmation de votre abonnement. Votre compte Elite Turf peut être créé avant ou après le paiement.`,
   },
   {
     question: "Les prix sont en euros — puis-je payer depuis l'Afrique ?",
@@ -67,7 +67,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quand est-ce que j'accède aux pronostics ?",
     answer:
-      "Par carte, immédiatement après confirmation du paiement : pas d'attente, pas de validation manuelle. Par Orange Money ou Wave, dès réception de votre paiement par notre équipe. Les pronostics du jour sont publiés avant le départ de la course concernée, et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
+      "Par carte, immédiatement après confirmation du paiement : pas d'attente, pas de validation manuelle. Par Orange Money ou Wave, dès réception de votre paiement par notre équipe, qui vous envoie un reçu sur WhatsApp. Les pronostics du jour sont publiés avant le départ de la course concernée, et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
     question: "Que se passe-t-il si mon premier pronostic expert est perdant ?",
