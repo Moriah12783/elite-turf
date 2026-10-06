@@ -16,6 +16,8 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+# Copies de sauvegarde des clés (ex. .env.local.bak-20260825, non ignorée jusqu'au 06/10/2026)
+.env*.bak*
 
 # Debug
 npm-debug.log*

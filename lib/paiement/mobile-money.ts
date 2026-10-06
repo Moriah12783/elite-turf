@@ -8,12 +8,12 @@
  *      montant, pays) ;
  *   2. Steph lui répond avec le numéro et le montant — AUCUN numéro de paiement
  *      n'est publié sur le site ;
- *   3. dès réception, Steph envoie un reçu sur WhatsApp ; l'accès est activé à
- *      la main, en base (aucun formulaire d'activation dans l'admin). Le compte
- *      peut être créé avant OU après le paiement (précisé par Steph le 06/10).
- *   4. 🔴 L'e-mail de confirmation NE PART PAS tout seul après une activation à
- *      la main : bouton « ✉ Confirmation » de /admin/utilisateurs
- *      (POST /api/admin/renvoyer-confirmation, vrai template, journalisé).
+ *   3. dès réception, Steph envoie un reçu sur WhatsApp et active l'abonné avec
+ *      le formulaire « Activer un paiement Orange Money / Wave » de
+ *      /admin/utilisateurs (lib/paiement/activation-mobile-money.ts) : accès,
+ *      paiement enregistré et e-mail de confirmation en une fois. Le compte peut
+ *      être créé avant OU après le paiement (précisé par Steph le 06/10).
+ *   4. Le bouton « ✉ Confirmation » de la même page renvoie l'e-mail si besoin.
  *
  * Rien ne passe par le site : sans lien avec Paystack (PAYSTACK_AVAILABLE,
  * lib/promo.ts), qui reste coupé.
