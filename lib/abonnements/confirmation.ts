@@ -7,14 +7,11 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmailDetailed } from "@/lib/email";
+import { journaliserEmail, TYPES_JOURNAL } from "@/lib/email/journal";
 import { templateConfirmationPack } from "@/lib/email/templates/confirmation-pack";
 
-/**
- * Type journalisé dans `email_sent_log`. Distinct des types des crons
- * (WELCOME_*, LEAD_*) pour que l'historique reste lisible : on voit d'un coup
- * d'œil ce qui a été envoyé à la main et ce qui est parti tout seul.
- */
-export const TYPE_JOURNAL_CONFIRMATION = "CONFIRMATION_ABONNEMENT";
+/** Type journalisé dans `email_sent_log` pour les envois manuels (cf. lib/email/journal.ts). */
+export const TYPE_JOURNAL_CONFIRMATION = TYPES_JOURNAL.CONFIRMATION_ABONNEMENT;
 
 export type PalierPayant = "STARTER" | "PRO" | "ELITE";
 
@@ -57,43 +54,23 @@ export async function envoyerConfirmationAbonnement(
 
   const envoi = await sendEmailDetailed({ to: d.email, subject, html });
 
-  /**
-   * JOURNALISATION — ajoutée le 29/08/2026.
-   *
-   * La route d'origine envoyait sans laisser AUCUNE trace : impossible de
-   * savoir qui avait reçu sa confirmation.
-   *
-   * 🔴 UPSERT et non INSERT : `email_sent_log` porte UNIQUE(email, type) ET
-   * UNIQUE(user_id, type) — des garde-fous d'idempotence conçus pour des crons
-   * « une fois et jamais plus ». Un INSERT ferait donc échouer tout SECOND
-   * envoi, alors que renvoyer est précisément le but. On conserve une ligne par
-   * (utilisateur, type), portant le DERNIER envoi. Ne pas relâcher ces
-   * contraintes : les crons welcome et lead-sequence s'en servent.
-   *
-   * L'échec de journalisation n'annule PAS l'envoi : l'e-mail est parti, le
-   * dire serait plus faux que de perdre une ligne de journal. Il est remonté à
-   * l'appelant, qui l'affiche.
-   */
-  const { error: logErr } = await admin
-    .from("email_sent_log")
-    .upsert(
-      {
-        user_id: d.id,
-        email:   d.email,
-        type:    TYPE_JOURNAL_CONFIRMATION,
-        status:  envoi.ok ? "SENT" : "FAILED",
-        error:   envoi.error ?? null,
-        sent_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,type" },
-    );
+  // JOURNALISATION (depuis le 29/08/2026) : upsert sur (user_id, type), jamais
+  // d'exception — cf. lib/email/journal.ts. Un échec de journal n'annule PAS
+  // l'envoi : il est remonté à l'appelant, qui l'affiche.
+  const erreurJournal = await journaliserEmail(admin, {
+    userId: d.id,
+    email:  d.email,
+    type:   TYPE_JOURNAL_CONFIRMATION,
+    ok:     envoi.ok,
+    erreur: envoi.error,
+  });
 
   return {
     ok: envoi.ok,
     erreur: envoi.error,
     subject,
     planNom,
-    journalise: !logErr,
-    ...(logErr ? { erreurJournal: logErr.message } : {}),
+    journalise: !erreurJournal,
+    ...(erreurJournal ? { erreurJournal } : {}),
   };
 }

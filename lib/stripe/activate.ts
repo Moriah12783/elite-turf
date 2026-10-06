@@ -3,7 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
 import { resolvePlanUuid } from "@/lib/plans/resolve";
 import { extractSubscriptionId, renewalTxRef } from "@/lib/stripe/renewal";
-import { sendEmail } from "@/lib/email";
+import { sendEmailDetailed } from "@/lib/email";
+import { journaliserEmail, TYPES_JOURNAL } from "@/lib/email/journal";
 import { templateConfirmationPaiement } from "@/lib/email/templates/confirmation-paiement";
 
 export interface StripeActivationResult {
@@ -157,7 +158,18 @@ export async function activateSubscriptionFromStripeSession(
         dateFin,
         statutAbonnement: statut,
       });
-      await sendEmail({ to: email, subject, html });
+      // Envoi + trace dans email_sent_log (06/10/2026) : avant, un échec ne
+      // laissait qu'un console.error. Toujours non bloquant pour l'activation.
+      const envoi = await sendEmailDetailed({ to: email, subject, html });
+      if (!envoi.ok) console.error(`[stripe/activate] confirmation NON envoyée à ${email} :`, envoi.error);
+      const erreurJournal = await journaliserEmail(supabase, {
+        userId,
+        email,
+        type: TYPES_JOURNAL.CONFIRMATION_PAIEMENT_CARTE,
+        ok: envoi.ok,
+        erreur: envoi.error,
+      });
+      if (erreurJournal) console.error("[stripe/activate] confirmation non journalisée :", erreurJournal);
     }
   } catch (e) {
     console.error("[stripe/activate] email non bloquant:", e);
@@ -309,7 +321,17 @@ export async function activateRenewalFromInvoice(
         dateFin,
         statutAbonnement: statut,
       });
-      await sendEmail({ to: email, subject, html });
+      // Envoi + trace dans email_sent_log (06/10/2026), non bloquant.
+      const envoi = await sendEmailDetailed({ to: email, subject, html });
+      if (!envoi.ok) console.error(`[stripe/renewal] confirmation NON envoyée à ${email} :`, envoi.error);
+      const erreurJournal = await journaliserEmail(supabase, {
+        userId,
+        email,
+        type: TYPES_JOURNAL.CONFIRMATION_RENOUVELLEMENT_CARTE,
+        ok: envoi.ok,
+        erreur: envoi.error,
+      });
+      if (erreurJournal) console.error("[stripe/renewal] confirmation non journalisée :", erreurJournal);
     }
   } catch (e) {
     console.error("[stripe/renewal] email non bloquant:", e);
