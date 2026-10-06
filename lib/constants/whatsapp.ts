@@ -15,6 +15,16 @@ export const WHATSAPP_SUPPORT_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "+33
 export const WHATSAPP_DIGITS = WHATSAPP_SUPPORT_NUMBER.replace(/\D/g, "");
 
 /**
+ * Numéro lisible, ex. « +33 6 44 68 67 20 » : celui que l'on dit de vérifier
+ * avant de payer (mise en garde contre les faux comptes WhatsApp). Un numéro
+ * qui n'est pas français s'affiche tel quel.
+ */
+export function numeroWhatsappLisible(numero: string = WHATSAPP_SUPPORT_NUMBER): string {
+  const m = numero.replace(/[^\d+]/g, "").match(/^\+33(\d)(\d{2})(\d{2})(\d{2})(\d{2})$/);
+  return m ? `+33 ${m[1]} ${m[2]} ${m[3]} ${m[4]} ${m[5]}` : numero;
+}
+
+/**
  * URL wa.me prête à l'emploi, avec message pré-rempli optionnel.
  * @example whatsappUrl("Bonjour Elite Turf") → https://wa.me/33644686720?text=...
  */

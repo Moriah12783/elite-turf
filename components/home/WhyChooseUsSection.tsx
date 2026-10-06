@@ -1,4 +1,5 @@
 import { BarChart2, Users, Eye, CreditCard } from "lucide-react";
+import { OU_PAYER_MOBILE_MONEY_DEBUT } from "@/lib/paiement/mobile-money";
 
 const BLOCS = [
   {
@@ -23,7 +24,7 @@ const BLOCS = [
     icon: CreditCard,
     titre: "Paiement sécurisé",
     texte:
-      "Paiement par carte bancaire sécurisé et traçable (Visa/Mastercard) — toutes cartes, tous pays, jamais de transfert vers un numéro personnel. Accès activé en moins de 2 minutes. Mobile Money bientôt.",
+      `Paiement par carte bancaire sécurisé et traçable (Visa/Mastercard) — toutes cartes, tous pays, accès activé en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT} : aussi par Orange Money ou Wave, au prix affiché, accès activé dès réception.`,
   },
 ];
 

@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import PageHero from "@/components/layout/PageHero";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
+import { numeroWhatsappLisible } from "@/lib/constants/whatsapp";
+import { OU_PAYER_MOBILE_MONEY_DEBUT } from "@/lib/paiement/mobile-money";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -105,9 +107,9 @@ const SIGNAUX = [
   },
   {
     icon: Banknote,
-    titre: "Le paiement anonyme, hors plateforme",
+    titre: "Le paiement anonyme, à prix négocié",
     texte:
-      "Transfert par Mobile Money ou Western Union vers un numéro personnel, négocié par WhatsApp, sans reçu ni facture : aucune trace, aucun recours, aucun remboursement possible.",
+      "Un tarif qui se discute en privé sur WhatsApp, payé par Mobile Money ou Western Union, sans prix affiché publiquement ni compte client où retrouver ce que vous avez acheté : aucun recours, aucun remboursement possible.",
   },
   {
     icon: Ghost,
@@ -127,7 +129,7 @@ const CHECKLIST = [
   "Suivez un service plusieurs semaines AVANT de payer le moindre franc.",
   "Exigez un bilan COMPLET — pertes incluses —, idéalement horodaté avant la course.",
   "Méfiez-vous de tout « garanti », « sûr » ou « 100 % de réussite ».",
-  "Refusez le paiement anonyme (numéro personnel, WhatsApp) ; privilégiez un paiement traçable.",
+  "Refusez tout prix négocié en privé : payez le prix affiché publiquement, et gardez la confirmation de paiement.",
   "Vérifiez vous-même l'arrivée officielle (PMU, Geny) plutôt que de croire une capture.",
 ];
 
@@ -146,9 +148,9 @@ const ELITE = [
   },
   {
     icon: CreditCard,
-    titre: "Un paiement traçable et sécurisé",
+    titre: "Un paiement traçable, au prix affiché",
     texte:
-      "Le paiement se fait par carte bancaire sécurisée (toutes cartes, tous pays), avec accès activé immédiatement — jamais par transfert vers un numéro personnel. Le Mobile Money direct arrive prochainement.",
+      `Par carte bancaire sécurisée (toutes cartes, tous pays), avec accès activé immédiatement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, aussi par Orange Money ou Wave : au prix affiché sur notre page Abonnements, avec un numéro de paiement donné uniquement par notre WhatsApp officiel (${numeroWhatsappLisible()}), et un accès activé sur votre compte Elite Turf dès réception.`,
   },
   {
     icon: Gift,
@@ -234,9 +236,10 @@ export default function ArnaquesPronosticsPage() {
                 Les arnaques de pronostics y sont nombreuses, au point que la brigade de lutte contre
                 la cybercriminalité (BCLCC) au Burkina Faso a émis une alerte publique : ne payez
                 jamais pour un pronostic ou un coupon présenté comme « sûr ». La plupart de ces
-                vendeurs exigent un paiement par Mobile Money vers un numéro personnel, via WhatsApp,
-                sans aucun reçu ni recours possible. Un service sérieux propose toujours un paiement
-                traçable.
+                vendeurs se font payer par Mobile Money via WhatsApp, à un prix négocié en privé,
+                sans compte client ni recours possible. Un service sérieux affiche ses prix
+                publiquement, active votre accès sur un compte à votre nom et publie tous ses
+                résultats, gagnants comme perdants.
               </p>
             </div>
           </div>
@@ -353,7 +356,7 @@ const FAQ = [
   {
     question: "Comment payer un service de pronostics en sécurité ?",
     answer:
-      "Privilégiez un paiement traçable (carte bancaire) sur une plateforme officielle. Évitez les transferts Mobile Money ou Western Union vers un numéro personnel négociés par WhatsApp : sans reçu ni recours, vous ne pourrez pas être remboursé.",
+      "Payez le prix affiché publiquement par le service, pour un accès activé sur un compte à votre nom, et gardez la confirmation de paiement (reçu de carte, SMS de votre opérateur Mobile Money). Évitez les transferts Mobile Money ou Western Union à un prix négocié en privé, sans compte ni trace de ce que vous avez acheté : vous ne pourriez pas être remboursé.",
   },
   {
     question: "Comment Elite Turf prouve ses résultats ?",

@@ -23,6 +23,7 @@ import FAQSection from "@/components/home/FAQSection";
 import GuideBlocSection from "@/components/home/GuideBlocSection";
 import PreuveSection from "@/components/home/PreuveSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
+import { OU_PAYER_MOBILE_MONEY_DEBUT } from "@/lib/paiement/mobile-money";
 import Link from "next/link";
 import { ArrowRight, AlertTriangle, Download } from "lucide-react";
 
@@ -36,7 +37,7 @@ const homeFaqJsonLd = {
     { "@type": "Question", name: "Faut-il créer un compte pour consulter les pronostics ?",
       acceptedAnswer: { "@type": "Answer", text: "Non pour l'offre gratuite : le Radar de la presse (le consensus des pronostics de la presse) et la Sélection stats sur chaque course sont accessibles sans inscription. Les pronostics experts Starter, Pro et Elite nécessitent un abonnement, à partir de 65 €." } },
     { "@type": "Question", name: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
-      acceptedAnswer: { "@type": "Answer", text: "Choisissez votre plan et payez par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays, y compris prépayées. Votre accès est actif en moins de 2 minutes. Le paiement Mobile Money arrive bientôt (Burkina, Mali, Sénégal…)." } },
+      acceptedAnswer: { "@type": "Answer", text: `Choisissez votre plan et payez par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays, y compris prépayées. Votre accès est actif en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA : écrivez-nous sur WhatsApp, et votre accès est activé dès réception du paiement.` } },
     { "@type": "Question", name: "Les pronostics Elite Turf sont-ils fiables ?",
       acceptedAnswer: { "@type": "Answer", text: "Nos résultats sont publics et vérifiables. Vous pouvez consulter l'intégralité de notre historique sur la page Performances. Nous publions les bons comme les moins bons résultats — la transparence est notre engagement." } },
     { "@type": "Question", name: "Puis-je annuler mon abonnement à tout moment ?",

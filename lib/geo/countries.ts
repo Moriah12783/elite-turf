@@ -23,6 +23,12 @@ export interface PaymentMethod {
    * (mais qu'on veut quand même montrer pour le SEO + perception).
    */
   bientot?:   boolean;
+  /**
+   * Payé via notre WhatsApp (Orange Money et Wave en Côte d'Ivoire, au Mali,
+   * au Burkina Faso et au Sénégal, depuis le 06/10/2026) : Steph donne le
+   * numéro et le montant, aucun numéro n'est publié. Cf. lib/paiement/mobile-money.ts.
+   */
+  viaWhatsapp?: boolean;
 }
 
 export interface Country {
@@ -79,14 +85,15 @@ export const COUNTRIES: Country[] = [
       site:   "https://www.lonaci.ci",
       courte: "Loterie Nationale de Côte d'Ivoire — opérateur officiel",
     },
-    // Mobile Money (via Paystack) : désactivé tant que PAYSTACK_AVAILABLE = false
-    // (lib/promo.ts). Ne retirer « bientot » qu'une méthode à la fois, une fois
-    // son paiement vérifié par un vrai paiement test.
+    // Orange Money et Wave : payés via notre WhatsApp depuis le 06/10/2026
+    // (`viaWhatsapp`). Le paiement automatique (Paystack) reste coupé tant que
+    // PAYSTACK_AVAILABLE = false (lib/promo.ts) : ne retirer « bientot » qu'une
+    // méthode à la fois, une fois son paiement vérifié par un vrai paiement test.
     paiements: [
       { nom: "Carte bancaire",  description: "Visa / Mastercard — toutes cartes", icon: "💳" },
-      { nom: "Orange Money CI", description: "Orange Money Côte d'Ivoire",        icon: "🟧", bientot: true },
+      { nom: "Orange Money CI", description: "Orange Money Côte d'Ivoire",        icon: "🟧", viaWhatsapp: true },
       { nom: "MTN MoMo",        description: "MTN Mobile Money",                  icon: "🟨", bientot: true },
-      { nom: "Wave",            description: "Wave Money",                        icon: "🌊", bientot: true },
+      { nom: "Wave",            description: "Wave Money",                        icon: "🌊", viaWhatsapp: true },
       { nom: "Moov Money",      description: "Moov Africa Mobile Money",          icon: "🟥", bientot: true },
     ],
     motsCles: [
@@ -118,8 +125,8 @@ export const COUNTRIES: Country[] = [
     },
     paiements: [
       { nom: "Carte bancaire", description: "Visa / Mastercard — toutes cartes", icon: "💳" },
-      { nom: "Wave Sénégal",  description: "Wave Money — leader local",     icon: "🌊", bientot: true },
-      { nom: "Orange Money",  description: "Orange Money Sénégal",          icon: "🟧", bientot: true },
+      { nom: "Wave Sénégal",  description: "Wave Money — leader local",     icon: "🌊", viaWhatsapp: true },
+      { nom: "Orange Money",  description: "Orange Money Sénégal",          icon: "🟧", viaWhatsapp: true },
       { nom: "Free Money",    description: "Free Sénégal Mobile Money",     icon: "🟦", bientot: true },
       { nom: "Wari",          description: "Solution paiement Wari",         icon: "🟫", bientot: true },
     ],
@@ -210,7 +217,8 @@ export const COUNTRIES: Country[] = [
     },
     paiements: [
       { nom: "Carte bancaire",    description: "Visa / Mastercard — toutes cartes", icon: "💳" },
-      { nom: "Orange Money ML",   description: "Orange Money Mali",     icon: "🟧", bientot: true },
+      { nom: "Orange Money ML",   description: "Orange Money Mali",     icon: "🟧", viaWhatsapp: true },
+      { nom: "Wave Mali",         description: "Wave Mali",             icon: "🌊", viaWhatsapp: true },
       { nom: "Moov Money",        description: "Moov Africa",           icon: "🟥", bientot: true },
     ],
     motsCles: [
@@ -226,7 +234,8 @@ export const COUNTRIES: Country[] = [
   // moyens de paiement Mobile Money locaux ne sont pas opérationnels via
   // Paystack. La `deviseNative` est conservée pour migration future.
   // Les paiements Mobile Money sont listés avec `bientot: true` pour
-  // signaler clairement que c'est en cours d'activation.
+  // signaler clairement que c'est en cours d'activation (sauf Orange Money
+  // et Wave au Burkina : `viaWhatsapp` depuis le 06/10/2026).
   // ────────────────────────────────────────────────────────────────────
 
   {
@@ -244,7 +253,8 @@ export const COUNTRIES: Country[] = [
       courte: "Loterie Nationale Burkinabè — opérateur officiel des courses PMU",
     },
     paiements: [
-      { nom: "Orange Money BF", description: "Orange Money Burkina Faso", icon: "🟧", bientot: true },
+      { nom: "Orange Money BF", description: "Orange Money Burkina Faso", icon: "🟧", viaWhatsapp: true },
+      { nom: "Wave BF",         description: "Wave Burkina Faso",         icon: "🌊", viaWhatsapp: true },
       { nom: "Moov Money BF",   description: "Moov Africa Burkina",       icon: "🟥", bientot: true },
       { nom: "Carte bancaire",  description: "Visa / Mastercard",          icon: "💳" },
     ],

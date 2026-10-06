@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, Clock, RefreshCw } from "lucide-react";
+import { Loader2, Lock, CreditCard, Smartphone, ChevronDown, RefreshCw } from "lucide-react";
 import type { Plan } from "@/types";
 import { PAYSTACK_AVAILABLE } from "@/lib/promo";
 import { trackEvent } from "@/lib/analytics/track";
+import { PAYS_MOBILE_MONEY, formulesMobileMoney, montantMobileMoney } from "@/lib/paiement/mobile-money";
 
 interface Props {
   plan: Plan;
@@ -201,32 +202,37 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
 
               <div className="mx-3 border-t border-border/50" />
             </>
-          ) : (
+          ) : formulesMobileMoney().some((p) => p.id === plan.id) ? (
             <>
-              <div
-                className="w-full flex items-center gap-3 px-3 py-2.5 opacity-60 cursor-not-allowed"
-                aria-disabled="true"
+              {/* Paystack coupé : Orange Money et Wave se paient via notre
+                  WhatsApp (accord de Steph du 06/10/2026), depuis la section
+                  #mobile-money de /abonnements — seule page qui affiche ce bouton.
+                  Pays, montants, message : lib/paiement/mobile-money.ts. */}
+              <a
+                href="#mobile-money"
+                onClick={() => setOpen(false)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-bg-hover transition-colors text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-4 h-4 text-text-muted" />
+                <div className="w-8 h-8 rounded-lg bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-4 h-4 text-[#25D366]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-text-secondary text-sm font-semibold">Orange Money · MTN · Wave</p>
-                    <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 rounded">
-                      <Clock className="w-2.5 h-2.5" />
-                      Bientôt disponible
+                    <p className="text-text-primary text-sm font-semibold">Orange Money · Wave</p>
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-[#25D366] bg-[#25D366]/10 border border-[#25D366]/30 px-1.5 py-0.5 rounded">
+                      Via WhatsApp
                     </span>
                   </div>
                   <p className="text-text-muted text-xs">
-                    Maintenance en cours — utilisez Visa / Mastercard ci-dessous pour finaliser maintenant.
+                    {PAYS_MOBILE_MONEY.map((p) => p.nom).join(", ")} · accès activé dès réception
                   </p>
                 </div>
-              </div>
+                <span className="text-text-muted text-xs font-mono whitespace-nowrap">{montantMobileMoney(plan)}</span>
+              </a>
 
               <div className="mx-3 border-t border-border/50" />
             </>
-          )}
+          ) : null}
 
           {/* Renouvellement automatique (opt-in) — carte uniquement, jamais pour les plans Test */}
           {plan.nom !== "Test" && (
@@ -275,8 +281,8 @@ export default function PaiementButton({ plan, userId, userEmail, variant = "sec
           </button>
 
           <p className="text-[10px] text-text-muted px-3 py-2 leading-relaxed border-t border-border/50">
-            📱 Mobile Money de retour très bientôt. 💳 En attendant, payez par carte —
-            Visa / Mastercard et cartes prépayées virtuelles Wave / Orange Money acceptées.
+            💳 Par carte : Visa / Mastercard, y compris les cartes prépayées virtuelles
+            Wave / Orange Money — accès immédiat.
           </p>
 
           <button

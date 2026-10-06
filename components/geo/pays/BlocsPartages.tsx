@@ -4,7 +4,9 @@
  * `data-shared="true"` : la mesure de similarité les exclut.
  *
  * Montants en devise native (franc CFA : parité fixe 655,957) marqués « ≈ »,
- * avec le montant réellement facturé en euros (paiement par carte).
+ * avec le montant réellement facturé en euros (paiement par carte). Là où
+ * Orange Money et Wave sont acceptés, ce montant en francs CFA est celui payé
+ * (lib/paiement/mobile-money.ts).
  */
 import Link from "next/link";
 import { ArrowRight, Shield, AlertTriangle } from "lucide-react";
@@ -12,12 +14,15 @@ import { COUNTRIES, formatPrice, type Country } from "@/lib/geo/countries";
 import type { FichePays } from "@/lib/geo/fiches/types";
 import { PLAN_CONFIG } from "@/types";
 import { STARTER_OFFRE_LABEL, PRO_OFFRE_LABEL, ELITE_OFFRE_LABEL } from "@/lib/pricing";
+import { paysMobileMoney, lienMobileMoney } from "@/lib/paiement/mobile-money";
 
 const LIBELLES: Record<string, string> = { starter: STARTER_OFFRE_LABEL, pro: PRO_OFFRE_LABEL, elite: ELITE_OFFRE_LABEL };
 
 export default function BlocsPartages({ country, fiche, depuis }: { country: Country; fiche: FichePays; depuis: string }) {
   const cfa = fiche.deviseNative === "XOF" || fiche.deviseNative === "XAF" ? fiche.deviseNative : null;
   const formules = PLAN_CONFIG.filter((p) => LIBELLES[p.id]);
+  // Orange Money / Wave via WhatsApp (Côte d'Ivoire, Burkina, Sénégal ici ; pas le Togo).
+  const mobileMoney = paysMobileMoney(country.code);
 
   return (
     <>
@@ -28,9 +33,20 @@ export default function BlocsPartages({ country, fiche, depuis }: { country: Cou
         </h2>
         <p className="text-text-secondary text-sm mb-6 leading-relaxed">
           Paiement par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées,
-          y compris les cartes prépayées. Les prix sont facturés en euros
-          {cfa ? ", avec l'équivalent indicatif en francs CFA" : ""}. Le paiement Mobile Money n&apos;est pas
-          encore disponible.
+          y compris les cartes prépayées. {mobileMoney ? "Par carte, les" : "Les"} prix sont facturés en euros
+          {cfa ? ", avec l'équivalent indicatif en francs CFA" : ""}.{" "}
+          {mobileMoney ? (
+            <>
+              Vous pouvez aussi payer directement en francs CFA, par{" "}
+              <Link href={lienMobileMoney(mobileMoney)} className="text-gold-light underline hover:text-gold-primary">
+                Orange Money ou Wave
+              </Link>{" "}
+              : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant, et votre accès est activé dès
+              réception du paiement.
+            </>
+          ) : (
+            <>Le paiement Mobile Money n&apos;est pas encore disponible.</>
+          )}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {formules.map((p) => (

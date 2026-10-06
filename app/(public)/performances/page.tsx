@@ -19,6 +19,7 @@ import PageHero from "@/components/layout/PageHero";
 import { buildGenyUrlFromStored, buildGenyUrlAuto } from "@/lib/geny";
 import { resolveFormule, filterByFormule, summarizeTier, FORMULES } from "@/lib/performances/tier-stats";
 import { getPublicCounters, roundTenPlus } from "@/lib/metrics/public-counters";
+import { OU_PAYER_MOBILE_MONEY } from "@/lib/paiement/mobile-money";
 import FormuleTabs from "@/components/performances/FormuleTabs";
 import PeriodeTabs from "@/components/performances/PeriodeTabs";
 import { resolvePeriode, buildPeriodeTabs, filterByPeriode, moisLabel } from "@/lib/performances/periode-filter";
@@ -681,7 +682,7 @@ export default async function PerformancesPage({
             </h3>
             <p className="text-text-secondary text-sm max-w-md mx-auto mb-6">
               Rejoignez les <span className="text-gold-light font-semibold">{roundTenPlus(compteurs.communaute)} turfistes</span> qui
-              utilisent Elite Turf chaque jour. Accès immédiat, paiement par carte bancaire (toutes cartes, tous pays). Mobile Money bientôt disponible.
+              utilisent Elite Turf chaque jour. Accès immédiat, paiement par carte bancaire (toutes cartes, tous pays). Orange Money et Wave {OU_PAYER_MOBILE_MONEY}.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link

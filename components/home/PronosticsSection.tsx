@@ -17,6 +17,7 @@ import { heureGmtDepuisParis } from "@/lib/seo/dates";
 import { ArriveeVedette, QuinteHier } from "@/components/home/ArriveeVedette";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 import { chargerQuintesPeriode } from "@/app/(public)/quinte-plus/donnees";
+import { OU_PAYER_MOBILE_MONEY } from "@/lib/paiement/mobile-money";
 
 const LABEL_QUINTE = "Nationale 1 — Quinté+";
 
@@ -763,7 +764,7 @@ function CtaBlock() {
         Voir tous les pronostics du jour
       </Link>
       <p className="mt-3 text-text-muted text-xs">
-        Paiement par carte bancaire (toutes cartes, tous pays) · Mobile Money bientôt · Accès immédiat
+        Carte bancaire (toutes cartes, tous pays) : accès immédiat · Orange Money et Wave {OU_PAYER_MOBILE_MONEY}
       </p>
     </div>
   );

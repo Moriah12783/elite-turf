@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { messageWhatsappDepuis, whatsappUrl } from "./whatsapp";
+import { messageWhatsappDepuis, numeroWhatsappLisible, whatsappUrl } from "./whatsapp";
+
+describe("numeroWhatsappLisible — le numéro à vérifier avant de payer", () => {
+  it("numéro français groupé par deux", () => {
+    expect(numeroWhatsappLisible("+33644686720")).toBe("+33 6 44 68 67 20");
+    expect(numeroWhatsappLisible("+33 6 44 68 67 20")).toBe("+33 6 44 68 67 20");
+  });
+
+  it("autre format : affiché tel quel", () => {
+    expect(numeroWhatsappLisible("+2250700000000")).toBe("+2250700000000");
+  });
+});
 
 describe("messageWhatsappDepuis — d'où écrit le visiteur", () => {
   it("indique la page pays d'où vient le contact", () => {

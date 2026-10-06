@@ -10,13 +10,25 @@ import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
 import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
-import { whatsappUrl } from "@/lib/constants/whatsapp";
+import { whatsappUrl, numeroWhatsappLisible } from "@/lib/constants/whatsapp";
 import TrackPageView from "@/components/analytics/TrackPageView";
 import { offreEliteStarterActive, libelleFinOffre } from "@/lib/promo/offre-elite-starter";
 import CasesFormule from "@/components/abonnements/CasesFormule";
+import PayerMobileMoney from "@/components/abonnements/PayerMobileMoney";
 import { ACCROCHES, prixParJour, type IdFormule } from "@/lib/abonnements/comparatif";
+import { formatPrice } from "@/lib/geo/countries";
+import {
+  OU_PAYER_MOBILE_MONEY,
+  OU_PAYER_MOBILE_MONEY_DEBUT,
+  formulesMobileMoney,
+  montantMobileMoney,
+  paysMobileMoney,
+} from "@/lib/paiement/mobile-money";
 
 const FORMULES_A_CASES: Record<string, IdFormule> = { starter: "starter", pro: "pro", elite: "elite" };
+
+/** « Starter 42 500 FCFA, Pro 99 500 FCFA, Elite 136 500 FCFA » */
+const TARIFS_MOBILE_MONEY = formulesMobileMoney().map((p) => `${p.nom} ${montantMobileMoney(p)}`).join(", ");
 
 // FAQ Schema.org — visent les requêtes "comment payer pmu mobile money",
 // "abonnement quinté+", "tarif pronostic pmu", "annuler abonnement".
@@ -45,17 +57,17 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Comment payer mon abonnement Elite Turf ?",
     answer:
-      "Le paiement se fait par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit (y compris les cartes prépayées Wave et Orange Money). Votre accès est activé immédiatement après le paiement. Le paiement Mobile Money (Orange Money, MTN, Wave) sera bientôt disponible pour le Burkina Faso, le Mali, le Sénégal et d'autres pays.",
+      `Le paiement se fait par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays sont acceptées — prépayée, virtuelle ou débit (y compris les cartes prépayées Wave et Orange Money). Votre accès est activé immédiatement après le paiement. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA (${TARIFS_MOBILE_MONEY}) : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant, et votre accès est activé dès réception du paiement.`,
   },
   {
     question: "Les prix sont en euros — puis-je payer depuis l'Afrique ?",
     answer:
-      "Oui. Vous payez par carte bancaire en euros — toutes les cartes africaines sont acceptées, y compris les cartes prépayées virtuelles Wave / Orange Money que la plupart des wallets permettent de créer. Le paiement direct en Mobile Money (FCFA) arrive bientôt.",
+      `Oui. Par carte bancaire, vous payez en euros — toutes les cartes africaines sont acceptées, y compris les cartes prépayées virtuelles Wave / Orange Money que la plupart des wallets permettent de créer. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer directement en francs CFA, par Orange Money ou Wave, via notre WhatsApp.`,
   },
   {
     question: "Quand est-ce que j'accède aux pronostics ?",
     answer:
-      "Immédiatement après confirmation du paiement. Pas d'attente, pas de validation manuelle. Les pronostics du jour sont publiés avant le départ de la course concernée, et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
+      "Par carte, immédiatement après confirmation du paiement : pas d'attente, pas de validation manuelle. Par Orange Money ou Wave, dès réception de votre paiement par notre équipe. Les pronostics du jour sont publiés avant le départ de la course concernée, et vous êtes alerté par email et WhatsApp dès leur mise en ligne.",
   },
   {
     question: "Que se passe-t-il si mon premier pronostic expert est perdant ?",
@@ -70,7 +82,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Je n'arrive pas à payer, que faire ?",
     answer:
-      "Vérifiez que votre carte est autorisée pour les paiements en ligne / internationaux et que le solde est suffisant. Une carte prépayée virtuelle (Wave, Orange Money) fonctionne très bien. Si le problème persiste, contactez-nous sur WhatsApp au +33 6 44 68 67 20 — nous répondons sous 2h en moyenne.",
+      `Vérifiez que votre carte est autorisée pour les paiements en ligne / internationaux et que le solde est suffisant. Une carte prépayée virtuelle (Wave, Orange Money) fonctionne très bien. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, via notre WhatsApp. Si le problème persiste, contactez-nous sur WhatsApp au ${numeroWhatsappLisible()} — nous répondons sous 2h en moyenne.`,
   },
   {
     question: "Quel est le délai de remboursement en cas de problème ?",
@@ -130,7 +142,15 @@ const PLAN_STYLES = {
   },
 };
 
-export default async function AbonnementsPage() {
+export default async function AbonnementsPage({
+  searchParams,
+}: {
+  searchParams?: { pays?: string | string[] };
+}) {
+  // Arrivée depuis une page pays (/abonnements?pays=BF#mobile-money) : pays
+  // pré-coché dans « Payer par Orange Money ou Wave ».
+  const paysInitial = paysMobileMoney(typeof searchParams?.pays === "string" ? searchParams.pays : null);
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -196,7 +216,7 @@ export default async function AbonnementsPage() {
       <PageHero
         image="/images/heroes/hero-abonnements.jpg"
         titre="Choisissez votre accès"
-        sousTitre="Sélection stats gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Mobile Money bientôt."
+        sousTitre={`Sélection stats gratuite sur chaque course du jour. Accès complet aux pronostics experts à partir de 65€. Carte bancaire (Visa/Mastercard) — toutes cartes, tous pays. Orange Money et Wave ${OU_PAYER_MOBILE_MONEY}.`}
       />
 
       {/* ── PREUVE VÉRIFIABLE (au-dessus de la ligne de flottaison) ──────
@@ -499,8 +519,10 @@ export default async function AbonnementsPage() {
                       {plan.duree_jours} jours
                       {!PROMO.actif && <> · soit {prixParJour(plan.prix_eur, plan.duree_jours)}</>}
                     </p>
+                    {/* Arrondi à 500, comme sur les pages pays : c'est aussi le
+                        montant payé par Orange Money ou Wave (≈ 42 637 avant). */}
                     {!PROMO.actif && (
-                      <p className="text-text-muted text-xs">≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA</p>
+                      <p className="text-text-muted text-xs">≈ {formatPrice(plan.prix_eur, "XOF")}</p>
                     )}
                   </div>
 
@@ -528,12 +550,23 @@ export default async function AbonnementsPage() {
                       ✓ Plan actuel
                     </div>
                   ) : (
-                    <PaiementButton
-                      plan={plan}
-                      userId={user?.id}
-                      userEmail={user?.email}
-                      variant={styles.btn}
-                    />
+                    <>
+                      <PaiementButton
+                        plan={plan}
+                        userId={user?.id}
+                        userEmail={user?.email}
+                        variant={styles.btn}
+                      />
+                      {FORMULES_A_CASES[plan.id] && (
+                        <a
+                          href="#mobile-money"
+                          className="mt-3 block text-center text-xs text-text-muted hover:text-gold-light transition-colors"
+                        >
+                          Ou par <span className="font-semibold text-text-secondary">Orange Money ou Wave</span> : Côte
+                          d&apos;Ivoire, Mali, Burkina, Sénégal →
+                        </a>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -542,6 +575,9 @@ export default async function AbonnementsPage() {
 
           {/* Réassurance déplacée en haut de page (trust strip above the fold). */}
         </div>
+
+        {/* ── ORANGE MONEY / WAVE (CI, Mali, Burkina, Sénégal) — via WhatsApp ── */}
+        <PayerMobileMoney paysInitial={paysInitial} connecte={!!user} />
 
         {/* ── MOYENS DE PAIEMENT ── */}
         <div className="text-center">
@@ -553,17 +589,23 @@ export default async function AbonnementsPage() {
               { emoji: "💳", label: "Visa / Mastercard" },
               { emoji: "🌍", label: "Toutes cartes, tous pays" },
               { emoji: "🪪", label: "Prépayée · virtuelle · débit" },
-              { emoji: "⏳", label: "Mobile Money bientôt" },
             ].map((p) => (
               <div key={p.label} className="flex items-center gap-2 px-4 py-2.5 bg-bg-card border border-border rounded-xl">
                 <span className="text-lg">{p.emoji}</span>
                 <span className="text-text-secondary text-sm font-medium">{p.label}</span>
               </div>
             ))}
+            <a
+              href="#mobile-money"
+              className="flex items-center gap-2 px-4 py-2.5 bg-bg-card border border-gold-primary/30 hover:border-gold-primary/60 rounded-xl transition-colors"
+            >
+              <span className="text-lg">📱</span>
+              <span className="text-text-secondary text-sm font-medium">Orange Money · Wave</span>
+            </a>
           </div>
-          <div className="mt-5 flex items-center justify-center gap-2 text-text-muted text-xs">
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 text-text-muted text-xs">
             <Clock className="w-3.5 h-3.5" />
-            Activation de l&apos;accès en moins de 2 minutes après paiement
+            Par carte : accès activé en moins de 2 minutes. Par Orange Money ou Wave : dès réception du paiement.
           </div>
         </div>
 
