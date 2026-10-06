@@ -32,7 +32,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",
-    a: `Choisissez votre plan et payez par carte bancaire (Visa / Mastercard) — toutes cartes, tous pays, y compris prépayées (Wave, Orange Money). Votre accès est actif en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA : écrivez-nous sur WhatsApp, et votre accès est activé dès réception du paiement.`,
+    a: `Choisissez votre plan et payez par carte bancaire (Visa / Mastercard) — toutes cartes, tous pays, y compris prépayées (Wave, Orange Money). Votre accès est actif en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT}, vous pouvez aussi payer par Orange Money ou Wave, en francs CFA : écrivez-nous sur WhatsApp. Dès réception du paiement, nous vous envoyons un reçu sur WhatsApp et votre accès est activé.`,
   },
   {
     q: "Le site est-il accessible sur mobile ?",

@@ -24,7 +24,7 @@ const BLOCS = [
     icon: CreditCard,
     titre: "Paiement sécurisé",
     texte:
-      `Paiement par carte bancaire sécurisé et traçable (Visa/Mastercard) — toutes cartes, tous pays, accès activé en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT} : aussi par Orange Money ou Wave, au prix affiché, accès activé dès réception.`,
+      `Paiement par carte bancaire sécurisé et traçable (Visa/Mastercard) — toutes cartes, tous pays, accès activé en moins de 2 minutes. ${OU_PAYER_MOBILE_MONEY_DEBUT} : aussi par Orange Money ou Wave, au prix affiché, avec un reçu et un accès activé dès réception.`,
   },
 ];
 

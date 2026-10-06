@@ -75,8 +75,8 @@ export default function PayerMobileMoney({ paysInitial, connecte }: Props) {
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border bg-bg-elevated/60 p-4">
           <UserPlus className="w-5 h-5 text-gold-primary flex-shrink-0" aria-hidden="true" />
           <p className="flex-1 text-text-secondary text-sm leading-snug">
-            <span className="text-text-primary font-semibold">Avant de commencer :</span> créez votre compte gratuit.
-            C&apos;est sur ce compte que votre accès sera activé.
+            <span className="text-text-primary font-semibold">Pas encore de compte ?</span> Créez-le gratuitement, avant
+            ou après votre paiement : c&apos;est sur ce compte que votre accès sera activé.
           </p>
           <Link
             href="/inscription"
@@ -115,7 +115,11 @@ export default function PayerMobileMoney({ paysInitial, connecte }: Props) {
           <Num n={2} /> Votre formule
         </p>
         <p className="text-text-muted text-xs mb-2 min-h-[1rem]" aria-live="polite">
-          {pays ? "WhatsApp s'ouvre avec votre message déjà écrit : ajoutez l'e-mail de votre compte, puis envoyez." : "Cochez d'abord votre pays."}
+          {!pays
+            ? "Cochez d'abord votre pays."
+            : connecte
+              ? "WhatsApp s'ouvre avec votre message déjà écrit : ajoutez l'e-mail de votre compte, puis envoyez."
+              : "WhatsApp s'ouvre avec votre message déjà écrit : ajoutez l'e-mail de votre compte si vous en avez un, puis envoyez."}
         </p>
         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {formules.map((plan) => (
@@ -157,7 +161,8 @@ export default function PayerMobileMoney({ paysInitial, connecte }: Props) {
         </p>
         <p className="flex gap-3 rounded-xl border border-border bg-bg-elevated/60 p-3 text-text-secondary text-sm leading-snug">
           <Num n={4} />
-          Vous payez depuis votre téléphone : votre accès est activé dès réception de votre paiement.
+          Vous payez depuis votre téléphone. Dès réception, nous vous envoyons un reçu sur WhatsApp, votre accès est
+          activé et vous recevez l&apos;e-mail de confirmation de votre abonnement.
         </p>
       </div>
 
@@ -166,8 +171,8 @@ export default function PayerMobileMoney({ paysInitial, connecte }: Props) {
         <span>
           Le numéro de paiement vous est donné uniquement sur notre WhatsApp officiel, le{" "}
           <span className="text-text-primary font-semibold whitespace-nowrap">{numeroWhatsappLisible()}</span> : vérifiez que
-          c&apos;est bien ce numéro. Le montant à payer est celui affiché ici. Gardez la confirmation de votre paiement
-          (SMS ou historique de l&apos;application).
+          c&apos;est bien ce numéro. Le montant à payer est celui affiché ici. Gardez la confirmation de votre
+          opérateur (SMS ou historique de l&apos;application) et le reçu que nous vous envoyons sur WhatsApp.
         </span>
       </p>
 

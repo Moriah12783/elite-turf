@@ -8,7 +8,12 @@
  *      montant, pays) ;
  *   2. Steph lui répond avec le numéro et le montant — AUCUN numéro de paiement
  *      n'est publié sur le site ;
- *   3. l'accès est activé dès réception du paiement (à la main, depuis l'admin).
+ *   3. dès réception, Steph envoie un reçu sur WhatsApp ; l'accès est activé à
+ *      la main, en base (aucun formulaire d'activation dans l'admin). Le compte
+ *      peut être créé avant OU après le paiement (précisé par Steph le 06/10).
+ *   4. 🔴 L'e-mail de confirmation NE PART PAS tout seul après une activation à
+ *      la main : bouton « ✉ Confirmation » de /admin/utilisateurs
+ *      (POST /api/admin/renvoyer-confirmation, vrai template, journalisé).
  *
  * Rien ne passe par le site : sans lien avec Paystack (PAYSTACK_AVAILABLE,
  * lib/promo.ts), qui reste coupé.
