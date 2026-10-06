@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
-import { templateConfirmationPack } from "@/lib/email/templates/confirmation-pack";
+import { PLAN_CONFIG } from "@/types";
+import { resolvePlanUuid } from "@/lib/plans/resolve";
+import {
+  palierDeFormule,
+  calculerPeriode,
+  avertissements,
+  formuleDeTransaction,
+  estPaiementCarte,
+} from "@/lib/paiement/activation-mobile-money";
+import { envoyerConfirmationAbonnement } from "@/lib/abonnements/confirmation";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -9,13 +17,29 @@ function redirect(path: string) {
   return NextResponse.redirect(`${APP_URL}${path}`, { status: 302 });
 }
 
+const erreur = (code: string) => redirect(`/admin/paiements?error=${code}`);
+
 /**
- * POST /api/admin/paiements/valider
- * Valide un paiement EN_ATTENTE :
- *  1. Transaction → SUCCES
- *  2. Abonnement  → ACTIF + dates recalculées
- *  3. Profile     → statut_abonnement PRO, ELITE ou STARTER + date_expiration
- *  4. Email       → confirmation pack envoyée à l'abonné
+ * POST /api/admin/paiements/valider — bouton « ✓ Valider » de /admin/paiements.
+ *
+ * Valide un paiement Mobile Money resté EN_ATTENTE (ancien circuit Paystack)
+ * dont l'argent a bien été reçu. Les nouveaux paiements Orange Money / Wave
+ * passent par le bouton « Activer » de /admin/utilisateurs (PR #370).
+ *
+ * Corrigé le 06/10/2026 (GO de Steph) : la formule était lue par
+ * `transactions.abonnement_id`, qu'aucune route d'initiation n'écrit — toujours
+ * null —, donc « PRO, 30 jours » était appliqué à TOUT paiement (un Starter
+ * validé devenait 30 jours de Pro, e-mail « Pro » compris). Désormais :
+ *   - formule = celle enregistrée avec le paiement (`metadata.plan_id`) ;
+ *     inconnue → refus, on ne devine pas ;
+ *   - mêmes règles que le bouton « Activer » (lib/paiement/activation-mobile-money.ts) :
+ *     abonné encore actif → jours ajoutés après sa date de fin ; refus si
+ *     paiement par carte, renouvellement par carte en cours, accès permanent ;
+ *   - la transaction est RÉSERVÉE (EN_ATTENTE → SUCCES, mise à jour
+ *     conditionnelle) avant l'activation : un double clic ne valide pas deux
+ *     fois. Si l'activation du profil échoue, elle repasse EN_ATTENTE et
+ *     l'admin peut réessayer (avant : SUCCES écrit d'abord, réessai bloqué) ;
+ *   - e-mail de confirmation journalisé (lib/abonnements/confirmation.ts).
  */
 export async function POST(req: NextRequest) {
   // ── Auth admin ──────────────────────────────────────────────────────────
@@ -24,149 +48,151 @@ export async function POST(req: NextRequest) {
   if (!user) return redirect("/connexion?redirect=/admin/paiements");
 
   const admin = createServiceClient();
-  const { data: adminProfile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
+  const { data: adminProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!adminProfile || adminProfile.role !== "ADMIN") return redirect("/");
 
-  // ── Récupérer l'ID transaction ───────────────────────────────────────────
+  // ── Transaction ─────────────────────────────────────────────────────────
   const formData = await req.formData();
   const txId = formData.get("id") as string | null;
+  if (!txId) return erreur("id_manquant");
 
-  if (!txId) return redirect("/admin/paiements?error=id_manquant");
-
-  // ── Récupérer la transaction (+ abonnement + plan) ───────────────────────
   const { data: tx, error: txErr } = await admin
     .from("transactions")
-    .select(`
-      id, user_id, statut, abonnement_id,
-      abonnement:abonnement_id (
-        id, plan_id,
-        plan:plan_id (
-          nom, duree_jours, acces_elite, acces_performance, nb_alertes
-        )
-      )
-    `)
+    .select("id, user_id, statut, methode, reference_operateur, metadata")
     .eq("id", txId)
     .single();
-
   if (txErr || !tx) {
     console.error("[Valider] Transaction introuvable:", txErr?.message);
-    return redirect("/admin/paiements?error=transaction_introuvable");
+    return erreur("transaction_introuvable");
   }
+  if (tx.statut === "SUCCES") return erreur("deja_valide");
+  if (tx.statut !== "EN_ATTENTE") return erreur("statut_invalide");
+  if (estPaiementCarte(tx)) return erreur("paiement_carte");
 
-  if (tx.statut === "SUCCES") {
-    return redirect("/admin/paiements?error=deja_valide");
-  }
+  const formule = formuleDeTransaction(tx.metadata);
+  const plan = formule ? PLAN_CONFIG.find((p) => p.id === formule) : undefined;
+  const palier = formule ? palierDeFormule(formule) : null;
+  if (!plan || !palier) return erreur("formule_inconnue");
 
-  // ── Récupérer le profil de l'abonné (email + nom) ───────────────────────
-  const { data: memberProfile } = await admin
+  // ── Abonné ──────────────────────────────────────────────────────────────
+  const { data: profil, error: errProfil } = await admin
     .from("profiles")
-    .select("email, nom_complet")
+    .select("id, email, nom_complet, statut_abonnement, date_expiration_abonnement")
     .eq("id", tx.user_id)
     .single();
+  if (errProfil || !profil) return erreur("membre_introuvable");
 
-  // ── 1. Mettre la transaction à SUCCES ───────────────────────────────────
-  const { error: txUpdateErr } = await admin
+  const { data: aboCarte, error: errCarte } = await admin
+    .from("abonnements")
+    .select("id")
+    .eq("user_id", profil.id)
+    .eq("statut", "ACTIF")
+    .eq("auto_renouvellement", true)
+    .not("stripe_subscription_id", "is", null)
+    .limit(1);
+  if (errCarte) return erreur("erreur_controle");
+  if (aboCarte && aboCarte.length > 0) return erreur("renouvellement_carte");
+
+  const maintenant = new Date();
+  const etat = { statut: profil.statut_abonnement ?? null, expiration: profil.date_expiration_abonnement ?? null };
+  const periode = calculerPeriode(etat, plan.duree_jours, maintenant);
+  if ("erreur" in periode) return erreur("acces_permanent");
+  // « Valider » agit en un clic, sans aperçu : pas de passage silencieux à une
+  // formule inférieure pour un abonné encore actif. « Activer » (Gérer les
+  // membres) affiche l'avertissement et laisse l'admin décider.
+  if (avertissements(etat, palier, maintenant).length > 0) return erreur("retrogradation");
+
+  const planUuid = await resolvePlanUuid(plan);
+  if (!planUuid) return erreur("formule_absente_en_base");
+
+  // ── Réservation : EN_ATTENTE → SUCCES, seulement si personne ne l'a fait ─
+  const { data: reservee, error: errReserve } = await admin
     .from("transactions")
     .update({ statut: "SUCCES" })
-    .eq("id", txId);
-
-  if (txUpdateErr) {
-    console.error("[Valider] Erreur update transaction:", txUpdateErr.message);
-    return redirect("/admin/paiements?error=erreur_transaction");
+    .eq("id", txId)
+    .eq("statut", "EN_ATTENTE")
+    .select("id");
+  if (errReserve) {
+    console.error("[Valider] Erreur update transaction:", errReserve.message);
+    return erreur("erreur_transaction");
   }
+  if (!reservee || reservee.length === 0) return erreur("deja_valide");
 
-  // ── 2. Mettre à jour l'abonnement ───────────────────────────────────────
-  const abonnement    = tx.abonnement as any;
-  const plan          = abonnement?.plan as any;
-  const dureeJours: number = plan?.duree_jours ?? 30;
-  const acces_elite: boolean = plan?.acces_elite ?? false;
-  const nbAlertes: number  = plan?.nb_alertes   ?? 5;
-  // ⚠️ La table `plans` nomme les offres « Découverte » / « Performance » /
-  // « Elite », alors que le template d'e-mail attend « Starter » / « Pro » /
-  // « Elite ». L'ancien test `["Starter","Pro","Elite"].includes(plan.nom)` ne
-  // matchait donc JAMAIS pour Découverte ni Performance, et retombait sur le
-  // défaut « Pro » : un abonné Starter validé à la main recevait un e-mail
-  // « Votre accès Pro est activé ». On aligne la traduction sur celle qui sert
-  // déjà à calculer `statutAbonnement`, juste en dessous — même source, même
-  // résultat, plus de divergence possible.
-  const planNom: "Starter" | "Pro" | "Elite" =
-    acces_elite ? "Elite" : plan?.nom === "Découverte" ? "Starter" : "Pro";
-
-  const dateDebut = new Date();
-  const dateFin   = new Date(dateDebut);
-  dateFin.setDate(dateFin.getDate() + dureeJours);
-
-  const dateDebutISO = dateDebut.toISOString().split("T")[0];
-  const dateFinISO   = dateFin.toISOString().split("T")[0];
-
-  let abonnementId: string | null = tx.abonnement_id ?? null;
-
-  if (abonnementId) {
-    await admin
-      .from("abonnements")
-      .update({ statut: "ACTIF", date_debut: dateDebutISO, date_fin: dateFinISO })
-      .eq("id", abonnementId);
-  } else if (abonnement?.plan_id) {
-    const { data: newAbo } = await admin
-      .from("abonnements")
-      .insert({
-        user_id:             tx.user_id,
-        plan_id:             abonnement.plan_id,
-        date_debut:          dateDebutISO,
-        date_fin:            dateFinISO,
-        statut:              "ACTIF",
-        auto_renouvellement: false,
-        transaction_id:      txId,
-      })
-      .select("id")
-      .single();
-
-    abonnementId = newAbo?.id ?? null;
-
-    if (abonnementId) {
-      await admin
-        .from("transactions")
-        .update({ abonnement_id: abonnementId })
-        .eq("id", txId);
-    }
-  }
-
-  // ── 3. Mettre à jour le profil utilisateur ───────────────────────────────
-  const statutAbonnement = acces_elite ? "ELITE" : plan?.nom === "Découverte" ? "STARTER" : "PRO";
-
-  await admin
+  // ── 1. Le profil (l'accès) ──────────────────────────────────────────────
+  const { error: errAcces } = await admin
     .from("profiles")
     .update({
-      statut_abonnement:          statutAbonnement,
-      date_expiration_abonnement: dateFinISO,
+      statut_abonnement:          palier,
+      date_expiration_abonnement: periode.fin,
+      date_debut_abonnement:      periode.debut,
+      plan_id:                    plan.id,
     })
-    .eq("id", tx.user_id);
-
-  // ── 4. Envoyer l'email de confirmation à l'abonné ───────────────────────
-  if (memberProfile?.email) {
-    const { subject, html } = templateConfirmationPack({
-      nomComplet:     memberProfile.nom_complet || memberProfile.email.split("@")[0],
-      email:          memberProfile.email,
-      planNom,
-      dateExpiration: dateFinISO,
-      nbAlertes:      nbAlertes === -1 ? 999 : nbAlertes,
-    });
-
-    await sendEmail({ to: memberProfile.email, subject, html });
-
-    console.log(
-      `[Valider] ✓ Email "${subject}" envoyé à ${memberProfile.email}`
-    );
+    .eq("id", profil.id);
+  if (errAcces) {
+    console.error("[Valider] Activation du profil impossible:", errAcces.message);
+    // Rien n'est activé : la transaction redevient validable… si ce retour
+    // arrière réussit. Sinon elle reste « Validé » sans accès ouvert, et le
+    // bouton disparaît : il faut le dire, pas annoncer un réessai possible.
+    const { error: errRetour } = await admin
+      .from("transactions")
+      .update({ statut: "EN_ATTENTE" })
+      .eq("id", txId)
+      .eq("statut", "SUCCES");
+    if (errRetour) {
+      console.error(
+        `[Valider] INCOHÉRENCE : transaction ${txId} SUCCES, profil ${profil.id} NON activé :`,
+        errRetour.message,
+      );
+      return erreur("incoherence_activation");
+    }
+    return erreur("erreur_activation");
   }
 
+  // ── 2. La ligne `abonnements` (lue par le cron d'expiration) ────────────
+  // Anciennes lignes ACTIF clôturées AVANT l'insertion : cf. le bouton
+  // « Activer » (/api/admin/abonnements/activer-mobile-money).
+  const { error: errCloture } = await admin
+    .from("abonnements")
+    .update({ statut: "EXPIRE" })
+    .eq("user_id", profil.id)
+    .eq("statut", "ACTIF");
+  const { data: abonnement, error: errAbo } = await admin
+    .from("abonnements")
+    .insert({
+      user_id:             profil.id,
+      plan_id:             planUuid,
+      date_debut:          periode.debut.slice(0, 10),
+      date_fin:            periode.fin.slice(0, 10),
+      statut:              "ACTIF",
+      auto_renouvellement: false,
+      transaction_id:      txId,
+    })
+    .select("id")
+    .single();
+  if (abonnement?.id) {
+    await admin.from("transactions").update({ abonnement_id: abonnement.id }).eq("id", txId);
+  }
+  if (errCloture || errAbo) {
+    console.error("[Valider] Ligne abonnements:", errCloture?.message, errAbo?.message);
+  }
+
+  // ── 3. L'e-mail de confirmation (journalisé) ────────────────────────────
+  const envoi = await envoyerConfirmationAbonnement(admin, {
+    id:         profil.id,
+    email:      profil.email,
+    nomComplet: profil.nom_complet ?? null,
+    palier,
+    expiration: periode.fin,
+  });
+
   console.log(
-    `[Valider] ✓ Transaction ${txId} validée → user ${tx.user_id} → ${statutAbonnement} jusqu'au ${dateFinISO}`
+    `[Valider] ✓ Transaction ${txId} validée → user ${profil.id} → ${palier} jusqu'au ${periode.fin}` +
+      (periode.prolongation ? " (prolongation)" : ""),
   );
 
-  return redirect(`/admin/paiements?success=${statutAbonnement}&expire=${dateFinISO}`);
+  const params = new URLSearchParams({ success: palier, expire: periode.fin.slice(0, 10) });
+  if (periode.prolongation) params.set("prolonge", "1");
+  if (!envoi.ok) params.set("email", "echec");
+  if (errAbo) params.set("abonnement", errCloture ? "echec_risque" : "echec");
+  return redirect(`/admin/paiements?${params.toString()}`);
 }

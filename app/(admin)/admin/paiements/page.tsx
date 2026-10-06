@@ -40,7 +40,16 @@ const ABANDONNE_CONFIG = {
 };
 
 interface Props {
-  searchParams: { success?: string; error?: string; expire?: string; relance?: string };
+  searchParams: {
+    success?: string;
+    error?: string;
+    expire?: string;
+    relance?: string;
+    /** Retours du bouton « Valider » (route /api/admin/paiements/valider). */
+    prolonge?: string;
+    email?: string;
+    abonnement?: string;
+  };
 }
 
 export default async function PaiementsPage({ searchParams }: Props) {
@@ -94,6 +103,18 @@ export default async function PaiementsPage({ searchParams }: Props) {
     erreur_transaction:    "Erreur lors de la mise à jour de la transaction.",
     email_introuvable:     "E-mail du membre introuvable.",
     erreur_envoi:          "Échec de l'envoi de l'e-mail de relance.",
+    // Bouton « Valider » (corrigé le 06/10/2026) : rien n'est modifié dans ces cas.
+    statut_invalide:       "Ce paiement n'est pas « en attente » : il ne peut pas être validé.",
+    paiement_carte:        "Paiement par carte : rien à valider à la main (paiement abandonné).",
+    formule_inconnue:      "Formule inconnue pour ce paiement : rien n'a été modifié. Utilisez « Activer un paiement Orange Money / Wave » dans Gérer les membres, qui demande la formule.",
+    membre_introuvable:    "Compte de l'abonné introuvable : rien n'a été modifié.",
+    erreur_controle:       "Contrôle du renouvellement par carte impossible : rien n'a été modifié, réessayez.",
+    renouvellement_carte:  "Cet abonné a un renouvellement automatique par carte en cours : il doit d'abord l'annuler. Rien n'a été modifié.",
+    acces_permanent:       "Ce compte a un accès payant sans date de fin (permanent) : la validation lui en donnerait une. Rien n'a été modifié.",
+    formule_absente_en_base: "Formule introuvable dans la table plans : rien n'a été modifié.",
+    erreur_activation:     "Activation impossible : le paiement est resté en attente, vous pouvez réessayer.",
+    retrogradation:        "Cet abonné a encore une formule supérieure active : « Valider » ne le fait pas passer à une formule inférieure. Utilisez « Activer un paiement Orange Money / Wave » dans Gérer les membres, qui affiche un aperçu. Rien n'a été modifié.",
+    incoherence_activation: "⚠ À CORRIGER À LA MAIN : le paiement est marqué « Validé » mais l'abonné n'a PAS été activé (l'activation puis le retour en attente ont échoué). Activez-le avec « Activer » dans Gérer les membres.",
   };
 
   return (
@@ -122,6 +143,22 @@ export default async function PaiementsPage({ searchParams }: Props) {
             {expireDate && (
               <p className="text-text-secondary text-xs mt-0.5">
                 Accès jusqu'au {new Date(expireDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                {searchParams.prolonge === "1" && " — jours ajoutés après sa date de fin actuelle"}
+              </p>
+            )}
+            {searchParams.email === "echec" && (
+              <p className="text-status-partial text-xs mt-1">
+                ⚠ L&apos;e-mail de confirmation n&apos;est pas parti : renvoyez-le avec « ✉ Confirmation » dans Gérer les membres.
+              </p>
+            )}
+            {searchParams.abonnement === "echec" && (
+              <p className="text-status-partial text-xs mt-1">
+                ⚠ Ligne d&apos;abonnement non enregistrée : l&apos;accès reste réglé par la date du profil, mais le rappel d&apos;échéance ne partira pas.
+              </p>
+            )}
+            {searchParams.abonnement === "echec_risque" && (
+              <p className="text-status-loss text-xs mt-1">
+                ⚠ L&apos;ancienne ligne d&apos;abonnement est restée active : le cron d&apos;expiration pourrait couper l&apos;accès à son ancienne date de fin. À corriger à la main.
               </p>
             )}
           </div>
@@ -273,10 +310,16 @@ export default async function PaiementsPage({ searchParams }: Props) {
       <div className="p-4 rounded-xl bg-bg-elevated border border-border">
         <p className="text-text-muted text-xs leading-relaxed flex items-start gap-2">
           <TrendingUp className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-gold-primary" />
-          <strong className="text-text-secondary">✓ Valider</strong> (Mobile Money uniquement) met à jour automatiquement :
-          la transaction (→ Validé), l&apos;abonnement (→ Actif) et le profil de l&apos;abonné (→ STARTER, PRO ou ELITE)
-          selon le plan souscrit. Les paiements carte <strong className="text-text-secondary">« Non finalisé »</strong> sont
-          des checkouts <strong className="text-text-secondary">abandonnés</strong> — aucun montant n&apos;a été reçu, il n&apos;y a rien à valider.
+          <span>
+            <strong className="text-text-secondary">✓ Valider</strong> (Mobile Money en attente uniquement) applique la
+            formule enregistrée avec le paiement : transaction (→ Validé), abonnement (→ Actif), profil de l&apos;abonné
+            (→ STARTER, PRO ou ELITE) et e-mail de confirmation. Un abonné encore actif garde ses jours restants ; si la
+            formule n&apos;est pas connue, rien n&apos;est modifié. Les paiements Orange Money / Wave reçus sur WhatsApp
+            s&apos;activent avec « Activer un paiement Orange Money / Wave » dans Gérer les membres. Les paiements carte{" "}
+            <strong className="text-text-secondary">« Non finalisé »</strong> sont des checkouts{" "}
+            <strong className="text-text-secondary">abandonnés</strong> — aucun montant n&apos;a été reçu, il n&apos;y a
+            rien à valider.
+          </span>
         </p>
       </div>
 
