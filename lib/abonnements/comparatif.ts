@@ -4,16 +4,18 @@
  * comparer d'un coup d'œil. Utilisé par /abonnements et la section tarifs de
  * l'accueil.
  *
- * Offre en vigueur depuis le 02/10/2026 (décision de Steph du 01/10/2026,
- * « dès demain ») :
- *   - Starter, Pro et Elite : le pronostic expert du jour en 6 chevaux ;
- *   - Elite en plus : le PLAN DE JEU — 8 chevaux, le couplé (2 chevaux), la
- *     base de 3 chevaux pour le champ réduit ou total, les values, les
- *     associés.
+ * Offre ALIGNÉE SUR LES PRONOSTICS PUBLIÉS (décision de Steph du 06/10/2026) :
+ *   - Starter, Pro et Elite : le pronostic expert du jour en 8 chevaux (niveau
+ *     PRO en base) ;
+ *   - Elite en plus : le PLAN DE JEU — 6 chevaux resserrés (niveau ELITE), la
+ *     base de 3 pour le champ réduit ou total, et les values. Chaque jour
+ *     depuis le 26/09, ces 6 chevaux sont pris parmi les 8 du PRO.
  * Starter accède au niveau PRO (lib/auth/access.ts) : Starter = Pro sur 7 jours.
  *
- * AVANT (jusqu'au 01/10/2026) : PRO en 8 chevaux, ELITE en 6 chevaux, sans
- * plan de jeu — les fiches ne l'annonçaient pas tant qu'il n'était pas livré.
+ * Du 02/10 au 06/10/2026, les fiches annonçaient l'inverse : 6 chevaux pour
+ * tous, et un plan de jeu Elite en 8 chevaux avec le couplé et les associés.
+ * Jamais publié sous cette forme : aucun couplé ni associé coché. Ne les
+ * remettre qu'une fois publiés (garde-fou dans comparatif.test.ts).
  *
  * PUR, ES5-safe, testé.
  */
@@ -64,13 +66,13 @@ export function fichesFormules(offreEliteJusquau: string | null = null): GroupeF
         {
           id: "pronostic-expert",
           libelle: "Le pronostic expert du jour",
-          detail: "Tiercé, Quarté+, Quinté+ : 6 chevaux classés par confiance, avec l'analyse",
+          detail: "Tiercé, Quarté+, Quinté+ : 8 chevaux classés par confiance, avec l'analyse",
           cases: ABONNES,
         },
         {
           id: "plan-de-jeu-elite",
           libelle: "Le plan de jeu Elite",
-          detail: "8 chevaux : le couplé (2 chevaux), la base de 3 pour le champ réduit ou total, les values et les associés",
+          detail: "6 chevaux resserrés : la base de 3 pour le champ réduit ou total, et les values",
           cases: {
             free: false,
             starter: offreEliteJusquau ? `Offert jusqu'au ${offreEliteJusquau}` : false,
