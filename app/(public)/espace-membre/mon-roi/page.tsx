@@ -287,7 +287,7 @@ export default async function MonRoiPage() {
         {statut === "PRO" && (
           <UpgradeCTA
             title="Devenez membre Elite"
-            text="Le pack Elite ajoute chaque jour le plan de jeu : 8 chevaux, le couplé, la base de 3 chevaux, les values et les associés, + WhatsApp direct avec nos experts. Réservé aux passionnés."
+            text="Le pack Elite ajoute chaque jour le plan de jeu : 6 chevaux, avec la base de 3 chevaux et les values, + WhatsApp direct avec nos experts. Réservé aux passionnés."
             href="/abonnements#elite"
             cta="Découvrir le pack Elite"
           />

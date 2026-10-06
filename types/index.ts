@@ -264,12 +264,14 @@ export const PLAN_CONFIG: Plan[] = [
     acces_elite: true,
     nb_alertes: -1,
     description: "La sélection dans la sélection",
+    // Alignées le 06/10/2026 sur ce qui est publié au niveau ELITE (décision de
+    // Steph) : 6 chevaux, 3 en base + les values ; couplé et associés retirés,
+    // jamais cochés. `description` ci-dessus part chez Stripe : ne pas y toucher.
     features: [
       "Tout le Pack Pro inclus : le pronostic expert en 6 chevaux",
-      "Le plan de jeu Elite chaque jour : 8 chevaux",
-      "Le couplé : 2 chevaux",
+      "Le plan de jeu Elite chaque jour : 6 chevaux",
       "La base de 3 chevaux pour le champ réduit ou total",
-      "Les values et les associés",
+      "Les values",
       "Alertes WhatsApp",
       "Support WhatsApp prioritaire",
     ],
