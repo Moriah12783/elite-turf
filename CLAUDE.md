@@ -45,8 +45,14 @@ npx vitest run       # tests (lib/**/*.test.ts)
 ## Paiement Orange Money / Wave (depuis le 06/10/2026)
 - **Source unique `lib/paiement/mobile-money.ts`** : pays (Côte d'Ivoire, Mali, Burkina Faso, Sénégal) ; montants via `formatPrice` (Starter 42 500 / Pro 99 500 / Elite 136 500 FCFA : le montant payé, pas un « ≈ ») ; message WhatsApp pré-rempli ; lien `/abonnements?pays=XX#mobile-money` (`lienMobileMoney()`).
 - **Parcours** : le visiteur écrit sur le WhatsApp officiel → Steph lui envoie le numéro et le montant → après paiement, Steph envoie un reçu sur WhatsApp. **Aucun numéro de paiement publié sur le site.** Le compte peut être créé avant ou après le paiement (PR #368).
-- **Activation à la main, en base** (aucun formulaire admin : le bouton « Valider » de `/admin/paiements` ne traite qu'une transaction EN_ATTENTE existante) : une ligne `abonnements` (`plan_id`, `date_debut`, `date_fin`, `statut = 'ACTIF'` ; `transaction_id` facultatif) + `profiles.statut_abonnement` (`STARTER`/`PRO`/`ELITE`) et `date_expiration_abonnement`. Modèle : `app/api/admin/paiements/valider/route.ts` (⚠️ table `plans` : Starter = « Découverte », Pro = « Performance », cf. commentaire du fichier). C'est la ligne `abonnements` (`date_fin`) que le cron `expire-abonnements` lit pour repasser le profil en `EXPIRE`.
-- 🔴 **L'e-mail de confirmation NE PART PAS tout seul** après une activation à la main : bouton « ✉ Confirmation » de `/admin/utilisateurs` (POST `/api/admin/renvoyer-confirmation`).
+- **Activation : formulaire « Activer un paiement Orange Money / Wave » de `/admin/utilisateurs`** (PR #370, 06/10/2026). Route `POST /api/admin/abonnements/activer-mobile-money` ; règles pures dans `lib/paiement/activation-mobile-money.ts`.
+  - « Vérifier » : aperçu, aucune écriture. « Confirmer » : exactement la saisie vérifiée.
+  - Écritures, dans l'ordre : profil (statut + `date_expiration_abonnement`), puis ligne `abonnements` ACTIF (les anciennes passent EXPIRE), puis `transactions` SUCCES (`ORANGE_MONEY`/`WAVE`, XOF, référence `ET-MM-…`), puis e-mail de confirmation (case cochée par défaut).
+  - Décisions de Steph : un abonné encore actif garde ses jours (prolongation depuis sa date de fin) ; paiement enregistré ; e-mail automatique.
+  - Refus : compte introuvable ou en double ; renouvellement automatique par carte en cours ; accès permanent ; doublon probable (moins de 10 min ou même référence d'opérateur).
+  - **Ne plus activer à la main en base.** C'est la ligne `abonnements` (`date_fin`) que le cron `expire-abonnements` lit pour repasser le profil en `EXPIRE`.
+  - ⚠️ Table `plans` : Starter = « Découverte », Pro = « Performance » (`lib/plans/resolve.ts`).
+- Le bouton « ✉ Confirmation » de `/admin/utilisateurs` (POST `/api/admin/renvoyer-confirmation`) renvoie l'e-mail si besoin. L'envoi et le journal sont partagés via `lib/abonnements/confirmation.ts`.
 - **Paystack reste coupé** : `PAYSTACK_AVAILABLE = false` (`lib/promo.ts`).
 - **Ne jamais mettre l'e-mail d'un visiteur dans un lien `wa.me`** : GA4 (chargé via GTM) enregistre l'adresse des liens cliqués. Le message pré-rempli s'arrête sur « E-mail de mon compte Elite Turf : » et le visiteur complète lui-même dans WhatsApp.
 
