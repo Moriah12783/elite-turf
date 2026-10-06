@@ -12,8 +12,9 @@
  * bonne chose (Base → BASE, Value → OUTSIDER) : les lecteurs publics n'ont rien
  * à réapprendre. Seul « le coup » n'avait pas d'équivalent → COUP.
  *
- * ⚠️ `SelectionDetailItem.role` est typé `RunnerRole | string` : COUP compile
- * sans étendre le type du pipeline, qui reste le vocabulaire de l'IA seule.
+ * ⚠️ Les lecteurs (`SelectionDetailLike.role`, ./plan-radar.ts) typent le rôle
+ * en `string` : COUP compile sans étendre le type du pipeline, qui reste le
+ * vocabulaire de l'IA seule.
  */
 
 /** Rôles formant le SOCLE jouable — affichés en « base ». */
@@ -26,9 +27,9 @@ export const ROLE_COUP = "COUP";
  * Couverture : le cheval fait partie du jeu sans être mis en avant.
  *
  * Indispensable et JAMAIS proposé comme bouton : sur la fiche détail, la
- * hiérarchie REMPLACE la liste par mérite (pronostics/[id]/page.tsx). Un cheval
- * de `selection` absent de `selection_detail` disparaîtrait donc de la page.
- * Tout cheval non qualifié par l'expert reçoit ce rôle → aucun cheval perdu.
+ * hiérarchie REMPLACE la liste par mérite (pronostics/[id]/page.tsx). Tout
+ * cheval non qualifié par l'expert reçoit ce rôle → il s'affiche dans « Le
+ * champ », aucun cheval perdu.
  */
 export const ROLE_CHAMP = "CHAMP";
 

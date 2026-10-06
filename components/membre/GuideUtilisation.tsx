@@ -1,16 +1,19 @@
 import { BookOpen, Star, ChevronDown, Target } from "lucide-react";
+import type { CleNiveau } from "@/lib/pronostics/plan-radar";
+import { TIERS } from "@/components/pronostics/plan-radar-tiers";
 
 /**
  * Guide « Exploiter vos pronostics » — espace membre.
  *
- * Explique à l'abonné comment lire la sélection Elite (base / value / coup /
- * champ + pivot) et comment en tirer des tickets en champ réduit ou total.
+ * Explique à l'abonné (Starter, Pro ou Elite) comment lire sa sélection
+ * (couplé / base / associés / value / coup / champ + pivot) et comment en tirer
+ * des tickets en champ réduit ou total.
  *
- * 🔴 RÈGLE : les classes de couleur ci-dessous sont COPIÉES à l'identique de
- * `components/pronostics/PlanRadarBlock.tsx` (TIERS). Le guide doit montrer
- * exactement ce que l'abonné voit sur son pronostic — un guide qui décrit
- * d'autres couleurs que l'interface est pire que pas de guide. Si les couleurs
- * changent là-bas, les changer ICI aussi.
+ * 🔴 RÈGLE : libellés et couleurs viennent de
+ * `components/pronostics/plan-radar-tiers.ts`, la source lue par les
+ * pronostics eux-mêmes. Le guide montre donc exactement ce que l'abonné voit —
+ * un guide qui décrit d'autres couleurs que l'interface est pire que pas de
+ * guide. (Avant le 06/10/2026, ces classes étaient recopiées à la main.)
  *
  * Repliable via <details> natif : aucun JavaScript, donc utilisable dans un
  * composant serveur, et le contenu reste dans le HTML (lisible, imprimable,
@@ -21,62 +24,25 @@ import { BookOpen, Star, ChevronDown, Target } from "lucide-react";
  * /performances, où elles sont datées et opposables.
  */
 
-/** Une catégorie de la sélection, avec la couleur EXACTE du pronostic. */
+/** Une catégorie de la sélection : libellé et couleur EXACTS du pronostic, plus l'explication du guide. */
+function categorie(cle: CleNiveau, detail: string) {
+  const t = TIERS[cle];
+  return { cle, titre: t.label, puce: t.chip, texte: t.text, role: t.consigne, detail };
+}
+
 const CATEGORIES = [
-  {
-    cle: "couple",
-    titre: "Le couplé",
-    puce: "bg-purple-500/10 text-purple-300 border-purple-500/40",
-    texte: "text-purple-400",
-    role: "Les 2 chevaux à jouer en couplé",
-    detail:
-      "Le duo du plan de jeu Elite. Ces deux chevaux figurent aussi dans leur catégorie (souvent la base).",
-  },
-  {
-    cle: "base",
-    titre: "La base",
-    puce: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40",
-    texte: "text-emerald-400",
-    role: "Nos chevaux les plus solides",
-    detail:
-      "Le socle de la course. C'est parmi eux que se trouve le pivot, le cheval sur lequel appuyer tous vos tickets.",
-  },
-  {
-    cle: "associes",
-    titre: "Les associés",
-    puce: "bg-teal-500/10 text-teal-300 border-teal-500/40",
-    texte: "text-teal-400",
-    role: "À jouer avec la base",
-    detail:
-      "Dans le plan de jeu Elite, les chevaux à associer à la base de 3 en champ réduit.",
-  },
-  {
-    cle: "value",
-    titre: "La value",
-    puce: "bg-blue-500/10 text-blue-300 border-blue-500/40",
-    texte: "text-blue-400",
-    role: "Nos secondes chances",
-    detail:
-      "Moins attendus que la base, ils sont là pour faire grimper les rapports quand ils entrent à l'arrivée.",
-  },
-  {
-    cle: "coup",
-    titre: "Le coup",
-    puce: "bg-gold-faint text-gold-light border-gold-primary/50",
-    texte: "text-gold-primary",
-    role: "Notre tentative",
-    detail:
-      "L'outsider de la sélection. Il ne sort pas souvent, mais quand il sort, il transforme le rapport.",
-  },
-  {
-    cle: "champ",
-    titre: "Le champ",
-    puce: "bg-bg-elevated text-text-secondary border-border",
-    texte: "text-text-muted",
-    role: "Les compléments",
-    detail:
-      "Les chevaux qui ferment la sélection. Utiles pour élargir un champ réduit sans faire exploser le budget.",
-  },
+  categorie("couple",
+    "Le duo du plan de jeu Elite. Ces deux chevaux figurent aussi dans leur catégorie (souvent la base)."),
+  categorie("base",
+    "Le socle de la course. C'est parmi eux que se trouve le pivot, le cheval sur lequel appuyer tous vos tickets."),
+  categorie("associes",
+    "Dans le plan de jeu Elite, les chevaux à associer à la base de 3 en champ réduit."),
+  categorie("value",
+    "Moins attendus que la base, ils sont là pour faire grimper les rapports quand ils entrent à l'arrivée."),
+  categorie("coup",
+    "L'outsider de la sélection. Il ne sort pas souvent, mais quand il sort, il transforme le rapport."),
+  categorie("champ",
+    "Les chevaux qui ferment la sélection. Utiles pour élargir un champ réduit sans faire exploser le budget."),
 ];
 
 /** Une formule de jeu : quels chevaux prendre en base, quoi associer. */
@@ -130,11 +96,15 @@ export default function GuideUtilisation() {
 
       <div className="px-5 pb-6 space-y-7 border-t border-border pt-5">
         {/* ── Intro ─────────────────────────────────────────────────── */}
+        {/* Sans nombre de chevaux (décision de Steph du 06/10/2026) : le guide
+            est lu par les abonnés Starter, Pro et Elite, qui ne reçoivent pas
+            la même sélection. Avant : « votre plan de jeu Elite vous propose
+            8 chevaux », faux pour la sélection Elite publiée (6 chevaux). */}
         <p className="text-text-secondary text-sm leading-relaxed">
-          Chaque jour, votre plan de jeu Elite vous propose{" "}
-          <strong className="text-text-primary">8 chevaux</strong>, répartis en
-          catégories. Pour en tirer parti, la méthode que nous conseillons est de
-          jouer en <strong className="text-gold-light">champ réduit</strong> ou en{" "}
+          Chaque jour, votre pronostic range ses chevaux par catégories, avec un{" "}
+          <strong className="text-gold-light">pivot ⭐</strong>. Pour en tirer
+          parti, la méthode que nous conseillons est de jouer en{" "}
+          <strong className="text-gold-light">champ réduit</strong> ou en{" "}
           <strong className="text-gold-light">champ total</strong> : vous couvrez
           la course intelligemment tout en gardant la main sur votre budget.
         </p>

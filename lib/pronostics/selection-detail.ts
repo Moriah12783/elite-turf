@@ -7,14 +7,14 @@
  * DEUX INVARIANTS, tous deux imposés par les consommateurs publics :
  *
  *  1. TOUT OU RIEN. Sur la fiche détail, la hiérarchie REMPLACE la liste par
- *     mérite. Un cheval de `selection` absent de `selection_detail` disparaîtrait
- *     de la page. Donc : soit on n'écrit rien (null → affichage actuel intact),
- *     soit on écrit une ligne pour CHAQUE cheval de la sélection.
+ *     mérite. Soit on n'écrit rien (null → affichage actuel intact), soit on
+ *     écrit une ligne pour CHAQUE cheval de la sélection : chacun est alors
+ *     rangé où l'expert l'a voulu, le champ compris.
  *  2. L'ORDRE DE MÉRITE est celui de `selection`, jamais celui des clics.
  *
- * Le champ `name` est OMIS quand on ne connaît pas le nom : `ProSelectionBlock`
- * fait `horse?.nom_cheval ?? it.name ?? \`Cheval n°X\`` — et `??` ne rattrape pas
- * la chaîne vide, qui afficherait une ligne blanche.
+ * Le champ `name` est OMIS quand on ne connaît pas le nom : la fiche détail
+ * s'en sert quand le partant manque, et une chaîne vide y afficherait une
+ * ligne blanche.
  *
  * PUR (aucune I/O), testé.
  */

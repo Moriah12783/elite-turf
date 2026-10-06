@@ -11,9 +11,8 @@
  * DEUX SOURCES, par ordre de richesse :
  *  1. `plan_de_jeu` (pronostics ELITE) → pivot (banker) + base + value_picks.
  *  2. Repli `selection_detail` → on s'appuie sur les RÔLES : BASE/APPUI/COMPLEMENT
- *     = le socle, le reste (OUTSIDER…) = la value. Même découpage que
- *     `ProSelectionBlock` déjà utilisé sur la fiche détail. Validé PO :
- *     « chances régulières » et « base » désignent bien le même socle jouable.
+ *     = le socle, le reste (OUTSIDER…) = la value. Validé PO : « chances
+ *     régulières » et « base » désignent bien le même socle jouable.
  *     Quand l'expert saisit lui-même ses rôles dans l'admin, il peut en plus
  *     DÉSIGNER le coup (rôle COUP) et le pivot (`pivot: true`) — un choix, qui
  *     prime alors sur les heuristiques. Vocabulaire : ./selection-roles.ts.
@@ -30,6 +29,7 @@
  */
 
 import { ROLES_SOCLE, ROLE_COUP, ROLE_CHAMP, ROLE_ASSOCIE, COUPLE_MAX } from "./selection-roles";
+import { canAccess } from "@/lib/auth/access";
 
 export interface PlanDeJeuLike {
   banker?:      { number?: number | null } | null;
@@ -228,4 +228,49 @@ export function buildPlanRadar(input: PlanRadarInput): PlanRadar | null {
     champ: resteDe(selection, socle, value, coup, associes),
     source: "roles",
   };
+}
+
+/** Niveaux payants : seuls leurs pronostics montrent les rôles. */
+const NIVEAUX_AVEC_ROLES = ["STARTER", "PRO", "ELITE"];
+
+/**
+ * Le plan à afficher à CE lecteur, ou `null` — porte d'entrée de tous les
+ * écrans (carte, accueil, fiche course, fiche détail).
+ *
+ * Règle de Steph : le ticket structuré (bases, values, associés) reste réservé
+ * aux abonnés et ne doit jamais apparaître sur une page publique. D'où deux
+ * verrous, en plus de l'accès :
+ *  - jamais sur un pronostic GRATUIT : tout visiteur le lit, rôles compris ;
+ *  - niveau inconnu → refus, comme `canAccess`.
+ *
+ * L'accès est recalculé ici à partir de l'abonnement, et non reçu en booléen :
+ * un écran ne peut pas ouvrir les rôles par erreur.
+ */
+export function planRadarAbonne(
+  niveau: string | null | undefined,
+  abonnement: string,
+  input: PlanRadarInput,
+): PlanRadar | null {
+  const n = String(niveau ?? "");
+  if (NIVEAUX_AVEC_ROLES.indexOf(n) === -1 || !canAccess(n, abonnement)) return null;
+  return buildPlanRadar(input);
+}
+
+export type CleNiveau = "couple" | "base" | "associes" | "value" | "coup" | "champ";
+
+/**
+ * Les niveaux non vides du plan, dans l'ordre d'affichage — le même sur tous
+ * les écrans, pour que l'abonné retrouve ses repères. Le couplé vient en tête
+ * mais double ses chevaux, qui figurent aussi dans leur niveau.
+ */
+export function tiersDuPlan(plan: PlanRadar): Array<{ cle: CleNiveau; numeros: number[] }> {
+  const niveaux: Array<{ cle: CleNiveau; numeros: number[] }> = [
+    { cle: "couple",   numeros: plan.couple },
+    { cle: "base",     numeros: plan.base },
+    { cle: "associes", numeros: plan.associes },
+    { cle: "value",    numeros: plan.value },
+    { cle: "coup",     numeros: plan.coup !== null ? [plan.coup] : [] },
+    { cle: "champ",    numeros: plan.champ },
+  ];
+  return niveaux.filter((t) => t.numeros.length > 0);
 }

@@ -8,7 +8,7 @@ import PaywallBanner from "./PaywallBanner";
 import { BET_TYPE_LABELS, CONFIDENCE_CONFIG } from "@/types";
 import type { PronosticLevel, SubscriptionStatus, BetType, Confidence, PronosticResult } from "@/types";
 import { canAccess } from "@/lib/auth/access";
-import { buildPlanRadar, type PlanDeJeuLike, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
+import { planRadarAbonne, type PlanDeJeuLike, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
 import PlanRadarBlock from "./PlanRadarBlock";
 import { libelleDateCourse, estDuJour, estPassee } from "@/lib/pronostics/date-affichage";
 
@@ -85,15 +85,13 @@ export default function PronosticCard({ pronostic: p, userSubscription }: Pronos
   const resultatConf = racePast ? RESULTAT_CONFIG_DEPASSE : RESULTAT_CONFIG[p.resultat];
   const ResultatIcon = resultatConf.icon;
   // Structure « façon Radar » du vrai pronostic — plan de jeu si l'expert en a
-  // posé un, sinon repli sur les rôles. null si ni l'un ni l'autre → on garde
-  // l'affichage sélection classique, rien d'inventé.
-  const planRadar = hasAccess
-    ? buildPlanRadar({
-        selection:       p.selection,
-        planDeJeu:       p.plan_de_jeu ?? null,
-        selectionDetail: p.selection_detail ?? null,
-      })
-    : null;
+  // posé un, sinon repli sur les rôles. null si ni l'un ni l'autre, sans accès,
+  // ou sur un pronostic GRATUIT → affichage sélection classique, rien d'inventé.
+  const planRadar = planRadarAbonne(p.niveau_acces, userSubscription, {
+    selection:       p.selection,
+    planDeJeu:       p.plan_de_jeu ?? null,
+    selectionDetail: p.selection_detail ?? null,
+  });
 
   return (
     /* cursor-pointer + active:scale = signal visuel fort que TOUTE la carte est

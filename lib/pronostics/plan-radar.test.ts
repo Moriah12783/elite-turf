@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPlanRadar } from "./plan-radar";
+import { buildPlanRadar, planRadarAbonne, tiersDuPlan, type PlanRadar } from "./plan-radar";
 
 // Cas RÉEL lu en base (pronostic ELITE Quinté+) :
 //   selection    = [13,1,14,11,6,7]
@@ -15,8 +15,7 @@ const PRONO_ELITE_REEL = {
   },
 };
 
-// Repli : rôles tels que posés par le pipeline dans `selection_detail`
-// (mêmes libellés que ProSelectionBlock).
+// Repli : rôles tels que posés par le pipeline dans `selection_detail`.
 const DETAIL_ROLES = [
   { number: 9,  role: "BASE" },
   { number: 14, role: "APPUI" },
@@ -311,6 +310,96 @@ describe("buildPlanRadar — plan de jeu Elite saisi par l'expert (02/10/2026)",
     const r = buildPlanRadar({ selection, planDeJeu: { banker: { number: 7 }, quinte_plan: { base: [7, 2] }, value_picks: [{ number: 5 }] } })!;
     expect(r.associes).toEqual([]);
     expect(r.couple).toEqual([]);
+  });
+});
+
+// Cas RÉEL lu en base : Quinté+ du 06/10/2026, pronostic PRO (8 chevaux).
+const PRO_DU_06_10 = {
+  selection: [9, 3, 2, 15, 12, 4, 14, 6],
+  selectionDetail: [
+    { number: 9, role: "BASE", pivot: true },
+    { number: 3, role: "BASE" },
+    { number: 2, role: "BASE" },
+    { number: 15, role: "BASE" },
+    { number: 12, role: "OUTSIDER" },
+    { number: 4, role: "OUTSIDER" },
+    { number: 14, role: "OUTSIDER" },
+    { number: 6, role: "OUTSIDER" },
+  ],
+};
+
+describe("planRadarAbonne — les rôles restent réservés aux abonnés", () => {
+  it("abonné qui a accès à un pronostic payant → le plan", () => {
+    const r = planRadarAbonne("PRO", "PRO", PRO_DU_06_10)!;
+    expect(r.base).toEqual([9, 3, 2, 15]);
+    expect(r.value).toEqual([12, 4, 14, 6]);
+    expect(r.pivot).toBe(9);
+    expect(planRadarAbonne("PRO", "STARTER", PRO_DU_06_10)).not.toBeNull();
+    expect(planRadarAbonne("PRO", "ELITE", PRO_DU_06_10)).not.toBeNull();
+    expect(planRadarAbonne("ELITE", "ELITE", PRO_DU_06_10)).not.toBeNull();
+  });
+
+  it("sans accès → null, même quand le pronostic a des rôles", () => {
+    expect(planRadarAbonne("PRO", "GRATUIT", PRO_DU_06_10)).toBeNull();
+    expect(planRadarAbonne("PRO", "EXPIRE", PRO_DU_06_10)).toBeNull();
+    expect(planRadarAbonne("ELITE", "PRO", PRO_DU_06_10)).toBeNull();
+  });
+
+  it("pronostic GRATUIT → null : ses rôles seraient lisibles par tous les visiteurs", () => {
+    expect(planRadarAbonne("GRATUIT", "ELITE", PRO_DU_06_10)).toBeNull();
+  });
+
+  it("niveau inconnu ou absent → null (refus par défaut)", () => {
+    expect(planRadarAbonne("VIP", "ELITE", PRO_DU_06_10)).toBeNull();
+    expect(planRadarAbonne(null, "ELITE", PRO_DU_06_10)).toBeNull();
+    expect(planRadarAbonne(undefined, "ELITE", PRO_DU_06_10)).toBeNull();
+  });
+
+  it("abonné, mais pronostic sans rôles → null : l'appelant garde la liste simple", () => {
+    expect(planRadarAbonne("PRO", "PRO", { selection: PRO_DU_06_10.selection })).toBeNull();
+  });
+});
+
+describe("tiersDuPlan — les niveaux affichés, dans un ordre unique", () => {
+  it("couplé, base, associés, value, coup, champ — les niveaux vides sont omis", () => {
+    const plan: PlanRadar = {
+      pivot: 7, base: [7, 2, 11], value: [5], coup: 9, associes: [14, 3], couple: [7, 2], champ: [1], source: "roles",
+    };
+    expect(tiersDuPlan(plan)).toEqual([
+      { cle: "couple",   numeros: [7, 2] },
+      { cle: "base",     numeros: [7, 2, 11] },
+      { cle: "associes", numeros: [14, 3] },
+      { cle: "value",    numeros: [5] },
+      { cle: "coup",     numeros: [9] },
+      { cle: "champ",    numeros: [1] },
+    ]);
+  });
+
+  it("Quinté+ du 06/10 : la base puis la value, rien d'autre", () => {
+    expect(tiersDuPlan(buildPlanRadar(PRO_DU_06_10)!)).toEqual([
+      { cle: "base",  numeros: [9, 3, 2, 15] },
+      { cle: "value", numeros: [12, 4, 14, 6] },
+    ]);
+  });
+
+  it("hors couplé, chaque cheval publié figure dans exactement un niveau", () => {
+    const selection = [7, 2, 11, 5, 9, 14, 3, 1];
+    const r = buildPlanRadar({
+      selection,
+      selectionDetail: [
+        { number: 7, role: "BASE", couple: true, pivot: true },
+        { number: 2, role: "BASE", couple: true },
+        { number: 11, role: "BASE" },
+        { number: 5, role: "OUTSIDER" },
+        { number: 9, role: "COUP" },
+        { number: 14, role: "ASSOCIE" },
+        { number: 3, role: "ASSOCIE" },
+      ],
+    })!;
+    const affiches = tiersDuPlan(r)
+      .filter((t) => t.cle !== "couple")
+      .reduce((acc: number[], t) => acc.concat(t.numeros), []);
+    expect(affiches.slice().sort((a, b) => a - b)).toEqual(selection.slice().sort((a, b) => a - b));
   });
 });
 
