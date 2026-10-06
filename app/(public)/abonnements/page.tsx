@@ -47,7 +47,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
     answer:
-      "Starter et Pro donnent accès au même pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+ : 6 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le plan de jeu : 8 chevaux, le couplé (2 chevaux), la base de 3 chevaux pour le champ réduit ou total, les values et les associés.",
+      "Starter et Pro donnent accès au même pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+ : 8 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le plan de jeu : 6 chevaux resserrés, avec la base de 3 chevaux pour le champ réduit ou total, et les values.",
   },
   {
     question: "Quel plan choisir si je suis débutant ?",
