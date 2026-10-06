@@ -8,17 +8,16 @@
  * Pas de tracking complexe — juste un wa.me direct. C'est volontairement
  * minimaliste : pas de popup intrusive, pas de chat embarqué, juste un
  * point d'entrée discret pour convertir les visiteurs en leads WhatsApp.
+ * Le message pré-rempli indique la page d'où écrit le visiteur (06/10/2026).
  */
 
 "use client";
 
-import { MessageCircle } from "lucide-react";
-import { whatsappUrl } from "@/lib/constants/whatsapp";
-
-const PREFILL_MESSAGE = "Bonjour Elite Turf, je souhaite plus d'informations sur vos pronostics.";
+import { usePathname } from "next/navigation";
+import { messageWhatsappDepuis, whatsappUrl } from "@/lib/constants/whatsapp";
 
 export default function WhatsAppFloatingButton() {
-  const href = whatsappUrl(PREFILL_MESSAGE);
+  const href = whatsappUrl(messageWhatsappDepuis(usePathname()));
 
   return (
     <a

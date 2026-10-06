@@ -20,6 +20,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { type Country, COUNTRIES } from "@/lib/geo/countries";
 import { GEO_INTRO, buildGeoFaq, nomApresDepuis } from "@/lib/geo/content";
 import PriceDualCurrency from "@/components/geo/PriceDualCurrency";
+import FormulesEnBref from "@/components/geo/FormulesEnBref";
 import { PLAN_CONFIG, type Plan } from "@/types";
 import { STARTER_OFFRE_LABEL, PRO_OFFRE_LABEL, ELITE_OFFRE_LABEL } from "@/lib/pricing";
 
@@ -128,6 +129,9 @@ export default async function GeoLandingPage({ country }: Props) {
           <ChevronRight className="w-3 h-3" />
           <span className="text-text-secondary">{country.nom}</span>
         </nav>
+
+        {/* ── Nos formules, en bref (le détail suit plus bas) ────── */}
+        <FormulesEnBref devise={country.devise} />
 
         {/* ── Intro éditoriale ───────────────────────────────────── */}
         <section className="mb-12">

@@ -21,6 +21,7 @@ import BlocJouerDepuis from "./BlocJouerDepuis";
 import BlocCoursesOperateur from "./BlocCoursesOperateur";
 import BlocFaqPays from "./BlocFaqPays";
 import BlocsPartages from "./BlocsPartages";
+import FormulesEnBref from "@/components/geo/FormulesEnBref";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -41,6 +42,8 @@ export default async function PagePays({ slug }: { slug: string }) {
   const bloc = blocJouerDepuis(edito, fiche);
   const lignes = lignesNationales(nationales, fiche, date);
   const faq = faqPays(fiche);
+  // Même règle que BlocsPartages : équivalent en francs CFA seulement en zone CFA.
+  const cfa = fiche.deviseNative === "XOF" || fiche.deviseNative === "XAF" ? fiche.deviseNative : null;
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -74,6 +77,7 @@ export default async function PagePays({ slug }: { slug: string }) {
         </nav>
 
         {entete && <EnteteDuJour entete={entete} />}
+        <FormulesEnBref devise={cfa} />
         {bloc && <BlocJouerDepuis bloc={bloc} />}
         {lignes.length > 0 && <BlocCoursesOperateur lignes={lignes} ville={edito.ville} />}
         <BlocFaqPays titre={`Questions fréquentes : le PMU ${edito.depuis}`} faq={faq} />
