@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { messageWhatsappDepuis, numeroWhatsappLisible, whatsappUrl } from "./whatsapp";
 
 describe("numeroWhatsappLisible — le numéro à vérifier avant de payer", () => {
-  it("numéro français groupé par deux", () => {
-    expect(numeroWhatsappLisible("+33644686720")).toBe("+33 6 44 68 67 20");
-    expect(numeroWhatsappLisible("+33 6 44 68 67 20")).toBe("+33 6 44 68 67 20");
+  it("numéro français groupé par deux, espaces insécables", () => {
+    const attendu = "+33 6 44 68 67 20";
+    expect(numeroWhatsappLisible("+33644686720")).toBe(attendu);
+    expect(numeroWhatsappLisible("+33 6 44 68 67 20")).toBe(attendu);
   });
 
   it("autre format : affiché tel quel", () => {
