@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildArriveePodium } from "./arrivee";
+import { buildArriveePodium, estPlace } from "./arrivee";
 
 describe("buildArriveePodium", () => {
   const partants = [
@@ -21,5 +21,30 @@ describe("buildArriveePodium", () => {
   it("arrivée vide ou null → []", () => {
     expect(buildArriveePodium([], partants)).toEqual([]);
     expect(buildArriveePodium(null, partants)).toEqual([]);
+  });
+});
+
+describe("estPlace — « placé » = dans les 3 premiers de l'arrivée", () => {
+  // Arrivée RÉELLE du Quinté+ du 06/10/2026 : 7 chevaux enregistrés.
+  const ARRIVEE_06_10 = [8, 2, 7, 3, 15, 12, 9];
+
+  it("les 3 premiers sont placés", () => {
+    expect(estPlace(8, ARRIVEE_06_10)).toBe(true);
+    expect(estPlace(2, ARRIVEE_06_10)).toBe(true);
+    expect(estPlace(7, ARRIVEE_06_10)).toBe(true);
+  });
+
+  it("4e à 7e : dans l'arrivée enregistrée, mais PAS placés (décision du 06/10/2026)", () => {
+    expect(estPlace(3, ARRIVEE_06_10)).toBe(false);
+    expect(estPlace(15, ARRIVEE_06_10)).toBe(false);
+    expect(estPlace(12, ARRIVEE_06_10)).toBe(false);
+    expect(estPlace(9, ARRIVEE_06_10)).toBe(false);
+  });
+
+  it("cheval absent de l'arrivée, ou arrivée inconnue → non placé", () => {
+    expect(estPlace(4, ARRIVEE_06_10)).toBe(false);
+    expect(estPlace(8, [])).toBe(false);
+    expect(estPlace(8, null)).toBe(false);
+    expect(estPlace(8, undefined)).toBe(false);
   });
 });

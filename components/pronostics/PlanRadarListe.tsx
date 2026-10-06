@@ -19,9 +19,8 @@ export interface ChevalAffiche {
  *
  * Rendu réservé aux abonnés : l'appelant passe par `planRadarAbonne`.
  *
- * Pas de badge « placé » : l'arrivée officielle compte souvent 7 chevaux, un
- * 7e y serait marqué. Le rang réel se lit dans l'encadré « Arrivée officielle »
- * de la fiche.
+ * Pas de badge « placé » ici, comme l'ancien bloc Pro/Elite : le résultat se
+ * lit dans l'encadré « Arrivée officielle » de la fiche, avec le rang réel.
  *
  * @param chevaux nom, cote et jockey par numéro, quand la page les connaît.
  * @param compact colonne étroite : ni consigne, ni cote, ni ticket.

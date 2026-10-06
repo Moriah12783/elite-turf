@@ -18,6 +18,7 @@ import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
 import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
 import { planRadarAbonne, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
+import { estPlace } from "@/lib/courses/arrivee";
 import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
 import type { PartantConsensus } from "@/lib/consensus/engine";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
@@ -373,18 +374,21 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                   <div className="space-y-1.5">
                     {p.selection.map((n: number, idx: number) => {
                       const horse = partants.find((pt: any) => pt.numero === n);
-                      const isInArrivee = course?.arrivee_officielle?.includes(n);
+                      // « Placé » = dans les 3 premiers (lib/courses/arrivee.ts),
+                      // une fois le résultat connu. Avant le 06/10/2026 : tout
+                      // cheval de l'arrivée enregistrée, 6e et 7e compris.
+                      const place = p.resultat !== "EN_ATTENTE" && estPlace(n, course?.arrivee_officielle);
                       return (
                         <div
                           key={idx}
                           className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
-                            isInArrivee && p.resultat !== "EN_ATTENTE"
+                            place
                               ? "bg-status-win/10 border-status-win/30"
                               : "bg-bg-elevated border-border/50"
                           }`}
                         >
                           <span className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${
-                            isInArrivee && p.resultat !== "EN_ATTENTE"
+                            place
                               ? "bg-status-win/20 border-2 border-status-win/50 text-status-win"
                               : "bg-gold-faint border-2 border-gold-primary/50 text-gold-light"
                           }`}>
@@ -410,7 +414,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                               )}
                             </div>
                           </div>
-                          {isInArrivee && p.resultat !== "EN_ATTENTE" && (
+                          {place && (
                             <span className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-status-win/20 text-status-win border border-status-win/30 font-bold">
                               ✓ Placé
                             </span>

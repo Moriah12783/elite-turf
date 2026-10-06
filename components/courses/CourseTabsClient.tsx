@@ -11,6 +11,7 @@ import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
 import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
 import TabStatsRich from "@/components/courses/TabStatsRich";
 import { delaiRafraichissement } from "@/lib/courses/cotes-live";
+import { estPlace } from "@/lib/courses/arrivee";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -267,7 +268,8 @@ function TabPartants({
           </thead>
           <tbody className="divide-y divide-border/30">
             {partantsSorted.map((p) => {
-              const inArrivee = arriveeOfficielle?.slice(0, 3).includes(p.numero);
+              // « Placé » = 3 premiers : règle partagée avec la fiche d'un pronostic.
+              const inArrivee = estPlace(p.numero, arriveeOfficielle);
               const selected  = pronosticSelection?.includes(p.numero);
               const position  = arriveeMap[p.numero] ?? null;
               return (
