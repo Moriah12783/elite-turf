@@ -28,7 +28,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-t
 export const metadata: Metadata = {
   title: { absolute: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium" },
   description:
-    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays. Mobile Money bientôt.",
+    "Pronostics PMU du jour analysés par des experts hippiques. Quinté+, Quarté+, Tiercé. Résultats publiés en toute transparence. Abonnements dès 65€ — Paiement par carte bancaire (Visa/Mastercard), toutes cartes tous pays. Orange Money et Wave (Côte d'Ivoire, Mali, Burkina, Sénégal).",
   alternates: { canonical: APP_URL },
   openGraph: {
     title: "Elite Turf — Pronostics PMU & Analyses Hippiques Premium",

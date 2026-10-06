@@ -7,19 +7,26 @@
  *
  * Mêmes montants que ce détail : PLAN_CONFIG + formatPrice (franc CFA à parité
  * fixe, arrondi à 500, marqué « ≈ » ; le montant facturé est en euros).
+ * Pays où Orange Money et Wave sont acceptés (lib/paiement/mobile-money.ts) :
+ * lien vers « Payer par Orange Money ou Wave », pays pré-coché.
  * `data-shared` : exclu de la mesure de similarité entre pages pays.
  */
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PLAN_CONFIG, type Plan } from "@/types";
 import { formatPrice, type Country } from "@/lib/geo/countries";
+import { paysMobileMoney, lienMobileMoney } from "@/lib/paiement/mobile-money";
 
 const FORMULES = ["starter", "pro", "elite"];
 
-/** @param devise devise d'affichage de la page ; EUR ou null → prix en euros seuls. */
-export default function FormulesEnBref({ devise }: { devise: Country["devise"] | null }) {
+/**
+ * @param devise devise d'affichage de la page ; EUR ou null → prix en euros seuls.
+ * @param pays   code ISO du pays de la page.
+ */
+export default function FormulesEnBref({ devise, pays }: { devise: Country["devise"] | null; pays?: string }) {
   const locale = devise && devise !== "EUR" ? devise : null;
   const formules = FORMULES.map((id) => PLAN_CONFIG.find((p) => p.id === id)).filter((p): p is Plan => !!p);
+  const mobileMoney = paysMobileMoney(pays);
 
   return (
     <section data-shared="true" aria-labelledby="formules-en-bref" className="mb-10 card-base p-4 sm:p-5">
@@ -27,7 +34,9 @@ export default function FormulesEnBref({ devise }: { devise: Country["devise"] |
         <h2 id="formules-en-bref" className="font-serif text-lg sm:text-xl font-bold text-text-primary">
           Nos formules
         </h2>
-        <p className="text-text-muted text-xs">Paiement par carte bancaire, prépayées acceptées</p>
+        <p className="text-text-muted text-xs">
+          {mobileMoney ? "Carte bancaire, Orange Money ou Wave" : "Paiement par carte bancaire, prépayées acceptées"}
+        </p>
       </div>
       <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {formules.map((p) => (
@@ -47,12 +56,22 @@ export default function FormulesEnBref({ devise }: { devise: Country["devise"] |
           </li>
         ))}
       </ul>
-      <Link
-        href="/abonnements"
-        className="mt-3 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all"
-      >
-        Voir les formules <ArrowRight className="w-4 h-4" aria-hidden="true" />
-      </Link>
+      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <Link
+          href="/abonnements"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-gold-primary hover:bg-gold-dark text-bg-primary font-bold text-sm rounded-xl transition-all"
+        >
+          Voir les formules <ArrowRight className="w-4 h-4" aria-hidden="true" />
+        </Link>
+        {mobileMoney && (
+          <Link
+            href={lienMobileMoney(mobileMoney)}
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 border border-gold-primary/40 text-gold-light hover:bg-gold-faint font-semibold text-sm rounded-xl transition-all"
+          >
+            Payer par Orange Money ou Wave
+          </Link>
+        )}
+      </div>
     </section>
   );
 }

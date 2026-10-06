@@ -4,6 +4,8 @@ import { PLAN_CONFIG } from "@/types";
 import { PROMO } from "@/lib/promo";
 import CasesFormule from "@/components/abonnements/CasesFormule";
 import { ACCROCHES, prixParJour, type IdFormule } from "@/lib/abonnements/comparatif";
+import { OU_PAYER_MOBILE_MONEY_DEBUT, lienMobileMoney } from "@/lib/paiement/mobile-money";
+import { formatPrice } from "@/lib/geo/countries";
 
 const PACK_NAMES: Record<string, string> = {
   Free:    "GRATUIT",
@@ -63,8 +65,12 @@ export default function PricingSection() {
             Choisissez Votre Pack
           </h2>
           <p className="text-text-secondary mt-3 max-w-xl mx-auto text-sm">
-            Payez par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays (prépayée, virtuelle, débit). Mobile Money bientôt disponible (Burkina, Mali, Sénégal…).
-            Accès immédiat après paiement.
+            Payez par carte bancaire (Visa/Mastercard) — toutes cartes, tous pays (prépayée, virtuelle, débit) —
+            accès immédiat après paiement. {OU_PAYER_MOBILE_MONEY_DEBUT}, payez aussi par{" "}
+            <Link href={lienMobileMoney()} className="text-gold-light underline hover:text-gold-primary">
+              Orange Money ou Wave
+            </Link>
+            .
           </p>
         </div>
 
@@ -198,8 +204,10 @@ export default function PricingSection() {
                     {plan.duree_jours} jours
                     {!PROMO.actif && <> · soit {prixParJour(plan.prix_eur, plan.duree_jours)}</>}
                   </p>
+                  {/* Arrondi à 500, comme /abonnements et les pages pays : c'est
+                      aussi le montant payé par Orange Money ou Wave. */}
                   {!PROMO.actif && (
-                    <p className="text-text-muted text-xs">≈ {plan.prix_fcfa.toLocaleString("fr-FR")} F CFA</p>
+                    <p className="text-text-muted text-xs">≈ {formatPrice(plan.prix_eur, "XOF")}</p>
                   )}
                 </div>
 
@@ -239,7 +247,7 @@ export default function PricingSection() {
               { emoji: "💳", label: "Visa / Mastercard" },
               { emoji: "🌍", label: "Toutes cartes, tous pays" },
               { emoji: "🪪", label: "Prépayée · virtuelle · débit" },
-              { emoji: "⏳", label: "Mobile Money bientôt" },
+              { emoji: "📱", label: "Orange Money · Wave" },
             ].map((p) => (
               <div key={p.label} className="flex items-center gap-2 px-4 py-2 bg-bg-card border border-border rounded-xl">
                 <span className="text-base">{p.emoji}</span>

@@ -13,6 +13,7 @@
 
 import type { Metadata } from "next";
 import { type Country } from "@/lib/geo/countries";
+import { paysMobileMoney } from "@/lib/paiement/mobile-money";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr";
 
@@ -92,6 +93,7 @@ export function buildGeoFaq(country: Country): { q: string; a: string }[] {
   const op = country.operateurOfficiel;
   const depuis = nomApresDepuis(country);
   const aVenir = country.paiements.filter((p) => p.bientot).map((p) => p.nom);
+  const mobileMoney = paysMobileMoney(country.code) !== null;
   return [
     {
       q: `Comment jouer le Quinté+ depuis ${depuis} ?`,
@@ -102,7 +104,13 @@ export function buildGeoFaq(country: Country): { q: string; a: string }[] {
     {
       q: `Comment payer mon abonnement Elite Turf depuis ${depuis} ?`,
       a: `Le paiement se fait par carte bancaire (Visa/Mastercard, toutes cartes acceptées), avec activation en moins de 2 minutes.${
-        aVenir.length ? ` Les paiements Mobile Money (${aVenir.join(", ")}) seront bientôt disponibles.` : ""
+        mobileMoney
+          ? " Vous pouvez aussi payer par Orange Money ou Wave, en francs CFA : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant, et votre accès est activé dès réception du paiement."
+          : ""
+      }${
+        aVenir.length
+          ? ` ${mobileMoney ? "Les autres paiements Mobile Money" : "Les paiements Mobile Money"} (${aVenir.join(", ")}) seront bientôt disponibles.`
+          : ""
       }`,
     },
     {

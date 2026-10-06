@@ -77,7 +77,7 @@ export default async function PagePays({ slug }: { slug: string }) {
         </nav>
 
         {entete && <EnteteDuJour entete={entete} />}
-        <FormulesEnBref devise={cfa} />
+        <FormulesEnBref devise={cfa} pays={country.code} />
         {bloc && <BlocJouerDepuis bloc={bloc} />}
         {lignes.length > 0 && <BlocCoursesOperateur lignes={lignes} ville={edito.ville} />}
         <BlocFaqPays titre={`Questions fréquentes : le PMU ${edito.depuis}`} faq={faq} />

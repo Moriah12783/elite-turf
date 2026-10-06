@@ -23,6 +23,7 @@ import PriceDualCurrency from "@/components/geo/PriceDualCurrency";
 import FormulesEnBref from "@/components/geo/FormulesEnBref";
 import { PLAN_CONFIG, type Plan } from "@/types";
 import { STARTER_OFFRE_LABEL, PRO_OFFRE_LABEL, ELITE_OFFRE_LABEL } from "@/lib/pricing";
+import { paysMobileMoney, lienMobileMoney } from "@/lib/paiement/mobile-money";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -87,6 +88,7 @@ export default async function GeoLandingPage({ country }: Props) {
   const starter = PLAN_CONFIG.find((p) => p.id === "starter");
   const depuis = nomApresDepuis(country);
   const nomDevise = country.devise === "MAD" ? "dirhams" : "francs CFA";
+  const mobileMoney = paysMobileMoney(country.code);
 
   const faq = buildGeoFaq(country);
   const faqLd = {
@@ -131,7 +133,7 @@ export default async function GeoLandingPage({ country }: Props) {
         </nav>
 
         {/* ── Nos formules, en bref (le détail suit plus bas) ────── */}
-        <FormulesEnBref devise={country.devise} />
+        <FormulesEnBref devise={country.devise} pays={country.code} />
 
         {/* ── Intro éditoriale ───────────────────────────────────── */}
         <section className="mb-12">
@@ -173,12 +175,25 @@ export default async function GeoLandingPage({ country }: Props) {
             <Shield className="w-6 h-6 text-gold-primary" />
             Comment payer depuis {depuis}
           </h2>
-          {/* Seule la carte est proposée aujourd'hui (Mobile Money : PAYSTACK_AVAILABLE
-              = false, lib/promo.ts) — même discours que /abonnements. */}
+          {/* Carte partout ; Orange Money et Wave via WhatsApp là où ils sont
+              acceptés (lib/paiement/mobile-money.ts). Le paiement automatique
+              Mobile Money (Paystack) reste coupé : PAYSTACK_AVAILABLE = false,
+              lib/promo.ts — même discours que /abonnements. */}
           <p className="text-text-secondary text-sm mb-6">
             Paiement par carte bancaire (Visa / Mastercard) : toutes les cartes de tous les pays
-            sont acceptées, y compris les cartes prépayées. Les prix sont facturés en euros
+            sont acceptées, y compris les cartes prépayées. {mobileMoney ? "Par carte, les" : "Les"} prix sont
+            facturés en euros
             {country.devise !== "EUR" ? `, avec l'équivalent indicatif en ${nomDevise}` : ""}.
+            {mobileMoney && (
+              <>
+                {" "}Vous pouvez aussi payer directement en francs CFA, par{" "}
+                <Link href={lienMobileMoney(mobileMoney)} className="text-gold-light underline hover:text-gold-primary">
+                  Orange Money ou Wave
+                </Link>{" "}
+                : écrivez-nous sur WhatsApp, nous vous indiquons le numéro et le montant, et votre accès est
+                activé dès réception du paiement.
+              </>
+            )}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {country.paiements.map((p) => (
@@ -193,6 +208,11 @@ export default async function GeoLandingPage({ country }: Props) {
                     Bientôt
                   </span>
                 )}
+                {p.viaWhatsapp && (
+                  <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-[#25D366]/10 border border-[#25D366]/40 rounded-full text-[9px] font-bold text-[#25D366] uppercase tracking-wider">
+                    Via WhatsApp
+                  </span>
+                )}
                 <div className="text-3xl mb-2" aria-hidden="true">{p.icon}</div>
                 <h3 className="text-text-primary text-sm font-semibold mb-1">{p.nom}</h3>
                 <p className="text-text-muted text-xs">{p.description}</p>
@@ -202,11 +222,14 @@ export default async function GeoLandingPage({ country }: Props) {
           {country.paiements.some((p) => p.bientot) && (
             <p className="text-gold-primary text-xs italic mt-4">
               🟡 Les moyens de paiement marqués <strong>« Bientôt »</strong> ne sont pas encore
-              disponibles. En attendant, le paiement se fait par carte bancaire.
+              disponibles. En attendant, le paiement se fait par carte bancaire
+              {mobileMoney ? ", Orange Money ou Wave" : ""}.
             </p>
           )}
           <p className="text-text-muted text-xs italic mt-4">
-            Validation en moins de 2 minutes. Reçu envoyé par email. Activation immédiate de votre abonnement.
+            {mobileMoney
+              ? "Par carte : validation en moins de 2 minutes, reçu envoyé par email, activation immédiate. Par Orange Money ou Wave : activation dès réception du paiement."
+              : "Validation en moins de 2 minutes. Reçu envoyé par email. Activation immédiate de votre abonnement."}
           </p>
         </section>
 

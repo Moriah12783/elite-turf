@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { XCircle, MessageCircle, ArrowLeft, CreditCard } from "lucide-react";
+import { OU_PAYER_MOBILE_MONEY, lienMobileMoney } from "@/lib/paiement/mobile-money";
 
 export const metadata: Metadata = {
   title: "Paiement échoué",
@@ -56,7 +57,10 @@ export default function PaiementEchecPage() {
               <strong className="text-text-primary">Astuce :</strong> attendez 1 à 2 minutes,
               puis essayez <strong>une autre carte</strong> ou un autre moyen de paiement —
               carte prépayée virtuelle <strong>Wave / Orange Money</strong>, ou{" "}
-              <strong>Mobile Money</strong> en Côte d&apos;Ivoire. Enchaîner les tentatives
+              <Link href={lienMobileMoney()} className="underline hover:text-gold-light">
+                <strong>paiement par Orange Money ou Wave</strong>
+              </Link>{" "}
+              {OU_PAYER_MOBILE_MONEY}. Enchaîner les tentatives
               trop vite peut amener votre banque à bloquer la carte par sécurité.
             </p>
           </div>
