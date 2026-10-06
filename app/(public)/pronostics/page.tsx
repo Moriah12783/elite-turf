@@ -32,7 +32,7 @@ const PRONOSTICS_FAQ = [
   {
     question: "Qu'est-ce qu'un Quinté+ et comment le jouer ?",
     answer:
-      "Le Quinté+ est le pari star du PMU : il consiste à trouver les 5 premiers chevaux d'une course de référence dans l'ordre (gain maximum) ou dans le désordre. Notre pronostic expert vous propose 8 chevaux classés par ordre de confiance ; le plan de jeu Elite en retient 6, avec la base de 3 chevaux et les values.",
+      "Le Quinté+ est le pari star du PMU : il consiste à trouver les 5 premiers chevaux d'une course de référence dans l'ordre (gain maximum) ou dans le désordre. Notre pronostic expert vous propose 6 chevaux classés par ordre de confiance ; les abonnés Elite reçoivent en plus le plan de jeu : 6 chevaux, avec la base de 3 chevaux et les values.",
   },
   {
     question: "Comment lire un pronostic Elite Turf ?",

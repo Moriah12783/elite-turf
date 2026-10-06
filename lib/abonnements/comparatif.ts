@@ -4,18 +4,18 @@
  * comparer d'un coup d'œil. Utilisé par /abonnements et la section tarifs de
  * l'accueil.
  *
- * Offre ALIGNÉE SUR LES PRONOSTICS PUBLIÉS (décision de Steph du 06/10/2026) :
- *   - Starter, Pro et Elite : le pronostic expert du jour en 8 chevaux (niveau
- *     PRO en base) ;
- *   - Elite en plus : le PLAN DE JEU — 6 chevaux resserrés (niveau ELITE), la
- *     base de 3 pour le champ réduit ou total, et les values. Chaque jour
- *     depuis le 26/09, ces 6 chevaux sont pris parmi les 8 du PRO.
+ * Offre (décisions de Steph du 06/10/2026) :
+ *   - Starter, Pro et Elite : le pronostic expert du jour en 6 chevaux. Son
+ *     public africain préfère 6 chevaux à 8 (le PRO publié ce jour-là en
+ *     comptait 8, que la fiche a brièvement annoncés : PR #375) ;
+ *   - Elite en plus : le PLAN DE JEU = ce qui est publié au niveau ELITE —
+ *     6 chevaux, la base de 3 pour le champ réduit ou total, et les values.
  * Starter accède au niveau PRO (lib/auth/access.ts) : Starter = Pro sur 7 jours.
  *
- * Du 02/10 au 06/10/2026, les fiches annonçaient l'inverse : 6 chevaux pour
- * tous, et un plan de jeu Elite en 8 chevaux avec le couplé et les associés.
- * Jamais publié sous cette forme : aucun couplé ni associé coché. Ne les
- * remettre qu'une fois publiés (garde-fou dans comparatif.test.ts).
+ * Du 02/10 au 06/10/2026, les fiches annonçaient un plan de jeu Elite en
+ * 8 chevaux avec le couplé et les associés. Jamais publié sous cette forme :
+ * aucun couplé ni associé coché. Ne les remettre qu'une fois publiés
+ * (garde-fou dans comparatif.test.ts).
  *
  * PUR, ES5-safe, testé.
  */
@@ -66,13 +66,13 @@ export function fichesFormules(offreEliteJusquau: string | null = null): GroupeF
         {
           id: "pronostic-expert",
           libelle: "Le pronostic expert du jour",
-          detail: "Tiercé, Quarté+, Quinté+ : 8 chevaux classés par confiance, avec l'analyse",
+          detail: "Tiercé, Quarté+, Quinté+ : 6 chevaux classés par confiance, avec l'analyse",
           cases: ABONNES,
         },
         {
           id: "plan-de-jeu-elite",
           libelle: "Le plan de jeu Elite",
-          detail: "6 chevaux resserrés : la base de 3 pour le champ réduit ou total, et les values",
+          detail: "6 chevaux : la base de 3 pour le champ réduit ou total, et les values",
           cases: {
             free: false,
             starter: offreEliteJusquau ? `Offert jusqu'au ${offreEliteJusquau}` : false,

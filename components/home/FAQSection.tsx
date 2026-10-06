@@ -28,7 +28,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que contient un abonnement Elite Turf ?",
-    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Les Packs Starter (7 jours) et Pro (30 jours) donnent accès au même contenu : ${STARTER_OFFRE_LABEL}, en 8 chevaux. Le Pack Elite y ajoute le plan de jeu : 6 chevaux resserrés, avec la base de 3 chevaux et les values.`,
+    a: `Selon votre formule : accès aux pronostics quotidiens Quinté+, Quarté+, Tiercé, analyses détaillées (base, outsider, confiance), espace membre personnalisé, et notifications. Les Packs Starter (7 jours) et Pro (30 jours) donnent accès au même contenu : ${STARTER_OFFRE_LABEL}, en 6 chevaux. Le Pack Elite y ajoute le plan de jeu : 6 chevaux, avec la base de 3 chevaux et les values.`,
   },
   {
     q: "Comment payer depuis la Côte d'Ivoire ou l'Afrique ?",

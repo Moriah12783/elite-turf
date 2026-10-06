@@ -36,17 +36,21 @@ describe("fiches à cases des formules", () => {
     expect(elite.cases.starter).toBe("Offert jusqu'au 27 août");
   });
 
-  it("offre alignée sur les pronostics publiés (06/10/2026) : 8 chevaux pour tous, plan de jeu Elite en 6", () => {
-    // Publié chaque jour depuis le 26/09 : PRO = 8 chevaux (Starter, Pro et
-    // Elite le lisent), ELITE = 6 chevaux (base de 3 + values), toujours pris
-    // parmi les 8 du PRO.
+  it("offre du 06/10/2026 (soir) : 6 chevaux pour tous, plan de jeu Elite en 6 (base de 3 + values)", () => {
+    // Décisions de Steph : Starter et Pro restent annoncés en 6 chevaux (son
+    // public africain préfère 6 à 8) ; le plan de jeu Elite = ce qui est publié
+    // au niveau ELITE : 6 chevaux, 3 en base + les values.
     const expert = lignes().find((l) => l.id === "pronostic-expert")!;
-    expect(expert.detail).toContain("8 chevaux");
+    expect(expert.detail).toContain("6 chevaux");
+    expect(expert.detail).not.toContain("8 chevaux");
     const plan = lignes().find((l) => l.id === "plan-de-jeu-elite")!;
     expect(plan.libelle).toBe("Le plan de jeu Elite");
     for (const element of ["6 chevaux", "base de 3", "champ réduit ou total", "values"]) {
       expect(plan.detail).toContain(element);
     }
+    // Pro et Elite comptent tous deux 6 chevaux : « resserrés » ferait croire
+    // que le plan de jeu en compte moins que le pronostic expert.
+    expect(plan.detail).not.toContain("resserr");
     // Le plan de jeu n'est annoncé nulle part ailleurs que sur sa propre ligne.
     const autres = lignes().filter((l) => l.id !== "plan-de-jeu-elite").map((l) => `${l.libelle} ${l.detail}`).join(" ").toLowerCase();
     expect(autres).not.toContain("plan de jeu");
