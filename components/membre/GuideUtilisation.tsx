@@ -5,8 +5,9 @@ import { TIERS } from "@/components/pronostics/plan-radar-tiers";
 /**
  * Guide « Exploiter vos pronostics » — espace membre.
  *
- * Explique à l'abonné comment lire la sélection Elite (base / value / coup /
- * champ + pivot) et comment en tirer des tickets en champ réduit ou total.
+ * Explique à l'abonné (Starter, Pro ou Elite) comment lire sa sélection
+ * (couplé / base / associés / value / coup / champ + pivot) et comment en tirer
+ * des tickets en champ réduit ou total.
  *
  * 🔴 RÈGLE : libellés et couleurs viennent de
  * `components/pronostics/plan-radar-tiers.ts`, la source lue par les
@@ -95,11 +96,15 @@ export default function GuideUtilisation() {
 
       <div className="px-5 pb-6 space-y-7 border-t border-border pt-5">
         {/* ── Intro ─────────────────────────────────────────────────── */}
+        {/* Sans nombre de chevaux (décision de Steph du 06/10/2026) : le guide
+            est lu par les abonnés Starter, Pro et Elite, qui ne reçoivent pas
+            la même sélection. Avant : « votre plan de jeu Elite vous propose
+            8 chevaux », faux pour la sélection Elite publiée (6 chevaux). */}
         <p className="text-text-secondary text-sm leading-relaxed">
-          Chaque jour, votre plan de jeu Elite vous propose{" "}
-          <strong className="text-text-primary">8 chevaux</strong>, répartis en
-          catégories. Pour en tirer parti, la méthode que nous conseillons est de
-          jouer en <strong className="text-gold-light">champ réduit</strong> ou en{" "}
+          Chaque jour, votre pronostic range ses chevaux par catégories, avec un{" "}
+          <strong className="text-gold-light">pivot ⭐</strong>. Pour en tirer
+          parti, la méthode que nous conseillons est de jouer en{" "}
+          <strong className="text-gold-light">champ réduit</strong> ou en{" "}
           <strong className="text-gold-light">champ total</strong> : vous couvrez
           la course intelligemment tout en gardant la main sur votre budget.
         </p>
