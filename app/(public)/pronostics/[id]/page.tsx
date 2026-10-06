@@ -16,7 +16,8 @@ import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
-import { ProSelectionBlock, countNonEmptyProSections, type SelectionDetailItem } from "@/components/pronostics/ProSelectionBlock";
+import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
+import { planRadarAbonne, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
 import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
 import type { PartantConsensus } from "@/lib/consensus/engine";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
@@ -129,16 +130,29 @@ export default async function PronosticDetailPage({ params }: PageProps) {
   const ResultatIcon = resultatConf.icon;
   const course = p.course as any;
   const plan = ((p as { plan_de_jeu?: unknown }).plan_de_jeu ?? null) as ElitePlanDeJeu | null;
-  // La hiérarchie par rôles vaut pour les 2 niveaux « pronostic travaillé » —
-  // demande PO : « à partir du pronostic Pro ou Elite ».
-  const isPro = p.niveau_acces === "PRO" || p.niveau_acces === "ELITE";
-  const selectionDetail = (((p as { selection_detail?: unknown }).selection_detail ?? []) as SelectionDetailItem[]);
-  // Hiérarchie PRO seulement si ≥ 2 tiers réels (sinon liste par mérite : évite
-  // un bloc dégénéré à une section + le mislabel du favori sur BDD jeune).
-  const useProHierarchy = isPro && selectionDetail.length > 0 && countNonEmptyProSections(selectionDetail) >= 2;
+  const selectionDetail = ((p as { selection_detail?: unknown }).selection_detail ?? null) as
+    Array<SelectionDetailLike & { name?: string | null }> | null;
+  // Plan de jeu par rôles (couplé, base + pivot, associés, value, coup, champ) :
+  // abonné ayant accès à un pronostic payant. Même règle, mêmes niveaux et mêmes
+  // couleurs que la carte de /pronostics. null → liste par ordre de mérite.
+  const planRadar = planRadarAbonne(p.niveau_acces, userSubscription, {
+    selection:       p.selection,
+    planDeJeu:       plan,
+    selectionDetail,
+  });
   const partants: any[] = (course?.partants || [])
     .filter((pt: any) => !pt.non_partant)
     .sort((a: any, b: any) => a.numero - b.numero);
+  // Nom, cote et jockey par numéro pour le plan de jeu. Partant introuvable
+  // (non-partant, partants pas encore en base) → le nom gardé dans
+  // selection_detail, s'il existe.
+  const chevaux: Record<number, ChevalAffiche> = {};
+  for (const it of selectionDetail ?? []) {
+    if (it?.number != null && it.name) chevaux[it.number] = { nom: it.name };
+  }
+  for (const pt of partants) {
+    chevaux[pt.numero] = { nom: pt.nom_cheval, cote: pt.cote, jockey: pt.jockey };
+  }
 
   // Consensus presse lié à cette course (RLS service-role → lu côté serveur).
   // Gaté sur l'abonnement réel (isSubscriber) ET l'accès au pronostic (hasAccess) :
@@ -347,13 +361,13 @@ export default async function PronosticDetailPage({ params }: PageProps) {
               </h2>
               {hasAccess ? (
                 <div className="space-y-2">
-                  {/* Chevaux sélectionnés — PRO : groupés par rôle (Base /
-                      Chances / Outsiders) + ticket ; sinon liste par mérite. */}
-                  {useProHierarchy ? (
-                    <ProSelectionBlock
-                      items={selectionDetail}
+                  {/* Chevaux sélectionnés — pronostic payant avec rôles : groupés
+                      par niveau du plan de jeu + ticket ; sinon liste par mérite. */}
+                  {planRadar ? (
+                    <PlanRadarListe
+                      plan={planRadar}
+                      chevaux={chevaux}
                       ticket={(p as { suggested_ticket?: string | null }).suggested_ticket ?? null}
-                      partants={partants}
                     />
                   ) : (
                   <div className="space-y-1.5">

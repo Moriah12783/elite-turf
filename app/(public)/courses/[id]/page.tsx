@@ -21,8 +21,10 @@ import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { shouldShowNotreSelectionPromo } from "@/lib/courses/notre-selection";
 import { NotreSelectionPromo } from "@/components/courses/NotreSelectionPromo";
-import { canAccess } from "@/lib/auth/access";
+import { canAccess, plusHautAccessible } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
+import { planRadarAbonne } from "@/lib/pronostics/plan-radar";
+import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +115,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
       ),
       pronostics(
         id, niveau_acces, type_pari, selection,
-        confiance, analyse_courte, publie
+        confiance, analyse_courte, publie, date_publication,
+        selection_detail, plan_de_jeu
       )
     `)
     .eq("id", params.id)
@@ -211,7 +214,15 @@ export default async function CourseDetailPage({ params }: PageProps) {
   }
 
   const refCourse      = `R${c.numero_reunion}C${c.numero_course}`;
-  const pronosticPublie = c.pronostics?.find((p: any) => p.publie);
+  // Le Quinté+ porte deux pronostics depuis le 02/10/2026 (ELITE et PRO) : celui
+  // du plus haut niveau que l'abonné peut lire, sinon le plus récent (verrouillé)
+  // — même choix que l'accueil.
+  const pronosticPublie: any = plusHautAccessible(
+    (c.pronostics ?? [])
+      .filter((p: any) => p.publie)
+      .sort((a: any, b: any) => String(b.date_publication ?? "").localeCompare(String(a.date_publication ?? ""))),
+    userSubscription,
+  );
   // Partants, cotes et « Sélection stats » : lib/selection/preparer.ts, source unique avec la
   // photo prise avant le départ (cron photo-selection). Cotes factices (LONACI « 1,2 », masse
   // sans pari) écartées ; course qui part dans l'heure → cotes du moment (CSV PMU de
@@ -232,6 +243,19 @@ export default async function CourseDetailPage({ params }: PageProps) {
       ? "Pas de cote fiable pour cette course : nous préférons ne pas publier de sélection."
       : "La sélection suit les cotes PMU : elle s'affichera dès leur publication.";
   const isSubscribed = ["STARTER", "PRO", "ELITE"].includes(userSubscription);
+  // Colonne « Pronostic Expert » : la sélection rangée par niveau du plan de
+  // jeu, mêmes couleurs que /pronostics — pour l'abonné qui y a accès.
+  const planPronostic = pronosticPublie
+    ? planRadarAbonne(pronosticPublie.niveau_acces, userSubscription, {
+        selection:       Array.isArray(pronosticPublie.selection) ? pronosticPublie.selection : [],
+        planDeJeu:       pronosticPublie.plan_de_jeu ?? null,
+        selectionDetail: pronosticPublie.selection_detail ?? null,
+      })
+    : null;
+  const nomsChevaux: Record<number, ChevalAffiche> = {};
+  for (const pt of allPartants) {
+    if (pt?.numero != null) nomsChevaux[pt.numero] = { nom: pt.nom_cheval };
+  }
   // Anti-cannibalisation : si le visiteur a accès au pronostic premium publié
   // de cette course, on lui masque la « Notre sélection » gratuite (clone du
   // produit payé). Visible pour tous ailleurs.
@@ -492,6 +516,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
                     <>
                       <div className="mb-3">
                         <span className="text-text-muted text-xs block mb-2">Sélection :</span>
+                        {planPronostic ? (
+                          <PlanRadarListe plan={planPronostic} chevaux={nomsChevaux} compact />
+                        ) : (
                         <div className="flex flex-col gap-1.5">
                           {pronosticPublie.selection?.map((n: number, idx: number) => {
                             const horse = allPartants.find((p: any) => p.numero === n);
@@ -511,6 +538,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                             );
                           })}
                         </div>
+                        )}
                       </div>
                       <p className="text-text-secondary text-xs leading-relaxed italic mb-4">
                         &ldquo;{pronosticPublie.analyse_courte}&rdquo;

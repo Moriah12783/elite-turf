@@ -29,7 +29,7 @@ describe("buildSelectionDetail", () => {
       noms:      { 7: "Hodrigo Ever", 2: "   " },
     })!;
     expect(rows[0].name).toBe("Hodrigo Ever");
-    expect("name" in rows[1]).toBe(false); // jamais "" : ProSelectionBlock afficherait du vide
+    expect("name" in rows[1]).toBe(false); // jamais "" : la fiche détail afficherait du vide
   });
 
   it("nettoie les espaces parasites des noms", () => {

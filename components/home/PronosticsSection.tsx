@@ -8,7 +8,9 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isJouableAfrique, getNationaleLabel } from "@/lib/pmu-api";
 import { fetchCotesPmu, favoriPmu, type FavoriPmu } from "@/lib/pmu-cotes";
 import { niveauConfiance } from "@/lib/pronostics/confiance";
-import { canAccess } from "@/lib/auth/access";
+import { canAccess, plusHautAccessible } from "@/lib/auth/access";
+import { planRadarAbonne } from "@/lib/pronostics/plan-radar";
+import PlanRadarBlock from "@/components/pronostics/PlanRadarBlock";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
 import { pickCoursesASuivre, type CourseASuivre } from "@/lib/turf/courses-a-suivre";
@@ -100,6 +102,7 @@ export default async function PronosticsSection({
     .from("pronostics")
     .select(`
       id, niveau_acces, type_pari, confiance, analyse_courte, selection, nb_vues, date_publication,
+      selection_detail, plan_de_jeu,
       course:courses(
         id, libelle, heure_depart, numero_reunion, numero_course, date_course,
         paris_disponibles,
@@ -155,12 +158,15 @@ export default async function PronosticsSection({
   const idCoursePronostic = (p: any) =>
     (Array.isArray(p.course) ? p.course[0] : p.course)?.id;
 
-  // Carte vedette « pronostic » : celui publié sur le Quinté+ s'il existe.
+  // Carte vedette « pronostic » : celui publié sur le Quinté+ s'il existe. Il
+  // en porte deux depuis le 02/10/2026 (ELITE et PRO) : celui du plus haut
+  // niveau que l'abonné peut lire (l'ELITE pour un abonné Elite, le PRO pour
+  // un abonné Pro), sinon le premier, verrouillé.
   // Pas de Quinté+ identifiable (données incomplètes) → ancien choix, parmi les
   // pronostics publiés : Quinté+ > Quarté+ > premier à venir.
   const aVenir = pronosWithStatus.filter((p: any) => !p._terminee);
   const vedetteProno: any = quinte
-    ? pronosWithStatus.find((p: any) => idCoursePronostic(p) === quinte.id) || null
+    ? plusHautAccessible(pronosWithStatus.filter((p: any) => idCoursePronostic(p) === quinte.id), userSubscription)
     : aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 1) ||
       aVenir.find((p: any) => getNatNum(getCourseParisDisponibles(p)) === 2) ||
       aVenir[0] ||
@@ -337,6 +343,16 @@ export default async function PronosticsSection({
   const vCourse: any = Array.isArray(vedette?.course) ? vedette.course[0] : vedette?.course;
   const confVedette = niveauConfiance(vedette?.confiance);
   const listWithoutVedette = displayList.filter((p: any) => p.id !== vedette?.id);
+  // Plan de jeu en couleurs (base, value, associés…) d'un pronostic, pour
+  // l'abonné qui y a accès. null sur l'accueil visiteur en cache, où
+  // `userSubscription` vaut GRATUIT : les rôles n'y apparaissent jamais.
+  const planDe = (p: any) =>
+    planRadarAbonne(p?.niveau_acces, userSubscription, {
+      selection:       Array.isArray(p?.selection) ? p.selection : [],
+      planDeJeu:       p?.plan_de_jeu ?? null,
+      selectionDetail: p?.selection_detail ?? null,
+    });
+  const planVedette = vedette ? planDe(vedette) : null;
 
   // ── 3. Favori PMU : la cote directe la plus basse, seulement si le PMU parle
   // bien de NOTRE course (mêmes chevaux) — (date, R, C) ne suffit pas.
@@ -459,6 +475,14 @@ export default async function PronosticsSection({
                   </p>
                 )}
 
+                {/* Abonné : toute la sélection, rangée par niveau du plan de jeu,
+                    avec les mêmes couleurs que sur /pronostics. */}
+                {planVedette && (
+                  <div className="mb-4 max-w-xl">
+                    <PlanRadarBlock plan={planVedette} />
+                  </div>
+                )}
+
                 {/* Favori PMU, avec l'heure de sa cote : l'accueil visiteur est
                     régénéré toutes les ~5 min, la cote affichée peut donc dater. */}
                 {favoriAuto && (
@@ -513,6 +537,7 @@ export default async function PronosticsSection({
         <div className="space-y-4">
           {displayList.map((p: any) => {
             const isLocked = !canAccess(p.niveau_acces, userSubscription);
+            const planP = planDe(p);
             // Normaliser la relation course (Supabase peut retourner un tableau)
             const pCourse: any = Array.isArray(p.course) ? p.course[0] : p.course;
             const paris    = pCourse?.paris_disponibles || [];
@@ -558,11 +583,17 @@ export default async function PronosticsSection({
                     <span className="text-gold-light">{(pCourse?.heure_depart || "").substring(0, 5)}</span>
                   </p>
 
-                  {/* Sélection */}
+                  {/* Sélection — abonné : rangée par niveau du plan de jeu ;
+                      sinon les numéros, ou des « ? » si verrouillée. */}
+                  {planP ? (
+                    <div className="mb-4">
+                      <PlanRadarBlock plan={planP} />
+                    </div>
+                  ) : (
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-text-muted text-xs uppercase tracking-wider">Sélection :</span>
                     {!isLocked ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {(Array.isArray(p.selection) ? p.selection : []).map((n: number) => (
                           <span key={n} className="w-8 h-8 rounded-full bg-gold-faint border border-gold-primary/40 flex items-center justify-center text-gold-light font-bold text-sm">
                             {n}
@@ -580,6 +611,7 @@ export default async function PronosticsSection({
                       </div>
                     )}
                   </div>
+                  )}
 
                   {/* Analyse */}
                   {!isLocked ? (

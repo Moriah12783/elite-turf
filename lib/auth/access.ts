@@ -31,3 +31,31 @@ export function canAccess(niveau: string, sub: string): boolean {
   if (niveau === "ELITE")   return sub === "ELITE";
   return false; // niveau inconnu → refus par défaut (fail-closed)
 }
+
+/** Rang des niveaux, du plus ouvert au plus réservé. */
+const RANG_NIVEAU: Record<string, number> = { GRATUIT: 0, STARTER: 1, PRO: 2, ELITE: 3 };
+
+/**
+ * Le pronostic à montrer quand une course en a plusieurs de publiés : depuis
+ * le 02/10/2026, chaque Quinté+ porte un ELITE et un PRO. Celui du plus haut
+ * niveau que l'abonné peut lire ; à défaut, le premier de la liste (carte
+ * verrouillée). À niveau égal, l'ordre reçu départage.
+ *
+ * Avant : le premier venu. Un abonné PRO pouvait tomber sur l'ELITE verrouillé,
+ * et un abonné ELITE voyait le PRO (publié quelques secondes après l'ELITE,
+ * donc en tête du tri par date), avec d'autres rôles que son propre pronostic.
+ */
+export function plusHautAccessible<T extends { niveau_acces: string }>(
+  pronostics: T[] | null | undefined,
+  sub: string,
+): T | null {
+  const liste = pronostics ?? [];
+  let choisi: T | null = null;
+  for (const p of liste) {
+    if (!canAccess(p.niveau_acces, sub)) continue;
+    if (choisi === null || (RANG_NIVEAU[p.niveau_acces] ?? -1) > (RANG_NIVEAU[choisi.niveau_acces] ?? -1)) {
+      choisi = p;
+    }
+  }
+  return choisi ?? liste[0] ?? null;
+}
