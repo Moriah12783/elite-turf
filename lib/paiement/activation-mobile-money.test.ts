@@ -7,7 +7,30 @@ import {
   avertissements,
   referenceMobileMoney,
   motifEmailExact,
+  formuleDeTransaction,
+  estPaiementCarte,
 } from "./activation-mobile-money";
+
+describe("« Valider » (Admin → Paiements) : la formule enregistrée avec le paiement", () => {
+  it("metadata.plan_id (Paystack, carte) ou metadata.formule (bouton Activer)", () => {
+    expect(formuleDeTransaction({ plan_id: "starter", provider: "paystack" })).toBe("starter");
+    expect(formuleDeTransaction({ formule: "elite" })).toBe("elite");
+  });
+
+  it("inconnue, absente ou plan de test : null — on ne devine jamais (plus de « Pro 30 jours » par défaut)", () => {
+    expect(formuleDeTransaction(null)).toBeNull();
+    expect(formuleDeTransaction({})).toBeNull();
+    expect(formuleDeTransaction({ plan_id: "test-paystack" })).toBeNull();
+    expect(formuleDeTransaction({ plan_id: 42 })).toBeNull();
+  });
+
+  it("paiement par carte : jamais validé à la main (checkout abandonné)", () => {
+    expect(estPaiementCarte({ methode: "STRIPE", reference_operateur: "ET-STRIPE-x" })).toBe(true);
+    expect(estPaiementCarte({ methode: "ORANGE_MONEY", reference_operateur: "ET-STRIPE-x" })).toBe(true);
+    expect(estPaiementCarte({ methode: "ORANGE_MONEY", reference_operateur: "ET-A88892" })).toBe(false);
+    expect(estPaiementCarte({ methode: "WAVE", reference_operateur: null })).toBe(false);
+  });
+});
 
 const plan = (id: string) => PLAN_CONFIG.find((p) => p.id === id) as Plan;
 const MAINTENANT = new Date("2026-10-15T10:00:00.000Z");

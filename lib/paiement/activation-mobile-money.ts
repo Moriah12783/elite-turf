@@ -108,3 +108,27 @@ export function referenceMobileMoney(operateur: Operateur, maintenant: Date, ale
 export function motifEmailExact(email: string): string {
   return email.trim().toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`);
 }
+
+/**
+ * Formule enregistrée AVEC un paiement en attente (bouton « Valider » de
+ * /admin/paiements) : `metadata.plan_id` (Paystack, carte) ou
+ * `metadata.formule` (bouton « Activer »). Seules les formules payantes
+ * comptent ; sinon null — la route refuse plutôt que de deviner (elle
+ * appliquait « Pro 30 jours » à tout paiement, faute de lire cette valeur).
+ */
+export function formuleDeTransaction(metadata: Record<string, unknown> | null | undefined): string | null {
+  const brut = metadata?.plan_id ?? metadata?.formule;
+  return typeof brut === "string" && palierDeFormule(brut) ? brut : null;
+}
+
+/**
+ * Paiement par carte : temps réel (réussi ou abandonné), jamais « reçu mais à
+ * valider ». Même règle que l'affichage de /admin/paiements (isCardTx).
+ */
+export function estPaiementCarte(tx: { methode?: string | null; reference_operateur?: string | null }): boolean {
+  return (
+    tx.methode === "STRIPE" ||
+    tx.methode === "CARTE_BANCAIRE" ||
+    (typeof tx.reference_operateur === "string" && tx.reference_operateur.indexOf("ET-STRIPE-") === 0)
+  );
+}
