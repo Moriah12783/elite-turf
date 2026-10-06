@@ -14,6 +14,7 @@ import { whatsappUrl } from "@/lib/constants/whatsapp";
 import PageHero from "@/components/layout/PageHero";
 import ProfileEditForm from "@/components/membre/ProfileEditForm";
 import TransactionsHistory from "@/components/membre/TransactionsHistory";
+import { chargerHistoriquePaiements, idFormuleAbonne } from "@/lib/membre/historique-paiements";
 import AnnulerRenouvellement from "@/components/membre/AnnulerRenouvellement";
 import GuideUtilisation from "@/components/membre/GuideUtilisation";
 
@@ -89,8 +90,8 @@ export default async function EspaceMembrePage() {
 
   const serviceClient = createServiceClient();
 
-  // Fetch en parallèle : profil + abonnement actif + pronostics récents + stats
-  const [profileRes, abonnementRes, pronosticsRes] = await Promise.all([
+  // Fetch en parallèle : profil + abonnement actif + pronostics récents + paiements
+  const [profileRes, abonnementRes, pronosticsRes, historiquePaiements] = await Promise.all([
     serviceClient
       .from("profiles")
       .select("nom_complet, email, phone, pays, ville, statut_abonnement, date_inscription, date_expiration_abonnement, avatar_url")
@@ -121,6 +122,9 @@ export default async function EspaceMembrePage() {
       `)
       .order("date_publication", { ascending: false })
       .limit(8),
+
+    // Côté serveur (CLAUDE.md, règle 3) : null si la lecture échoue.
+    chargerHistoriquePaiements(serviceClient, user.id),
   ]);
 
   const profile = profileRes.data;
@@ -137,9 +141,12 @@ export default async function EspaceMembrePage() {
   const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.GRATUIT;
   const StatusIcon = statusCfg.Icon;
 
-  // Plan actif
+  // Plan actif : la table `plans` dit Découverte / Performance / Elite, PLAN_CONFIG
+  // Starter / Pro / Elite (la comparaison directe des noms laissait Starter et
+  // Pro sans prix ni alertes). À défaut de ligne d'abonnement : statut du profil.
   const plan = (abonnement?.plan as any) as { nom: string; prix_fcfa: number; duree_jours: number } | null;
-  const planConfig = plan ? PLAN_CONFIG.find((p) => p.nom === plan.nom) : null;
+  const idFormule = idFormuleAbonne(plan?.nom, profile?.statut_abonnement);
+  const planConfig = idFormule ? PLAN_CONFIG.find((p) => p.id === idFormule) ?? null : null;
 
   const dateExpiration = profile?.date_expiration_abonnement
     ? new Date(profile.date_expiration_abonnement)
@@ -299,11 +306,13 @@ export default async function EspaceMembrePage() {
                   </div>
                   <div>
                     <p className="font-bold text-text-primary text-lg">
-                      Plan {plan?.nom || statusCfg.label}
+                      Plan {planConfig?.nom || statusCfg.label}
                     </p>
-                    <p className="text-text-muted text-sm">
-                      {planConfig?.prix_eur?.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€/mois
-                    </p>
+                    {planConfig && (
+                      <p className="text-text-muted text-sm">
+                        {planConfig.prix_eur.toLocaleString("fr-FR")} € · {planConfig.duree_jours} jours
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className="px-3 py-1.5 bg-status-win/10 text-status-win text-xs font-bold rounded-full border border-status-win/20">
@@ -331,7 +340,7 @@ export default async function EspaceMembrePage() {
                 <div className="p-3 bg-bg-elevated rounded-xl">
                   <p className="text-text-muted text-xs mb-1">Alertes incluses</p>
                   <p className="text-text-primary font-semibold text-sm">
-                    {planConfig?.nb_alertes === -1 ? "Illimitées" : `${planConfig?.nb_alertes || 0}/mois`}
+                    {!planConfig ? "—" : planConfig.nb_alertes === -1 ? "Illimitées" : planConfig.nb_alertes}
                   </p>
                 </div>
               </div>
@@ -627,7 +636,7 @@ export default async function EspaceMembrePage() {
           <h2 className="font-serif font-bold text-text-primary text-lg mb-4">
             Historique des paiements
           </h2>
-          <TransactionsHistory />
+          <TransactionsHistory lignes={historiquePaiements} />
         </div>
 
         {/* ── ACCÈS RAPIDES ─────────────────────────────────────────── */}
