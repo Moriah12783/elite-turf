@@ -1,5 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { analyserMusique } from "./musique";
+import { analyserMusique, dernieresPlaces } from "./musique";
+
+describe("dernieresPlaces — 7 dernières courses pour le tableau de l'e-mail à Steph", () => {
+  it("JOYCE PILE (n°2 du 07/10, 5e à 23/1) : 2 1 5 7 0 2 3", () => {
+    expect(dernieresPlaces("2a1a5a7a0a2a3a6a0aDa")).toEqual(["2", "1", "5", "7", "0", "2", "3"]);
+  });
+
+  it("garde les fautes en lettres et saute les marqueurs d'année", () => {
+    expect(dernieresPlaces("4a0aDaDaDa5aDa5a4a4a")).toEqual(["4", "0", "D", "D", "D", "5", "D"]);
+    expect(dernieresPlaces("9a2a1a1a3a4a1a0a(25)6a")).toEqual(["9", "2", "1", "1", "3", "4", "1"]);
+  });
+
+  it("moins de 7 courses : ce qu'il y a", () => {
+    expect(dernieresPlaces("(25)1a2a")).toEqual(["1", "2"]);
+  });
+
+  it("musique absente ou illisible → null", () => {
+    expect(dernieresPlaces(null)).toBeNull();
+    expect(dernieresPlaces("")).toBeNull();
+    expect(dernieresPlaces("abc")).toBeNull();
+  });
+});
 
 describe("analyserMusique — 5 dernières courses, de la plus récente à la plus ancienne", () => {
   it("IMAGE D'ATALANTE : 2-3-2-2-8 → 4 fois dans les 3 premiers, sans faute", () => {

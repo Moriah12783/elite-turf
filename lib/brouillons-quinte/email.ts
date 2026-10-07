@@ -27,6 +27,24 @@ export interface ChevalResume {
   nom: string;
 }
 
+/** Une ligne du tableau des musiques (tous les chevaux, pour l'analyse de Steph). */
+export interface LigneMusique {
+  numero: number;
+  nom: string;
+  nonPartant: boolean;
+  cote: number | null;
+  /** Rang au marché (1 = favori) ; null sans cote ou non partant. */
+  rang: number | null;
+  /** Même cote qu'un autre partant classé. */
+  exAequo: boolean;
+  /** 7 dernières places, de la plus récente à la plus ancienne ; null si musique inconnue. */
+  places: string[] | null;
+  /** Fautes (D, A, T) parmi ces places ; null si musique inconnue. */
+  fautes: number | null;
+  /** « Base ⭐ », « Base », « Value Pro », « Value Elite » ou « Value Pro + Elite » ; null sinon. */
+  retenu: string | null;
+}
+
 export interface ResumeBrouillons {
   jour: string;
   prix: string;
@@ -38,6 +56,8 @@ export interface ResumeBrouillons {
   confiance: Confiance;
   pro: { base: ChevalResume[]; values: ChevalResume[] };
   elite: { base: ChevalResume[]; values: ChevalResume[]; ecartes: ChevalResume[]; completeAvecFautifs: boolean };
+  /** Tous les chevaux, classés par cote, non-partants à la fin. */
+  partants: LigneMusique[];
 }
 
 /** Liens d'édition des brouillons ; null pour un brouillon absent. */
@@ -76,6 +96,39 @@ function blocSelection(titre: string, sel: { base: ChevalResume[]; values: Cheva
     + `<p style="margin:0">★ Base : ${chevaux(sel.base, pivot)}<br>◇ Values : ${chevaux(sel.values, null)}</p>`;
 }
 
+/** 3.8 → « 3,8 » ; 10 → « 10 ». */
+function coteFr(c: number): string {
+  return String(c).replace(".", ",");
+}
+
+/** Podiums en vert, fautes en rouge, « 0 » en gris. */
+function placeHtml(p: string): string {
+  if (p === "1" || p === "2" || p === "3") return `<b style="color:#15803d">${p}</b>`;
+  if (p === "D" || p === "A" || p === "T") return `<b style="color:#b91c1c">${p}</b>`;
+  if (p === "0") return `<span style="color:#9ca3af">0</span>`;
+  return echapper(p);
+}
+
+/** Tableau des musiques de tous les chevaux (option A, décision de Steph du 07/10/2026). */
+function tableauMusiques(lignes: LigneMusique[]): string {
+  if (lignes.length === 0) return "";
+  const th = (t: string) => `<th style="text-align:left;padding:3px 8px;border-bottom:1px solid #ccc">${t}</th>`;
+  const td = (t: string) => `<td style="padding:3px 8px;border-bottom:1px solid #eee">${t}</td>`;
+  const entete = ["N°", "Cheval", "Cote", "Marché", "7 dernières", "Fautes", "Retenu"].map(th).join("");
+  const corps = lignes.map((l) => "<tr>" + [
+    td(String(l.numero)),
+    td(echapper(l.nom)),
+    td(l.nonPartant ? "non partant" : l.cote === null ? "—" : coteFr(l.cote)),
+    td(l.rang === null ? "—" : `${l.rang}${l.exAequo ? "=" : ""}`),
+    td(l.places === null ? "inconnue" : l.places.map(placeHtml).join(" ")),
+    td(l.fautes === null ? "—" : String(l.fautes)),
+    td(l.retenu ? echapper(l.retenu) : ""),
+  ].join("") + "</tr>").join("");
+  return `<h3 style="margin:20px 0 4px">Musiques des partants</h3>`
+    + `<p style="margin:0 0 6px;font-size:12px;color:#555">7 dernières courses, de la plus récente à la plus ancienne. 0 = au-delà du 9e ; D = disqualifié, A = arrêté, T = tombé. « = » : même cote qu'un autre partant.</p>`
+    + `<table style="border-collapse:collapse;font-size:13px">${entete}${corps}</table>`;
+}
+
 function blocLiens(l: LiensBrouillons): string {
   const liens: string[] = [];
   if (l.pro) liens.push(`<a href="${echapper(l.pro)}">Ouvrir le brouillon Pro</a>`);
@@ -106,6 +159,7 @@ export function emailBrouillons(r: ResumeBrouillons, liens: LiensBrouillons | nu
     morceaux.push(blocLiens(liens));
     morceaux.push("<p>Rien n'est publié : relisez, puis cliquez « Publier ».</p>");
   }
+  morceaux.push(tableauMusiques(r.partants));
   return { subject, html: morceaux.filter(Boolean).join("\n") };
 }
 

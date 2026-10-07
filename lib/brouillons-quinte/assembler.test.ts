@@ -98,9 +98,41 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
     }
   });
 
+  it("tableau des musiques : tous les chevaux, classés par cote, non-partant à la fin", () => {
+    const t = r.resume.partants;
+    expect(t.map((l) => l.numero)).toEqual([17, 16, 5, 13, 10, 15, 18, 11, 14, 2, 7, 4, 3, 8, 6, 9, 1, 12]);
+    expect(t[0]).toEqual({
+      numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false,
+      places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐",
+    });
+    expect(t[17]).toMatchObject({ numero: 12, nom: "JUNON DE LOU", nonPartant: true, rang: null });
+  });
+
+  it("ex-aequo signalés : n°11 (retenu) et n°14 à 15", () => {
+    const t = r.resume.partants;
+    expect(t.find((l) => l.numero === 11)).toMatchObject({ rang: 8, exAequo: true, retenu: "Value Elite" });
+    expect(t.find((l) => l.numero === 14)).toMatchObject({ rang: 9, exAequo: true, retenu: null, places: ["6", "7", "4", "1", "2", "4", "8"] });
+  });
+
+  it("le n°2 hors sélection : sa musique sur 7 courses est visible", () => {
+    expect(r.resume.partants.find((l) => l.numero === 2)).toMatchObject({
+      rang: 10, cote: 23, places: ["2", "1", "5", "7", "0", "2", "3"], fautes: 0, retenu: null,
+    });
+  });
+
+  it("fautes comptées sur les 7 courses ; chevaux retenus en Pro, en Elite ou dans les deux", () => {
+    const ligne = (n: number) => r.resume.partants.find((l) => l.numero === n)!;
+    expect(ligne(10)).toMatchObject({ fautes: 4, retenu: "Value Pro" });
+    expect(ligne(16).retenu).toBe("Base");
+    expect(ligne(13).retenu).toBe("Value Pro");
+    expect(ligne(15).retenu).toBe("Value Pro + Elite");
+    expect(ligne(18).retenu).toBe("Value Elite");
+  });
+
   it("résumé pour l'e-mail", () => {
     const base = [{ numero: 17, nom: "IMAGE D'ATALANTE" }, { numero: 16, nom: "JAIN MAB" }, { numero: 5, nom: "JEUNE ORANGE COTON" }];
-    expect(r.resume).toEqual({
+    const { partants: _tableau, ...resume } = r.resume;
+    expect(resume).toEqual({
       jour: "2026-10-07",
       prix: "Prix des Gobelins",
       hippodrome: "Enghien",
