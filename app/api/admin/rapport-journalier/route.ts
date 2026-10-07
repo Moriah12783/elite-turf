@@ -14,10 +14,15 @@
  * Query params :
  *  ?date=YYYY-MM-DD  (défaut : aujourd'hui)
  *  ?save=true        (sauvegarde le rapport en DB si table rapports existe)
+ *
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET), pour GET
+ * comme pour POST. Le cron-worker l'appelle en GET avec le Bearer. Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fenetreComparaison } from "@/lib/pronostics/resultat";
 
 export const dynamic = "force-dynamic";
@@ -79,6 +84,9 @@ function analysePerformance(
 // ── Handler ───────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const url     = new URL(req.url);
   const dateISO = url.searchParams.get("date") || new Date().toISOString().split("T")[0];
   const save    = url.searchParams.get("save") === "true";

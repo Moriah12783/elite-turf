@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants } from "@/lib/geny";
 import { todayParisISO } from "@/lib/paris-date";
 import type { GenyParticipant } from "@/lib/geny";
@@ -29,8 +30,8 @@ import type { GenyParticipant } from "@/lib/geny";
  *   5. Pour chaque course : fetchGenyPartants → [DELETE si force] → INSERT
  *   6. Retour récap { ok, total, success, failed, errors[] }
  *
- * Auth : protégée par middleware (/api/admin/* nécessite session admin
- * via cookies). Les middlewares vérifient déjà.
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET). Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  */
 
 const CONCURRENCY = 4;
@@ -207,6 +208,9 @@ async function processInPool<T, R>(
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const startGlobal = Date.now();
   try {
     const supabase = createServiceClient();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { buildGenyUrlFromStored, safeRapport } from "@/lib/geny";
 import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
 import {
@@ -31,7 +32,8 @@ import {
  *
  * Retour : résumé {ok, total, succeeded, failed, skipped, details: [...]}
  *
- * Auth : protégée par middleware /admin (cookies session).
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET). Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  *
  * UX : l'éditeur clique "🪄 Tout pré-remplir & publier" sur /admin/arrivees,
  * attend ~30-60s (selon nb de courses), puis voit toutes les arrivées
@@ -178,6 +180,9 @@ async function fetchAndParseOne(course: CourseEligible): Promise<ParseOutcome> {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const body = (await req.json()) as PostBody;

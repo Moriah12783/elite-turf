@@ -2,10 +2,14 @@
  * GET /api/admin/cron-status
  * Retourne le dernier statut de chaque cron job depuis la table cron_logs.
  * Si la table n'existe pas encore, retourne tous les crons avec status "never".
+ *
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET). Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +47,10 @@ export interface CronJobStatus {
   githubWorkflow: string | null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
 

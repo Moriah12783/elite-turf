@@ -10,18 +10,25 @@
  * (musique/jockey…). Les partants doivent déjà exister (créés par le cron
  * `enrichir-partants` / « Pré-remplir »). Ce bouton MET À JOUR leurs cotes.
  * Priorité : cote_directe > cote_reference ; NP/absente → cote NULL (jamais 1,2).
+ *
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET). Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchPmuCotesMap, resolvePmuCote, sameHorse, coteSource } from "@/lib/cotes/pmu-csv";
 
 export const dynamic = "force-dynamic";
 
 interface RouteParams { params: { id: string } }
 
-export async function POST(_req: NextRequest, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const supabase = createServiceClient();
 
   // 1. Course (numéros réunion/course pour matcher le CSV)
@@ -125,7 +132,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   });
 }
 
-// GET = même chose (pour appel depuis le skill)
+// GET = même chose (appel scripté : Bearer CRON_SECRET, garde dans POST)
 export async function GET(req: NextRequest, ctx: RouteParams) {
   return POST(req, ctx);
 }

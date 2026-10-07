@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { buildGenyUrlFromStored } from "@/lib/geny";
 import {
   parseRapportsPMU,
@@ -45,6 +46,9 @@ interface PrefillResponse {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const body = (await req.json()) as PostBody;
