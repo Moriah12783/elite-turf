@@ -2,7 +2,12 @@
  * POST/GET /api/admin/rapport-journalier/envoyer
  *
  * Génère le rapport post-course du jour ET envoie un email à l'admin.
- * Appelé par l'agent Claude programmé chaque soir à 21h UTC.
+ * Était appelé par une tâche Claude programmée à 21h UTC, sans
+ * authentification ; cette tâche est inactive depuis (constat du 07/10/2026).
+ *
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET), pour GET
+ * comme pour POST : un envoi automatique doit passer par le cron-worker. Le
+ * middleware ne protège que les pages /admin, pas /api/admin.
  *
  * Query params :
  *  ?date=YYYY-MM-DD  (défaut : aujourd'hui)
@@ -10,6 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { sendEmail } from "@/lib/email";
 import { fenetreComparaison } from "@/lib/pronostics/resultat";
 
@@ -169,6 +175,9 @@ function buildEmailHtml(data: {
 // ── Handler ───────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const url     = new URL(req.url);
   const dateISO = url.searchParams.get("date") || new Date().toISOString().split("T")[0];
 

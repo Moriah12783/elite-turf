@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 /**
@@ -17,8 +18,9 @@ import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
  *    (les pages today sont déjà full-dynamic mais on revalide explicitement
  *    pour les autres dates et le sitemap-news)
  *
- * Auth : protégée par middleware (/admin) — ce endpoint est appelé depuis
- * la page admin via fetch (cookies session inclus).
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET). La page
+ * admin l'appelle via fetch, cookies de session inclus. Le middleware ne
+ * protège que les pages /admin, pas /api/admin.
  */
 
 interface PostBody {
@@ -39,6 +41,9 @@ function isValidArrivee(arr: unknown): arr is number[] {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const body = (await req.json()) as PostBody;
@@ -144,6 +149,9 @@ export async function POST(req: NextRequest) {
  * Utile en cas d'erreur de saisie ou de course annulée.
  */
 export async function DELETE(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const courseId = req.nextUrl.searchParams.get("course_id");
     if (!courseId) {

@@ -176,8 +176,9 @@ const CRON_MAP: Record<string, string> = {
 
   // ── Notifications utilisateurs ────────────────────────────────────
   "23 * * * *":   "/api/cron/welcome-emails",
-  "0 6 * * *":    "/api/cron/daily-push",
-  "0 17 * * *":   "/api/cron/daily-push",
+  // daily-push (« 0 6 » + « 0 17 », push OneSignal) retiré le 07/10/2026 avec
+  // sa route, décision de Steph : message du matin faux (Quinté+ jamais publié
+  // à 6h UTC), audience OneSignal vide. Voir wrangler.toml.
   "30 10 * * *":  "/api/cron/sms-sequence",
   "45 10 * * *":  "/api/cron/alerte-sms-jour",  // abonnes payants : analyses du jour dispo (matin)
   "0 13 * * *":   "/api/cron/alerte-sms-jour",  // filet apres-midi (dedup 1/jour)

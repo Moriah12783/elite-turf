@@ -162,7 +162,7 @@ Réponse :
 | `*/30 * * * *` | `/api/cron/health-alerter` | Health check |
 | `45 3 * * *` | `/api/cron/seo-etl` | SEO ETL nuit |
 | `23 * * * *` | `/api/cron/welcome-emails` | Welcome emails horaires |
-| `0 6` + `0 17 * * *` | `/api/cron/daily-push` | Push notifications |
+| ~~`0 6` + `0 17 * * *`~~ | ~~`/api/cron/daily-push`~~ | Push notifications — **retiré le 07/10/2026** (message du matin faux, audience OneSignal vide) |
 
 ## 🗑️ Cleanup vercel.json
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchGenyPartants, type GenyParticipant } from "@/lib/geny";
 
 /**
@@ -69,9 +70,12 @@ function mapGenyParticipant(p: GenyParticipant): PartantPayload {
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { courseId: string } },
 ) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
 

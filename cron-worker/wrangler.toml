@@ -16,7 +16,7 @@
 #   2. Deploy le worker :
 #      $ npx wrangler deploy --config cron-worker/wrangler.toml
 #   3. Vérifier dans Cloudflare dashboard → elite-turf-crons → Triggers
-#      que les 41 crons sont bien actifs.
+#      que les 40 crons sont bien actifs.
 #
 # Mise à jour des schedules :
 #   - Modifier la liste `[triggers].crons` ci-dessous
@@ -24,7 +24,7 @@
 #   - Re-deploy : `npx wrangler deploy --config cron-worker/wrangler.toml`
 #
 # Coût : Cloudflare Workers Paid plan (5 USD/mois) déjà actif. Les Cron
-# Triggers sont gratuits jusqu'à 100/worker. On en a 41, OK.
+# Triggers sont gratuits jusqu'à 100/worker. On en a 40, OK.
 
 # Last redeploy : 2026-05-16 (GitHub Action auto-deploy activée — PR fix/auto-deploy-cron-worker)
 # Cette ligne sert à forcer le premier trigger de la workflow GitHub Action
@@ -141,8 +141,9 @@ crons = [
 
   # ── Notifications utilisateurs ──────────────────────────────────────
   "23 * * * *",      # welcome-emails (toutes les heures à :23)
-  "0 6 * * *",       # daily-push matin
-  "0 17 * * *",      # daily-push soir
+  # daily-push (push OneSignal 6h + 17h UTC) retiré le 07/10/2026, décision de
+  # Steph : le push du matin annonçait un Quinté+ « publié » qui ne l'était
+  # jamais à 6h UTC (règle 2), et OneSignal n'avait aucun abonné.
   "30 10 * * *",     # sms-sequence (sequence SMS J2 preuve / J5 upgrade)
   "45 10 * * *",     # alerte-sms-jour (abonnes payants : "analyses du jour dispo" — passe matin, apres publication premium)
   "0 13 * * *",      # alerte-sms-jour (filet apres-midi ; dedup 1/jour via sms_log ALERTE_JOUR_<date>)
