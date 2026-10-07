@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
+
+// Réservé à l'admin (page /admin/notifications). Jusqu'au 07/10/2026, cette
+// route n'avait AUCUNE vérification : n'importe qui pouvait envoyer un push au
+// texte libre à tous les abonnés OneSignal, ou lire l'historique des envois.
 
 const ONESIGNAL_APP_ID  = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
@@ -6,6 +11,9 @@ const APP_URL           = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://w
 
 // POST — envoyer une notification
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
     return NextResponse.json(
       { error: "OneSignal non configuré — ajoutez NEXT_PUBLIC_ONESIGNAL_APP_ID et ONESIGNAL_REST_API_KEY dans Vercel" },
@@ -65,7 +73,10 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — récupérer l'historique des notifications
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
     return NextResponse.json({ notifications: [] });
   }
