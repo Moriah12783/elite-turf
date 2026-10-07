@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 /**
  * PUT /api/admin/partants/[courseId]
  * Remplace tous les partants d'une course (delete + insert).
- * Utilise le service client pour bypasser le RLS partants_service_all.
+ * Utilise le service client pour bypasser le RLS partants_service_all :
+ * réservé aux admins (session admin ou Bearer CRON_SECRET). Le middleware ne
+ * protège que les pages /admin, pas /api/admin.
  * Body: { partants: Array<{...}> }
  */
 export async function PUT(
   req: NextRequest,
   { params }: { params: { courseId: string } }
 ) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const { partants } = await req.json();
