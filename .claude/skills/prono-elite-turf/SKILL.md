@@ -43,8 +43,9 @@ cote, non-partant, arrivée, rapport, ni analyse.
 4. **Collecter & croiser** : partants, non-partants, forme (musique),
    driver/jockey + entraîneur, terrain/corde/distance, cotes indicatives.
 5. **Hiérarchiser** une sélection de **8 chevaux** par ordre de confiance sur la
-   course vedette → les **6 premiers** font le pronostic Starter/Pro, les **8**
-   le plan de jeu Elite (couplé, base de 3, associés, values).
+   course vedette → les **6 premiers** font le pronostic Starter/Pro ; le plan
+   de jeu Elite = la **base de 3** (les 3 premiers) + **3 values choisies parmi
+   les 4e à 8e** (voir *Structure du livrable*).
 6. **Décliner par tier** (tableau ci-dessous) + attribuer un **indice de confiance**.
 7. **Rendre** : analyse détaillée puis blocs copier-coller par tier.
 8. Données insuffisantes → **fallback prudent**, jamais de sélection forcée.
@@ -58,7 +59,9 @@ cote, non-partant, arrivée, rapport, ni analyse.
 
 ## Structure du livrable (conforme aux formules d'abonnement)
 À partir d'**une** sélection hiérarchisée de **8 chevaux** sur la course vedette,
-produire **deux blocs** (offre en vigueur depuis le 02/10/2026, décision de Steph).
+produire **deux blocs de 6 chevaux** (offre en vigueur depuis le 06/10/2026,
+décisions de Steph du 06 et du 07/10/2026 ; page /abonnements alignée par les
+PR #375 à #377).
 
 > ⚠️ **Pas de bloc « Free ».** La formule Free, c'est **« Notre sélection »** —
 > une fonctionnalité **automatique du site** affichée sur **chaque** course
@@ -68,32 +71,41 @@ produire **deux blocs** (offre en vigueur depuis le 02/10/2026, décision de Ste
 
 | Tier | Ce que tu produis |
 |------|-------------------|
-| **STARTER & PRO** — *Le pronostic expert du jour* | **6 chevaux** classés par confiance (les 6 premiers des 8) : **★ base + appuis + ◇ outsiders**. Tiercé, Quarté+, **Quinté+**. Starter = Pro sur 7 jours : **même bloc**. |
-| **ELITE** — *Le plan de jeu* | Les **8 chevaux**, avec : **🎯 le couplé** (2 chevaux), **★ la base de 3 chevaux** pour le champ réduit ou total, **🤝 les associés**, **◇ les values**. |
+| **STARTER & PRO** — *Le pronostic expert du jour* | **6 chevaux** classés par confiance = les **6 premiers des 8** : **★ base** = les 3 premiers (le n°1 = le **pivot ⭐**), **◇ values** = les 4e, 5e et 6e. Tiercé, Quarté+, **Quinté+**. Starter = Pro sur 7 jours : **même bloc**. |
+| **ELITE** — *Le plan de jeu* | **6 chevaux** : **★ la base de 3** (les mêmes 3 premiers, pivot ⭐ compris) pour le champ réduit ou total, + **◇ 3 values choisies parmi les 4e à 8e** pour leur cote (*value*). Une value Elite peut donc être un cheval classé 7e ou 8e, absent du bloc Pro : c'est ce qui distingue l'Elite. |
 
-Emboîtement : **Starter = Pro (6 chevaux) ⊂ Elite (plan de jeu, 8 chevaux)**.
-Elite reçoit AUSSI le bloc Pro.
+Pas de couplé ni d'associés : retirés de l'offre le 06/10/2026, faute d'avoir
+jamais été publiés. Les boutons existent encore dans l'admin : ne pas les
+proposer sans décision de Steph.
 
-**Saisie sur le site** (admin, éditeur « Sélection & hiérarchie ») : bouton
-**Base** sur les 3 chevaux de base, **Value** sur les values, **Associé** sur les
-associés, **Couplé** sur les 2 chevaux du couplé (marqueur à part, cumulable
-avec la base). Les chevaux non qualifiés restent en champ.
+Emboîtement : **Pro = les 6 premiers des 8 ; Elite = base de 3 + 3 values pris
+parmi les 8.** Elite reçoit AUSSI le bloc Pro.
+
+**Saisie sur le site** : Admin → Pronostics → **« Nouveau pronostic »**
+(`/admin/pronostics/nouveau`), **deux saisies** sur la course vedette :
+1. **Pro** : niveau ⭐ Pro, les 6 numéros dans l'ordre ; bouton **Base** sur les
+   3 premiers, **★** sur le pivot, **Value** sur les 3 autres.
+2. **Elite** : niveau 👑 Elite, les 6 numéros (base de 3 puis les 3 values) ;
+   **Base** sur les 3 de base, **★** sur le pivot, **Value** sur les 3 values.
+
+« Publier le pronostic » envoie un e-mail aux abonnés du niveau (Starter, Pro et
+Elite pour le Pro ; Elite seuls pour l'Elite). Le consensus presse, lui, ne
+publie que le Radar gratuit.
 *(Optionnel : une 2e course vedette si une 2e course forte est validée.)*
 
 ## Classification tactique — toujours nommée
-- **★ Cheval de base** (n°1, plus forte conviction) → à associer dans TOUTES les combinaisons.
-- **+ Appuis** (2e–3e choix) → les associés solides.
-- **◇ Outsiders / values** (chevaux à cote, *value*) → le piment qui paie, à doser.
-- **🎯 Couplé** *(Elite)* → les 2 chevaux à jouer en couplé.
-- **🤝 Associés** *(Elite)* → les chevaux à associer à la base de 3 en champ réduit.
+- **⭐ Pivot** (n°1, plus forte conviction) → à associer dans TOUTES les combinaisons.
+- **★ Base** (les 3 premiers, pivot compris) → le socle, pour le champ réduit ou total.
+- **◇ Values** (chevaux à cote, *value*) → le piment qui paie, à doser.
 
-*(Classification identique au bloc « Comment jouer la sélection » de la fiche
-pronostic du site.)*
+*(Mêmes noms et mêmes couleurs que sur le site : la base en vert avec l'étoile
+du pivot, la value en bleu.)*
 
 ## Méthodologie (niveau expert turf senior)
 Croiser : forme récente (musique), valeur/poids, driver/jockey + entraîneur,
 terrain / corde / distance, **cote indicative vs valeur intrinsèque** (détection
-de *value* pour l'outsider), discipline, engagements. Hiérarchiser par confiance.
+des *values* : une cote supérieure à la chance réelle), discipline, engagements.
+Hiérarchiser par confiance.
 JAMAIS de surinterprétation d'une donnée faible.
 
 ## Indice de confiance
@@ -104,9 +116,10 @@ ou données partielles. **La confiance reflète la solidité réelle, pas l'opti
 **(A) Analyse détaillée** (à l'écran), par course : **hippodrome + R#C#
 (réunion/course) + Prix (libellé exact)** — OBLIGATOIRE pour que l'abonné
 retrouve la course dans le programme du jour —, statut de validation, heure,
-discipline, distance, type de pari, partants, sélection hiérarchisée (base /
-appuis / outsiders nommés), cotes indicatives (signalées si absentes), indice de
-confiance, analyse brève argumentée, note de prudence.
+discipline, distance, type de pari, partants, les **8 chevaux classés** (pivot,
+base, values nommés ; préciser lesquels entrent dans le plan de jeu Elite),
+cotes indicatives (signalées si absentes), indice de confiance, analyse brève
+argumentée, note de prudence.
 
 **(B) Blocs copier-coller par tier** (prêts WhatsApp / email, autonomes) —
 TOUJOURS les fournir, segmentés STARTER & PRO / ELITE. Modèle :
@@ -117,17 +130,14 @@ TOUJOURS les fournir, segmentés STARTER & PRO / ELITE. Modèle :
 ✅ [Validation LONACI / Afrique corroborée]
 
 STARTER & PRO — Le pronostic expert (6 chevaux)
-★ Base : [n°] [NOM]
-+ Appuis : [n°] [NOM], [n°] [NOM]
-◇ Outsiders : [n°] [NOM], [n°] [NOM]
+★ Base : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM]
+◇ Values : [n°] [NOM], [n°] [NOM], [n°] [NOM]
 🎯 Jeux : Tiercé, Quarté+, Quinté+
 Confiance : ◆◆◆
 
-ELITE — Le plan de jeu (8 chevaux)
-🎯 Couplé : [n°] [NOM] – [n°] [NOM]
-★ Base de 3 : [n°] [NOM], [n°] [NOM], [n°] [NOM]   (champ réduit ou total)
-🤝 Associés : [n°] [NOM], [n°] [NOM]
-◇ Values : [n°] [NOM], [n°] [NOM]
+ELITE — Le plan de jeu (6 chevaux)
+★ Base de 3 : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM]   (champ réduit ou total)
+◇ Values : [n°] [NOM], [n°] [NOM], [n°] [NOM]   (choisies parmi nos 8 chevaux)
 Confiance : ◆◆◆
 ⚠️ Cotes indicatives · le jeu comporte des risques, jouez responsable
 ```
