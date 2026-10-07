@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 
 /**
  * PATCH /api/admin/courses/[id]
- * Mise à jour d'une course via service client (bypass RLS).
+ * Mise à jour d'une course via service client (bypass RLS) : réservée aux
+ * admins (session admin ou Bearer CRON_SECRET). Le middleware ne protège que
+ * les pages /admin, pas /api/admin.
  */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const body = await req.json();
@@ -43,9 +49,12 @@ export async function PATCH(
  * Supprime une course via service client (bypass RLS).
  */
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const supabase = createServiceClient();
     const { error } = await supabase.from("courses").delete().eq("id", params.id);
