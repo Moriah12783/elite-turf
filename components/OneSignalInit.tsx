@@ -3,6 +3,21 @@ import Script from "next/script";
 
 const APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 
+/**
+ * ⚠️ OneSignal est réglé en mode « Typical Site » : le SDK applique la
+ * configuration du TABLEAU DE BORD OneSignal, pas les options passées à
+ * `OneSignal.init` ci-dessous (demande d'abonnement, textes, délai, message
+ * de bienvenue). Constaté le 07/10/2026 : en prod, la demande affichée est le
+ * texte anglais par défaut du tableau de bord (« Subscribe to our
+ * notifications… », 10 s), pas les textes français d'ici.
+ *
+ * Décision de Steph du 07/10/2026 : plus de demande d'abonnement automatique,
+ * puisque plus aucun push ne part automatiquement (daily-push retiré, PR #380).
+ * Le réglage qui compte se fait dans OneSignal (Permission Prompt Setup →
+ * Auto-prompt désactivé). `autoPrompt: false` garde le code aligné si
+ * l'intégration passe un jour en « Custom Code ». Revoir les textes avant
+ * toute réactivation : ils promettent « les pronostics du jour ».
+ */
 export default function OneSignalInit() {
   if (!APP_ID) return null;
 
@@ -32,7 +47,7 @@ export default function OneSignalInit() {
               slidedown: {
                 prompts: [{
                   type: "push",
-                  autoPrompt: true,
+                  autoPrompt: false,
                   text: {
                     actionMessage: "🏇 Recevez les pronostics Elite Turf directement sur votre appareil !",
                     acceptButton: "Oui, m'abonner",
