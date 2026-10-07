@@ -10,10 +10,14 @@
  *
  * Body JSON : { dateDebut?: "YYYY-MM-DD", dateFin?: "YYYY-MM-DD" }
  * Défaut    : du 2026-03-29 à aujourd'hui
+ *
+ * Auth : requireAdminAuth (session admin ou Bearer CRON_SECRET), pour POST
+ * comme pour GET. Le middleware ne protège que les pages /admin, pas /api/admin.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { fetchPmuResultats } from "@/lib/pmu-api";
 import { calculerResultat } from "@/lib/pronostics/resultat";
 
@@ -84,6 +88,9 @@ async function fetchGenyArrivee(
 // ── Route principale ──────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const authError = await requireAdminAuth(req);
+  if (authError) return authError;
+
   const supabase = createServiceClient();
 
   let dateDebut = "2026-03-20";
