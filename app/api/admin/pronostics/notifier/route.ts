@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const { data: prono, error: pronoErr } = await supabase
       .from("pronostics")
       .select(`
-        id, type_pari, niveau_acces, analyse_courte, selection,
+        id, type_pari, niveau_acces, analyse_courte, selection, publie,
         course:courses (
           date_course, nb_partants,
           hippodrome:hippodromes ( nom )
@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
 
     if (pronoErr || !prono) {
       return NextResponse.json({ error: "Pronostic introuvable" }, { status: 404 });
+    }
+
+    // Second garde-fou : on ne prévient jamais les abonnés d'un brouillon.
+    if (!prono.publie) {
+      return NextResponse.json({ error: "Pronostic non publié : notification refusée" }, { status: 409 });
     }
 
     const courseRaw = Array.isArray(prono.course) ? prono.course[0] : prono.course;

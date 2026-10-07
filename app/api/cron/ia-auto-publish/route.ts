@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
         id,
         course:courses ( date_course )
       `)
-      .eq("publie", false);
+      .eq("publie", false)
+      // Les brouillons du Quinté+ préparés à T-90 attendent Steph : jamais publiés ici.
+      .or("source.is.null,source.neq.AUTO-MARCHE");
 
     if (fetchErr) throw new Error(`Fetch drafts: ${fetchErr.message}`);
 
