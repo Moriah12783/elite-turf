@@ -13,7 +13,8 @@ import {
   TAILLE_SELECTION, type ChevalClasse, type Confiance,
 } from "./selection";
 import { analyseCourte, analyseComplete, heureGmt, type ChevalCommente, type ContexteCourse } from "./commentaires";
-import type { RaisonEchec, ResumeBrouillons, ChevalResume } from "./email";
+import type { RaisonEchec, ResumeBrouillons, ChevalResume, LigneMusique } from "./email";
+import { dernieresPlaces, estFaute } from "./musique";
 
 /** Partant de la base, tel que la route le lit. */
 export interface PartantBase {
@@ -93,6 +94,57 @@ function releveDesCotes(classes: ChevalClasse[], participants: ParticipantPmu[])
   return max;
 }
 
+/**
+ * PUR : tableau des musiques de tous les chevaux, pour l'analyse de Steph.
+ * Ordre du marché : cote croissante ; à cote égale, l'ordre des 8 favoris
+ * (buildNotreSelection), puis le numéro. Chevaux sans cote ensuite, puis les
+ * non-partants.
+ */
+function tableauPartants(
+  participants: ParticipantPmu[],
+  classes: ChevalClasse[],
+  retenus: { pivot: number; base: number[]; valuesPro: number[]; valuesElite: number[] },
+): LigneMusique[] {
+  const rangClasse: Record<number, number> = {};
+  for (const c of classes) rangClasse[c.numero] = c.rang;
+  const ordre = (n: number) => (rangClasse[n] === undefined ? Infinity : rangClasse[n]);
+  const cotes = participants
+    .filter((p) => !p.nonPartant && p.cote !== null)
+    .sort((a, b) => (a.cote as number) - (b.cote as number) || ordre(a.numero) - ordre(b.numero) || a.numero - b.numero);
+  const sansCote = participants.filter((p) => !p.nonPartant && p.cote === null).sort((a, b) => a.numero - b.numero);
+  const nonPartants = participants.filter((p) => p.nonPartant).sort((a, b) => a.numero - b.numero);
+
+  const retenu = (n: number): string | null => {
+    if (n === retenus.pivot) return "Base ⭐";
+    if (retenus.base.indexOf(n) !== -1) return "Base";
+    const pro = retenus.valuesPro.indexOf(n) !== -1;
+    const elite = retenus.valuesElite.indexOf(n) !== -1;
+    if (pro && elite) return "Value Pro + Elite";
+    if (pro) return "Value Pro";
+    if (elite) return "Value Elite";
+    return null;
+  };
+
+  const ligne = (p: ParticipantPmu, rang: number | null): LigneMusique => {
+    const places = dernieresPlaces(p.musique);
+    return {
+      numero: p.numero,
+      nom: p.nom,
+      nonPartant: p.nonPartant,
+      cote: p.cote,
+      rang,
+      exAequo: rang !== null && cotes.filter((x) => x.cote === p.cote).length > 1,
+      places,
+      fautes: places === null ? null : places.filter(estFaute).length,
+      retenu: p.nonPartant ? null : retenu(p.numero),
+    };
+  };
+
+  return cotes.map((p, i) => ligne(p, i + 1))
+    .concat(sansCote.map((p) => ligne(p, null)))
+    .concat(nonPartants.map((p) => ligne(p, null)));
+}
+
 export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
   const classes = versChevauxClasses(e.top8, e.ctx.participants);
   const pro = decouperPro(classes);
@@ -154,6 +206,12 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
         ecartes: elite.ecartes.map(resume),
         completeAvecFautifs: elite.completeAvecFautifs,
       },
+      partants: tableauPartants(e.ctx.participants, classes, {
+        pivot: pro.pivot,
+        base: pro.base,
+        valuesPro: pro.values,
+        valuesElite: elite.values,
+      }),
     },
   };
 }

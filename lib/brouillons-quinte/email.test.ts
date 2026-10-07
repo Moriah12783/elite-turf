@@ -21,11 +21,58 @@ const R: ResumeBrouillons = {
     ecartes: [],
     completeAvecFautifs: false,
   },
+  partants: [
+    { numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false, places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐" },
+    { numero: 10, nom: "JUSTICIA SMART", nonPartant: false, cote: 10, rang: 5, exAequo: false, places: ["4", "0", "D", "D", "D", "5", "D"], fautes: 4, retenu: "Value Pro" },
+    { numero: 11, nom: "JALOUZ D'OLIVERIE", nonPartant: false, cote: 15, rang: 8, exAequo: true, places: ["9", "2", "0", "2", "2", "0", "9"], fautes: 0, retenu: "Value Elite" },
+    { numero: 14, nom: "INES DE LA ROUVRE", nonPartant: false, cote: 15, rang: 9, exAequo: true, places: ["6", "7", "4", "1", "2", "4", "8"], fautes: 0, retenu: null },
+    { numero: 3, nom: "SANS MUSIQUE", nonPartant: false, cote: 57, rang: 13, exAequo: false, places: null, fautes: null, retenu: null },
+    { numero: 12, nom: "JUNON DE LOU", nonPartant: true, cote: 6.8, rang: null, exAequo: false, places: ["4", "5", "D", "5", "D", "1", "2"], fautes: 2, retenu: null },
+  ],
 };
 const LIENS: LiensBrouillons = {
   pro: "https://elite-turf.fr/admin/pronostics/a/modifier",
   elite: "https://elite-turf.fr/admin/pronostics/b/modifier",
 };
+
+describe("tableau des musiques des partants (option A du 07/10)", () => {
+  const html = emailBrouillons(R, LIENS).html;
+
+  it("titre, légende et une ligne par cheval, dans l'ordre donné", () => {
+    expect(html).toContain("Musiques des partants");
+    expect(html).toContain("7 dernières courses, de la plus récente à la plus ancienne");
+    const i = ["IMAGE D&#39;ATALANTE", "JUSTICIA SMART", "JALOUZ D&#39;OLIVERIE", "INES DE LA ROUVRE", "SANS MUSIQUE", "JUNON DE LOU"].map((n) => html.indexOf(n));
+    expect(i.every((x) => x >= 0)).toBe(true);
+    expect(i).toEqual(i.slice().sort((a, b) => a - b));
+  });
+
+  it("cote à la française, rang au marché, ex-aequo signalés", () => {
+    expect(html).toContain(">3,8<");
+    expect(html).toContain(">8=<");
+    expect(html).toContain(">9=<");
+    expect(html).toContain(">1<");
+  });
+
+  it("places lisibles : podiums en vert, fautes en rouge", () => {
+    expect(html).toContain('<b style="color:#15803d">2</b>');
+    expect(html).toContain('<b style="color:#b91c1c">D</b>');
+  });
+
+  it("non-partant, musique inconnue et chevaux retenus", () => {
+    expect(html).toContain(">non partant<");
+    expect(html).toContain(">inconnue<");
+    expect(html).toContain(">Base ⭐<");
+    expect(html).toContain(">Value Elite<");
+  });
+
+  it("aussi dans l'essai à blanc", () => {
+    expect(emailBrouillons(R, null).html).toContain("Musiques des partants");
+  });
+
+  it("sans partants : pas de tableau", () => {
+    expect(emailBrouillons({ ...R, partants: [] }, LIENS).html).not.toContain("Musiques des partants");
+  });
+});
 
 describe("e-mails à Steph", () => {
   it("prêts : objet, sélections, confiance, liens", () => {
