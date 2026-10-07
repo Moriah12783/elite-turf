@@ -107,6 +107,7 @@ describe("appliquerCotesPmu", () => {
     { id: "b", numero: 2, nom_cheval: "N2", cote: 7, non_partant: false },
     { id: "c", numero: 3, nom_cheval: "N3", cote: 5, non_partant: true },
     { id: "d", numero: 4, nom_cheval: "N4", cote: 4, non_partant: false },
+    { id: "e", numero: 5, nom_cheval: "N5", cote: 3, non_partant: true },
   ];
   const r = appliquerCotesPmu(base, [pmu(1, false, 3.5), pmu(2, true, null), pmu(3, false, 6)]);
 
@@ -116,11 +117,17 @@ describe("appliquerCotesPmu", () => {
 
   it("non-partant déclaré au PMU seulement → exclu", () => {
     expect(r[1].non_partant).toBe(true);
-    expect(r.filter((p) => !p.non_partant).map((p) => p.numero)).toEqual([1, 4]);
+    expect(r.filter((p) => !p.non_partant).map((p) => p.numero)).toEqual([1, 3, 4]);
   });
 
-  it("un non-partant de la base le reste", () => {
-    expect(r[2].non_partant).toBe(true);
+  it("le PMU fait foi : non partant en base mais partant au PMU → partant, avec sa cote", () => {
+    expect(r[2].non_partant).toBe(false);
+    expect(r[2].cote).toBe(6);
+  });
+
+  it("absent du PMU : le statut de la base est gardé, sans cote", () => {
+    expect(r[4].non_partant).toBe(true);
+    expect(r[4].cote).toBeNull();
   });
 
   it("cheval absent du PMU → pas de cote (il ne sera pas classé)", () => {
