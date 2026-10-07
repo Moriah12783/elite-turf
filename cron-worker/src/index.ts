@@ -171,6 +171,8 @@ const CRON_MAP: Record<string, string> = {
   // Sélection stats : photo figée 15 à 5 min avant chaque départ → bilan honnête
   // (jamais recalculé sur des cotes relevées après coup). Décalé de 2 min sur « */5 » (accueil).
   "2,7,12,17,22,27,32,37,42,47,52,57 * * * *": "/api/cron/photo-selection",
+  // Brouillons Pro + Elite du Quinté+ à ~T-90 (jamais publiés ; e-mail à Steph). Décalé de 2 min sur photo-selection.
+  "4,9,14,19,24,29,34,39,44,49,54,59 * * * *": "/api/cron/brouillons-quinte",
 
   // ── Notifications utilisateurs ────────────────────────────────────
   "23 * * * *":   "/api/cron/welcome-emails",

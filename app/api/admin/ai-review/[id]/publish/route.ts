@@ -246,6 +246,9 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     .select("id")
     .eq("course_id",    draft.course_id)
     .eq("niveau_acces", niveauLegacy)
+    // Un brouillon AUTO-MARCHE (préparé à T-90) attend la relecture de Steph :
+    // ne jamais le reprendre ni le publier avec le contenu de l'IA.
+    .or("source.is.null,source.neq.AUTO-MARCHE")
     .maybeSingle();
 
   const pronosticPayload = {

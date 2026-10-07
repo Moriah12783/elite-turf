@@ -120,6 +120,8 @@ export default async function EspaceMembrePage() {
           hippodrome:hippodrome_id(nom)
         )
       `)
+      // Publiés seulement : un brouillon (date de publication vide) passait en tête.
+      .eq("publie", true)
       .order("date_publication", { ascending: false })
       .limit(8),
 

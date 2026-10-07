@@ -185,7 +185,9 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await supabase
       .from("pronostics")
       .select("id, course_id, selection")
-      .in("course_id", courseIds);
+      .in("course_id", courseIds)
+      // Jamais de reprise d'un brouillon AUTO-MARCHE (préparé à T-90, en attente de Steph).
+      .or("source.is.null,source.neq.AUTO-MARCHE");
     for (const p of existing ?? []) {
       // On garde le premier pronostic trouvé par course (cas pas de doublon attendu mais safe)
       if (!existingByCourseId.has(p.course_id)) {

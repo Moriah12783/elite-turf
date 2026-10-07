@@ -137,6 +137,7 @@ crons = [
   "*/5 * * * *",     # accueil mis en cache (B3) : appel de « / » → régénération, jamais plus de ~5 min
   "40 9 * * 1",      # calibration-hebdo (lundi 9h40 UTC : scellé write-once de la semaine précédente, Radar)
   "2,7,12,17,22,27,32,37,42,47,52,57 * * * *",  # photo-selection : fige la Sélection stats 15 à 5 min avant chaque départ (bilan)
+  "4,9,14,19,24,29,34,39,44,49,54,59 * * * *",  # brouillons-quinte : brouillons Pro + Elite du Quinté+ à ~T-90 (spec 2026-10-07)
 
   # ── Notifications utilisateurs ──────────────────────────────────────
   "23 * * * *",      # welcome-emails (toutes les heures à :23)

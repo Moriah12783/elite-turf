@@ -81,7 +81,7 @@ export function nomCheval(nom: string | null | undefined): string {
  * « Poète Célèste » chez GenyBet et au PMU. Jusqu'au 03/10/2026, l'égalité
  * stricte écartait ces courses (Dax, Mont-de-Marsan, Craon…).
  */
-function memeNom(a: string, b: string): boolean {
+export function memeNom(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
   const court = a.length <= b.length ? a : b;
@@ -139,11 +139,10 @@ const PMU_HEADERS = {
 };
 
 /**
- * Cotes en direct d'une course. `null` = PMU injoignable : l'appelant NE DOIT
- * PAS en conclure « pas de cote ».
+ * GET JSON sur l'API PMU : relais d'abord, accès direct ensuite. `null` = PMU
+ * injoignable ou réponse illisible — jamais « pas de donnée ».
  */
-export async function fetchCotesPmu(dateISO: string, R: number, C: number, timeoutMs = 4000): Promise<CotePmu[] | null> {
-  const chemin = `/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}/participants`;
+export async function fetchPmuJson(chemin: string, timeoutMs = 4000): Promise<unknown | null> {
   for (const base of [PMU_PROXY, PMU_DIRECT]) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -151,11 +150,20 @@ export async function fetchCotesPmu(dateISO: string, R: number, C: number, timeo
       const res = await fetch(base + chemin, { headers: PMU_HEADERS, cache: "no-store", signal: ctrl.signal });
       clearTimeout(timer);
       if (!res.ok) continue;
-      return lireCotesPmu(await res.json());
+      return await res.json();
     } catch {
       clearTimeout(timer);
       /* base suivante */
     }
   }
   return null;
+}
+
+/**
+ * Cotes en direct d'une course. `null` = PMU injoignable : l'appelant NE DOIT
+ * PAS en conclure « pas de cote ».
+ */
+export async function fetchCotesPmu(dateISO: string, R: number, C: number, timeoutMs = 4000): Promise<CotePmu[] | null> {
+  const json = await fetchPmuJson(`/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}/participants`, timeoutMs);
+  return json === null ? null : lireCotesPmu(json);
 }

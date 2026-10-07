@@ -37,6 +37,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .from("pronostics")
     .select("analyse_courte, niveau_acces, type_pari, selection, confiance, resultat, course:courses(libelle, date_course, heure_depart, hippodrome:hippodromes(nom))")
     .eq("id", params.id)
+    // Un brouillon n'a pas de métadonnées : la page renvoie 404 et son titre ne doit rien révéler.
+    .eq("publie", true)
     .single();
 
   if (!data) return { title: "Pronostic" };
