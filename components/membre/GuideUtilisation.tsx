@@ -5,9 +5,13 @@ import { TIERS } from "@/components/pronostics/plan-radar-tiers";
 /**
  * Guide « Exploiter vos pronostics » — espace membre.
  *
- * Explique à l'abonné (Starter, Pro ou Elite) comment lire sa sélection
- * (couplé / base / associés / value / coup / champ + pivot) et comment en tirer
- * des tickets en champ réduit ou total.
+ * Explique à l'abonné (Starter, Pro ou Elite) comment lire sa sélection et
+ * comment en tirer des tickets en champ réduit ou total.
+ *
+ * Aligné le 07/10/2026 sur ce qui est publié (demande de Steph) : la base (avec
+ * le pivot) et la value figurent sur chaque pronostic ; le couplé, les
+ * associés, le coup et le champ seulement les jours où l'expert les utilise
+ * (aucun depuis le 26/09). L'offre ne promet plus ni couplé ni associés.
  *
  * 🔴 RÈGLE : libellés et couleurs viennent de
  * `components/pronostics/plan-radar-tiers.ts`, la source lue par les
@@ -30,27 +34,54 @@ function categorie(cle: CleNiveau, detail: string) {
   return { cle, titre: t.label, puce: t.chip, texte: t.text, role: t.consigne, detail };
 }
 
-const CATEGORIES = [
-  categorie("couple",
-    "Le duo du plan de jeu Elite. Ces deux chevaux figurent aussi dans leur catégorie (souvent la base)."),
+/** Sur chaque pronostic publié. */
+const SUR_CHAQUE_PRONOSTIC = [
   categorie("base",
     "Le socle de la course. C'est parmi eux que se trouve le pivot, le cheval sur lequel appuyer tous vos tickets."),
-  categorie("associes",
-    "Dans le plan de jeu Elite, les chevaux à associer à la base de 3 en champ réduit."),
   categorie("value",
     "Moins attendus que la base, ils sont là pour faire grimper les rapports quand ils entrent à l'arrivée."),
+];
+
+/** Seulement les jours où l'expert les utilise : rien n'est promis chaque jour. */
+const SELON_LES_JOURS = [
+  categorie("couple",
+    "Le duo à jouer en couplé. Ces deux chevaux figurent aussi dans leur catégorie (souvent la base)."),
+  categorie("associes",
+    "Les chevaux à associer à la base en champ réduit."),
   categorie("coup",
     "L'outsider de la sélection. Il ne sort pas souvent, mais quand il sort, il transforme le rapport."),
   categorie("champ",
     "Les chevaux qui ferment la sélection. Utiles pour élargir un champ réduit sans faire exploser le budget."),
 ];
 
+/** Une catégorie, avec sa pastille aux couleurs exactes du pronostic. */
+function Categorie({ c }: { c: ReturnType<typeof categorie> }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-bg-elevated/40 p-3.5">
+      <span
+        className={`inline-flex items-center justify-center w-9 h-9 rounded-lg border text-xs font-bold flex-shrink-0 ${c.puce}`}
+      >
+        {c.cle === "coup" ? "1" : c.cle === "champ" ? "•••" : "N°"}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-tight">
+          <span className={c.texte}>{c.titre}</span>
+          <span className="text-text-muted font-normal"> — {c.role}</span>
+        </p>
+        <p className="text-text-secondary text-xs mt-1 leading-relaxed">
+          {c.detail}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Une formule de jeu : quels chevaux prendre en base, quoi associer. */
 const FORMULES = [
   {
     pari: "Couplé",
     base: "Le pivot ⭐",
-    associer: "Un cheval de la value, ou le coup",
+    associer: "Un cheval de la value (ou le coup, les jours où il y en a un)",
     note: "La combinaison la plus simple : deux chevaux, un ancrage solide et une seconde chance.",
   },
   {
@@ -62,7 +93,7 @@ const FORMULES = [
   {
     pari: "Quarté",
     base: "Le pivot ⭐ + un cheval de la base + un cheval de la value",
-    associer: "Le reste de nos numéros, dont le coup doré",
+    associer: "Le reste de nos numéros (et le coup doré, les jours où il y en a un)",
     note: "Trois chevaux d'appui : c'est l'équilibre entre couverture et budget.",
   },
 ];
@@ -118,27 +149,12 @@ export default function GuideUtilisation() {
             Ce sont exactement les couleurs affichées sur votre pronostic.
           </p>
 
+          <p className="text-[11px] uppercase tracking-wider font-bold text-text-muted mb-2">
+            Sur chaque pronostic
+          </p>
           <div className="space-y-3">
-            {CATEGORIES.map((c) => (
-              <div
-                key={c.cle}
-                className="flex items-start gap-3 rounded-xl border border-border bg-bg-elevated/40 p-3.5"
-              >
-                <span
-                  className={`inline-flex items-center justify-center w-9 h-9 rounded-lg border text-xs font-bold flex-shrink-0 ${c.puce}`}
-                >
-                  {c.cle === "coup" ? "1" : c.cle === "champ" ? "•••" : "N°"}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold leading-tight">
-                    <span className={c.texte}>{c.titre}</span>
-                    <span className="text-text-muted font-normal"> — {c.role}</span>
-                  </p>
-                  <p className="text-text-secondary text-xs mt-1 leading-relaxed">
-                    {c.detail}
-                  </p>
-                </div>
-              </div>
+            {SUR_CHAQUE_PRONOSTIC.map((c) => (
+              <Categorie key={c.cle} c={c} />
             ))}
           </div>
 
@@ -159,6 +175,18 @@ export default function GuideUtilisation() {
                 placer 1<sup>er</sup>, 2<sup>e</sup> ou 3<sup>e</sup>.
               </p>
             </div>
+          </div>
+
+          <p className="text-[11px] uppercase tracking-wider font-bold text-text-muted mt-6 mb-1">
+            Selon les jours
+          </p>
+          <p className="text-text-muted text-xs mb-3">
+            Ces catégories n&apos;apparaissent que les jours où nous les utilisons.
+          </p>
+          <div className="space-y-3">
+            {SELON_LES_JOURS.map((c) => (
+              <Categorie key={c.cle} c={c} />
+            ))}
           </div>
         </section>
 
@@ -205,11 +233,12 @@ export default function GuideUtilisation() {
             En résumé
           </h3>
           <p className="text-text-secondary text-sm leading-relaxed">
-            Appuyez-vous sur la <span className="text-emerald-400 font-semibold">solidité
+            Appuyez-vous sur la <span className={`${TIERS.base.text} font-semibold`}>solidité
             de la base</span>, complétez avec la{" "}
-            <span className="text-blue-400 font-semibold">pertinence de la value</span> et
-            tentez <span className="text-gold-primary font-semibold">le coup</span> pour
-            le rapport. Le pivot ⭐ reste votre point fixe.
+            <span className={`${TIERS.value.text} font-semibold`}>pertinence de la value</span> et,
+            les jours où nous en désignons un, tentez{" "}
+            <span className={`${TIERS.coup.text} font-semibold`}>le coup</span> pour le
+            rapport. Le pivot ⭐ reste votre point fixe.
           </p>
           <p className="text-text-muted text-xs mt-3 leading-relaxed">
             Le turf comporte une part d&apos;aléa que personne ne supprime. Jouez
