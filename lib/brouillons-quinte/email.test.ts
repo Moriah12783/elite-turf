@@ -71,6 +71,11 @@ describe("e-mails à Steph", () => {
     expect(m.html).toContain("Nouveau pronostic");
   });
 
+  it("échec, partants incohérents : raison lisible", () => {
+    const m = emailEchec({ jour: "2026-10-07", prix: "Prix des Gobelins", heureGmt: "11h55", raison: "partants_incoherents" });
+    expect(m.subject).toBe("Brouillons du Quinté+ NON préparés — les partants de notre base ne correspondent pas à ceux du PMU (numéros ou noms)");
+  });
+
   it("échappe le HTML", () => {
     expect(emailBrouillons({ ...R, prix: "<b>X</b>" }, null).html).toContain("&lt;b&gt;X&lt;/b&gt;");
     expect(emailEchec({ jour: "j", prix: "P", heureGmt: "11h55", raison: "erreur", detail: "<script>" }).html).toContain("&lt;script&gt;");

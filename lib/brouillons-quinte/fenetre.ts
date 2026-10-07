@@ -34,6 +34,23 @@ export function dernierPassage(minutes: number | null): boolean {
   return minutes !== null && minutes < DERNIER_PASSAGE_SOUS;
 }
 
+export type Moment =
+  | { etat: "heure_inconnue" }
+  | { etat: "hors_fenetre"; minutes: number }
+  | { etat: "dans_fenetre"; minutes: number };
+
+/**
+ * PUR : où en est-on par rapport au départ ? Une heure de départ illisible
+ * n'est pas une erreur : la route s'arrête sans alerte. Sinon le cron, qui
+ * passe toutes les 5 min, laisserait un échec et une alerte Telegram à chaque
+ * passage, toute la journée (revue finale du 07/10/2026).
+ */
+export function situer(depart: Date | null, maintenant: number = Date.now()): Moment {
+  const minutes = minutesAvantDepart(depart, maintenant);
+  if (minutes === null) return { etat: "heure_inconnue" };
+  return dansFenetre(minutes) ? { etat: "dans_fenetre", minutes } : { etat: "hors_fenetre", minutes };
+}
+
 export interface PronosticExistant {
   id: string;
   niveau_acces: string;

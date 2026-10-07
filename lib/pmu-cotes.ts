@@ -81,7 +81,7 @@ export function nomCheval(nom: string | null | undefined): string {
  * « Poète Célèste » chez GenyBet et au PMU. Jusqu'au 03/10/2026, l'égalité
  * stricte écartait ces courses (Dax, Mont-de-Marsan, Craon…).
  */
-function memeNom(a: string, b: string): boolean {
+export function memeNom(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
   const court = a.length <= b.length ? a : b;

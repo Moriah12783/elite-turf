@@ -23,7 +23,7 @@ import { buildNotreSelection } from "@/lib/courses/notre-selection";
 import { sendEmail, APP_URL } from "@/lib/email";
 import { chargerDonneesPmu } from "@/lib/brouillons-quinte/pmu";
 import {
-  minutesAvantDepart, dansFenetre, dernierPassage, gardeFous, type PronosticExistant,
+  situer, dansFenetre, dernierPassage, gardeFous, type PronosticExistant,
 } from "@/lib/brouillons-quinte/fenetre";
 import { appliquerCotesPmu } from "@/lib/brouillons-quinte/selection";
 import { controlerDonneesPmu, assemblerBrouillons } from "@/lib/brouillons-quinte/assembler";
@@ -108,11 +108,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: "pas_de_quinte" });
     }
     const depart = parisVersUtc(quinte.date_course, quinte.heure_depart);
-    if (!depart) throw new Error(`heure de départ illisible : ${quinte.heure_depart}`);
-    minutes = minutesAvantDepart(depart);
+    const moment = situer(depart);
+    if (moment.etat === "heure_inconnue" || !depart) {
+      // Heure illisible : arrêt sans alerte (sinon un échec toutes les 5 min, toute la journée).
+      await cronLog.finish("skip", { reason: "heure_depart_inconnue", heure_depart: quinte.heure_depart ?? null, jour });
+      return NextResponse.json({ ok: true, skipped: "heure_depart_inconnue" });
+    }
+    minutes = moment.minutes;
     prix = quinte.libelle || prix;
     heure = heureGmt(depart.getTime());
-    if (!apercu && !dansFenetre(minutes)) {
+    if (!apercu && moment.etat === "hors_fenetre") {
       await cronLog.finish("skip", { reason: "hors_fenetre", minutes, jour });
       return NextResponse.json({ ok: true, skipped: "hors_fenetre", minutes });
     }
@@ -157,7 +162,7 @@ export async function GET(req: NextRequest) {
     if (pErr) throw new Error(`partants : ${pErr.message}`);
     const base = (partantsBase ?? []) as any[];
     const pmu = await chargerDonneesPmu(quinte.date_course, quinte.numero_reunion, quinte.numero_course);
-    const raison = controlerDonneesPmu(base.map((p) => p.nom_cheval), pmu.participants);
+    const raison = controlerDonneesPmu(base, pmu.participants);
     if (raison || !pmu.participants) return await donneesInsuffisantes(raison ?? "pmu_injoignable");
 
     // 4. Les 8 favoris, dans l'ordre de la Sélection stats du site (non-partants exclus en amont)

@@ -8,6 +8,7 @@ import type { Confiance } from "./selection";
 export type RaisonEchec =
   | "pmu_injoignable"
   | "course_pmu_non_reconnue"
+  | "partants_incoherents"
   | "cotes_factices"
   | "cotes_indisponibles"
   | "erreur";
@@ -15,6 +16,7 @@ export type RaisonEchec =
 export const RAISONS_LISIBLES: Record<RaisonEchec, string> = {
   pmu_injoignable: "le PMU ne répond pas",
   course_pmu_non_reconnue: "la course PMU ne correspond pas à la nôtre (chevaux différents)",
+  partants_incoherents: "les partants de notre base ne correspondent pas à ceux du PMU (numéros ou noms)",
   cotes_factices: "les cotes PMU semblent factices",
   cotes_indisponibles: "moins de 8 chevaux ont une cote PMU",
   erreur: "erreur technique",

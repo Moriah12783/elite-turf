@@ -2,7 +2,7 @@
  * lib/brouillons-quinte/assembler.ts — contrôles d'entrée et assemblage des
  * deux lignes `pronostics` (spec §5, §8). PUR : la route fait les I/O.
  */
-import { memesPartants } from "@/lib/pmu-cotes";
+import { memesPartants, memeNom, nomCheval } from "@/lib/pmu-cotes";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { buildSelectionDetail, type SelectionDetailRow } from "@/lib/pronostics/selection-detail";
 import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
@@ -15,18 +15,44 @@ import {
 import { analyseCourte, analyseComplete, heureGmt, type ChevalCommente, type ContexteCourse } from "./commentaires";
 import type { RaisonEchec, ResumeBrouillons, ChevalResume } from "./email";
 
+/** Partant de la base, tel que la route le lit. */
+export interface PartantBase {
+  numero: number;
+  nom_cheval: string;
+}
+
 /**
- * PUR : les données PMU sont-elles exploitables ? null = oui. Ordre : PMU
- * injoignable, autre course (contrôle d'identité, piège déjà vécu 4 fois),
- * cotes factices, moins de 8 cotes.
+ * PUR : les données PMU sont-elles exploitables ? null = oui. Ordre :
+ * 1. PMU injoignable ;
+ * 2. autre course (contrôle d'identité par les noms, piège déjà vécu 4 fois) ;
+ * 3. partants incohérents : chaque partant coté du PMU doit exister en base
+ *    sous le même numéro et le même nom. Les cotes PMU sont appliquées aux
+ *    lignes de la base par numéro : sans ce contrôle, une base incomplète ou
+ *    mal numérotée ferait écrire « Favori du marché » pour un cheval qui ne
+ *    l'est pas (revue finale du 07/10/2026) ;
+ * 4. cotes factices ;
+ * 5. moins de 8 cotes.
  */
-export function controlerDonneesPmu(nomsBase: string[], participants: ParticipantPmu[] | null): RaisonEchec | null {
+export function controlerDonneesPmu(base: PartantBase[], participants: ParticipantPmu[] | null): RaisonEchec | null {
   if (participants === null) return "pmu_injoignable";
-  if (!memesPartants(nomsBase, participants.map((p) => p.nom))) return "course_pmu_non_reconnue";
+  if (!memesPartants(base.map((b) => b.nom_cheval), participants.map((p) => p.nom))) return "course_pmu_non_reconnue";
   const partants = participants.filter((p) => !p.nonPartant);
+  if (!partantsCoherents(base, partants)) return "partants_incoherents";
   if (!cotesPlausibles(partants.map((p) => p.cote))) return "cotes_factices";
   if (partants.filter((p) => p.cote !== null).length < TAILLE_SELECTION) return "cotes_indisponibles";
   return null;
+}
+
+/** PUR : chaque partant coté du PMU a, en base, une ligne au même numéro et au même nom. */
+function partantsCoherents(base: PartantBase[], partantsPmu: ParticipantPmu[]): boolean {
+  const nomParNumero: Record<number, string> = {};
+  for (const b of base) nomParNumero[b.numero] = nomCheval(b.nom_cheval);
+  for (const p of partantsPmu) {
+    if (p.cote === null) continue;
+    const nomBase = nomParNumero[p.numero];
+    if (nomBase === undefined || !memeNom(nomBase, nomCheval(p.nom))) return false;
+  }
+  return true;
 }
 
 export interface LigneBrouillon {

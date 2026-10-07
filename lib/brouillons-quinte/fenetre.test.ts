@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutesAvantDepart, dansFenetre, dernierPassage, gardeFous, type EtatDuJour } from "./fenetre";
+import { minutesAvantDepart, dansFenetre, dernierPassage, gardeFous, situer, type EtatDuJour } from "./fenetre";
 import { parisVersUtc } from "@/lib/paris-date";
 
 const DEPART = parisVersUtc("2026-10-07", "13:55:00")!;
@@ -32,6 +32,19 @@ describe("fenêtre des brouillons : de 95 à 60 minutes avant le départ", () =>
     const hiver = parisVersUtc("2026-10-25", "13:55:00")!;
     expect(hiver.toISOString()).toBe("2026-10-25T12:55:00.000Z");
     expect(dansFenetre(minutesAvantDepart(hiver, a("2026-10-25T11:25:00Z")))).toBe(true); // 90
+  });
+});
+
+describe("situer : où en est-on par rapport au départ ?", () => {
+  it("heure de départ illisible → heure inconnue, pas une erreur (sinon une alerte toutes les 5 min)", () => {
+    expect(situer(parisVersUtc("2026-10-07", ""))).toEqual({ etat: "heure_inconnue" });
+    expect(situer(null)).toEqual({ etat: "heure_inconnue" });
+  });
+
+  it("dans la fenêtre, avant, après", () => {
+    expect(situer(DEPART, a("2026-10-07T10:25:00Z"))).toEqual({ etat: "dans_fenetre", minutes: 90 });
+    expect(situer(DEPART, a("2026-10-07T09:00:00Z"))).toEqual({ etat: "hors_fenetre", minutes: 175 });
+    expect(situer(DEPART, a("2026-10-07T12:00:00Z"))).toEqual({ etat: "hors_fenetre", minutes: -5 });
   });
 });
 

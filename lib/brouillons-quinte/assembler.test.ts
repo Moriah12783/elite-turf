@@ -3,28 +3,48 @@ import { controlerDonneesPmu, assemblerBrouillons } from "./assembler";
 import { analyseCourte } from "./commentaires";
 import { CTX, CTX_ROUTE, PARTICIPANTS, TOP8 } from "./__fixtures__/gobelins";
 
-const NOMS_BASE = PARTICIPANTS.map((p) => p.nom);
+/** Partants de la base tels que la route les lit (numéro + nom). */
+const BASE = PARTICIPANTS.map((p) => ({ numero: p.numero, nom_cheval: p.nom }));
 
 describe("controlerDonneesPmu", () => {
   it("vraies données du 07/10 → aucune objection", () => {
-    expect(controlerDonneesPmu(NOMS_BASE, PARTICIPANTS)).toBeNull();
+    expect(controlerDonneesPmu(BASE, PARTICIPANTS)).toBeNull();
+  });
+
+  it("noms de la base écrits autrement (minuscules) → toujours reconnus", () => {
+    const base = PARTICIPANTS.map((p) => ({ numero: p.numero, nom_cheval: p.nom.toLowerCase() }));
+    expect(controlerDonneesPmu(base, PARTICIPANTS)).toBeNull();
   });
 
   it("PMU injoignable", () => {
-    expect(controlerDonneesPmu(NOMS_BASE, null)).toBe("pmu_injoignable");
+    expect(controlerDonneesPmu(BASE, null)).toBe("pmu_injoignable");
   });
 
   it("autres chevaux → course non reconnue (aucune sélection)", () => {
-    expect(controlerDonneesPmu(["ALPHA", "BRAVO", "CHARLIE", "DELTA"], PARTICIPANTS)).toBe("course_pmu_non_reconnue");
+    const autres = ["ALPHA", "BRAVO", "CHARLIE", "DELTA"].map((nom, i) => ({ numero: i + 1, nom_cheval: nom }));
+    expect(controlerDonneesPmu(autres, PARTICIPANTS)).toBe("course_pmu_non_reconnue");
+  });
+
+  it("la favorite du PMU absente de la base → partants incohérents (le classement du marché serait faux)", () => {
+    expect(controlerDonneesPmu(BASE.filter((b) => b.numero !== 17), PARTICIPANTS)).toBe("partants_incoherents");
+  });
+
+  it("numéros décalés entre la base et le PMU → partants incohérents", () => {
+    const decale = PARTICIPANTS.map((p) => ({ numero: (p.numero % 18) + 1, nom_cheval: p.nom }));
+    expect(controlerDonneesPmu(decale, PARTICIPANTS)).toBe("partants_incoherents");
+  });
+
+  it("le non-partant du PMU absent de la base ne gêne pas", () => {
+    expect(controlerDonneesPmu(BASE.filter((b) => b.numero !== 12), PARTICIPANTS)).toBeNull();
   });
 
   it("toutes les cotes à 1,2 → factices", () => {
-    expect(controlerDonneesPmu(NOMS_BASE, PARTICIPANTS.map((p) => ({ ...p, cote: 1.2 })))).toBe("cotes_factices");
+    expect(controlerDonneesPmu(BASE, PARTICIPANTS.map((p) => ({ ...p, cote: 1.2 })))).toBe("cotes_factices");
   });
 
   it("moins de 8 cotes → indisponibles", () => {
     const parts = PARTICIPANTS.map((p, i) => (i < 5 ? p : { ...p, cote: null }));
-    expect(controlerDonneesPmu(NOMS_BASE, parts)).toBe("cotes_indisponibles");
+    expect(controlerDonneesPmu(BASE, parts)).toBe("cotes_indisponibles");
   });
 });
 
