@@ -28,6 +28,28 @@ export interface RapportsPMU {
   simple_place?:     number[];      // [1er, 2e, 3e]
   deux_sur_quatre?:  number;
   multi?:            { en_4?: number; en_5?: number; en_6?: number; en_7?: number };
+  /**
+   * Ex æquo (dead heat) : le PMU paie alors PLUSIEURS combinaisons pour un même
+   * pari — Prix de Versailles (08/10/2026), Quinté+ 1-5-8-4-15 ET 1-5-8-4-16.
+   * Les champs ci-dessus n'en gardent qu'une. Ici, toutes les combinaisons
+   * payées des seuls paris concernés, telles que le PMU les donne, et de la
+   * même source (masse d'enjeux) que les champs ci-dessus.
+   * Absent = non vérifié ; `lignes: []` = vérifié, une combinaison par pari.
+   */
+  combinaisons?:     { source: SourceRapports; lignes: CombinaisonPayee[] };
+}
+
+/** Masse d'enjeux d'où viennent les rapports : internet (e-paris) ou points de vente (Geny). */
+export type SourceRapports = "internet" | "points_de_vente";
+
+export interface CombinaisonPayee {
+  pari: "SIMPLE_GAGNANT" | "SIMPLE_PLACE" | "COUPLE_GAGNANT" | "COUPLE_PLACE" | "TRIO" | "TIERCE" | "QUARTE_PLUS" | "QUINTE_PLUS";
+  /** Tiercé, Quarté+, Quinté+ seulement. */
+  type?: "ordre" | "desordre";
+  /** Telle que le PMU la donne : « 1-5-8-4-16 ». */
+  combinaison: string;
+  /** Mêmes unités que les champs ci-dessus : Quinté+ pour 2 €, le reste pour 1 €. */
+  rapport: number;
 }
 
 /**

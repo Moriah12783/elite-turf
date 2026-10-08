@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseRapportsDefinitifs, estCandidate } from "./pmu-rapports";
+import { parseRapportsDefinitifs, estCandidate, aCompleterCombinaisons, lignesPrincipales, combinaisonsMultiples, sourceDesRapports } from "./pmu-rapports";
 import { computeRapportGagnant } from "@/lib/pmu-rapports-gagnant";
 
 // Vrais rapports définitifs PMU du Quinté+ du 01/10/2026 (Prix Céréaliste, Auteuil R1C1).
@@ -69,5 +69,124 @@ describe("estCandidate — qui reçoit des rapports", () => {
   it("portée Quinté+ : une course ordinaire est écartée", () => {
     expect(estCandidate({ ...base, nationale: null, paris_disponibles: ["SIMPLE_GAGNANT"] }, "quinte")).toBe(false);
     expect(estCandidate({ ...base, nationale: null, paris_disponibles: ["SIMPLE_GAGNANT"] }, "toutes")).toBe(true);
+  });
+});
+
+// ── Ex æquo : plusieurs combinaisons payées (08/10/2026) ──────────────────────
+const fixture = (nom: string): unknown =>
+  JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${nom}`, import.meta.url)), "utf8"));
+// Vrais rapports PMU. Versailles (08/10/2026) : 15 et 16 ex æquo 5es.
+// Deauville (30/08/2026) : 4 et 11 ex æquo 1ers, 7 et 16 ex æquo 5es.
+// Ville de Paris (21/05/2026) : 3 et 6 ex æquo 3es.
+const VERSAILLES = fixture("pmu-rapports-definitifs-20261008-R1C1.json");
+const DEAUVILLE = fixture("pmu-rapports-definitifs-20260830-R1C3.json");
+const VILLE_DE_PARIS = fixture("pmu-rapports-definitifs-20260521-R1C7.json");
+const VILLE_DE_PARIS_PDV = fixture("pmu-rapports-offline-20260521-R1C7.json");
+
+describe("parseRapportsDefinitifs — ex æquo : toutes les combinaisons payées", () => {
+  it("Versailles : les deux Quinté+ payés (1-5-8-4-15 et 1-5-8-4-16)", () => {
+    const r = parseRapportsDefinitifs(VERSAILLES, [1, 5, 8, 4, 15, 16, 10])!;
+    expect(r.combinaisons).toEqual({
+      source: "internet",
+      lignes: [
+        { pari: "QUINTE_PLUS", type: "ordre", combinaison: "1-5-8-4-15", rapport: 6145.8 },
+        { pari: "QUINTE_PLUS", type: "ordre", combinaison: "1-5-8-4-16", rapport: 3227.8 },
+        { pari: "QUINTE_PLUS", type: "desordre", combinaison: "1-5-8-4-15", rapport: 72.2 },
+        { pari: "QUINTE_PLUS", type: "desordre", combinaison: "1-5-8-4-16", rapport: 39.2 },
+      ],
+    });
+    // Les champs historiques restent ceux de la première combinaison.
+    expect(r.quinte_plus).toEqual({ ordre: 6145.8, desordre: 72.2, bonus4: 3, bonus3: 2.6 });
+  });
+
+  it("Deauville : deux simples gagnants, tiercé et quarté dans les deux ordres", () => {
+    const lignes = parseRapportsDefinitifs(DEAUVILLE, [4, 11, 8, 9, 7, 16, 12])!.combinaisons!.lignes;
+    expect(lignes.filter((l) => l.pari === "SIMPLE_GAGNANT")).toEqual([
+      { pari: "SIMPLE_GAGNANT", combinaison: "4", rapport: 2.1 },
+      { pari: "SIMPLE_GAGNANT", combinaison: "11", rapport: 5.1 },
+    ]);
+    expect(lignes.filter((l) => l.pari === "TIERCE").map((l) => `${l.type} ${l.combinaison}`))
+      .toEqual(["ordre 4-11-8", "ordre 11-4-8", "desordre 4-11-8"]);
+    expect(lignes.some((l) => l.pari === "SIMPLE_PLACE" || l.pari === "COUPLE_GAGNANT")).toBe(false);
+  });
+
+  it("Deauville : l'ordre du Quinté+ n'est pas celui de la Tirelire", () => {
+    const r = parseRapportsDefinitifs(DEAUVILLE, [4, 11, 8, 9, 7, 16, 12])!;
+    expect(r.quinte_plus?.ordre).toBe(4594.2);     // 2 × 2 297,10 €, et non 2 × 6 070,60 € (Ordre + Tirelire)
+    expect(r.combinaisons!.lignes.filter((l) => l.pari === "QUINTE_PLUS" && l.type === "ordre").map((l) => l.rapport))
+      .toEqual([4594.2, 4594.2, 4684.2, 4684.2]);
+  });
+
+  it("Ville de Paris : quatre placés et cinq couplés placés", () => {
+    const lignes = parseRapportsDefinitifs(VILLE_DE_PARIS, [4, 11, 3, 6, 15, 5])!.combinaisons!.lignes;
+    expect(lignes.filter((l) => l.pari === "SIMPLE_PLACE").map((l) => l.combinaison)).toEqual(["4", "11", "3", "6"]);
+    expect(lignes.filter((l) => l.pari === "COUPLE_PLACE").map((l) => l.combinaison)).toEqual(["4-11", "4-3", "11-3", "4-6", "11-6"]);
+  });
+
+  it("sans ex æquo : vérifié, aucune combinaison de plus", () => {
+    expect(parseRapportsDefinitifs(brut, ARRIVEE)!.combinaisons).toEqual({ source: "internet", lignes: [] });
+  });
+});
+
+describe("sourceDesRapports — d'où viennent des rapports déjà en base", () => {
+  const internet = lignesPrincipales(VILLE_DE_PARIS, "internet");
+  const pdv = lignesPrincipales(VILLE_DE_PARIS_PDV, "points_de_vente");
+
+  it("rapports Geny de la Ville de Paris : prix des points de vente", () => {
+    // Valeurs réellement en base pour cette course (21/05/2026, scraping Geny).
+    const geny = {
+      tierce: { ordre: 147, desordre: 22.6 },
+      quarte_plus: { bonus: 4.3, ordre: 290.6, desordre: 20.5 },
+      quinte_plus: { ordre: 5139.2, bonus3: 3.4, bonus4: 4, desordre: 96 },
+      simple_gagnant: 10.26,
+    };
+    expect(sourceDesRapports(geny, { internet, points_de_vente: pdv })).toBe("points_de_vente");
+  });
+
+  it("rapports PMU internet : internet", () => {
+    const r = parseRapportsDefinitifs(VILLE_DE_PARIS, [4, 11, 3, 6, 15, 5])!;
+    expect(sourceDesRapports(r, { internet, points_de_vente: pdv })).toBe("internet");
+  });
+
+  it("course sans tiercé (rapports PMU internet) : les simples et couplés tranchent", () => {
+    const lignes = lignesPrincipales(VERSAILLES, "internet");
+    expect(sourceDesRapports({ simple_gagnant: 3, couple_gagnant: 13.1, simple_place: [1.5, 2.4, 1.9] }, { internet: lignes })).toBe("internet");
+  });
+
+  it("simples et couplés de Geny : aucune source PMU, rien d'ajouté", () => {
+    // Valeurs Geny réellement en base pour la Ville de Paris (21/05/2026).
+    const genySimples = { simple_gagnant: 10.26, couple_gagnant: 29.37, simple_place: [2.36, 1.83, 1.31], couple_place: [5.44, 4.31, 6.16] };
+    expect(sourceDesRapports(genySimples, { internet, points_de_vente: pdv })).toBeNull();
+  });
+
+  it("aucune source ne concorde : null, on n'ajoute rien", () => {
+    expect(sourceDesRapports({ tierce: { ordre: 1, desordre: 2 } }, { internet, points_de_vente: pdv })).toBeNull();
+  });
+});
+
+describe("combinaisonsMultiples — seulement les paris où l'ex æquo multiplie les combinaisons", () => {
+  it("points de vente, Ville de Paris : tiercé, quarté, quinté, placés ; pas le simple gagnant", () => {
+    const paris = combinaisonsMultiples(lignesPrincipales(VILLE_DE_PARIS_PDV, "points_de_vente")).map((l) => l.pari);
+    expect(Array.from(new Set(paris)).sort()).toEqual(["COUPLE_PLACE", "QUARTE_PLUS", "QUINTE_PLUS", "SIMPLE_PLACE", "TIERCE"]);
+  });
+});
+
+describe("aCompleterCombinaisons — rapports déjà en base d'une course avec ex æquo", () => {
+  const base = {
+    id: "c1", date_course: "2026-10-08", numero_reunion: 1, numero_course: 1, nationale: 1,
+    paris_disponibles: ["QUINTE_PLUS"], arrivee_officielle: [1, 5, 8, 4, 15, 16, 10],
+    arrivee_rangs: [1, 2, 3, 4, 5, 5, 7],
+    hippodrome: { pays: "France" }, arrivees: { id: "a1", rapports_pmu: { tierce: { ordre: 55.3 } } },
+  };
+  it("ex æquo et rapports sans combinaisons : oui", () => {
+    expect(aCompleterCombinaisons(base)).toBe(true);
+  });
+  it("combinaisons déjà vérifiées : non", () => {
+    expect(aCompleterCombinaisons({ ...base, arrivees: { id: "a1", rapports_pmu: { tierce: { ordre: 55.3 }, combinaisons: { source: "internet", lignes: [] } } } })).toBe(false);
+  });
+  it("sans ex æquo, sans rapports, ou hors de France : non", () => {
+    expect(aCompleterCombinaisons({ ...base, arrivee_rangs: null })).toBe(false);
+    expect(aCompleterCombinaisons({ ...base, arrivees: { id: "a1", rapports_pmu: null } })).toBe(false);
+    expect(aCompleterCombinaisons({ ...base, hippodrome: { pays: "Maroc" } })).toBe(false);
   });
 });
