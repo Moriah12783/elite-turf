@@ -20,7 +20,7 @@
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { buildGenyUrlFromStored } from "@/lib/geny";
 import { fetchGenybetArriveesMap } from "@/lib/sync/genybet-arrivees";
-import { fetchPmuArriveesDuJour } from "@/lib/sync/pmu-arrivees";
+import { arriveeARetenir, fetchPmuArriveesDuJour } from "@/lib/sync/pmu-arrivees";
 import { todayParisISO } from "@/lib/paris-date";
 import {
   parseRapportsPMU,
@@ -373,6 +373,11 @@ interface FetchedArrivee {
   arrivee:     number[];
   rapports:    RapportsPMU | null;
   commentaire: string | null;
+  /**
+   * Rangs officiels PMU (ex æquo), NULL = ordre strict. Seule l'API PMU les
+   * connaît : une arrivée venue de Geny ou de GenyBet n'en a pas.
+   */
+  rangs?:      number[] | null;
 }
 
 async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee | null> {
@@ -595,16 +600,18 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
         const c = parId.get(v.courseId);
         if (!c) continue;
         const off = pmuMap.get(`${c.numero_reunion}|${c.numero_course}`);
-        if (!off || off.length < 3) continue;
-        const attendu = off.slice(0, maxHorsesForParis(c.parisDisponibles));
-        const identique = v.arrivee.length === attendu.length
-          && v.arrivee.every((n, i) => n === attendu[i]);
+        if (!off || off.arrivee.length < 3) continue;
+        // Cap compté en rangs : un ex æquo au rang du cap est gardé en entier.
+        const attendu = arriveeARetenir(off, maxHorsesForParis(c.parisDisponibles));
+        v.rangs = attendu.rangs;
+        const identique = v.arrivee.length === attendu.arrivee.length
+          && v.arrivee.every((n, i) => n === attendu.arrivee[i]);
         if (!identique) {
           console.warn(
             `[geny-arrivees] ⚠️ R${c.numero_reunion}C${c.numero_course} : ` +
-            `Geny ${v.arrivee.join("-")} ≠ PMU ${attendu.join("-")} → PMU retenue`,
+            `Geny ${v.arrivee.join("-")} ≠ PMU ${attendu.arrivee.join("-")} → PMU retenue`,
           );
-          v.arrivee = attendu;
+          v.arrivee = attendu.arrivee;
           corriges++;
         }
       }
@@ -615,10 +622,12 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
       for (const c of unique) {
         if (dejaVues.has(c.id)) continue;
         const off = pmuMap.get(`${c.numero_reunion}|${c.numero_course}`);
-        if (!off || off.length < 3) continue;
+        if (!off || off.arrivee.length < 3) continue;
+        const retenue = arriveeARetenir(off, maxHorsesForParis(c.parisDisponibles));
         valid.push({
           courseId: c.id,
-          arrivee: off.slice(0, maxHorsesForParis(c.parisDisponibles)),
+          arrivee: retenue.arrivee,
+          rangs: retenue.rangs,
           rapports: null,
           commentaire: null,
         });
@@ -673,18 +682,20 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
 
   // Upsert dans courses (arrivee_officielle + statut TERMINE)
   if (valid.length > 0) {
-    const courseUpdates = valid.map(({ courseId, arrivee }) => ({
+    const courseUpdates = valid.map(({ courseId, arrivee, rangs }) => ({
       id:                 courseId,
       arrivee_officielle: arrivee,
+      arrivee_rangs:      rangs ?? null,
       statut:             "TERMINE",
     }));
     await supabase.from("courses").upsert(courseUpdates);
 
     // Upsert dans table arrivees (best-effort, table optionnelle)
     // Inclut désormais rapports_pmu (JSONB) + commentaire (TEXT)
-    const arriveesRows = valid.map(({ courseId, arrivee, rapports, commentaire }) => ({
+    const arriveesRows = valid.map(({ courseId, arrivee, rangs, rapports, commentaire }) => ({
       course_id:     courseId,
       ordre_arrivee: arrivee,
+      rangs:         rangs ?? null,
       rapports_pmu: rapports ?? null,
       commentaire:  commentaire ?? null,
       horodatage:    new Date().toISOString(),

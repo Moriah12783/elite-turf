@@ -64,6 +64,7 @@ describe("lireProgrammeFrance", () => {
   it("aplatit l'arrivée définitive, donne l'heure de Paris et l'identité de la course", () => {
     expect(pmu.get(cleRC(1, 4))).toEqual({
       arrivee: [5, 13, 11, 16, 7, 2, 10, 9, 14],
+      rangs: [1, 2, 3, 4, 5, 6, 7, 8, 9],
       depart: { paris: "15:15", decalageMin: 120 },
       hippodrome: "ENGHIEN",
       hippodromeLong: "HIPPODROME D'ENGHIEN SOISY",
@@ -73,6 +74,10 @@ describe("lireProgrammeFrance", () => {
 
   it("préserve l'ordre d'un ex æquo", () => {
     expect(pmu.get(cleRC(1, 5))?.arrivee).toEqual([3, 1, 4, 2]);
+  });
+
+  it("garde le rang partagé d'un ex æquo : 1 et 4 sont 2es, le 2 est 4e", () => {
+    expect(pmu.get(cleRC(1, 5))?.rangs).toEqual([1, 2, 2, 4]);
   });
 
   it("laisse vide l'arrivée d'une course annulée, mais garde son heure", () => {
@@ -176,7 +181,7 @@ describe("planifierRattrapage", () => {
 
   it("ajoute l'arrivée manquante, coupée à 7 chevaux pour un Quinté+", () => {
     const plan = planifierRattrapage([course({})], pmu);
-    expect(plan.arrivees).toEqual([{ course_id: "c-1", ordre_arrivee: [5, 13, 11, 16, 7, 2, 10] }]);
+    expect(plan.arrivees).toEqual([{ course_id: "c-1", ordre_arrivee: [5, 13, 11, 16, 7, 2, 10], rangs: null }]);
     expect(plan.ignorees).toEqual([]);
   });
 
@@ -198,7 +203,7 @@ describe("planifierRattrapage", () => {
     const plan = planifierRattrapage([course({ arrivee_officielle: [13, 5, 11, 16, 7], a_ligne_arrivee: true })], pmu);
     expect(plan.arrivees).toEqual([]);
     expect(plan.divergentes).toEqual([
-      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10], a_ligne_arrivee: true, corrigeable: true },
+      { course_id: "c-1", base: [13, 5, 11, 16, 7], pmu: [5, 13, 11, 16, 7, 2, 10], rangs_pmu: null, a_ligne_arrivee: true, corrigeable: true },
     ]);
   });
 
@@ -261,5 +266,29 @@ describe("planifierRattrapage", () => {
     ]);
     const plan = planifierRattrapage([course({ hippodrome: "Paris-Vincennes" })], pmuVincennes);
     expect(plan.arrivees).toHaveLength(1);
+  });
+
+  describe("ex æquo", () => {
+    // Fixture : 1 et 4 ex æquo 2es (format PMU [[3],[1,4],[2]]).
+    const pmuExAequo = new Map<string, CoursePmuFrance>([
+      [cleRC(1, 4), { arrivee: [3, 1, 4, 2], rangs: [1, 2, 2, 4], depart: null, ...IDENTITE }],
+    ]);
+    const PARTANTS = [1, 2, 3, 4, 5];
+
+    it("écrit les rangs avec l'arrivée", () => {
+      const plan = planifierRattrapage([course({ partants: PARTANTS })], pmuExAequo);
+      expect(plan.arrivees).toEqual([{ course_id: "c-1", ordre_arrivee: [3, 1, 4, 2], rangs: [1, 2, 2, 4] }]);
+    });
+
+    it("deux ex æquo dans l'autre ordre ne font pas une divergence", () => {
+      const plan = planifierRattrapage([course({ partants: PARTANTS, arrivee_officielle: [3, 4, 1, 2] })], pmuExAequo);
+      expect(plan.divergentes).toEqual([]);
+    });
+
+    it("un cheval à un autre rang reste une divergence", () => {
+      const plan = planifierRattrapage([course({ partants: PARTANTS, arrivee_officielle: [3, 2, 1, 4] })], pmuExAequo);
+      expect(plan.divergentes).toHaveLength(1);
+      expect(plan.divergentes[0].rangs_pmu).toEqual([1, 2, 2, 4]);
+    });
   });
 });
