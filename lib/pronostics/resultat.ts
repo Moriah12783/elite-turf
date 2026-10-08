@@ -23,6 +23,8 @@
  * PUR (aucune I/O), testé.
  */
 
+import { groupesArrivee } from "../courses/rangs";
+
 export type ResultatPronostic = "GAGNANT" | "PARTIEL" | "PERDANT";
 
 /** Majuscules sans accents ni séparateurs : « Quinté+ » → « QUINTE ». */
@@ -74,11 +76,20 @@ export function fenetreComparaison(
  * ⚠️ « GAGNANT » ne signifie donc PAS « les cinq premiers dans l'ordre ».
  * C'est un critère de champ réduit, et toute communication publique de ce
  * taux doit l'énoncer — sans quoi le chiffre est trompeur.
+ *
+ * EX ÆQUO (`rangs`, cf. lib/courses/rangs) : on suit la règle de paiement du
+ * PMU. Prix de Versailles (08/10/2026), 15 et 16 ex æquo 5es : le PMU paie
+ * 1-5-8-4-15 et 1-5-8-4-16. Un cheval ex æquo à la limite compte donc dans la
+ * fenêtre, mais un groupe d'ex æquo ne remplit jamais plus de places qu'il
+ * n'en reste : jouer 15 ET 16 sans le 4 fait 4 trouvés, pas 5. Sans rangs
+ * (ordre strict, historique), chaque cheval est seul à son rang : la règle se
+ * réduit exactement à l'ancienne.
  */
 export function calculerResultat(
   selection: number[] | null | undefined,
   arrivee: number[] | null | undefined,
   typePari: string | null | undefined,
+  rangs?: number[] | null,
 ): ResultatPronostic {
   const arr = Array.isArray(arrivee) ? arrivee : [];
 
@@ -97,12 +108,16 @@ export function calculerResultat(
 
   const topN = fenetreComparaison(typePari, n);
 
-  const dansLeTop: Record<number, boolean> = {};
-  const tete = arr.slice(0, topN);
-  for (let i = 0; i < tete.length; i++) dansLeTop[tete[i]] = true;
-
+  // Rang par rang : chaque groupe (un cheval, ou plusieurs ex æquo) apporte
+  // ses chevaux joués, dans la limite des places qu'il occupe dans la fenêtre.
   let trouves = 0;
-  for (let i = 0; i < n; i++) if (dansLeTop[distincts[i]]) trouves++;
+  const groupes = groupesArrivee(arr, rangs);
+  for (let g = 0; g < groupes.length && groupes[g].rang <= topN; g++) {
+    const places = Math.min(groupes[g].numeros.length, topN - groupes[g].rang + 1);
+    let joues = 0;
+    for (const numero of groupes[g].numeros) if (vus[numero]) joues++;
+    trouves += Math.min(places, joues);
+  }
 
   const cible = n < topN ? n : topN;
   if (trouves === cible) return "GAGNANT";

@@ -27,6 +27,8 @@ type CourseJoin = {
   numero_course: number;
   statut: string;
   arrivee_officielle: number[] | null;
+  /** Rangs officiels (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  arrivee_rangs: number[] | null;
 };
 
 export const dynamic = "force-dynamic";
@@ -74,7 +76,8 @@ export async function POST(req: NextRequest) {
         numero_reunion,
         numero_course,
         statut,
-        arrivee_officielle
+        arrivee_officielle,
+        arrivee_rangs
       )
     `)
     .eq("resultat", "EN_ATTENTE")
@@ -121,6 +124,9 @@ export async function POST(req: NextRequest) {
 
     try {
       let arriveeOfficielle: number[] | null = course.arrivee_officielle;
+      // Les rangs ne valent que pour l'arrivée en base : une arrivée reprise
+      // ailleurs (ci-dessous) n'en a pas, et se juge en ordre strict.
+      let rangs: number[] | null = course.arrivee_rangs ?? null;
       let pmuResultCache: Awaited<ReturnType<typeof fetchPmuResultats>> = null;
 
       // Si la course n'a pas encore d'arrivée enregistrée → appel API PMU
@@ -134,6 +140,7 @@ export async function POST(req: NextRequest) {
 
         if (pmuResult && pmuResult.arrivee.length > 0) {
           arriveeOfficielle = pmuResult.arrivee;
+          rangs = null;
           pmuResultCache = pmuResult;
 
           // Sauvegarder l'arrivée dans la table courses pour les prochains appels
@@ -165,7 +172,7 @@ export async function POST(req: NextRequest) {
       const selection: number[] = prono.selection ?? [];
       const typePari: string    = prono.type_pari ?? "";
 
-      const resultat = calculerResultat(selection, arriveeOfficielle, typePari);
+      const resultat = calculerResultat(selection, arriveeOfficielle, typePari, rangs);
 
       // ── 3b. Extraire le rapport gagnant réel (dividende PMU) ───────
       // On récupère le rapport Quinté+ / Quarté+ / Tiercé depuis pmuResult.rapports
