@@ -110,12 +110,16 @@ export function calculerResultat(
 
   // Rang par rang : chaque groupe (un cheval, ou plusieurs ex æquo) apporte
   // ses chevaux joués, dans la limite des places qu'il occupe dans la fenêtre.
+  // Un numéro répété dans une arrivée corrompue ne compte qu'une fois.
   let trouves = 0;
+  const comptes: Record<number, boolean> = {};
   const groupes = groupesArrivee(arr, rangs);
   for (let g = 0; g < groupes.length && groupes[g].rang <= topN; g++) {
     const places = Math.min(groupes[g].numeros.length, topN - groupes[g].rang + 1);
     let joues = 0;
-    for (const numero of groupes[g].numeros) if (vus[numero]) joues++;
+    for (const numero of groupes[g].numeros) {
+      if (vus[numero] && !comptes[numero]) { comptes[numero] = true; joues++; }
+    }
     trouves += Math.min(places, joues);
   }
 

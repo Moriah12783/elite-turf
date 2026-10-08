@@ -153,6 +153,10 @@ describe("calculerResultat — ex æquo (dead heat), règle de paiement du PMU",
     expect(calculerResultat([4, 11, 6], arrivee, "TIERCE")).toBe("PARTIEL");
   });
 
+  it("un numéro répété dans une arrivée corrompue ne compte qu'une fois (comme avant)", () => {
+    expect(calculerResultat([3, 5, 7, 9, 11], [3, 3, 5, 7, 9], "QUINTE_PLUS")).toBe("PARTIEL");
+  });
+
   it("des rangs incohérents sont ignorés : on juge sur la position", () => {
     expect(calculerResultat([1, 5, 8, 4, 16], VERSAILLES, "QUINTE_PLUS", [1, 2, 3])).toBe("PARTIEL");
   });
