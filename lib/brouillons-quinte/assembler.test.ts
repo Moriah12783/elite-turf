@@ -131,7 +131,7 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
 
   it("résumé pour l'e-mail", () => {
     const base = [{ numero: 17, nom: "IMAGE D'ATALANTE" }, { numero: 16, nom: "JAIN MAB" }, { numero: 5, nom: "JEUNE ORANGE COTON" }];
-    const { partants: _tableau, ...resume } = r.resume;
+    const { partants: _tableau, textes: _textes, ...resume } = r.resume;
     expect(resume).toEqual({
       jour: "2026-10-07",
       prix: "Prix des Gobelins",
@@ -151,6 +151,14 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
         ecartes: [],
         completeAvecFautifs: false,
       },
+    });
+  });
+
+  it("résumé : les textes des brouillons, pour l'essai à blanc", () => {
+    expect(r.resume.textes).toEqual({
+      courte: r.pro.analyse_courte,
+      pro: r.pro.analyse_texte,
+      elite: r.elite.analyse_texte,
     });
   });
 
