@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   couperParRang,
   estExAequo,
+  arriveeEnTexte,
   groupesArrivee,
+  libelleRang,
   rangDe,
   rangsAStocker,
   rangsEffectifs,
@@ -104,5 +106,28 @@ describe("couperParRang — le cap (6 ou 7) se compte en rangs, pas en chevaux",
 
   it("sans ex æquo : les N premiers", () => {
     expect(couperParRang([5, 3, 1, 2, 4], [1, 2, 3, 4, 5], 3)).toEqual({ arrivee: [5, 3, 1], rangs: [1, 2, 3] });
+  });
+});
+
+describe("libelleRang", () => {
+  it("1er, 2e… et « ex æquo » quand le rang est partagé", () => {
+    expect(libelleRang(1, false)).toBe("1er");
+    expect(libelleRang(2, false)).toBe("2e");
+    expect(libelleRang(5, true)).toBe("5e ex æquo");
+    expect(libelleRang(1, true)).toBe("1er ex æquo");
+  });
+});
+
+describe("arriveeEnTexte — « 1 - 5 - 8 - 4 - 15 / 16 (ex æquo) »", () => {
+  it("les N premiers rangs, ex æquo groupés et signalés", () => {
+    expect(arriveeEnTexte(VERSAILLES, RANGS_VERSAILLES, 5)).toBe("1 - 5 - 8 - 4 - 15 / 16 (ex æquo)");
+  });
+
+  it("sans ex æquo : la liste habituelle", () => {
+    expect(arriveeEnTexte([8, 2, 7, 3, 15, 12, 9], null, 5)).toBe("8 - 2 - 7 - 3 - 15");
+  });
+
+  it("un ex æquo au-delà des N premiers n'apparaît pas", () => {
+    expect(arriveeEnTexte(VERSAILLES, RANGS_VERSAILLES, 4)).toBe("1 - 5 - 8 - 4");
   });
 });

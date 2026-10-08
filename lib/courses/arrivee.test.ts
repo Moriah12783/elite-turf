@@ -9,10 +9,15 @@ describe("buildArriveePodium", () => {
   ];
   it("classe les places 1..N et mappe les noms", () => {
     expect(buildArriveePodium([4, 2, 5], partants)).toEqual([
-      { rank: 1, numero: 4, nom: "Imperator d'Em" },
-      { rank: 2, numero: 2, nom: "Goldy Smile" },
-      { rank: 3, numero: 5, nom: "High Tech Roc" },
+      { rank: 1, numero: 4, nom: "Imperator d'Em", exAequo: false },
+      { rank: 2, numero: 2, nom: "Goldy Smile", exAequo: false },
+      { rank: 3, numero: 5, nom: "High Tech Roc", exAequo: false },
     ]);
+  });
+  it("ex æquo : même rang, signalé (Prix de Versailles, 08/10/2026)", () => {
+    const podium = buildArriveePodium([1, 5, 8, 4, 15, 16, 10], [], [1, 2, 3, 4, 5, 5, 7]);
+    expect(podium.map((p) => p.rank)).toEqual([1, 2, 3, 4, 5, 5, 7]);
+    expect(podium.filter((p) => p.exAequo).map((p) => p.numero)).toEqual([15, 16]);
   });
   it("nom null si partant absent ou nom manquant", () => {
     expect(buildArriveePodium([9], partants)[0].nom).toBeNull();
@@ -39,6 +44,13 @@ describe("estPlace — « placé » = dans les 3 premiers de l'arrivée", () => 
     expect(estPlace(15, ARRIVEE_06_10)).toBe(false);
     expect(estPlace(12, ARRIVEE_06_10)).toBe(false);
     expect(estPlace(9, ARRIVEE_06_10)).toBe(false);
+  });
+
+  it("un 3e ex æquo est placé (Prix de la Ville de Paris, 21/05/2026 : 3 et 6 ex æquo 3es)", () => {
+    const arrivee = [4, 11, 3, 6, 15, 5];
+    expect(estPlace(6, arrivee, [1, 2, 3, 3, 5, 6])).toBe(true);
+    expect(estPlace(15, arrivee, [1, 2, 3, 3, 5, 6])).toBe(false);
+    expect(estPlace(6, arrivee)).toBe(false);   // sans rangs : position 4
   });
 
   it("cheval absent de l'arrivée, ou arrivée inconnue → non placé", () => {

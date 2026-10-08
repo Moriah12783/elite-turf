@@ -6,23 +6,30 @@
  * Pur, sans I/O — consommé par le composant ArriveePodium.
  */
 
+import { estExAequo, rangDe, rangsEffectifs } from "./rangs";
+
 export interface PodiumPlace {
   rank: number;
   numero: number;
   nom: string | null;
+  /** Rang partagé avec un autre cheval (dead heat) : afficher « 5ᵉ ex æquo ». */
+  exAequo: boolean;
 }
 
 export function buildArriveePodium(
   arrivee: number[] | null | undefined,
   partants: { numero: number; nom_cheval?: string | null }[] | null | undefined,
+  rangs?: number[] | null,
 ): PodiumPlace[] {
   if (!arrivee || arrivee.length === 0) return [];
   const byNum = new Map<number, string | null>();
   for (const p of partants ?? []) byNum.set(p.numero, p.nom_cheval ?? null);
+  const r = rangsEffectifs(arrivee, rangs);
   return arrivee.map((numero, i) => ({
-    rank: i + 1,
+    rank: r[i],
     numero,
     nom: byNum.get(numero) ?? null,
+    exAequo: estExAequo(numero, arrivee, rangs),
   }));
 }
 
@@ -38,7 +45,15 @@ export const NB_PLACES = 3;
  * chevaux, parfois 7 (80 % des courses à 6 depuis le 01/09/2026) : un 4e, un
  * 5e, un 6e, voire un 7e s'affichait « ✓ Placé ». Décision de Steph : les 3
  * premiers, comme sur la fiche course.
+ *
+ * Ex æquo (`rangs`) : un 3e ex æquo est placé — le PMU paie alors quatre
+ * placés. C'est le RANG qui compte, pas la position dans la liste.
  */
-export function estPlace(numero: number, arrivee: number[] | null | undefined): boolean {
-  return Array.isArray(arrivee) && arrivee.slice(0, NB_PLACES).indexOf(numero) !== -1;
+export function estPlace(
+  numero: number,
+  arrivee: number[] | null | undefined,
+  rangs?: number[] | null,
+): boolean {
+  const rang = rangDe(numero, arrivee, rangs);
+  return rang !== null && rang <= NB_PLACES;
 }

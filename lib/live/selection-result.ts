@@ -9,7 +9,11 @@
  * On ne tente PAS d'évaluer une combinaison Tiercé/Quinté complète (ordre /
  * désordre) en v1 : trop complexe et source d'erreurs. La base suffit pour un
  * tableau de bord live crédible.
+ *
+ * Ex æquo (`rangs`, cf. lib/courses/rangs) : c'est le RANG qui compte. Deux
+ * vainqueurs en dead heat sont tous deux gagnants, un 3e ex æquo est placé.
  */
+import { rangDe } from "../courses/rangs";
 
 export interface SelectionOutcome {
   base: number | null; // notre cheval n°1 (selection[0])
@@ -20,15 +24,17 @@ export interface SelectionOutcome {
 export function evaluateBaseVsArrivee(
   selection: number[] | null | undefined,
   arrivee: number[] | null | undefined,
+  rangs?: number[] | null,
 ): SelectionOutcome {
   const base = selection && selection.length > 0 ? selection[0] : null;
   if (base == null || !arrivee || arrivee.length === 0) {
     return { base, gagnant: false, place: false };
   }
+  const rang = rangDe(base, arrivee, rangs);
   return {
     base,
-    gagnant: arrivee[0] === base,
-    place: arrivee.slice(0, 3).includes(base),
+    gagnant: rang === 1,
+    place: rang !== null && rang <= 3,
   };
 }
 

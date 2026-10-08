@@ -120,3 +120,27 @@ export function couperParRang(
   }
   return out;
 }
+
+/** « 1er », « 2e »… « 5e ex æquo » : libellé d'une place à l'arrivée. */
+export function libelleRang(rang: number, exAequo: boolean): string {
+  return `${rang === 1 ? "1er" : `${rang}e`}${exAequo ? " ex æquo" : ""}`;
+}
+
+/**
+ * Les `n` premiers rangs en texte : « 8 - 2 - 7 - 3 - 15 », et avec un ex
+ * æquo « 1 - 5 - 8 - 4 - 15 / 16 (ex æquo) » — le 16 n'est plus masqué.
+ */
+export function arriveeEnTexte(
+  arrivee: number[] | null | undefined,
+  rangs: number[] | null | undefined,
+  n: number,
+): string {
+  const parts: string[] = [];
+  let exAequo = false;
+  for (const g of groupesArrivee(arrivee, rangs)) {
+    if (g.rang > n) break;
+    if (g.numeros.length > 1) exAequo = true;
+    parts.push(g.numeros.join(" / "));
+  }
+  return parts.join(" - ") + (exAequo ? " (ex æquo)" : "");
+}

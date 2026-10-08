@@ -66,7 +66,7 @@ export async function buildLivePayload(): Promise<LivePayload> {
     .from("courses")
     .select(
       `
-      id, numero_reunion, numero_course, libelle, heure_depart, arrivee_officielle,
+      id, numero_reunion, numero_course, libelle, heure_depart, arrivee_officielle, arrivee_rangs,
       hippodrome:hippodromes(nom, pays),
       partants(numero, nom_cheval)
     `,
@@ -100,7 +100,9 @@ export async function buildLivePayload(): Promise<LivePayload> {
     const hippo = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
     const arrivee: number[] = Array.isArray(c.arrivee_officielle) ? c.arrivee_officielle : [];
     const hasArrivee = arrivee.length > 0;
-    const podium = hasArrivee ? buildArriveePodium(arrivee, c.partants).slice(0, 5) : [];
+    const rangs: number[] | null = Array.isArray(c.arrivee_rangs) ? c.arrivee_rangs : null;
+    // Les 5 premiers RANGS : deux 5es ex æquo sont montrés tous les deux.
+    const podium = hasArrivee ? buildArriveePodium(arrivee, c.partants, rangs).filter((p) => p.rank <= 5) : [];
     const statut = computeCourseStatus({
       hasArrivee,
       startMinutes: heureToMinutes(c.heure_depart),
@@ -112,7 +114,7 @@ export async function buildLivePayload(): Promise<LivePayload> {
     if (pr) {
       let outcome: { gagnant: boolean; place: boolean } | null = null;
       if (hasArrivee) {
-        const ev = evaluateBaseVsArrivee(pr.selection, arrivee);
+        const ev = evaluateBaseVsArrivee(pr.selection, arrivee, rangs);
         outcome = { gagnant: ev.gagnant, place: ev.place };
         outcomes.push(ev);
       }

@@ -143,7 +143,7 @@ export default async function PronosticsSection({
     .select(`
       id, libelle, heure_depart, numero_reunion, numero_course,
       paris_disponibles, nationale, jouable_afrique, statut,
-      nb_partants, distance_metres, categorie, arrivee_officielle,
+      nb_partants, distance_metres, categorie, arrivee_officielle, arrivee_rangs,
       hippodrome:hippodromes(nom, pays)
     `)
     .eq("date_course", today)

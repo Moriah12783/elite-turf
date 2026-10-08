@@ -25,6 +25,7 @@ import { canAccess, plusHautAccessible } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
 import { planRadarAbonne } from "@/lib/pronostics/plan-radar";
 import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
+import { estExAequo, libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
     .select(`
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
-      categorie, terrain, nb_partants, statut, arrivee_officielle,
+      categorie, terrain, nb_partants, statut, arrivee_officielle, arrivee_rangs,
       geny_url,
       paris_disponibles, jouable_afrique, nationale,
       hippodrome:hippodromes(nom, pays, ville),
@@ -446,13 +447,14 @@ export default async function CourseDetailPage({ params }: PageProps) {
                     <div className="flex items-center gap-3 flex-wrap">
                       {c.arrivee_officielle.map((n: number, idx: number) => {
                         const horse = allPartants.find((p: any) => p.numero === n);
+                        const rang = rangsEffectifs(c.arrivee_officielle, c.arrivee_rangs)[idx];
                         return (
                           <div key={idx} className="flex flex-col items-center gap-1">
                             <span className="w-10 h-10 rounded-full border-2 border-status-win/40 bg-status-win/10 flex items-center justify-center text-status-win font-bold text-sm">
                               {n}
                             </span>
                             <span className="text-text-muted text-[10px]">
-                              {idx === 0 ? "1er" : idx === 1 ? "2e" : idx === 2 ? "3e" : `${idx+1}e`}
+                              {libelleRang(rang, estExAequo(n, c.arrivee_officielle, c.arrivee_rangs))}
                             </span>
                             {horse && (
                               <span className="text-text-secondary text-[9px] max-w-[60px] text-center leading-tight">
@@ -478,6 +480,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               partants={partants}
               nonPartants={nonPartants}
               arriveeOfficielle={c.arrivee_officielle}
+              arriveeRangs={c.arrivee_rangs}
               pronosticSelection={pronosticPublie && canAccess(pronosticPublie.niveau_acces, userSubscription) ? pronosticPublie.selection : null}
               statut={c.statut}
               genyUrl={genyUrl}
