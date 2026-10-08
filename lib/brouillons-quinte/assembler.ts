@@ -186,10 +186,13 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
     };
   };
 
+  const textePro = analyseComplete(ctx, "PRO", pro.base.map(commente), pro.values.map(commente), []);
+  const texteElite = analyseComplete(ctx, "ELITE", elite.base.map(commente), elite.values.map(commente), elite.ecartes.map(commente));
+
   return {
     ok: true,
-    pro: ligne("PRO", pro.base, pro.values, analyseComplete(ctx, "PRO", pro.base.map(commente), pro.values.map(commente), [])),
-    elite: ligne("ELITE", elite.base, elite.values, analyseComplete(ctx, "ELITE", elite.base.map(commente), elite.values.map(commente), elite.ecartes.map(commente))),
+    pro: ligne("PRO", pro.base, pro.values, textePro),
+    elite: ligne("ELITE", elite.base, elite.values, texteElite),
     resume: {
       jour: e.ctx.dateISO,
       prix: e.ctx.prix,
@@ -212,6 +215,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
         valuesPro: pro.values,
         valuesElite: elite.values,
       }),
+      textes: { courte, pro: textePro, elite: texteElite },
     },
   };
 }

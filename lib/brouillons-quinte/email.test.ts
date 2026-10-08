@@ -29,6 +29,11 @@ const R: ResumeBrouillons = {
     { numero: 3, nom: "SANS MUSIQUE", nonPartant: false, cote: 57, rang: 13, exAequo: false, places: null, fautes: null, retenu: null },
     { numero: 12, nom: "JUNON DE LOU", nonPartant: true, cote: 6.8, rang: null, exAequo: false, places: ["4", "5", "D", "5", "D", "1", "2"], fautes: 2, retenu: null },
   ],
+  textes: {
+    courte: "Trot attelé, 2 850 m, 17 partantes. Pivot : IMAGE D'ATALANTE (n°17), favorite.",
+    pro: "LA COURSE\nQuinté+ du mardi 7 octobre 2026.\n\nLA BASE\n⭐ n°17 IMAGE D'ATALANTE. Notre pivot.",
+    elite: "LA COURSE\nQuinté+ du mardi 7 octobre 2026.\n\nLES VALUES\nn°11 JALOUZ D'OLIVERIE. Retenue pour sa cote parmi nos 8.",
+  },
 };
 const LIENS: LiensBrouillons = {
   pro: "https://elite-turf.fr/admin/pronostics/a/modifier",
@@ -97,6 +102,34 @@ describe("e-mails à Steph", () => {
     expect(m.subject).toBe("[ESSAI À BLANC] Brouillons du Quinté+ — Prix des Gobelins");
     expect(m.html).not.toContain("href=");
     expect(m.html).toContain("BROUILLONS_QUINTE_ENABLED");
+  });
+
+  it("à blanc : les 3 textes prévus, à copier tels quels (lignes conservées, HTML échappé)", () => {
+    const html = emailBrouillons(R, null).html;
+    expect(html).toContain("Textes prévus pour les brouillons");
+    expect(html).toContain("Analyse courte (aperçu public)");
+    expect(html).toContain("Analyse complète — Pro");
+    expect(html).toContain("Analyse complète — Elite");
+    expect(html).toContain("Pivot : IMAGE D&#39;ATALANTE (n°17), favorite.");
+    expect(html).toContain("LA BASE\n⭐ n°17 IMAGE D&#39;ATALANTE. Notre pivot.");
+    expect(html).toContain("n°11 JALOUZ D&#39;OLIVERIE. Retenue pour sa cote parmi nos 8.");
+    expect(html).toContain("white-space:pre-wrap");
+  });
+
+  it("à blanc : les textes avant le tableau des musiques", () => {
+    const html = emailBrouillons(R, null).html;
+    expect(html.indexOf("Textes prévus")).toBeGreaterThan(-1);
+    expect(html.indexOf("Textes prévus")).toBeLessThan(html.indexOf("Musiques des partants"));
+  });
+
+  it("prêts : pas de textes dans l'e-mail (ils sont dans les brouillons)", () => {
+    expect(emailBrouillons(R, LIENS).html).not.toContain("Textes prévus");
+  });
+
+  it("à blanc : un texte HTML hostile est neutralisé", () => {
+    const html = emailBrouillons({ ...R, textes: { ...R.textes, pro: "<script>x</script>" } }, null).html;
+    expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
+    expect(html).not.toContain("<script>");
   });
 
   it("complété avec des fautifs : signalé", () => {

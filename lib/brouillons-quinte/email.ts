@@ -58,6 +58,8 @@ export interface ResumeBrouillons {
   elite: { base: ChevalResume[]; values: ChevalResume[]; ecartes: ChevalResume[]; completeAvecFautifs: boolean };
   /** Tous les chevaux, classés par cote, non-partants à la fin. */
   partants: LigneMusique[];
+  /** Textes des brouillons (analyse courte commune + analyses complètes), montrés dans l'essai à blanc. */
+  textes: { courte: string; pro: string; elite: string };
 }
 
 /** Liens d'édition des brouillons ; null pour un brouillon absent. */
@@ -129,6 +131,16 @@ function tableauMusiques(lignes: LigneMusique[]): string {
     + `<table style="border-collapse:collapse;font-size:13px">${entete}${corps}</table>`;
 }
 
+/** Textes prévus, à copier tels quels : lignes conservées (décision de Steph du 08/10/2026). */
+function blocTextes(t: ResumeBrouillons["textes"]): string {
+  const bloc = (titre: string, texte: string) => `<h4 style="margin:12px 0 4px">${titre}</h4>`
+    + `<div style="white-space:pre-wrap;font-size:13px;border:1px solid #ddd;padding:8px">${echapper(texte)}</div>`;
+  return `<h3 style="margin:20px 0 4px">Textes prévus pour les brouillons</h3>`
+    + bloc("Analyse courte (aperçu public)", t.courte)
+    + bloc("Analyse complète — Pro", t.pro)
+    + bloc("Analyse complète — Elite", t.elite);
+}
+
 function blocLiens(l: LiensBrouillons): string {
   const liens: string[] = [];
   if (l.pro) liens.push(`<a href="${echapper(l.pro)}">Ouvrir le brouillon Pro</a>`);
@@ -155,6 +167,7 @@ export function emailBrouillons(r: ResumeBrouillons, liens: LiensBrouillons | nu
   }
   if (liens === null) {
     morceaux.push("<p>Rien n'a été créé : l'interrupteur BROUILLONS_QUINTE_ENABLED est fermé.</p>");
+    morceaux.push(blocTextes(r.textes));
   } else {
     morceaux.push(blocLiens(liens));
     morceaux.push("<p>Rien n'est publié : relisez, puis cliquez « Publier ».</p>");
