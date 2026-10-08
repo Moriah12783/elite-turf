@@ -85,7 +85,10 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  -- Profondeur 1 seulement : quand c'est la synchro arrivees → courses qui
+  -- écrit (profondeur 2), elle recopie des rangs déjà vérifiés côté arrivees.
   IF TG_OP = 'UPDATE'
+     AND pg_trigger_depth() = 1
      AND NEW.arrivee_officielle IS DISTINCT FROM OLD.arrivee_officielle
      AND NEW.arrivee_rangs IS NOT DISTINCT FROM OLD.arrivee_rangs
   THEN

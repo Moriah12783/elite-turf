@@ -204,12 +204,13 @@ export async function runBackfillRangs(opts: BackfillRangsOptions): Promise<Back
       if (dryRun) continue;
       // Garde de concurrence : l'arrivée ne doit pas avoir changé depuis la lecture.
       const arrivee = `{${(l.arrivee_officielle ?? []).join(",")}}`;
-      const { error: err } = e.cible === "arrivees"
-        ? await supabase.from("arrivees").update({ rangs: e.rangs }).eq("course_id", e.course_id).eq("ordre_arrivee", arrivee)
-        : await supabase.from("courses").update({ arrivee_rangs: e.rangs }).eq("id", e.course_id).eq("arrivee_officielle", arrivee);
-      if (err) {
+      // Zéro ligne touchée (arrivée modifiée entre-temps) n'est pas une écriture.
+      const { data: touchees, error: err } = e.cible === "arrivees"
+        ? await supabase.from("arrivees").update({ rangs: e.rangs }).eq("course_id", e.course_id).eq("ordre_arrivee", arrivee).select("course_id")
+        : await supabase.from("courses").update({ arrivee_rangs: e.rangs }).eq("id", e.course_id).eq("arrivee_officielle", arrivee).select("id");
+      if (err || !touchees || touchees.length === 0) {
         res.echecs++;
-        console.warn(`[backfill-rangs] ${decrire(e.course_id)} : ${err.message}`);
+        console.warn(`[backfill-rangs] ${decrire(e.course_id)} : ${err ? err.message : "aucune ligne modifiée (arrivée changée entre-temps ?)"}`);
       } else {
         res.ecrites++;
       }
