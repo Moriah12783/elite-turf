@@ -12,6 +12,7 @@ import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
 import TabStatsRich from "@/components/courses/TabStatsRich";
 import { delaiRafraichissement } from "@/lib/courses/cotes-live";
 import { estPlace } from "@/lib/courses/arrivee";
+import { libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,8 @@ interface ArriveeItem {
   position: number;
   numero: number;
   nom: string | null;
+  /** Rang partagé (dead heat) : « 5e ex æquo ». */
+  exAequo?: boolean;
 }
 
 interface Dividende {
@@ -61,6 +64,8 @@ interface Props {
   partants: Partant[];
   nonPartants?: Partant[];
   arriveeOfficielle?: number[] | null;
+  /** Rangs officiels de l'arrivée (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  arriveeRangs?: number[] | null;
   pronosticSelection?: number[] | null;
   statut: string;
   genyUrl: string;
@@ -141,22 +146,24 @@ function TabButton({
 // ── Tab : Partants ─────────────────────────────────────────────────────────
 
 function TabPartants({
-  partants, nonPartants = [], arriveeOfficielle, pronosticSelection, genyUrl, isVedette, isSubscribed, statut,
+  partants, nonPartants = [], arriveeOfficielle, arriveeRangs, pronosticSelection, genyUrl, isVedette, isSubscribed, statut,
 }: {
   partants: Partant[];
   nonPartants?: Partant[];
   arriveeOfficielle?: number[] | null;
+  arriveeRangs?: number[] | null;
   pronosticSelection?: number[] | null;
   genyUrl: string;
   isVedette?: boolean;
   isSubscribed?: boolean;
   statut?: string;
 }) {
-  // Map numéro → position d'arrivée (1, 2, 3, …) pour affichage post-course
+  // Map numéro → rang d'arrivée (1, 2, 3, …, ex æquo compris) pour affichage post-course
   const arriveeMap: Record<number, number> = {};
   if (statut === "TERMINE" && arriveeOfficielle) {
+    const rangs = rangsEffectifs(arriveeOfficielle, arriveeRangs);
     arriveeOfficielle.forEach((num, idx) => {
-      arriveeMap[num] = idx + 1;
+      arriveeMap[num] = rangs[idx];
     });
   }
   const showPosition = statut === "TERMINE" && Object.keys(arriveeMap).length > 0;
@@ -269,7 +276,7 @@ function TabPartants({
           <tbody className="divide-y divide-border/30">
             {partantsSorted.map((p) => {
               // « Placé » = 3 premiers : règle partagée avec la fiche d'un pronostic.
-              const inArrivee = estPlace(p.numero, arriveeOfficielle);
+              const inArrivee = estPlace(p.numero, arriveeOfficielle, arriveeRangs);
               const selected  = pronosticSelection?.includes(p.numero);
               const position  = arriveeMap[p.numero] ?? null;
               return (
@@ -627,7 +634,6 @@ function CotesBars({ items, maxCote }: { items: CoteItem[]; maxCote: number }) {
 
 // ── Tab : Arrivées & Rapports ──────────────────────────────────────────────
 
-const POSITION_LABELS = ["1er", "2e", "3e", "4e", "5e"];
 const POSITION_COLORS = [
   "bg-yellow-500/20 border-yellow-500/50 text-yellow-400",   // 1er
   "bg-gray-400/20 border-gray-400/40 text-gray-300",          // 2e
@@ -738,11 +744,11 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
           </p>
           <div className="flex flex-wrap gap-3">
             {arrivee.map((item) => (
-              <div key={item.position} className="flex flex-col items-center gap-1">
+              <div key={item.numero} className="flex flex-col items-center gap-1">
                 <span className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-bold text-base ${POSITION_COLORS[item.position - 1] ?? POSITION_COLORS[4]}`}>
                   {item.numero}
                 </span>
-                <span className="text-text-muted text-[10px] font-medium">{POSITION_LABELS[item.position - 1]}</span>
+                <span className="text-text-muted text-[10px] font-medium">{libelleRang(item.position, !!item.exAequo)}</span>
                 {item.nom && (
                   <span className="text-text-secondary text-[9px] max-w-[64px] text-center leading-tight">{item.nom}</span>
                 )}
@@ -1018,6 +1024,7 @@ export default function CourseTabsClient({
   partants,
   nonPartants = [],
   arriveeOfficielle,
+  arriveeRangs,
   pronosticSelection,
   statut,
   genyUrl,
@@ -1064,6 +1071,7 @@ export default function CourseTabsClient({
           partants={partants}
           nonPartants={nonPartants}
           arriveeOfficielle={arriveeOfficielle}
+          arriveeRangs={arriveeRangs}
           pronosticSelection={pronosticSelection}
           genyUrl={genyUrl}
           isVedette={isVedette}

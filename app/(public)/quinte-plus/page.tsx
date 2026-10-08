@@ -20,6 +20,7 @@ import { ChevronRight, Trophy, CalendarClock, History } from "lucide-react";
 import { formatDateShort, todayParis, heureGmtDepuisParis } from "@/lib/seo/dates";
 import { chargerJourQuinte, chargerQuintesPeriode } from "./donnees";
 import VueQuintePlus from "./VueQuintePlus";
+import { arriveeEnTexte, groupesArrivee, libelleRang } from "@/lib/courses/rangs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -101,16 +102,19 @@ async function ComplementPilier({ aujourdhui }: { aujourdhui: string }) {
               <div className="text-text-muted text-xs mb-2">{quinteHier.hippodrome} · {formatDateShort(hier)}</div>
               {quinteHier.arrivee ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {quinteHier.arrivee.slice(0, 5).map((n, i) => (
-                    <span
-                      key={i}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        i === 0 ? "bg-status-win/15 border border-status-win/40 text-status-win" : "bg-bg-elevated border border-border text-gold-light"
-                      }`}
-                    >
-                      {n}
-                    </span>
-                  ))}
+                  {groupesArrivee(quinteHier.arrivee, quinteHier.rangs).filter((g) => g.rang <= 5).map((g) =>
+                    g.numeros.map((n) => (
+                      <span
+                        key={n}
+                        title={g.numeros.length > 1 ? libelleRang(g.rang, true) : undefined}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                          g.rang === 1 ? "bg-status-win/15 border border-status-win/40 text-status-win" : "bg-bg-elevated border border-border text-gold-light"
+                        }`}
+                      >
+                        {n}
+                      </span>
+                    )),
+                  )}
                 </div>
               ) : (
                 <div className="text-text-muted text-xs">Arrivée officielle en attente.</div>
@@ -169,7 +173,7 @@ async function ComplementPilier({ aujourdhui }: { aujourdhui: string }) {
                   </span>
                   {q.arrivee && (
                     <span className="hidden sm:inline text-gold-light font-mono text-xs whitespace-nowrap">
-                      {q.arrivee.slice(0, 5).join(" - ")}
+                      {arriveeEnTexte(q.arrivee, q.rangs, 5)}
                     </span>
                   )}
                   <ChevronRight className="w-4 h-4 text-text-muted flex-shrink-0" />

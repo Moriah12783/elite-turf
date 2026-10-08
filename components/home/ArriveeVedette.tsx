@@ -4,6 +4,7 @@ import { ArriveePodium } from "@/components/arrivees/ArriveePodium";
 import { resumeCourse, lignesRapports, type PartantNomme } from "@/lib/turf/arrivee-vedette";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 import type { QuinteDuJourResume } from "@/app/(public)/quinte-plus/donnees";
+import { arriveeEnTexte } from "@/lib/courses/rangs";
 
 /**
  * Bandeau « Quinté+ d'hier » sous la carte vedette, tant que le Quinté+ du
@@ -21,7 +22,7 @@ export function QuinteHier({ resume }: { resume: QuinteDuJourResume & { arrivee:
         Quinté+ d&apos;hier
       </span>
       <span className="text-text-primary font-medium break-words">{resume.libelle}</span>
-      <span className="text-gold-light font-bold tracking-wide">{resume.arrivee.slice(0, 5).join(" - ")}</span>
+      <span className="text-gold-light font-bold tracking-wide">{arriveeEnTexte(resume.arrivee, resume.rangs, 5)}</span>
       <span className="ml-auto inline-flex items-center gap-1 text-gold-primary group-hover:text-gold-light text-xs font-medium">
         Voir l&apos;arrivée
         <ChevronRight className="w-3.5 h-3.5" />
@@ -57,6 +58,7 @@ export function ArriveeVedette({
     },
     course.arrivee_officielle,
     partants,
+    course.arrivee_rangs,
   );
   const rapportsAffiches = lignesRapports(rapports);
 
@@ -64,7 +66,7 @@ export function ArriveeVedette({
     <>
       <div className="rounded-xl bg-bg-elevated/60 border border-gold-primary/20 p-4 mb-5">
         <p className="text-gold-light text-xs font-semibold uppercase tracking-wider mb-3">Arrivée officielle</p>
-        <ArriveePodium arrivee={course.arrivee_officielle} partants={partants} />
+        <ArriveePodium arrivee={course.arrivee_officielle} partants={partants} rangs={course.arrivee_rangs} />
       </div>
 
       {resume && (

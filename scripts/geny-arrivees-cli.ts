@@ -13,6 +13,7 @@
 import { runGenyArriveesSync } from "@/lib/sync/geny-arrivees";
 import { runPmuRapportsSync } from "@/lib/sync/pmu-rapports";
 import { runRattrapagePmu } from "@/lib/sync/pmu-rattrapage";
+import { runBackfillRangs } from "@/lib/sync/arrivee-rangs-backfill";
 import { todayParisISO } from "@/lib/paris-date";
 
 function decaler(iso: string, jours: number): string {
@@ -46,6 +47,19 @@ async function main(): Promise<void> {
     console.log("✅ RATTRAPAGE", JSON.stringify(r));
   } catch (e) {
     console.warn(`⚠️ rattrapage PMU non effectué : ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // Rangs des ex æquo (08/10/2026) : la synchro ci-dessus écrit une arrivée
+  // UNE fois. Si le PMU n'était pas encore définitif, elle vient de Geny, sans
+  // rangs, et l'ex æquo serait perdu pour le jugement du soir. On les pose
+  // ici, sur 3 jours + aujourd'hui, et seulement sur une arrivée identique à
+  // celle du PMU. N'écrit que des rangs. Best-effort.
+  try {
+    const aujourdhui = todayParisISO();
+    const r = await runBackfillRangs({ depuis: decaler(aujourdhui, -3), jusqua: aujourdhui, dryRun: false });
+    console.log("✅ RANGS", JSON.stringify({ ecrites: r.ecrites, a_ecrire: r.a_ecrire.length, deja: r.deja, echecs: r.echecs }));
+  } catch (e) {
+    console.warn(`⚠️ rangs d'arrivée non rattrapés : ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 

@@ -20,13 +20,15 @@
  *   - aucun pronostic n'est jugé ici.
  */
 import {
-  aplatirOrdreArrivee,
+  arriveeARetenir,
   capPourParis,
   cleRC,
   estArriveeDefinitive,
   fetchProgrammeDuJour,
+  lireOrdreArrivee,
 } from "./pmu-arrivees";
 import { cleHippodrome } from "./hippodrome-cle";
+import { rangsEffectifs } from "../courses/rangs";
 
 /** Écart toléré (minutes) entre l'heure programmée et le départ réel. */
 export const TOLERANCE_MIN = 10;
@@ -41,6 +43,8 @@ export interface DepartPmu {
 export interface CoursePmuFrance {
   /** Arrivée définitive aplatie ; [] si la course n'est pas officialisée. */
   arrivee: number[];
+  /** Rang officiel de chaque cheval de `arrivee` (ex æquo : `[1,2,2,4]`) ; absent = ordre strict. */
+  rangs?: number[];
   depart: DepartPmu | null;
   /** Identité de la course côté PMU : hippodrome (court, long) et nom de l'épreuve. */
   hippodrome: string;
@@ -134,9 +138,9 @@ export function lireProgrammeFrance(json: unknown): Map<string, CoursePmuFrance>
       const numC = Number(c?.numOrdre ?? c?.numExterne);
       if (!Number.isFinite(numC)) continue;
 
-      const arrivee = estArriveeDefinitive(c?.statut, c?.isArriveeDefinitive)
-        ? aplatirOrdreArrivee(c?.ordreArrivee)
-        : [];
+      const { arrivee, rangs } = estArriveeDefinitive(c?.statut, c?.isArriveeDefinitive)
+        ? lireOrdreArrivee(c?.ordreArrivee)
+        : { arrivee: [] as number[], rangs: [] as number[] };
 
       let depart: DepartPmu | null = null;
       const ms = Number(c?.heureDepart);
@@ -150,6 +154,7 @@ export function lireProgrammeFrance(json: unknown): Map<string, CoursePmuFrance>
       }
       out.set(cleRC(numR, numC), {
         arrivee,
+        rangs,
         depart,
         hippodrome: String(r.hippodrome?.libelleCourt ?? ""),
         hippodromeLong: String(r.hippodrome?.libelleLong ?? ""),
@@ -207,13 +212,14 @@ export type MotifIgnoree =
   | "numéros hors partants";
 
 export interface PlanRattrapage {
-  arrivees: { course_id: string; ordre_arrivee: number[] }[];
+  /** `rangs` : NULL sans ex æquo (cf. lib/courses/rangs). */
+  arrivees: { course_id: string; ordre_arrivee: number[]; rangs: number[] | null }[];
   heures: { course_id: string; avant: string; apres: string }[];
   /**
    * Arrivée en base contredite par le PMU. Corrigeable (mode `corrigerDivergentes`)
    * seulement si la course n'a AUCUN pronostic ; sinon signalée, jamais réécrite.
    */
-  divergentes: { course_id: string; base: number[]; pmu: number[]; a_ligne_arrivee: boolean; corrigeable: boolean }[];
+  divergentes: { course_id: string; base: number[]; pmu: number[]; rangs_pmu: number[] | null; a_ligne_arrivee: boolean; corrigeable: boolean }[];
   ignorees: { course_id: string; motif: MotifIgnoree }[];
 }
 
@@ -223,10 +229,19 @@ function tousParmi(arrivee: number[], partants: number[]): boolean {
   return true;
 }
 
-/** Les deux arrivées concordent sur leur partie commune (les longueurs varient selon l'époque). */
-function concordent(a: number[], b: number[]): boolean {
+/**
+ * L'arrivée en base `a` concorde avec l'arrivée PMU `b` sur leur partie commune
+ * (les longueurs varient selon l'époque). Deux ex æquo n'ont pas d'ordre entre
+ * eux : chaque cheval de `a` doit seulement être au PMU au rang de sa place.
+ */
+function concordent(a: number[], b: number[], rangsB?: number[] | null): boolean {
   const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) if (a[i] !== b[i]) return false;
+  const r = rangsEffectifs(b, rangsB);
+  for (let i = 0; i < n; i++) {
+    if (a[i] === b[i]) continue;
+    const j = b.indexOf(a[i]);
+    if (j === -1 || r[j] !== r[i]) return false;
+  }
   return true;
 }
 
@@ -255,14 +270,14 @@ export function planifierRattrapage(
     const base = Array.isArray(c.arrivee_officielle) && c.arrivee_officielle.length >= 3 ? c.arrivee_officielle : null;
     if (base || c.a_ligne_arrivee) {
       if (base && p && p.arrivee.length >= 3) {
-        const officielle = p.arrivee.slice(0, capPourParis(c.paris_disponibles));
-        if (!concordent(base, officielle)) {
+        const officielle = arriveeARetenir({ arrivee: p.arrivee, rangs: p.rangs ?? [] }, capPourParis(c.paris_disponibles));
+        if (!concordent(base, officielle.arrivee, officielle.rangs)) {
           // Corrigeable seulement sans pronostic ET si l'appariement est sûr
           // (mêmes garde-fous qu'un ajout : numéros PMU ⊆ nos partants).
           plan.divergentes.push({
-            course_id: c.id, base, pmu: officielle,
+            course_id: c.id, base, pmu: officielle.arrivee, rangs_pmu: officielle.rangs,
             a_ligne_arrivee: c.a_ligne_arrivee,
-            corrigeable: c.nb_pronostics === 0 && c.partants.length > 0 && tousParmi(officielle, c.partants),
+            corrigeable: c.nb_pronostics === 0 && c.partants.length > 0 && tousParmi(officielle.arrivee, c.partants),
           });
         }
       }
@@ -280,12 +295,12 @@ export function planifierRattrapage(
       plan.ignorees.push({ course_id: c.id, motif: "partants inconnus" });
       continue;
     }
-    const officielle = p.arrivee.slice(0, capPourParis(c.paris_disponibles));
-    if (!tousParmi(officielle, c.partants)) {
+    const officielle = arriveeARetenir({ arrivee: p.arrivee, rangs: p.rangs ?? [] }, capPourParis(c.paris_disponibles));
+    if (!tousParmi(officielle.arrivee, c.partants)) {
       plan.ignorees.push({ course_id: c.id, motif: "numéros hors partants" });
       continue;
     }
-    plan.arrivees.push({ course_id: c.id, ordre_arrivee: officielle });
+    plan.arrivees.push({ course_id: c.id, ordre_arrivee: officielle.arrivee, rangs: officielle.rangs });
   }
   return plan;
 }
@@ -429,10 +444,10 @@ export async function runRattrapagePmu(opts: RattrapageOptions): Promise<Rattrap
       // Sans ligne : on la crée, ce qui corrige `courses` de la même façon.
       const { error: e } = d.a_ligne_arrivee
         ? await supabase.from("arrivees")
-            .update({ ordre_arrivee: d.pmu, rapports_pmu: null, commentaire: note })
+            .update({ ordre_arrivee: d.pmu, rangs: d.rangs_pmu, rapports_pmu: null, commentaire: note })
             .eq("course_id", d.course_id)
         : await supabase.from("arrivees").upsert(
-            [{ course_id: d.course_id, ordre_arrivee: d.pmu, commentaire: note, horodatage: new Date().toISOString() }],
+            [{ course_id: d.course_id, ordre_arrivee: d.pmu, rangs: d.rangs_pmu, commentaire: note, horodatage: new Date().toISOString() }],
             { onConflict: "course_id", ignoreDuplicates: true },
           );
       if (e) {
@@ -448,7 +463,7 @@ export async function runRattrapagePmu(opts: RattrapageOptions): Promise<Rattrap
       // jamais écrasée. Le déclencheur recopie l'arrivée dans `courses`.
       const horodatage = new Date().toISOString();
       const { error: e } = await supabase.from("arrivees").upsert(
-        plan.arrivees.map((x) => ({ course_id: x.course_id, ordre_arrivee: x.ordre_arrivee, commentaire, horodatage })),
+        plan.arrivees.map((x) => ({ course_id: x.course_id, ordre_arrivee: x.ordre_arrivee, rangs: x.rangs, commentaire, horodatage })),
         { onConflict: "course_id", ignoreDuplicates: true },
       );
       if (e) {

@@ -25,6 +25,8 @@
  *     + `statut` pour CHAQUE course. Un seul appel couvre toute la journée.
  */
 
+import { couperParRang, rangsAStocker, rangsEffectifs } from "../courses/rangs";
+
 const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
 const PMU_PROXY  = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
 
@@ -49,22 +51,39 @@ export function estArriveeDefinitive(statut: unknown, isDefinitive?: unknown): b
   return STATUTS_DEFINITIFS.indexOf(s) !== -1;
 }
 
+export interface ArriveeRangee {
+  arrivee: number[];
+  /** Rang officiel de chaque cheval de `arrivee` : `[1,2,3,4,5,5,7]` (cf. lib/courses/rangs). */
+  rangs: number[];
+}
+
 /**
  * `ordreArrivee` PMU est un tableau de RANGS, chaque rang étant lui-même un
  * tableau : `[[12],[13],[7]]`. Un rang à plusieurs éléments = ex æquo (dead
- * heat), cas rare mais réel — on aplatit en préservant l'ordre d'arrivée.
+ * heat) : `[[1],[5],[8],[4],[15,16],[10]]` → 15 et 16 sont 5es, le 10 est 7e.
+ * L'arrivée est aplatie dans l'ordre, et le rang de chaque cheval est gardé à
+ * côté — l'aplatir seul faisait passer le 16 pour 6e (constat du 08/10/2026).
  */
-export function aplatirOrdreArrivee(raw: unknown): number[] {
-  if (!Array.isArray(raw)) return [];
-  const out: number[] = [];
-  for (const rang of raw) {
-    const items = Array.isArray(rang) ? rang : [rang];
+export function lireOrdreArrivee(raw: unknown): ArriveeRangee {
+  const out: ArriveeRangee = { arrivee: [], rangs: [] };
+  if (!Array.isArray(raw)) return out;
+  for (const groupe of raw) {
+    const items = Array.isArray(groupe) ? groupe : [groupe];
+    const rang = out.arrivee.length + 1;
     for (const n of items) {
       const v = Number(n);
-      if (Number.isFinite(v) && v > 0) out.push(v);
+      if (Number.isFinite(v) && v > 0) {
+        out.arrivee.push(v);
+        out.rangs.push(rang);
+      }
     }
   }
   return out;
+}
+
+/** L'arrivée seule, aplatie dans l'ordre (sans les rangs). */
+export function aplatirOrdreArrivee(raw: unknown): number[] {
+  return lireOrdreArrivee(raw).arrivee;
 }
 
 /** "2026-07-27" → "27072026" (format exigé par /programme/{date}). */
@@ -74,10 +93,9 @@ export function isoVersDdmmyyyy(iso: string): string {
   return `${m[3]}${m[2]}${m[1]}`;
 }
 
-export interface ArriveePmu {
+export interface ArriveePmu extends ArriveeRangee {
   reunion:    number;
   course:     number;
-  arrivee:    number[];
   definitive: boolean;
 }
 
@@ -102,10 +120,10 @@ export function parseArriveesProgramme(json: unknown): ArriveePmu[] {
       if (!Number.isFinite(numC)) continue;
       if (!estArriveeDefinitive(c?.statut, c?.isArriveeDefinitive)) continue;
 
-      const arrivee = aplatirOrdreArrivee(c?.ordreArrivee);
+      const { arrivee, rangs } = lireOrdreArrivee(c?.ordreArrivee);
       if (arrivee.length < 3) continue;   // trop court pour être exploitable
 
-      out.push({ reunion: numR, course: numC, arrivee, definitive: true });
+      out.push({ reunion: numR, course: numC, arrivee, rangs, definitive: true });
     }
   }
   return out;
@@ -154,7 +172,7 @@ export async function fetchProgrammeDuJour(dateISO: string, timeoutMs = 15000): 
  * Renvoie une Map indexée par `R|C`. Map VIDE si l'API est indisponible —
  * l'appelant NE DOIT PAS interpréter cela comme « aucune arrivée ».
  */
-export async function fetchPmuArriveesDuJour(dateISO: string, timeoutMs = 15000): Promise<Map<string, number[]>> {
+export async function fetchPmuArriveesDuJour(dateISO: string, timeoutMs = 15000): Promise<Map<string, ArriveeRangee>> {
   for (const url of urlsProgramme(dateISO)) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -165,8 +183,8 @@ export async function fetchPmuArriveesDuJour(dateISO: string, timeoutMs = 15000)
       const json = await res.json();
       const rows = parseArriveesProgramme(json);
       if (rows.length > 0) {
-        const map = new Map<string, number[]>();
-        for (const r of rows) map.set(cleRC(r.reunion, r.course), r.arrivee);
+        const map = new Map<string, ArriveeRangee>();
+        for (const r of rows) map.set(cleRC(r.reunion, r.course), { arrivee: r.arrivee, rangs: r.rangs });
         return map;
       }
     } catch {
@@ -187,6 +205,48 @@ export function capPourParis(paris: string[] | null | undefined): number {
     if (String(x).toUpperCase().indexOf("QUINTE") !== -1) return 7;
   }
   return 6;
+}
+
+/**
+ * Ce qu'on écrit en base d'une arrivée PMU : les chevaux classés jusqu'au rang
+ * `cap` (un ex æquo au rang du cap est gardé en entier) et leurs rangs — NULL
+ * sans ex æquo, comme tout l'historique (cf. lib/courses/rangs).
+ */
+export function arriveeARetenir(
+  off: ArriveeRangee,
+  cap: number,
+): { arrivee: number[]; rangs: number[] | null } {
+  const coupee = couperParRang(off.arrivee, off.rangs, cap);
+  return { arrivee: coupee.arrivee, rangs: rangsAStocker(coupee.rangs) };
+}
+
+/**
+ * Rangs à poser sur une arrivée DÉJÀ en base (backfill), d'après l'arrivée PMU.
+ * Garde-fou d'identité : chaque cheval de la base doit être au PMU au rang de
+ * sa place (deux ex æquo peuvent être dans l'autre ordre). Sinon ce n'est pas
+ * la même arrivée → null, on n'écrit rien. null aussi sans ex æquo dans la
+ * partie enregistrée : NULL en base veut déjà dire « ordre strict ».
+ */
+export function rangsPourArriveeEnBase(
+  base: number[] | null | undefined,
+  off: ArriveeRangee,
+): number[] | null {
+  if (!Array.isArray(base) || !concordeAvecPmu(base, off)) return null;
+  const r = rangsEffectifs(off.arrivee, off.rangs);
+  const out: number[] = [];
+  for (let i = 0; i < base.length; i++) out.push(r[off.arrivee.indexOf(base[i])]);
+  return rangsAStocker(out);
+}
+
+/** L'arrivée en base est-elle celle du PMU (au rang près, deux ex æquo pouvant être inversés) ? */
+export function concordeAvecPmu(base: number[], off: ArriveeRangee): boolean {
+  if (base.length < 3 || base.length > off.arrivee.length) return false;
+  const r = rangsEffectifs(off.arrivee, off.rangs);
+  for (let i = 0; i < base.length; i++) {
+    const j = off.arrivee.indexOf(base[i]);
+    if (j === -1 || r[j] !== r[i]) return false;
+  }
+  return true;
 }
 
 export interface CourseACorriger {

@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { fetchPmuResultats } from "@/lib/pmu-api";
+import { buildArriveePodium } from "@/lib/courses/arrivee";
 import {
   jsonbRapportsToRapportsList,
   type Rapport,
@@ -47,9 +48,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     .from("courses")
     .select(`
       id, date_course, numero_reunion, numero_course,
-      statut, arrivee_officielle,
+      statut, arrivee_officielle, arrivee_rangs,
       partants(numero, nom_cheval, jockey, cote),
-      arrivees(ordre_arrivee, rapports_pmu, commentaire, horodatage)
+      arrivees(ordre_arrivee, rangs, rapports_pmu, commentaire, horodatage)
     `)
     .eq("id", params.id)
     .single();
@@ -75,6 +76,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   let arrivee: number[] = arriveeRow?.ordre_arrivee
     ?? course.arrivee_officielle
     ?? [];
+  // Rangs (ex æquo) de l'arrivée retenue — NULL = ordre strict.
+  let rangs: number[] | null = arriveeRow?.ordre_arrivee
+    ? arriveeRow.rangs ?? null
+    : (course as any).arrivee_rangs ?? null;
   let rapports: Rapport[] = jsonbRapportsToRapportsList(
     arriveeRow?.rapports_pmu ?? null,
     arrivee,
@@ -97,6 +102,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       if (pmuResultat) {
         if (pmuResultat.arrivee.length > 0 && arrivee.length === 0) {
           arrivee = pmuResultat.arrivee;
+          rangs = null;
         }
         const pmuRapports = (pmuResultat.rapports ?? [])
           .filter((r: any) => r.dividendes?.length > 0)
@@ -119,12 +125,16 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     }
   }
 
-  // 4. Enrichir l'arrivée avec les noms de chevaux
-  const arriveeEnrichie = arrivee.slice(0, 5).map((num: number, idx: number) => ({
-    position: idx + 1,
-    numero:   num,
-    nom:      partantsMap[num] ?? null,
-  }));
+  // 4. Enrichir l'arrivée avec les noms de chevaux. Les 5 premiers RANGS :
+  // deux 5es ex æquo sont montrés tous les deux.
+  const arriveeEnrichie = buildArriveePodium(arrivee, (course.partants as any[]) ?? [], rangs)
+    .filter((p) => p.rank <= 5)
+    .map((p) => ({
+      position: p.rank,
+      numero:   p.numero,
+      nom:      partantsMap[p.numero] ?? null,
+      exAequo:  p.exAequo,
+    }));
 
   return NextResponse.json({
     arrivee:     arriveeEnrichie,

@@ -120,3 +120,44 @@ describe("calculerResultat", () => {
     expect(calculerResultat([1, 1, 2, 2, 9], [1, 2, 3, 4, 5], "QUINTE_PLUS")).toBe("PERDANT");
   });
 });
+
+describe("calculerResultat — ex æquo (dead heat), règle de paiement du PMU", () => {
+  // Prix de Versailles, Quinté+ du 08/10/2026. PMU : [[1],[5],[8],[4],[15,16],[10]]
+  // → le PMU paie 1-5-8-4-15 ET 1-5-8-4-16.
+  const VERSAILLES = [1, 5, 8, 4, 15, 16, 10];
+  const RANGS_VERSAILLES = [1, 2, 3, 4, 5, 5, 7];
+
+  it("GAGNANT avec le n°16, 5e ex æquo (le PMU paie 1-5-8-4-16)", () => {
+    expect(calculerResultat([1, 5, 8, 4, 16, 9], VERSAILLES, "QUINTE_PLUS", RANGS_VERSAILLES)).toBe("GAGNANT");
+  });
+
+  it("sans les rangs, le 16 passe 6e : comportement historique conservé", () => {
+    expect(calculerResultat([1, 5, 8, 4, 16, 9], VERSAILLES, "QUINTE_PLUS")).toBe("PARTIEL");
+    expect(calculerResultat([1, 5, 8, 4, 16, 9], VERSAILLES, "QUINTE_PLUS", null)).toBe("PARTIEL");
+  });
+
+  it("les deux ex æquo ne comptent que pour UNE place : sans le 4, pas de Quinté+", () => {
+    // 1, 5, 8 + (15 ou 16) = 4 trouvés sur 5 → PARTIEL, jamais GAGNANT.
+    expect(calculerResultat([1, 5, 8, 15, 16, 9, 3], VERSAILLES, "QUINTE_PLUS", RANGS_VERSAILLES)).toBe("PARTIEL");
+  });
+
+  it("le pronostic Elite réel de Versailles reste PARTIEL", () => {
+    expect(calculerResultat([8, 1, 5, 9, 3, 16, 11, 10], VERSAILLES, "QUINTE_PLUS", RANGS_VERSAILLES)).toBe("PARTIEL");
+  });
+
+  it("Tiercé : un 3e ex æquo complète le podium (Prix de la Ville de Paris, 21/05/2026)", () => {
+    // PMU : 4, 11, puis 3 et 6 ex æquo 3es.
+    const arrivee = [4, 11, 3, 6, 15, 5];
+    const rangs = [1, 2, 3, 3, 5, 6];
+    expect(calculerResultat([4, 11, 6], arrivee, "TIERCE", rangs)).toBe("GAGNANT");
+    expect(calculerResultat([4, 11, 6], arrivee, "TIERCE")).toBe("PARTIEL");
+  });
+
+  it("un numéro répété dans une arrivée corrompue ne compte qu'une fois (comme avant)", () => {
+    expect(calculerResultat([3, 5, 7, 9, 11], [3, 3, 5, 7, 9], "QUINTE_PLUS")).toBe("PARTIEL");
+  });
+
+  it("des rangs incohérents sont ignorés : on juge sur la position", () => {
+    expect(calculerResultat([1, 5, 8, 4, 16], VERSAILLES, "QUINTE_PLUS", [1, 2, 3])).toBe("PARTIEL");
+  });
+});

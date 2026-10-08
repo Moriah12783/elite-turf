@@ -206,14 +206,14 @@ function CourseRow({ course }: { course: LiveCourse }) {
       {course.podium.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3">
           {course.podium.map((p) => (
-            <span key={p.rank} className="inline-flex items-center gap-1 text-sm">
+            <span key={p.numero} className="inline-flex items-center gap-1 text-sm">
               <span>{medal(p.rank)}</span>
               <span
                 className={p.rank === 1 ? "text-gold-primary font-semibold" : "text-text-secondary"}
               >
                 {p.nom || `N°${p.numero}`}
               </span>
-              <span className="text-text-muted text-xs">({p.numero})</span>
+              <span className="text-text-muted text-xs">({p.numero}){p.exAequo ? " ex æquo" : ""}</span>
             </span>
           ))}
         </div>

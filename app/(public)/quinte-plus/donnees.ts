@@ -35,6 +35,8 @@ export interface QuinteDuJourResume {
   heure_depart: string | null;
   statut: string | null;
   arrivee: number[] | null;
+  /** Rangs officiels de l'arrivée (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  rangs: number[] | null;
 }
 
 /**
@@ -45,7 +47,7 @@ export interface QuinteDuJourResume {
 export const chargerQuintesPeriode = cache(async (debut: string, fin: string): Promise<QuinteDuJourResume[]> => {
   const { data, error } = await createServiceClient()
     .from("courses")
-    .select("id, date_course, libelle, heure_depart, nationale, jouable_afrique, paris_disponibles, statut, arrivee_officielle, hippodrome:hippodromes(nom, pays)")
+    .select("id, date_course, libelle, heure_depart, nationale, jouable_afrique, paris_disponibles, statut, arrivee_officielle, arrivee_rangs, hippodrome:hippodromes(nom, pays)")
     .gte("date_course", debut)
     .lte("date_course", fin)
     .or("nationale.eq.1,paris_disponibles.cs.{QUINTE_PLUS}");
@@ -69,6 +71,7 @@ export const chargerQuintesPeriode = cache(async (debut: string, fin: string): P
         heure_depart: q.heure_depart ?? null,
         statut: q.statut ?? null,
         arrivee: Array.isArray(q.arrivee_officielle) && q.arrivee_officielle.length > 0 ? q.arrivee_officielle : null,
+        rangs: Array.isArray(q.arrivee_rangs) ? q.arrivee_rangs : null,
       };
     })
     .filter((x): x is QuinteDuJourResume => x !== null);

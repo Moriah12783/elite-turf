@@ -129,7 +129,8 @@ export async function POST(req: NextRequest) {
           date_course,
           numero_reunion,
           numero_course,
-          arrivee_officielle
+          arrivee_officielle,
+          arrivee_rangs
         )
       `)
       .eq("publie", true)
@@ -155,6 +156,8 @@ export async function POST(req: NextRequest) {
         let arrivee: number[] | null = course.arrivee_officielle?.length
           ? course.arrivee_officielle
           : null;
+        // Rangs (ex æquo) : seulement pour l'arrivée en base, pas pour une arrivée reprise de Geny ou du PMU.
+        const rangs: number[] | null = arrivee ? course.arrivee_rangs ?? null : null;
 
         // ── 2a. Essayer Geny si pas d'arrivée ──────────────────────────
         if (!arrivee) {
@@ -184,7 +187,7 @@ export async function POST(req: NextRequest) {
         // ── 2d. Calculer le résultat ────────────────────────────────────
         const selection: number[] = prono.selection ?? [];
         const typePari: string    = prono.type_pari ?? "";
-        const resultat = calculerResultat(selection, arrivee, typePari);
+        const resultat = calculerResultat(selection, arrivee, typePari, rangs);
 
         // ── 2e. Mettre à jour le pronostic ──────────────────────────────
         const { error } = await supabase

@@ -33,6 +33,7 @@ import TrackPageView from "@/components/analytics/TrackPageView";
 import LeadCaptureCompact from "@/components/leads/LeadCaptureCompact";
 import { chargerJourQuinte } from "./donnees";
 import { niveauConfiance } from "@/lib/pronostics/confiance";
+import { estExAequo, rangsEffectifs } from "@/lib/courses/rangs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -63,7 +64,7 @@ export default async function VueQuintePlus({
     .select(`
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
-      categorie, terrain, nb_partants, statut, arrivee_officielle,
+      categorie, terrain, nb_partants, statut, arrivee_officielle, arrivee_rangs,
       paris_disponibles, jouable_afrique, nationale,
       hippodrome:hippodromes(id, nom, pays, ville),
       partants(
@@ -314,17 +315,19 @@ export default async function VueQuintePlus({
             <div className="flex flex-wrap gap-2">
               {arrivee!.map((num: number, idx: number) => {
                 const part = partants.find((p: any) => p.numero === num);
+                const rang = rangsEffectifs(arrivee, c.arrivee_rangs)[idx];
                 return (
                   <div
                     key={idx}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                      idx === 0
+                      rang === 1
                         ? "bg-status-win/15 border border-status-win/40"
                         : "bg-bg-elevated border border-border"
                     }`}
                   >
                     <span className="text-text-muted text-xs font-mono">
-                      {idx + 1}<sup>e</sup>
+                      {rang}<sup>{rang === 1 ? "er" : "e"}</sup>
+                      {estExAequo(num, arrivee, c.arrivee_rangs) && " ex æquo"}
                     </span>
                     <span className="text-gold-primary font-bold text-sm">
                       {num}

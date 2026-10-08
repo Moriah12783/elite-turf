@@ -106,7 +106,7 @@ export default async function ArriveesPage({ params }: PageProps) {
     .select(`
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
-      categorie, nb_partants, statut, arrivee_officielle,
+      categorie, nb_partants, statut, arrivee_officielle, arrivee_rangs,
       paris_disponibles,
       hippodrome:hippodromes(id, nom, pays, ville),
       partants(numero, nom_cheval, cote),
@@ -305,7 +305,7 @@ export default async function ArriveesPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-            <ArriveePodium arrivee={quinte.arrivee_officielle} partants={quinte.partants} />
+            <ArriveePodium arrivee={quinte.arrivee_officielle} partants={quinte.partants} rangs={quinte.arrivee_rangs} />
 
             {/* Rapports Quinté+ — affichage compact des dividendes principaux */}
             {quinte.rapports_pmu?.quinte_plus && (
@@ -401,7 +401,7 @@ export default async function ArriveesPage({ params }: PageProps) {
                             {c.libelle}
                           </span>
                         </div>
-                        <ArriveePodium arrivee={c.arrivee_officielle} partants={c.partants} compact />
+                        <ArriveePodium arrivee={c.arrivee_officielle} partants={c.partants} rangs={c.arrivee_rangs} compact />
 
                         {/* Rapports synthèse */}
                         {top3.length > 0 && (

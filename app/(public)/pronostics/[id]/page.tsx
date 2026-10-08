@@ -19,6 +19,7 @@ import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
 import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
 import { planRadarAbonne, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
 import { estPlace } from "@/lib/courses/arrivee";
+import { couperParRang, estExAequo, libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
 import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
 import type { PartantConsensus } from "@/lib/consensus/engine";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
@@ -114,7 +115,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
       course:courses(
         id, libelle, date_course, heure_depart,
         distance_metres, categorie, terrain, nb_partants,
-        arrivee_officielle,
+        arrivee_officielle, arrivee_rangs,
         hippodrome:hippodromes(nom, pays, ville),
         partants(id, numero, nom_cheval, jockey, cote, musique, non_partant)
       )
@@ -379,7 +380,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                       // « Placé » = dans les 3 premiers (lib/courses/arrivee.ts),
                       // une fois le résultat connu. Avant le 06/10/2026 : tout
                       // cheval de l'arrivée enregistrée, 6e et 7e compris.
-                      const place = p.resultat !== "EN_ATTENTE" && estPlace(n, course?.arrivee_officielle);
+                      const place = p.resultat !== "EN_ATTENTE" && estPlace(n, course?.arrivee_officielle, course?.arrivee_rangs);
                       return (
                         <div
                           key={idx}
@@ -434,9 +435,10 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                         Arrivée officielle
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {course.arrivee_officielle.slice(0, Math.max(p.selection.length, 5)).map((n: number, idx: number) => {
+                        {couperParRang(course.arrivee_officielle, course.arrivee_rangs, Math.max(p.selection.length, 5)).arrivee.map((n: number, idx: number) => {
                           const isSelected = p.selection.includes(n);
                           const horse = partants.find((pt: any) => pt.numero === n);
+                          const rang = rangsEffectifs(course.arrivee_officielle, course.arrivee_rangs)[idx];
                           return (
                             <div key={idx} className="flex flex-col items-center gap-0.5">
                               <span className={`w-9 h-9 rounded-full border-2 flex items-center justify-center font-bold text-sm ${
@@ -447,7 +449,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                                 {n}
                               </span>
                               <span className="text-[9px] text-text-muted">
-                                {idx + 1}{idx === 0 ? "er" : "e"}
+                                {libelleRang(rang, estExAequo(n, course.arrivee_officielle, course.arrivee_rangs))}
                               </span>
                               {horse && (
                                 <span className="text-[8px] text-text-muted max-w-[50px] text-center leading-tight">
