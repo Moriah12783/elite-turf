@@ -148,6 +148,8 @@ interface RapportsAffichables {
   quinte_plus?: { ordre?: number; desordre?: number; bonus4?: number; bonus3?: number };
   quarte_plus?: { ordre?: number; desordre?: number; bonus?: number };
   tierce?: { ordre?: number; desordre?: number };
+  /** Ex æquo : toutes les combinaisons payées (cf. `RapportsPMU.combinaisons`). */
+  combinaisons?: { lignes: { pari: string; type?: string; combinaison: string; rapport: number }[] };
 }
 
 export interface LigneRapport {
@@ -172,22 +174,35 @@ export function euros(n: number): string {
  */
 export function lignesRapports(r: RapportsAffichables | null | undefined): LigneRapport[] {
   if (!r) return [];
-  const morceaux = (paires: [string, number | undefined][]) =>
-    paires.filter((p) => typeof p[1] === "number" && (p[1] as number) > 0).map((p) => `${p[0]} ${euros(p[1] as number)}`);
+  const montant = (v: number | undefined): string | undefined => (typeof v === "number" && v > 0 ? euros(v) : undefined);
+  // Ex æquo : le PMU paie plusieurs ordres ou désordres, chacun est nommé.
+  const payees = r.combinaisons ? r.combinaisons.lignes : [];
+  const ordre = (pari: string, type: "ordre" | "desordre", v: number | undefined): string | undefined => {
+    const lignes = payees.filter((l) => l.pari === pari && l.type === type);
+    return lignes.length > 1 ? lignes.map((l) => `${l.combinaison} ${euros(l.rapport)}`).join(" / ") : montant(v);
+  };
+  const morceaux = (paires: [string, string | undefined][]) =>
+    paires.filter((p) => p[1] !== undefined).map((p) => `${p[0]} ${p[1]}`);
   const out: LigneRapport[] = [];
   const q = r.quinte_plus;
   if (q) {
-    const m = morceaux([["ordre", q.ordre], ["désordre", q.desordre], ["bonus 4/5", q.bonus4], ["bonus 3", q.bonus3]]);
+    const m = morceaux([
+      ["ordre", ordre("QUINTE_PLUS", "ordre", q.ordre)], ["désordre", ordre("QUINTE_PLUS", "desordre", q.desordre)],
+      ["bonus 4/5", montant(q.bonus4)], ["bonus 3", montant(q.bonus3)],
+    ]);
     if (m.length) out.push({ pari: "Quinté+", mise: "pour 2 €", detail: m.join(" · ") });
   }
   const qa = r.quarte_plus;
   if (qa) {
-    const m = morceaux([["ordre", qa.ordre], ["désordre", qa.desordre], ["bonus", qa.bonus]]);
+    const m = morceaux([
+      ["ordre", ordre("QUARTE_PLUS", "ordre", qa.ordre)], ["désordre", ordre("QUARTE_PLUS", "desordre", qa.desordre)],
+      ["bonus", montant(qa.bonus)],
+    ]);
     if (m.length) out.push({ pari: "Quarté+", mise: "pour 1 €", detail: m.join(" · ") });
   }
   const t = r.tierce;
   if (t) {
-    const m = morceaux([["ordre", t.ordre], ["désordre", t.desordre]]);
+    const m = morceaux([["ordre", ordre("TIERCE", "ordre", t.ordre)], ["désordre", ordre("TIERCE", "desordre", t.desordre)]]);
     if (m.length) out.push({ pari: "Tiercé", mise: "pour 1 €", detail: m.join(" · ") });
   }
   return out;

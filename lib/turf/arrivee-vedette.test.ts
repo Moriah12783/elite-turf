@@ -98,6 +98,30 @@ describe("lignesRapports — rapports PMU définitifs sur la carte d'arrivée", 
     expect(lignesRapports({ quinte_plus: { desordre: 248 } })).toEqual([{ pari: "Quinté+", mise: "pour 2 €", detail: "désordre 248,00 €" }]);
   });
 
+  it("ex æquo (Versailles, 08/10/2026) : les deux Quinté+ payés, chacun avec sa combinaison", () => {
+    const r = {
+      quinte_plus: { ordre: 6145.8, desordre: 72.2, bonus4: 3, bonus3: 2.6 },
+      tierce: { ordre: 55.3, desordre: 7.7 },
+      combinaisons: {
+        source: "internet" as const,
+        lignes: [
+          { pari: "QUINTE_PLUS" as const, type: "ordre" as const, combinaison: "1-5-8-4-15", rapport: 6145.8 },
+          { pari: "QUINTE_PLUS" as const, type: "ordre" as const, combinaison: "1-5-8-4-16", rapport: 3227.8 },
+          { pari: "QUINTE_PLUS" as const, type: "desordre" as const, combinaison: "1-5-8-4-15", rapport: 72.2 },
+          { pari: "QUINTE_PLUS" as const, type: "desordre" as const, combinaison: "1-5-8-4-16", rapport: 39.2 },
+        ],
+      },
+    };
+    expect(lignesRapports(r)).toEqual([
+      {
+        pari: "Quinté+",
+        mise: "pour 2 €",
+        detail: `ordre 1-5-8-4-15 ${euros(6145.8)} / 1-5-8-4-16 ${euros(3227.8)} · désordre 1-5-8-4-15 ${euros(72.2)} / 1-5-8-4-16 ${euros(39.2)} · bonus 4/5 ${euros(3)} · bonus 3 ${euros(2.6)}`,
+      },
+      { pari: "Tiercé", mise: "pour 1 €", detail: `ordre ${euros(55.3)} · désordre ${euros(7.7)}` },
+    ]);
+  });
+
   it("euros : arrondi au centime", () => {
     expect(euros(0.5)).toBe("0,50 €");
     expect(euros(1300190.0)).toBe("1 300 190,00 €");
