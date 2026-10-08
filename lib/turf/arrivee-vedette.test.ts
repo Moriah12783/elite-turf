@@ -41,6 +41,17 @@ describe("resumeCourse — uniquement les données de la base", () => {
       .toEqual(["Course à Chantilly : victoire du n°7.", "Le n°2 termine deuxième."]);
   });
 
+  it("dead heat pour la victoire : deux vainqueurs (Deauville, 30/08/2026)", () => {
+    // PMU : 4 et 11 ex æquo 1ers, puis 8 (3e).
+    const arrivee = [4, 11, 8, 9, 7, 16, 12];
+    const deauville = { hippodrome: "Deauville", categorie: null, distance_metres: null, nb_partants: null };
+    expect(resumeCourse(deauville, arrivee, [], [1, 1, 3, 4, 5, 5, 7]))
+      .toEqual(["Course à Deauville : victoire ex æquo du n°4 et du n°11.", "Le n°8 complète le podium."]);
+    // Sans les rangs : texte historique.
+    expect(resumeCourse(deauville, arrivee, []))
+      .toEqual(["Course à Deauville : victoire du n°4.", "Le n°11 et le n°8 complètent le podium."]);
+  });
+
   it("sans arrivée → null (la carte affiche alors « Arrivée en attente »)", () => {
     expect(resumeCourse(course, [], podium)).toBeNull();
     expect(resumeCourse(course, null, podium)).toBeNull();

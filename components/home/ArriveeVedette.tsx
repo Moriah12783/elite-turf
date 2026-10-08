@@ -58,6 +58,7 @@ export function ArriveeVedette({
     },
     course.arrivee_officielle,
     partants,
+    course.arrivee_rangs,
   );
   const rapportsAffiches = lignesRapports(rapports);
 

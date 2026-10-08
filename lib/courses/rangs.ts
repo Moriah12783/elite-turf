@@ -109,7 +109,7 @@ export function estExAequo(
  */
 export function couperParRang(
   arrivee: number[],
-  rangs: number[],
+  rangs: number[] | null | undefined,
   cap: number,
 ): { arrivee: number[]; rangs: number[] } {
   const r = rangsEffectifs(arrivee, rangs);

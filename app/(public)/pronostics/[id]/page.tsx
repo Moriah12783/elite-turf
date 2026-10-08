@@ -19,7 +19,7 @@ import { ElitePlanBlock } from "@/components/pronostics/ElitePlanBlock";
 import PlanRadarListe, { type ChevalAffiche } from "@/components/pronostics/PlanRadarListe";
 import { planRadarAbonne, type SelectionDetailLike } from "@/lib/pronostics/plan-radar";
 import { estPlace } from "@/lib/courses/arrivee";
-import { estExAequo, libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
+import { couperParRang, estExAequo, libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
 import { ConsensusPresseSection } from "@/components/pronostics/ConsensusPresseSection";
 import type { PartantConsensus } from "@/lib/consensus/engine";
 import type { ElitePlanDeJeu } from "@/lib/ai-pronostics/types";
@@ -435,7 +435,7 @@ export default async function PronosticDetailPage({ params }: PageProps) {
                         Arrivée officielle
                       </p>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {course.arrivee_officielle.slice(0, Math.max(p.selection.length, 5)).map((n: number, idx: number) => {
+                        {couperParRang(course.arrivee_officielle, course.arrivee_rangs, Math.max(p.selection.length, 5)).arrivee.map((n: number, idx: number) => {
                           const isSelected = p.selection.includes(n);
                           const horse = partants.find((pt: any) => pt.numero === n);
                           const rang = rangsEffectifs(course.arrivee_officielle, course.arrivee_rangs)[idx];

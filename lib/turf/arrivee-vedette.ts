@@ -8,6 +8,7 @@
  * aucune cote (rien ne garantit qu'elle soit la cote définitive).
  * ES5-safe (pas de spread de Set/Map, pas de regex /u).
  */
+import { groupesArrivee } from "../courses/rangs";
 
 export interface PartantNomme {
   numero: number;
@@ -54,7 +55,13 @@ export function nomPersonne(s: string | null | undefined): string {
  * LIPRIKA D'ANJOU (n°15), avec F. GILES, pour l'entraîneur H. MERIENNE (S).
  * GREY FIGHTER (n°3) et LUTECE ALLEN (n°14) complètent le podium. »
  */
-export function resumeCourse(course: CourseResumee, arrivee: number[] | null | undefined, partants: PartantNomme[]): string[] | null {
+export function resumeCourse(
+  course: CourseResumee,
+  arrivee: number[] | null | undefined,
+  partants: PartantNomme[],
+  /** Rangs officiels (ex æquo), cf. lib/courses/rangs. Absents = ordre strict. */
+  rangs?: number[] | null,
+): string[] | null {
   if (!aUneArrivee(arrivee)) return null;
   const parNumero: Record<number, PartantNomme> = {};
   for (let i = 0; i < partants.length; i++) parNumero[partants[i].numero] = partants[i];
@@ -72,16 +79,30 @@ export function resumeCourse(course: CourseResumee, arrivee: number[] | null | u
   const nb = nombrePartants(course, partants);
   if (nb > 0) contexte = contexte ? `${contexte}, ${nb} partants` : `${nb} partants`;
 
-  const gagnant = parNumero[arrivee[0]];
-  const nomGagnant = nomme(arrivee[0]);
-  let victoire = nomGagnant ? `victoire de ${nomGagnant}` : `victoire du n°${arrivee[0]}`;
-  if (gagnant && gagnant.jockey && gagnant.jockey.trim()) victoire += `, avec ${nomPersonne(gagnant.jockey)}`;
-  if (gagnant && gagnant.entraineur && gagnant.entraineur.trim()) victoire += `, pour l'entraîneur ${nomPersonne(gagnant.entraineur)}`;
+  // Rang par rang : deux vainqueurs en dead heat sont nommés tous les deux.
+  const groupes = groupesArrivee(arrivee, rangs);
+  let victoire: string;
+  if (groupes[0].numeros.length > 1) {
+    victoire = `victoire ex æquo ${enumerer(groupes[0].numeros.map((n) => (nomme(n) ? `de ${nomme(n)}` : `du n°${n}`)))}`;
+  } else {
+    const gagnant = parNumero[arrivee[0]];
+    const nomGagnant = nomme(arrivee[0]);
+    victoire = nomGagnant ? `victoire de ${nomGagnant}` : `victoire du n°${arrivee[0]}`;
+    if (gagnant && gagnant.jockey && gagnant.jockey.trim()) victoire += `, avec ${nomPersonne(gagnant.jockey)}`;
+    if (gagnant && gagnant.entraineur && gagnant.entraineur.trim()) victoire += `, pour l'entraîneur ${nomPersonne(gagnant.entraineur)}`;
+  }
   const phrases = [contexte ? `${contexte} : ${victoire}.` : `${majuscule(victoire)}.`];
 
-  const suivants = arrivee.slice(1, 3).map((n) => nomme(n) || `le n°${n}`);
-  if (suivants.length === 2) phrases.push(`${majuscule(suivants[0])} et ${suivants[1]} complètent le podium.`);
-  else if (suivants.length === 1) phrases.push(`${majuscule(suivants[0])} termine deuxième.`);
+  // Le reste du podium : rangs 2 et 3 (un 3e ex æquo y figure).
+  const podium: number[] = [];
+  for (const g of groupes) {
+    if (g.rang > 1 && g.rang <= 3) for (const n of g.numeros) podium.push(n);
+  }
+  const suivants = podium.map((n) => nomme(n) || `le n°${n}`);
+  if (suivants.length >= 2) phrases.push(`${majuscule(enumerer(suivants))} complètent le podium.`);
+  else if (suivants.length === 1) {
+    phrases.push(`${majuscule(suivants[0])} ${groupes[1].rang === 2 ? "termine deuxième" : "complète le podium"}.`);
+  }
 
   const nonPartants = partants
     .filter((p) => p.non_partant)
