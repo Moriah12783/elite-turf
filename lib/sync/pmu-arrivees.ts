@@ -25,7 +25,7 @@
  *     + `statut` pour CHAQUE course. Un seul appel couvre toute la journée.
  */
 
-import { couperParRang, rangsAStocker } from "../courses/rangs";
+import { couperParRang, rangsAStocker, rangsEffectifs } from "../courses/rangs";
 
 const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
 const PMU_PROXY  = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
@@ -218,6 +218,35 @@ export function arriveeARetenir(
 ): { arrivee: number[]; rangs: number[] | null } {
   const coupee = couperParRang(off.arrivee, off.rangs, cap);
   return { arrivee: coupee.arrivee, rangs: rangsAStocker(coupee.rangs) };
+}
+
+/**
+ * Rangs à poser sur une arrivée DÉJÀ en base (backfill), d'après l'arrivée PMU.
+ * Garde-fou d'identité : chaque cheval de la base doit être au PMU au rang de
+ * sa place (deux ex æquo peuvent être dans l'autre ordre). Sinon ce n'est pas
+ * la même arrivée → null, on n'écrit rien. null aussi sans ex æquo dans la
+ * partie enregistrée : NULL en base veut déjà dire « ordre strict ».
+ */
+export function rangsPourArriveeEnBase(
+  base: number[] | null | undefined,
+  off: ArriveeRangee,
+): number[] | null {
+  if (!Array.isArray(base) || !concordeAvecPmu(base, off)) return null;
+  const r = rangsEffectifs(off.arrivee, off.rangs);
+  const out: number[] = [];
+  for (let i = 0; i < base.length; i++) out.push(r[off.arrivee.indexOf(base[i])]);
+  return rangsAStocker(out);
+}
+
+/** L'arrivée en base est-elle celle du PMU (au rang près, deux ex æquo pouvant être inversés) ? */
+export function concordeAvecPmu(base: number[], off: ArriveeRangee): boolean {
+  if (base.length < 3 || base.length > off.arrivee.length) return false;
+  const r = rangsEffectifs(off.arrivee, off.rangs);
+  for (let i = 0; i < base.length; i++) {
+    const j = off.arrivee.indexOf(base[i]);
+    if (j === -1 || r[j] !== r[i]) return false;
+  }
+  return true;
 }
 
 export interface CourseACorriger {

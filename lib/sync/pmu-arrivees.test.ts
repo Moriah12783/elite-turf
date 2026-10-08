@@ -3,6 +3,7 @@ import {
   aplatirOrdreArrivee,
   lireOrdreArrivee,
   arriveeARetenir,
+  rangsPourArriveeEnBase,
   estArriveeDefinitive,
   isoVersDdmmyyyy,
   parseArriveesProgramme,
@@ -172,6 +173,32 @@ describe("arriveeARetenir — cap en rangs, rangs NULL sans ex æquo", () => {
       arrivee: [12, 13, 7, 4, 1, 6],
       rangs: null,
     });
+  });
+});
+
+describe("rangsPourArriveeEnBase — backfill : des rangs seulement sur la même arrivée", () => {
+  const VERSAILLES_PMU = lireOrdreArrivee([[1], [5], [8], [4], [15, 16], [10], [11], [13]]);
+
+  it("arrivée en base = arrivée PMU : ses rangs", () => {
+    expect(rangsPourArriveeEnBase([1, 5, 8, 4, 15, 16, 10], VERSAILLES_PMU)).toEqual([1, 2, 3, 4, 5, 5, 7]);
+  });
+
+  it("deux ex æquo dans l'autre ordre : mêmes rangs", () => {
+    expect(rangsPourArriveeEnBase([1, 5, 8, 4, 16, 15, 10], VERSAILLES_PMU)).toEqual([1, 2, 3, 4, 5, 5, 7]);
+  });
+
+  it("une autre arrivée (contaminée) : rien", () => {
+    expect(rangsPourArriveeEnBase([2, 8, 1, 7, 3, 5, 10], VERSAILLES_PMU)).toBeNull();
+    expect(rangsPourArriveeEnBase([5, 1, 8, 4, 15, 16, 10], VERSAILLES_PMU)).toBeNull();
+  });
+
+  it("pas d'ex æquo dans la partie enregistrée : rien à écrire", () => {
+    expect(rangsPourArriveeEnBase([1, 5, 8, 4], VERSAILLES_PMU)).toBeNull();
+  });
+
+  it("arrivée absente ou trop courte : rien", () => {
+    expect(rangsPourArriveeEnBase(null, VERSAILLES_PMU)).toBeNull();
+    expect(rangsPourArriveeEnBase([1, 5], VERSAILLES_PMU)).toBeNull();
   });
 });
 
