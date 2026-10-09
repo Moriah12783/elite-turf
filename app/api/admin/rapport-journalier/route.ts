@@ -23,20 +23,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
-import { fenetreComparaison } from "@/lib/pronostics/resultat";
+import { detailResultat } from "@/lib/pronostics/resultat";
+import { arriveeEnTexte, couperParRang } from "@/lib/courses/rangs";
 
 export const dynamic = "force-dynamic";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function computeHits(selection: number[], arrivee: number[], topN: number): number[] {
-  const top = new Set(arrivee.slice(0, topN));
-  return selection.filter((n) => top.has(n));
-}
-
-// Fenêtre de comparaison : `lib/pronostics/resultat.ts` (source unique, testée).
-// L'ancienne copie locale testait des libellés accentués absents de la base et
-// jugeait donc tous les Tiercés sur le top 5.
+// Chevaux trouvés et places couvertes : `detailResultat` (lib/pronostics/resultat.ts),
+// les mêmes règles que le jugement — rangs officiels, ex æquo compris. L'ancienne
+// copie locale comptait par position : un 5e ex æquo joué passait pour manqué.
 
 function resultEmoji(resultat: string): string {
   if (resultat === "GAGNANT") return "✅";
@@ -47,8 +43,9 @@ function resultEmoji(resultat: string): string {
 
 function analysePerformance(
   hits: number[],
+  trouves: number,
   selection: number[],
-  arrivee: number[],
+  arriveeTexte: string,
   topN: number,
   resultat: string,
 ): string {
@@ -57,7 +54,7 @@ function analysePerformance(
   // Tiercé gagné avec 8 chevaux joués n'en place que 3. Les messages disent
   // désormais ce qui est réellement vrai — sans quoi le rapport affirmerait
   // « tous les 8 chevaux dans le top 3 », arithmétiquement impossible.
-  const ordered = arrivee.slice(0, topN).join(" - ");
+  const ordered = arriveeTexte;
   const nbTrouves = `${hits.length} ${hits.length > 1 ? "chevaux trouvés" : "cheval trouvé"}`;
 
   if (resultat === "GAGNANT") {
@@ -66,7 +63,7 @@ function analysePerformance(
   }
   if (resultat === "PARTIEL") {
     const missed = selection.filter((n) => !hits.includes(n)).join(", ");
-    return `${hits.length}/${topN} places du top trouvées (${hits.join(", ")}). `
+    return `${trouves}/${topN} places du top trouvées (${hits.join(", ")}). `
       + `Chevaux joués non placés : ${missed || "aucun"}. Arrivée officielle : ${ordered}.`;
   }
   if (resultat === "PERDANT") {
@@ -112,6 +109,7 @@ export async function GET(req: NextRequest) {
         numero_reunion,
         numero_course,
         arrivee_officielle,
+        arrivee_rangs,
         hippodrome:hippodromes ( nom )
       )
     `)
@@ -148,8 +146,11 @@ export async function GET(req: NextRequest) {
     const selection: number[]  = p.selection ?? [];
     const arrivee: number[]    = course?.arrivee_officielle ?? [];
     const typePari: string     = p.type_pari ?? "";
-    const topN                 = fenetreComparaison(typePari, selection.length);
-    const hits                 = computeHits(selection, arrivee, topN);
+    const rangs: number[] | null = course?.arrivee_rangs ?? null;
+    const detail               = detailResultat(selection, arrivee, typePari, rangs);
+    const topN                 = detail.topN;
+    const hits                 = detail.chevaux;
+    const arriveeTexte         = arriveeEnTexte(arrivee, rangs, topN);
     const resultat: string     = p.resultat ?? "EN_ATTENTE";
 
     return {
@@ -163,8 +164,10 @@ export async function GET(req: NextRequest) {
       typePari,
       confiance:      p.confiance ?? "—",
       selection,
-      arriveeOfficielle: arrivee.slice(0, topN),
+      arriveeOfficielle: couperParRang(arrivee, rangs, topN).arrivee,
+      arriveeTexte,
       hitsCount:      hits.length,
+      placesTrouvees: detail.trouves,
       hitsChevaux:    hits,
       totalSelection: selection.length,
       topN,
@@ -172,7 +175,7 @@ export async function GET(req: NextRequest) {
       emoji:          resultEmoji(resultat),
       rapportPMU:     p.rapport_gagnant ?? null,
       analyseCourte:  p.analyse_courte ?? null,
-      analysePost:    analysePerformance(hits, selection, arrivee, topN, resultat),
+      analysePost:    analysePerformance(hits, detail.trouves, selection, arriveeTexte, topN, resultat),
     };
   });
 
@@ -191,7 +194,7 @@ export async function GET(req: NextRequest) {
       [
         `${r.emoji} ${r.libelle} (R${r.reunion}C${r.course}) — ${r.hippodrome}`,
         `   Sélection : ${r.selection.join("-")}`,
-        `   Arrivée top${r.topN} : ${r.arriveeOfficielle.join("-") || "N/D"}`,
+        `   Arrivée top${r.topN} : ${r.arriveeTexte || "N/D"}`,
         `   Résultat : ${r.resultat} (${r.hitsCount}/${r.totalSelection} chevaux trouvés)`,
         r.rapportPMU ? `   Rapport PMU : ${r.rapportPMU.toFixed(2)}€ pour 1€ misé` : null,
         `   ${r.analysePost}`,
