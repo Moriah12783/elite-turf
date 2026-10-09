@@ -22,11 +22,7 @@ import { buildGenyUrlFromStored } from "@/lib/geny";
 import { fetchGenybetArriveesMap } from "@/lib/sync/genybet-arrivees";
 import { arriveeARetenir, fetchPmuArriveesDuJour } from "@/lib/sync/pmu-arrivees";
 import { todayParisISO } from "@/lib/paris-date";
-import {
-  parseRapportsPMU,
-  parseCommentaire,
-  type RapportsPMU,
-} from "@/lib/sync/geny-rapports-parser";
+import { parseCommentaire } from "@/lib/sync/geny-rapports-parser";
 
 export interface GenyArriveesResult {
   ok:        true;
@@ -371,13 +367,29 @@ interface CourseRow {
 
 interface FetchedArrivee {
   arrivee:     number[];
-  rapports:    RapportsPMU | null;
   commentaire: string | null;
   /**
    * Rangs officiels PMU (ex æquo), NULL = ordre strict. Seule l'API PMU les
    * connaît : une arrivée venue de Geny ou de GenyBet n'en a pas.
    */
   rangs?:      number[] | null;
+}
+
+/**
+ * Ligne `arrivees` écrite par la synchro. PUR (testé). Jamais de `rapports_pmu` :
+ * ceux de Geny étaient faux (audit du 09/10/2026 : Tiercé et Quinté+ sur des
+ * courses qui n'en ont pas, montants d'un autre opérateur). Ils viennent du
+ * seul PMU (runPmuRapportsSync), qui n'écrase jamais un rapport existant — la
+ * clé est donc ABSENTE : l'upsert ne remet pas à vide un rapport déjà écrit.
+ */
+export function ligneArrivee(v: { courseId: string; arrivee: number[]; rangs?: number[] | null; commentaire: string | null }) {
+  return {
+    course_id:     v.courseId,
+    ordre_arrivee: v.arrivee,
+    rangs:         v.rangs ?? null,
+    commentaire:   v.commentaire ?? null,
+    horodatage:    new Date().toISOString(),
+  };
 }
 
 async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee | null> {
@@ -409,23 +421,17 @@ async function fetchArriveeForCourse(course: CourseRow): Promise<FetchedArrivee 
     const arrivee = parseArrivee(html, course.validNumbers, maxHorses);
     if (!arrivee) return null;
 
-    // Bonus : rapports PMU complets + commentaire d'arrivée (best-effort)
-    let rapports: RapportsPMU | null = null;
+    // Bonus : commentaire d'arrivée (best-effort). Les rapports ne sont PAS
+    // lus ici : ceux de Geny étaient faux (audit du 09/10/2026), ils viennent
+    // de l'API PMU (runPmuRapportsSync, lancé juste après par geny-arrivees-cli).
     let commentaire: string | null = null;
-    try {
-      const r = parseRapportsPMU(html);
-      // Considère "non vide" si au moins une clé existe
-      if (r && Object.keys(r).length > 0) rapports = r;
-    } catch {
-      // Parser défensif : on ne casse pas la sync si parsing rapports échoue
-    }
     try {
       commentaire = parseCommentaire(html);
     } catch {
-      // idem
+      // Parser défensif : on ne casse pas la sync si le commentaire est illisible
     }
 
-    return { arrivee, rapports, commentaire };
+    return { arrivee, commentaire };
   } catch {
     return null;
   }
@@ -568,7 +574,7 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
           : order;
         const finalOrder = kept.slice(0, maxHorses);
         if (finalOrder.length >= 3) {
-          valid.push({ courseId: c.id, arrivee: finalOrder, rapports: null, commentaire: null });
+          valid.push({ courseId: c.id, arrivee: finalOrder, commentaire: null });
           filled++;
         }
       }
@@ -628,7 +634,6 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
           courseId: c.id,
           arrivee: retenue.arrivee,
           rangs: retenue.rangs,
-          rapports: null,
           commentaire: null,
         });
         ajoutes++;
@@ -690,26 +695,16 @@ export async function runGenyArriveesSync(dateISO?: string): Promise<GenyArrivee
     }));
     await supabase.from("courses").upsert(courseUpdates);
 
-    // Upsert dans table arrivees (best-effort, table optionnelle)
-    // Inclut désormais rapports_pmu (JSONB) + commentaire (TEXT)
-    const arriveesRows = valid.map(({ courseId, arrivee, rangs, rapports, commentaire }) => ({
-      course_id:     courseId,
-      ordre_arrivee: arrivee,
-      rangs:         rangs ?? null,
-      rapports_pmu: rapports ?? null,
-      commentaire:  commentaire ?? null,
-      horodatage:    new Date().toISOString(),
-    }));
+    // Upsert dans table arrivees (best-effort, table optionnelle), sans
+    // rapports_pmu : cf. ligneArrivee.
+    const arriveesRows = valid.map(ligneArrivee);
     try {
       await supabase.from("arrivees").upsert(arriveesRows, { onConflict: "course_id" });
     } catch {
       // Table arrivees absente — silencieux
     }
 
-    const withRapports = valid.filter((v) => v.rapports !== null).length;
-    console.log(
-      `[geny-arrivees] upserted ${valid.length} arrivées (rapports PMU: ${withRapports})`,
-    );
+    console.log(`[geny-arrivees] upserted ${valid.length} arrivées`);
   }
 
   // Courses éligibles (temporellement, avec geny_url) qu'AUCUNE source (Geny NI
