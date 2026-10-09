@@ -57,25 +57,27 @@ function formatDateShort(d: string): string {
   });
 }
 
-function ArriveeBadge({ pos }: { pos: number | null }) {
+function ArriveeBadge({ pos, exAequo = false }: { pos: number | null; exAequo?: boolean }) {
   if (pos === null) return <span className="text-text-muted text-xs">—</span>;
+  // Dead heat : « 5e ex æquo » (rang partagé avec un autre cheval).
+  const ea = exAequo ? <span className="font-normal"> ex æquo</span> : null;
   if (pos === 1) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-status-win/15 text-status-win border border-status-win/30">
-        1<sup>er</sup>
+        1<sup>er</sup>{ea}
       </span>
     );
   }
   if (pos <= 3) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-gold-primary/10 text-gold-light border border-gold-primary/30">
-        {pos}<sup>e</sup>
+        {pos}<sup>e</sup>{ea}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono bg-bg-card text-text-secondary border border-border">
-      {pos}<sup>e</sup>
+      {pos}<sup>e</sup>{ea}
     </span>
   );
 }
@@ -166,7 +168,7 @@ export default function HistoriqueCourses({ type, rows, showJockey, showEntraine
                 <td className="py-2 px-3 text-right text-text-secondary font-mono text-xs hidden sm:table-cell">
                   {r.cote ? r.cote.toFixed(1) : "—"}
                 </td>
-                <td className="py-2 px-3 text-center"><ArriveeBadge pos={r.arrivee} /></td>
+                <td className="py-2 px-3 text-center"><ArriveeBadge pos={r.arrivee} exAequo={r.ex_aequo} /></td>
               </tr>
             ))}
           </tbody>

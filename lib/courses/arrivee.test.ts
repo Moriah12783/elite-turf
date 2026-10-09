@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildArriveePodium, estPlace } from "./arrivee";
+import { buildArriveePodium, estPlace, resultatPartant } from "./arrivee";
 
 describe("buildArriveePodium", () => {
   const partants = [
@@ -26,6 +26,29 @@ describe("buildArriveePodium", () => {
   it("arrivée vide ou null → []", () => {
     expect(buildArriveePodium([], partants)).toEqual([]);
     expect(buildArriveePodium(null, partants)).toEqual([]);
+  });
+});
+
+describe("resultatPartant — rang officiel d'un partant (stats chevaux, jockeys, entraîneurs)", () => {
+  it("dead heat pour la victoire : les deux sont vainqueurs (Deauville, 30/08/2026)", () => {
+    const arrivee = [4, 11, 8, 9, 7, 16, 12];
+    const rangs = [1, 1, 3, 4, 5, 5, 7];
+    expect(resultatPartant(11, arrivee, rangs)).toEqual({ rang: 1, exAequo: true, victoire: true, place: true });
+    expect(resultatPartant(8, arrivee, rangs)).toEqual({ rang: 3, exAequo: false, victoire: false, place: true });
+  });
+
+  it("3e ex æquo : placé (Ville de Paris, 21/05/2026)", () => {
+    expect(resultatPartant(6, [4, 11, 3, 6, 15, 5], [1, 2, 3, 3, 5, 6])).toEqual({ rang: 3, exAequo: true, victoire: false, place: true });
+  });
+
+  it("5e ex æquo : rang 5, ni gagnant ni placé (Versailles, 08/10/2026)", () => {
+    expect(resultatPartant(16, [1, 5, 8, 4, 15, 16, 10], [1, 2, 3, 4, 5, 5, 7])).toEqual({ rang: 5, exAequo: true, victoire: false, place: false });
+  });
+
+  it("sans rangs : la position ; absent de l'arrivée : null", () => {
+    expect(resultatPartant(16, [1, 5, 8, 4, 15, 16, 10], null)).toEqual({ rang: 6, exAequo: false, victoire: false, place: false });
+    expect(resultatPartant(99, [1, 5, 8], null)).toBeNull();
+    expect(resultatPartant(1, null, null)).toBeNull();
   });
 });
 

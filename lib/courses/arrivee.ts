@@ -57,3 +57,29 @@ export function estPlace(
   const rang = rangDe(numero, arrivee, rangs);
   return rang !== null && rang <= NB_PLACES;
 }
+
+export interface ResultatPartant {
+  /** Rang officiel (deux 5es ex æquo sont 5es tous les deux). */
+  rang: number;
+  exAequo: boolean;
+  victoire: boolean;
+  /** Dans les 3 premiers RANGS (sens PMU du placé). */
+  place: boolean;
+}
+
+/**
+ * Résultat d'un partant d'après l'arrivée et ses rangs (ex æquo compris) :
+ * règle UNIQUE des stats chevaux, jockeys, entraîneurs (fiches publiques, ETL,
+ * blog). null si le partant n'est pas dans l'arrivée enregistrée. Avant le
+ * 09/10/2026, la position dans la liste servait de rang : un co-vainqueur
+ * perdait sa victoire, un 3e ex æquo sa place.
+ */
+export function resultatPartant(
+  numero: number,
+  arrivee: number[] | null | undefined,
+  rangs?: number[] | null,
+): ResultatPartant | null {
+  const rang = rangDe(numero, arrivee, rangs);
+  if (rang === null) return null;
+  return { rang, exAequo: estExAequo(numero, arrivee, rangs), victoire: rang === 1, place: rang <= NB_PLACES };
+}
