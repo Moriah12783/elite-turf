@@ -17,7 +17,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { sendEmail } from "@/lib/email";
-import { fenetreComparaison } from "@/lib/pronostics/resultat";
+import { detailResultat } from "@/lib/pronostics/resultat";
+import { arriveeEnTexte } from "@/lib/courses/rangs";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +46,8 @@ function scoreColor(score: number) {
   return "#ef4444";
 }
 
-function computeHits(selection: number[], arrivee: number[], topN: number): number[] {
-  const top = new Set(arrivee.slice(0, topN));
-  return selection.filter((n) => top.has(n));
-}
-
-// Fenêtre de comparaison : `lib/pronostics/resultat.ts` (source unique, testée).
-// La copie locale supprimée ici avait perdu sa branche Tiercé.
+// Chevaux trouvés : `detailResultat` (lib/pronostics/resultat.ts), les mêmes
+// règles que le jugement — rangs officiels, ex æquo compris.
 
 // ── Template email HTML ───────────────────────────────────────────────────
 
@@ -75,7 +71,7 @@ function buildEmailHtml(data: {
         ${r.selection.join(' - ')}
       </td>
       <td style="padding:12px 16px; border-bottom:1px solid #1e1e2e; text-align:center; font-size:13px; color:#d1d5db;">
-        ${r.arriveeOfficielle.join(' - ')}
+        ${r.arriveeTexte}
       </td>
       <td style="padding:12px 16px; border-bottom:1px solid #1e1e2e; text-align:center;">
         <span style="font-weight:700; color:${resultColor(r.resultat)}; font-size:13px;">
@@ -190,7 +186,7 @@ export async function GET(req: NextRequest) {
       id, selection, type_pari, resultat, rapport_gagnant, confiance,
       course:courses (
         id, libelle, date_course, numero_reunion, numero_course,
-        arrivee_officielle, hippodrome:hippodromes(nom)
+        arrivee_officielle, arrivee_rangs, hippodrome:hippodromes(nom)
       )
     `)
     .eq("publie", true)
@@ -212,8 +208,8 @@ export async function GET(req: NextRequest) {
     const hippNom  = Array.isArray(course?.hippodrome) ? course.hippodrome[0]?.nom : course?.hippodrome?.nom ?? "—";
     const selection: number[] = p.selection ?? [];
     const arrivee: number[]   = course?.arrivee_officielle ?? [];
-    const topN                = fenetreComparaison(p.type_pari, selection.length);
-    const hits                = computeHits(selection, arrivee, topN);
+    const detail              = detailResultat(selection, arrivee, p.type_pari, course?.arrivee_rangs ?? null);
+    const hits                = detail.chevaux;
 
     return {
       libelle:           course?.libelle ?? "—",
@@ -222,7 +218,7 @@ export async function GET(req: NextRequest) {
       course:            course?.numero_course,
       typePari:          p.type_pari ?? "—",
       selection,
-      arriveeOfficielle: arrivee.slice(0, topN),
+      arriveeTexte:      arriveeEnTexte(arrivee, course?.arrivee_rangs ?? null, detail.topN),
       hitsCount:         hits.length,
       totalSelection:    selection.length,
       resultat:          p.resultat,
