@@ -1,15 +1,36 @@
 /**
  * lib/rapports-pmu-format.ts
  *
- * Convertit la structure JSONB `rapports_pmu` (issue du parser Geny) en la
- * forme attendue par CourseTabsClient (`Rapport[]` avec `dividendes[]`),
- * en construisant les `combinaison` labels à partir de l'ordre d'arrivée.
+ * Convertit la structure JSONB `rapports_pmu` (rapports définitifs de l'API
+ * PMU officielle, masse internet — lib/sync/pmu-rapports.ts) en la forme
+ * attendue par CourseTabsClient (`Rapport[]` avec `dividendes[]`), en
+ * construisant les `combinaison` labels à partir de l'ordre d'arrivée.
  *
- * Cette couche d'adaptation maintient l'API stable côté front même si on
- * change de source de données (Geny scrape → PMU API → autres).
+ * Cette couche d'adaptation maintient l'API stable côté front même si la
+ * source change : ces rapports venaient du scraping Geny jusqu'au 09/10/2026,
+ * date à laquelle ils ont été remplacés par ceux du PMU, ou vidés. Le format
+ * JSONB (`RapportsPMU`, défini dans le parser Geny) est resté le même.
  */
 
 import type { CombinaisonPayee, RapportsPMU } from "@/lib/sync/geny-rapports-parser";
+
+/**
+ * Provenance des rapports renvoyés par GET /api/courses/[id]/resultats :
+ *  - "pmu-definitifs" : `arrivees.rapports_pmu` (API PMU, rapports définitifs) ;
+ *  - "pmu"            : repli en direct sur l'API PMU (rien en base) ;
+ *  - "supabase"       : aucun rapport, arrivée seule.
+ */
+export type SourceResultats = "pmu-definitifs" | "pmu" | "supabase";
+
+/**
+ * Libellé « Source : » affiché sous les rapports. Accepte toute chaîne : une
+ * valeur inconnue (réponse d'une ancienne version) retombe sur la base.
+ */
+export function libelleSourceResultats(source: string | null): string {
+  if (source === "pmu-definitifs") return "PMU (rapports définitifs)";
+  if (source === "pmu") return "API PMU";
+  return "Base Elite Turf";
+}
 
 export interface Dividende {
   combinaison: string;
@@ -109,7 +130,7 @@ function ordreDesordre(
 }
 
 /**
- * Convertit la structure JSONB `rapports_pmu` (issue du parser Geny) en la
+ * Convertit la structure JSONB `rapports_pmu` (rapports définitifs PMU) en la
  * forme `Rapport[]` attendue par CourseTabsClient.
  *
  * @param rapports JSONB stocké en DB (peut être null)

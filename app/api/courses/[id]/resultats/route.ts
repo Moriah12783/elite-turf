@@ -3,11 +3,13 @@
  * Retourne l'arrivée officielle + les rapports PMU complets + commentaire.
  * Utilisé par CourseTabsClient onglet "Arrivées & Rapports".
  *
- * Sources, par ordre de priorité :
- *  1. Table `arrivees` (rapports_pmu JSONB scrapé depuis Geny + commentaire)
- *     → Source principale post-2026-05-07. Couvre TOUS les types de paris.
- *  2. API PMU (legacy, peu fiable)
- *  3. Champ courses.arrivee_officielle (fallback minimal sans rapports)
+ * Sources, par ordre de priorité (champ `source`, voir SourceResultats) :
+ *  1. Table `arrivees` → "pmu-definitifs" : rapports_pmu JSONB = rapports
+ *     définitifs de l'API PMU officielle, masse internet (lib/sync/pmu-rapports.ts).
+ *     Les anciens rapports scrapés sur Geny ont été remplacés ou vidés le
+ *     09/10/2026. Le commentaire de course, lui, vient toujours de Geny.
+ *  2. API PMU interrogée en direct → "pmu" (repli si rien en base)
+ *  3. Champ courses.arrivee_officielle → "supabase" (arrivée seule, sans rapports)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,6 +19,7 @@ import { buildArriveePodium } from "@/lib/courses/arrivee";
 import {
   jsonbRapportsToRapportsList,
   type Rapport,
+  type SourceResultats,
 } from "@/lib/rapports-pmu-format";
 
 interface RouteParams { params: { id: string } }
@@ -72,7 +75,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     ? ((course as any).arrivees[0] ?? null)
     : ((course as any).arrivees ?? null);
 
-  // 2. Source principale : table `arrivees` (Geny scrape) si présente
+  // 2. Source principale : table `arrivees` (rapports définitifs PMU) si présente
   let arrivee: number[] = arriveeRow?.ordre_arrivee
     ?? course.arrivee_officielle
     ?? [];
@@ -85,12 +88,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     arrivee,
   );
   const commentaire: string | null = arriveeRow?.commentaire ?? null;
-  let source: "geny-scrape" | "pmu" | "supabase" =
-    arriveeRow?.rapports_pmu ? "geny-scrape"
-    : arrivee.length > 0      ? "supabase"
-    : "supabase";
+  let source: SourceResultats = rapports.length > 0 ? "pmu-definitifs" : "supabase";
 
-  // 3. Si on n'a aucun rapport (pas de scrape encore), on tente PMU API
+  // 3. Si on n'a aucun rapport en base (pas encore synchronisé), on tente PMU API
   if (rapports.length === 0) {
     try {
       const pmuResultat = await fetchPmuResultats(
