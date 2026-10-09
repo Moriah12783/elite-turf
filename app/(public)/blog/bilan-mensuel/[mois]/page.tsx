@@ -18,6 +18,8 @@ import {
   getPeriodStats, getTopJockeysForPeriod,
   getTopChevauxForPeriod, getQuintesForPeriod,
 } from "@/lib/blog-auto/queries";
+import { buildArriveePodium } from "@/lib/courses/arrivee";
+import { libelleRang } from "@/lib/courses/rangs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -234,16 +236,18 @@ export default async function BilanMensuelPage({ params }: PageProps) {
                   </div>
                   {q.arrivee && (
                     <div className="hidden sm:flex flex-wrap gap-1">
-                      {q.arrivee.slice(0, 5).map((n, idx) => (
+                      {/* Les 5 premiers RANGS : deux 5es ex æquo sont montrés tous les deux. */}
+                      {buildArriveePodium(q.arrivee, [], q.rangs).filter((p) => p.rank <= 5).map((p) => (
                         <span
-                          key={idx}
+                          key={p.numero}
+                          title={p.exAequo ? libelleRang(p.rank, true) : undefined}
                           className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                            idx === 0
+                            p.rank === 1
                               ? "bg-status-win/15 text-status-win border border-status-win/30"
                               : "bg-bg-card text-text-secondary border border-border"
                           }`}
                         >
-                          {n}
+                          {p.numero}
                         </span>
                       ))}
                     </div>

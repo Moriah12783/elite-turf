@@ -9,6 +9,8 @@ import {
 import { buildGenyUrl } from "@/lib/geny";
 import BadgeJouableAfrique from "@/components/courses/BadgeJouableAfrique";
 import CountdownTimer from "@/components/courses/CountdownTimer";
+import { buildArriveePodium } from "@/lib/courses/arrivee";
+import { libelleRang } from "@/lib/courses/rangs";
 
 // Pool complet des 9 photos PMU locales
 const ALL_IMAGES = [
@@ -92,6 +94,8 @@ interface Props {
     nb_partants: number;
     statut: string;
     arrivee_officielle?: number[] | null;
+    /** Rangs officiels (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+    arrivee_rangs?: number[] | null;
     hippodrome?: { nom: string; pays: string } | null;
     pronostics?: Array<{ id: string; niveau_acces: string; publie: boolean; type_pari?: string }> | null;
     partants?: Array<{ numero: number; nom_cheval: string }> | null;
@@ -211,21 +215,18 @@ export default function CourseCard({ course: c, userSubscription }: Props) {
                   <span className="text-text-muted text-xs font-medium">Arrivée officielle</span>
                 </div>
                 <div className="mt-2 flex flex-col gap-1">
-                  {c.arrivee_officielle.slice(0, 5).map((n: number, idx: number) => {
-                    const cheval = c.partants?.find((p: any) => p.numero === n);
-                    const ordinals = ["1er", "2e", "3e", "4e", "5e"];
-                    return (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="text-text-muted text-xs w-6 text-right flex-shrink-0">{ordinals[idx]}</span>
-                        <span className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-text-primary text-xs font-bold flex-shrink-0">
-                          {n}
-                        </span>
-                        {cheval && (
-                          <span className="text-text-secondary text-xs font-medium truncate">{cheval.nom_cheval}</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* Les 5 premiers RANGS : deux 5es ex æquo sont montrés tous les deux. */}
+                  {buildArriveePodium(c.arrivee_officielle, c.partants, c.arrivee_rangs).filter((p) => p.rank <= 5).map((p) => (
+                    <div key={p.numero} className="flex items-center gap-2">
+                      <span className="text-text-muted text-xs text-right flex-shrink-0 min-w-[1.5rem]">{libelleRang(p.rank, p.exAequo)}</span>
+                      <span className="w-6 h-6 rounded-full bg-bg-card border border-border flex items-center justify-center text-text-primary text-xs font-bold flex-shrink-0">
+                        {p.numero}
+                      </span>
+                      {p.nom && (
+                        <span className="text-text-secondary text-xs font-medium truncate">{p.nom}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

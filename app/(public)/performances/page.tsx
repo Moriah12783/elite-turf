@@ -23,6 +23,8 @@ import { OU_PAYER_MOBILE_MONEY } from "@/lib/paiement/mobile-money";
 import FormuleTabs from "@/components/performances/FormuleTabs";
 import PeriodeTabs from "@/components/performances/PeriodeTabs";
 import { resolvePeriode, buildPeriodeTabs, filterByPeriode, moisLabel } from "@/lib/performances/periode-filter";
+import { buildArriveePodium } from "@/lib/courses/arrivee";
+import { rangsPour } from "@/lib/courses/rangs";
 
 // CTR boost Sprint A : emoji 📈 (signal data) + brand
 export const metadata: Metadata = {
@@ -73,7 +75,7 @@ export default async function PerformancesPage({
       course:courses(
         libelle, date_course, heure_depart,
         numero_reunion, numero_course,
-        geny_url, arrivee_officielle,
+        geny_url, arrivee_officielle, arrivee_rangs,
         hippodrome:hippodromes(nom, pays)
       )
     `)
@@ -498,7 +500,11 @@ export default async function PerformancesPage({
                     // Top 5 de l'arrivée (= zone de validation du Quinté+).
                     // Les chevaux de notre sélection dans ce top 5 sont les preuves
                     // visuelles "✓ placé" qui résolvent la friction Nabil.
-                    const topArrivee = new Set<number>(arriveeRaw.slice(0, 5));
+                    // Ex æquo : rangs de la course, seulement s'ils valent pour cette arrivée.
+                    // Les 5 premiers RANGS (deux 5es ex æquo y sont tous les deux).
+                    const rangsArrivee = rangsPour(arriveeRaw, course?.arrivee_officielle, course?.arrivee_rangs);
+                    const top5 = buildArriveePodium(arriveeRaw, [], rangsArrivee).filter((pl) => pl.rank <= 5);
+                    const topArrivee = new Set<number>(top5.map((pl) => pl.numero));
 
                     // Badge niveau d'accès (B1 + Q4 : signal commercial discret).
                     // Couleur cohérente avec /abonnements : Free vert, Starter neutre,
@@ -575,15 +581,17 @@ export default async function PerformancesPage({
                               sélection (preuve visuelle directe pour le visiteur). */}
                           {arriveeRaw.length > 0 ? (
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              {arriveeRaw.slice(0, 5).map((n: number, idx: number) => {
+                              {top5.map((pl) => {
+                                const n = pl.numero;
                                 const wasSelected = selRaw.includes(n);
-                                const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
+                                const medal = pl.rank === 1 ? "🥇" : pl.rank === 2 ? "🥈" : pl.rank === 3 ? "🥉" : "";
+                                const place = `${pl.rank}ᵉ place${pl.exAequo ? " ex æquo" : ""}`;
                                 return (
                                   <span
-                                    key={idx}
+                                    key={n}
                                     title={wasSelected
-                                      ? `${idx + 1}ᵉ place — Cheval ${n} (dans notre sélection ✓)`
-                                      : `${idx + 1}ᵉ place — Cheval ${n}`}
+                                      ? `${place} — Cheval ${n} (dans notre sélection ✓)`
+                                      : `${place} — Cheval ${n}`}
                                     className="inline-flex items-center gap-0.5"
                                   >
                                     {medal && <span className="text-xs leading-none" aria-hidden>{medal}</span>}
@@ -599,9 +607,9 @@ export default async function PerformancesPage({
                                   </span>
                                 );
                               })}
-                              {arriveeRaw.length > 5 && (
+                              {arriveeRaw.length > top5.length && (
                                 <span className="text-text-muted text-[10px] px-1.5 py-0.5 rounded-full bg-bg-card border border-border flex-shrink-0">
-                                  +{arriveeRaw.length - 5}
+                                  +{arriveeRaw.length - top5.length}
                                 </span>
                               )}
                             </div>

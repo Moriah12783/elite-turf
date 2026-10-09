@@ -8,6 +8,7 @@ import { buildGenyUrlAuto } from "@/lib/geny";
 import PageHero from "@/components/layout/PageHero";
 import type { BetType, PronosticResult } from "@/types";
 import { BET_TYPE_LABELS } from "@/types";
+import { arriveeEnTexte, rangsPour } from "@/lib/courses/rangs";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.elite-turf.fr";
 
@@ -75,7 +76,7 @@ export default async function ArchivesPage({ searchParams }: PageProps) {
     .select(`
       id, type_pari, resultat, date_publication,
       selection, arrivee_reelle, rapport_gagnant,
-      course:courses(libelle, date_course, numero_reunion, numero_course, hippodrome:hippodromes(nom))
+      course:courses(libelle, date_course, numero_reunion, numero_course, arrivee_officielle, arrivee_rangs, hippodrome:hippodromes(nom))
     `)
     .eq("publie", true)
     .neq("resultat", "EN_ATTENTE")
@@ -301,7 +302,10 @@ export default async function ArchivesPage({ searchParams }: PageProps) {
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className="text-text-secondary font-mono text-xs">
-                                {Array.isArray(p.arrivee_reelle) ? p.arrivee_reelle.join(" - ") : "—"}
+                                {/* Ex æquo groupés : « 1 - 5 - 8 - 4 - 15 / 16 - 10 (ex æquo) ». */}
+                                {Array.isArray(p.arrivee_reelle)
+                                  ? arriveeEnTexte(p.arrivee_reelle, rangsPour(p.arrivee_reelle, course?.arrivee_officielle, course?.arrivee_rangs), p.arrivee_reelle.length)
+                                  : "—"}
                               </span>
                             </td>
                             <td className="px-4 py-3">

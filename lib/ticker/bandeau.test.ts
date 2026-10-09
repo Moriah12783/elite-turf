@@ -27,6 +27,15 @@ describe("construireBandeau — uniquement des données réelles du jour", () =>
     ]);
   });
 
+  it("ex æquo : les deux 5es sont annoncés (Prix de Versailles, 08/10/2026)", () => {
+    const versailles = course("v", 1, 1, "13:55:00", {
+      statut: "TERMINE", arrivee_officielle: [1, 5, 8, 4, 15, 16, 10], arrivee_rangs: [1, 2, 3, 4, 5, 5, 7],
+      hippodrome: { nom: "Saint-Cloud" },
+    });
+    const items = construireBandeau({ courses: [versailles], pronostics: [], maintenantMinutesParis: SEIZE_H });
+    expect(items[0].result).toBe("🏁 Arrivée : 1 - 5 - 8 - 4 - 15 / 16 (ex æquo)");
+  });
+
   it("une course déjà partie sans arrivée connue n'est pas annoncée « à venir »", () => {
     const items = construireBandeau({ courses: jour, pronostics: [], maintenantMinutesParis: SEIZE_H });
     expect(items.some((i) => i.label.includes("Argentan"))).toBe(false);

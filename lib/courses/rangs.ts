@@ -144,3 +144,19 @@ export function arriveeEnTexte(
   }
   return parts.join(" - ") + (exAequo ? " (ex æquo)" : "");
 }
+
+/**
+ * Les rangs de la course pour une COPIE de son arrivée (ex. `pronostics.arrivee_reelle`,
+ * figée au jugement) : seulement si la copie est identique à l'arrivée actuelle.
+ * Une arrivée corrigée depuis n'a pas forcément les mêmes ex æquo : null (ordre strict).
+ */
+export function rangsPour(
+  arrivee: number[] | null | undefined,
+  arriveeCourse: number[] | null | undefined,
+  rangsCourse: number[] | null | undefined,
+): number[] | null {
+  if (!Array.isArray(arrivee) || !Array.isArray(arriveeCourse) || !Array.isArray(rangsCourse)) return null;
+  if (arrivee.length !== arriveeCourse.length) return null;
+  for (let i = 0; i < arrivee.length; i++) if (arrivee[i] !== arriveeCourse[i]) return null;
+  return rangsCourse;
+}

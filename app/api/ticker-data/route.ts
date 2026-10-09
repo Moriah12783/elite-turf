@@ -31,7 +31,7 @@ export async function GET() {
     const [coursesRes, pronosRes] = await Promise.all([
       supabase
         .from("courses")
-        .select("id, numero_reunion, numero_course, heure_depart, statut, arrivee_officielle, nb_partants, hippodrome:hippodromes(nom)")
+        .select("id, numero_reunion, numero_course, heure_depart, statut, arrivee_officielle, arrivee_rangs, nb_partants, hippodrome:hippodromes(nom)")
         .eq("date_course", today)
         .neq("statut", "ANNULE"),
       supabase

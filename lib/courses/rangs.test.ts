@@ -6,6 +6,7 @@ import {
   groupesArrivee,
   libelleRang,
   rangDe,
+  rangsPour,
   rangsAStocker,
   rangsEffectifs,
   rangsValides,
@@ -129,5 +130,17 @@ describe("arriveeEnTexte — « 1 - 5 - 8 - 4 - 15 / 16 (ex æquo) »", () => {
 
   it("un ex æquo au-delà des N premiers n'apparaît pas", () => {
     expect(arriveeEnTexte(VERSAILLES, RANGS_VERSAILLES, 4)).toBe("1 - 5 - 8 - 4");
+  });
+});
+
+describe("rangsPour — les rangs de la course ne valent que pour la même arrivée", () => {
+  it("copie identique (arrivee_reelle d'un pronostic) : les rangs de la course", () => {
+    expect(rangsPour(VERSAILLES, VERSAILLES, RANGS_VERSAILLES)).toEqual(RANGS_VERSAILLES);
+  });
+
+  it("arrivée différente (corrigée depuis) : aucun rang, ordre strict", () => {
+    expect(rangsPour([1, 5, 8, 4, 16, 15, 10], VERSAILLES, RANGS_VERSAILLES)).toBeNull();
+    expect(rangsPour(VERSAILLES, null, RANGS_VERSAILLES)).toBeNull();
+    expect(rangsPour(VERSAILLES, VERSAILLES, null)).toBeNull();
   });
 });
