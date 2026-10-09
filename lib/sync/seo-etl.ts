@@ -1,20 +1,30 @@
 /**
- * lib/sync/seo-etl.ts — Logique ETL partagée pour peupler/rafraîchir les
- * tables chevaux/jockeys/entraineurs.
+ * lib/sync/seo-etl.ts — rafraîchit les tables chevaux / jockeys / entraineurs
+ * (fiches SEO, sitemap, stats lues par l'IA) depuis l'historique `partants`.
  *
- * Appelée depuis :
- *   - /api/admin/seo-etl   (one-shot navigateur ADMIN ou cron Bearer)
- *   - /api/cron/seo-etl    (cron daily — direct call, pas self-fetch)
+ * Lancé chaque nuit par GitHub Actions (.github/workflows/seo-etl.yml →
+ * scripts/seo-etl-cli.ts). Plus par le Worker : le cron-worker coupait l'appel
+ * à 25 s et l'ETL ne terminait plus (tables figées au 09/10/2026 depuis le
+ * 27/06 pour les entraîneurs, le 03/08 pour les jockeys, le 09/09 pour les
+ * chevaux). Module Node pur (aucun import Next) pour le bundle esbuild.
  *
- * Pourquoi pas un self-fetch entre cron→admin : Cloudflare Workers fait des
- * loops self-fetch qui timeout en 522. Le pattern direct-call évite ça.
+ * Depuis le 09/10/2026 :
+ *   - une seule lecture de `partants` (au lieu de six) ;
+ *   - une course saisie par deux sources ne compte qu'une fois
+ *     (lib/seo/apparitions.ts) ;
+ *   - agrégation par CLÉ (lib/seo/cles-acteurs.ts) et non plus par nom
+ *     exact : « STAN LE GRAND » et « Stan Le Grand » font une seule fiche,
+ *     affichée en casse mixte (décision D1 de Steph) ;
+ *   - les fiches fusionnées ou orphelines sont supprimées, leurs anciens
+ *     slugs redirigés (table acteurs_alias), avec un garde-fou sur le volume.
  */
 
-import { createServiceClient } from "@/lib/supabase/server";
-import { logger } from "@/lib/observability/logger";
+import { createServiceClient } from "@/lib/supabase/service-client";
 import { slugify } from "@/lib/seo/slugs";
 import { looksLikeMusique } from "@/lib/geny";
 import { resultatPartant } from "@/lib/courses/arrivee";
+import { cleActeur, cleCheval, choisirGraphie, nettoyerNomActeur } from "@/lib/seo/cles-acteurs";
+import { dedoublonnerApparitions } from "@/lib/seo/apparitions";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -24,202 +34,316 @@ const COL_MAP: Record<EntiteType, "nom_cheval" | "jockey" | "entraineur"> = {
   entraineurs: "entraineur",
 };
 
+/** Au-delà de cette part de fiches supprimées en une nuit, l'ETL refuse d'écrire. */
+const SEUIL_SUPPRESSIONS = 0.1;
+const PAGE = 1000;
+const CHUNK = 500;
+const NB_EXEMPLES = 15;
+
+/** Une ligne partants × courses. */
+export interface LigneEtl {
+  course_id:   string;
+  numero:      number;
+  date_course: string;
+  statut:      string | null;
+  arrivee:     number[] | null;
+  rangs:       number[] | null;
+  /** courses.updated_at */
+  maj:         string | null;
+  nom_cheval:  string | null;
+  jockey:      string | null;
+  entraineur:  string | null;
+}
+
+/** Ligne voulue dans la table de l'entité. */
+export interface EntiteVoulue {
+  cle:                string;
+  slug:               string;
+  nom:                string;
+  nb_courses:         number;
+  nb_victoires:       number;
+  nb_places:          number;
+  derniere_course_at: string | null;
+}
+
+export interface Existant { slug: string; nom: string }
+
+export interface PlanEcritures {
+  /** Slugs des fiches à supprimer (fusionnées dans une autre, ou orphelines). */
+  suppressions: string[];
+  /** Anciens slugs → clé de la fiche qui les remplace. */
+  alias:        Array<{ slug: string; cle: string }>;
+  nouvelles:    string[];
+  renommees:    Array<{ slug: string; avant: string; apres: string }>;
+}
+
 export interface EtlResult {
   entite:           EntiteType;
-  noms_distincts:   number;
+  fiches:           number;
+  existantes:       number;
+  nouvelles:        number;
+  supprimees:       number;
+  renommees:        number;
+  alias:            number;
+  ecartees_musique: number;
+  collisions_slug:  number;
   insert_or_update: number;
   errors:           number;
+  exemples: {
+    nouvelles:  string[];
+    supprimees: string[];
+    renommees:  string[];
+  };
 }
 
 export interface EtlOptions {
   entites?: EntiteType[];
   dryRun?:  boolean;
+  /** Lève le garde-fou des suppressions (premier passage après la fusion). */
+  forcerSuppressions?: boolean;
 }
 
-/** Récupère noms distincts d'une colonne partants + count + derniere date. */
-async function aggregateNames(
-  supabase: ReturnType<typeof createServiceClient>,
-  col: "nom_cheval" | "jockey" | "entraineur",
-): Promise<Map<string, { nb_courses: number; derniere: string | null }>> {
-  const map = new Map<string, { nb_courses: number; derniere: string | null }>();
-  const PAGE = 1000;
-  let from = 0;
+// ── Pur ──────────────────────────────────────────────────────────────────
 
-  while (true) {
-    const { data, error } = await supabase
-      .from("partants")
-      .select(`${col}, course:courses(date_course)`)
-      .not(col, "is", null)
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`aggregate ${col}: ${error.message}`);
-    if (!data || data.length === 0) break;
+/** Une course saisie par deux sources ne compte qu'une fois. */
+export function dedoublonnerLignes(lignes: LigneEtl[]): { lignes: LigneEtl[]; ecartees: number } {
+  const gardees = dedoublonnerApparitions(lignes, (l) => ({
+    course_id:   l.course_id,
+    numero:      l.numero,
+    date_course: l.date_course,
+    cheval_cle:  cleCheval(l.nom_cheval),
+    termine:     l.statut === "TERMINE",
+    a_arrivee:   Array.isArray(l.arrivee) && l.arrivee.length > 0,
+    maj:         l.maj,
+  }));
+  return { lignes: gardees, ecartees: lignes.length - gardees.length };
+}
 
-    for (const row of data as any[]) {
-      const nom = row[col];
-      if (!nom || typeof nom !== "string") continue;
-      const trimmed = nom.trim();
-      if (!trimmed) continue;
-      const date = row.course?.date_course ?? null;
-      const prev = map.get(trimmed);
-      if (!prev) {
-        map.set(trimmed, { nb_courses: 1, derniere: date });
-      } else {
-        prev.nb_courses += 1;
-        if (date && (!prev.derniere || date > prev.derniere)) prev.derniere = date;
-      }
+interface Agregat {
+  graphies:   Map<string, number>;
+  nb_courses: number;
+  victoires:  number;
+  places:     number;
+  derniere:   string | null;
+}
+
+export function agregerEntites(type: EntiteType, lignes: LigneEtl[]): {
+  voulues:    EntiteVoulue[];
+  graphies:   Map<string, Map<string, number>>;
+  ecartees:   number;
+  collisions: number;
+} {
+  const col = COL_MAP[type];
+  const parCle = new Map<string, Agregat>();
+  const musiques = new Set<string>();
+
+  for (const l of lignes) {
+    const nom = l[col]?.trim();
+    if (!nom) continue;
+    // Le parser Geny pouvait prendre la musique du cheval pour un jockey ou un
+    // entraîneur (« 0h3h7h1h ») : jamais de fiche pour ces noms.
+    if (type !== "chevaux" && looksLikeMusique(nettoyerNomActeur(type, nom))) {
+      musiques.add(nom);
+      continue;
     }
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-  return map;
-}
+    const cle = cleActeur(type, nom);
+    if (!cle) continue;
 
-/** Calcule victoires + top3 en agrégeant partants × arrivee_officielle. */
-async function computeWinStats(
-  supabase: ReturnType<typeof createServiceClient>,
-  col: "nom_cheval" | "jockey" | "entraineur",
-): Promise<Map<string, { victoires: number; places: number }>> {
-  const map = new Map<string, { victoires: number; places: number }>();
-  const PAGE = 1000;
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("partants")
-      .select(`numero, ${col}, course:courses!inner(arrivee_officielle, arrivee_rangs, statut)`)
-      .not(col, "is", null)
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`win-stats ${col}: ${error.message}`);
-    if (!data || data.length === 0) break;
-
-    for (const row of data as any[]) {
-      const nom = (row[col] as string | null)?.trim();
-      if (!nom) continue;
-      const arr = row.course?.arrivee_officielle;
-      if (row.course?.statut !== "TERMINE" || !Array.isArray(arr) || arr.length === 0) continue;
-
+    let a = parCle.get(cle);
+    if (!a) {
+      a = { graphies: new Map(), nb_courses: 0, victoires: 0, places: 0, derniere: null };
+      parCle.set(cle, a);
+    }
+    a.graphies.set(nom, (a.graphies.get(nom) ?? 0) + 1);
+    a.nb_courses += 1;
+    if (l.date_course && (!a.derniere || l.date_course > a.derniere)) a.derniere = l.date_course;
+    if (l.statut === "TERMINE" && Array.isArray(l.arrivee) && l.arrivee.length > 0) {
       // Rang officiel, ex æquo compris : un co-vainqueur gagne, un 3e ex æquo est placé.
-      const res = resultatPartant(row.numero, arr, row.course?.arrivee_rangs);
-      if (!res) continue;
-
-      const prev = map.get(nom) ?? { victoires: 0, places: 0 };
-      if (res.victoire) prev.victoires += 1;
-      if (res.place)    prev.places    += 1;
-      map.set(nom, prev);
+      const res = resultatPartant(l.numero, l.arrivee, l.rangs);
+      if (res?.victoire) a.victoires += 1;
+      if (res?.place)    a.places    += 1;
     }
-    if (data.length < PAGE) break;
-    from += PAGE;
   }
-  return map;
+
+  // Deux clés qui donneraient le même slug (rarissime) : la plus courue garde la fiche.
+  const parSlug = new Map<string, EntiteVoulue>();
+  let collisions = 0;
+  const graphies = new Map<string, Map<string, number>>();
+  for (const [cle, a] of Array.from(parCle.entries())) {
+    const nom = choisirGraphie(type, a.graphies.entries());
+    const slug = slugify(nom);
+    if (!slug) continue;
+    graphies.set(cle, a.graphies);
+    const v: EntiteVoulue = {
+      cle, slug, nom,
+      nb_courses:         a.nb_courses,
+      nb_victoires:       a.victoires,
+      nb_places:          a.places,
+      derniere_course_at: a.derniere,
+    };
+    const prev = parSlug.get(slug);
+    if (prev) {
+      collisions += 1;
+      if (v.nb_courses <= prev.nb_courses) continue;
+    }
+    parSlug.set(slug, v);
+  }
+
+  return { voulues: Array.from(parSlug.values()), graphies, ecartees: musiques.size, collisions };
 }
 
-async function upsertEntites(
-  supabase: ReturnType<typeof createServiceClient>,
-  table: EntiteType,
-  rows: Array<{
-    nom: string;
-    slug: string;
-    nb_courses: number;
-    nb_victoires: number;
-    nb_places: number;
-    derniere_course_at: string | null;
-  }>,
-  dryRun: boolean,
-): Promise<{ inserted: number; errors: number }> {
-  if (rows.length === 0 || dryRun) return { inserted: 0, errors: 0 };
+export function planifierEcritures(
+  type: EntiteType,
+  existants: Existant[],
+  voulues: EntiteVoulue[],
+  graphiesParCle: Map<string, Map<string, number>>,
+): PlanEcritures {
+  const voulueParSlug = new Map(voulues.map((v) => [v.slug, v]));
+  const cles = new Set(voulues.map((v) => v.cle));
+  const existantParSlug = new Map(existants.map((e) => [e.slug, e]));
 
-  // Dé-duplication par slug : si 2 noms produisent le même slug, on garde
-  // celui avec le plus de courses (proxy de "version la plus utilisée").
-  const bySlug = new Map<string, typeof rows[number]>();
-  for (const r of rows) {
-    const prev = bySlug.get(r.slug);
-    if (!prev || r.nb_courses > prev.nb_courses) bySlug.set(r.slug, r);
+  const alias = new Map<string, string>();
+  const ajouterAlias = (slug: string, cle: string) => {
+    if (slug && !voulueParSlug.has(slug) && !alias.has(slug)) alias.set(slug, cle);
+  };
+
+  const suppressions: string[] = [];
+  for (const e of existants) {
+    if (voulueParSlug.has(e.slug)) continue;
+    suppressions.push(e.slug);
+    // Fiche fusionnée dans une autre : son ancienne adresse redirige.
+    // Orpheline (plus aucun partant) : rien vers quoi rediriger.
+    const cle = cleActeur(type, e.nom);
+    if (cles.has(cle)) ajouterAlias(e.slug, cle);
   }
-  const deduped = Array.from(bySlug.values());
+  // Chaque graphie brute a pu avoir sa propre fiche (l'ancien ETL slugifiait
+  // le nom brut : « c-demuro-57-5 », « m-seror-s ») : toutes redirigent.
+  for (const v of voulues) {
+    for (const nom of Array.from(graphiesParCle.get(v.cle)?.keys() ?? [])) ajouterAlias(slugify(nom), v.cle);
+  }
 
-  const CHUNK = 500;
+  const nouvelles: string[] = [];
+  const renommees: PlanEcritures["renommees"] = [];
+  for (const v of voulues) {
+    const e = existantParSlug.get(v.slug);
+    if (!e) nouvelles.push(v.slug);
+    else if (e.nom !== v.nom) renommees.push({ slug: v.slug, avant: e.nom, apres: v.nom });
+  }
+
+  return {
+    suppressions,
+    alias: Array.from(alias.entries()).map(([slug, cle]) => ({ slug, cle })),
+    nouvelles,
+    renommees,
+  };
+}
+
+// ── I/O ──────────────────────────────────────────────────────────────────
+
+type Client = ReturnType<typeof createServiceClient>;
+
+/** Tout l'historique partants × courses, en une seule lecture paginée (ordre stable). */
+async function chargerLignes(supabase: Client): Promise<LigneEtl[]> {
+  const out: LigneEtl[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("partants")
+      .select("id, numero, nom_cheval, jockey, entraineur, course:courses!inner(id, date_course, statut, arrivee_officielle, arrivee_rangs, updated_at)")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`lecture partants: ${error.message}`);
+    for (const row of (data ?? []) as any[]) {
+      const c = Array.isArray(row.course) ? row.course[0] : row.course;
+      if (!c) continue;
+      out.push({
+        course_id:   c.id,
+        numero:      row.numero,
+        date_course: c.date_course,
+        statut:      c.statut ?? null,
+        arrivee:     Array.isArray(c.arrivee_officielle) ? c.arrivee_officielle : null,
+        rangs:       Array.isArray(c.arrivee_rangs) ? c.arrivee_rangs : null,
+        maj:         c.updated_at ?? null,
+        nom_cheval:  row.nom_cheval,
+        jockey:      row.jockey,
+        entraineur:  row.entraineur,
+      });
+    }
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
+
+async function chargerExistants(supabase: Client, type: EntiteType): Promise<Existant[]> {
+  const out: Existant[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from(type)
+      .select("slug, nom")
+      .order("slug")
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`lecture ${type}: ${error.message}`);
+    out.push(...((data ?? []) as Existant[]));
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
+
+async function ecrire(
+  supabase: Client,
+  type: EntiteType,
+  voulues: EntiteVoulue[],
+  plan: PlanEcritures,
+): Promise<{ inserted: number; errors: number }> {
+  // 1. Suppressions d'abord : une clé passée à un autre slug libère l'ancien.
+  for (let i = 0; i < plan.suppressions.length; i += 200) {
+    const { error } = await supabase.from(type).delete().in("slug", plan.suppressions.slice(i, i + 200));
+    if (error) throw new Error(`suppression ${type}: ${error.message}`);
+  }
+
+  // 2. Fiches voulues.
   let inserted = 0;
-  let errors   = 0;
-  for (let i = 0; i < deduped.length; i += CHUNK) {
-    const chunk = deduped.slice(i, i + CHUNK);
+  let errors = 0;
+  for (let i = 0; i < voulues.length; i += CHUNK) {
+    const chunk = voulues.slice(i, i + CHUNK);
     const { error, count } = await supabase
-      .from(table)
+      .from(type)
       .upsert(chunk, { onConflict: "slug", count: "exact" });
     if (error) {
-      logger.error("seo-etl", `Upsert ${table} failed`, {
-        error: error.message, batch_start: i, batch_size: chunk.length,
-      });
+      console.error(`[seo-etl] upsert ${type} lot ${i}: ${error.message}`);
       errors += chunk.length;
     } else {
       inserted += count ?? chunk.length;
     }
   }
+
+  // 3. Redirections : nouveaux alias, et retrait de ceux redevenus des fiches.
+  const lignesAlias = plan.alias.map((a) => ({ type, slug: a.slug, cle: a.cle }));
+  for (let i = 0; i < lignesAlias.length; i += CHUNK) {
+    const { error } = await supabase
+      .from("acteurs_alias")
+      .upsert(lignesAlias.slice(i, i + CHUNK), { onConflict: "type,slug" });
+    if (error) throw new Error(`alias ${type}: ${error.message}`);
+  }
+  const slugsVoulus = new Set(voulues.map((v) => v.slug));
+  const { data: anciens, error: errAlias } = await supabase.from("acteurs_alias").select("slug").eq("type", type);
+  if (errAlias) throw new Error(`lecture alias ${type}: ${errAlias.message}`);
+  const redevenus = ((anciens ?? []) as Array<{ slug: string }>).map((a) => a.slug).filter((s) => slugsVoulus.has(s));
+  for (let i = 0; i < redevenus.length; i += 200) {
+    const { error } = await supabase.from("acteurs_alias").delete().eq("type", type).in("slug", redevenus.slice(i, i + 200));
+    if (error) throw new Error(`nettoyage alias ${type}: ${error.message}`);
+  }
+
   return { inserted, errors };
 }
 
-async function processEntite(
-  supabase: ReturnType<typeof createServiceClient>,
-  entite: EntiteType,
-  dryRun: boolean,
-): Promise<EtlResult> {
-  const col = COL_MAP[entite];
-  const nomsMap = await aggregateNames(supabase, col);
-  const winsMap = await computeWinStats(supabase, col);
-
-  // ── Filtrage anti-pollution pour jockeys + entraineurs ─────────────
-  // Le parser Geny (lib/geny.ts) pouvait confondre la colonne "musique du
-  // cheval" avec entraineur/jockey quand la structure HTML était décalée
-  // (< 10 colonnes). Ces noms pollués (ex: "0h3h7h1h", "3m5m0a6m4m") créent
-  // de faux entraineurs dans la table → SEO pollué + GSC marque comme doublons.
-  // On les filtre EN AMONT pour ne plus jamais les agréger.
-  // (Note : on ne filtre pas `chevaux` car les noms de chevaux peuvent
-  // légitimement contenir des chiffres/lettres atypiques : "Hello 3", "K2",
-  // etc. Le risque de faux positif est trop élevé.)
-  const shouldFilter = entite === "entraineurs" || entite === "jockeys";
-
-  let filteredCount = 0;
-  const rows = Array.from(nomsMap.entries())
-    .map(([nom, { nb_courses, derniere }]) => {
-      const w = winsMap.get(nom) ?? { victoires: 0, places: 0 };
-      return {
-        nom,
-        slug:               slugify(nom),
-        nb_courses,
-        nb_victoires:       w.victoires,
-        nb_places:          w.places,
-        derniere_course_at: derniere,
-      };
-    })
-    .filter((r) => {
-      if (r.slug.length === 0) return false;
-      if (shouldFilter && looksLikeMusique(r.nom)) {
-        filteredCount++;
-        return false;
-      }
-      return true;
-    });
-
-  if (filteredCount > 0) {
-    logger.info("seo-etl", `Filtré ${filteredCount} entrées suspectes (musique pattern)`, {
-      entite, filtered: filteredCount,
-    });
-  }
-
-  const { inserted, errors } = await upsertEntites(supabase, entite, rows, dryRun);
-
-  return {
-    entite,
-    noms_distincts:   nomsMap.size - filteredCount,
-    insert_or_update: inserted,
-    errors,
-  };
-}
-
-/** Lance l'ETL pour un ou plusieurs types d'entités. Séquentiel pour rester
- *  sous les 50 subrequests Cloudflare Workers Free.
- */
+/** Lance l'ETL pour un ou plusieurs types d'entités. */
 export async function runSeoEtl(opts: EtlOptions = {}): Promise<{
-  ok: true; results: EtlResult[]; dry_run: boolean; elapsed_ms: number;
+  ok: true;
+  dry_run: boolean;
+  lignes_lues: number;
+  doublons_ecartes: number;
+  results: EtlResult[];
+  elapsed_ms: number;
 }> {
   const entites = opts.entites && opts.entites.length > 0
     ? opts.entites
@@ -228,9 +352,50 @@ export async function runSeoEtl(opts: EtlOptions = {}): Promise<{
 
   const supabase = createServiceClient();
   const start = Date.now();
+  const brutes = await chargerLignes(supabase);
+  const { lignes, ecartees: doublons } = dedoublonnerLignes(brutes);
+
   const results: EtlResult[] = [];
-  for (const e of entites) {
-    results.push(await processEntite(supabase, e, dryRun));
+  for (const type of entites) {
+    const { voulues, graphies, ecartees, collisions } = agregerEntites(type, lignes);
+    const existants = await chargerExistants(supabase, type);
+    const plan = planifierEcritures(type, existants, voulues, graphies);
+
+    const seuil = Math.max(50, Math.floor(existants.length * SEUIL_SUPPRESSIONS));
+    if (!dryRun && plan.suppressions.length > seuil && !opts.forcerSuppressions) {
+      throw new Error(
+        `${type} : ${plan.suppressions.length} fiches à supprimer (seuil ${seuil}). ` +
+        "Vérifier un essai à blanc, puis relancer avec forcer_suppressions.",
+      );
+    }
+
+    const { inserted, errors } = dryRun ? { inserted: 0, errors: 0 } : await ecrire(supabase, type, voulues, plan);
+    results.push({
+      entite:           type,
+      fiches:           voulues.length,
+      existantes:       existants.length,
+      nouvelles:        plan.nouvelles.length,
+      supprimees:       plan.suppressions.length,
+      renommees:        plan.renommees.length,
+      alias:            plan.alias.length,
+      ecartees_musique: ecartees,
+      collisions_slug:  collisions,
+      insert_or_update: inserted,
+      errors,
+      exemples: {
+        nouvelles:  plan.nouvelles.slice(0, NB_EXEMPLES),
+        supprimees: plan.suppressions.slice(0, NB_EXEMPLES),
+        renommees:  plan.renommees.slice(0, NB_EXEMPLES).map((r) => `${r.avant} → ${r.apres}`),
+      },
+    });
   }
-  return { ok: true, results, dry_run: dryRun, elapsed_ms: Date.now() - start };
+
+  return {
+    ok: true,
+    dry_run: dryRun,
+    lignes_lues: brutes.length,
+    doublons_ecartes: doublons,
+    results,
+    elapsed_ms: Date.now() - start,
+  };
 }

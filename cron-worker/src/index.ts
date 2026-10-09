@@ -161,7 +161,8 @@ const CRON_MAP: Record<string, string> = {
 
   // ── Monitoring & SEO ──────────────────────────────────────────────
   "*/30 * * * *": "/api/cron/health-alerter",
-  "45 3 * * *":   "/api/cron/seo-etl",
+  // seo-etl (3h45) : sur GitHub Actions depuis le 09/10/2026 (.github/workflows/seo-etl.yml),
+  // le fetch coupé à 25 s ne le laissait plus finir.
   // Accueil mis en cache (ISR, brief SEO du 01/10/2026, B3) : délai de 4 min,
   // appelé toutes les 5 min → chaque appel déclenche la régénération, même
   // sans visiteur. La version servie n'a jamais plus de ~5 min, y compris la

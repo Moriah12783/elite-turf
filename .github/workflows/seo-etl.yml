@@ -1,0 +1,64 @@
+name: seo-etl
+
+# Rafraîchit les fiches chevaux / jockeys / entraîneurs depuis `partants`
+# (lib/sync/seo-etl.ts → scripts/seo-etl-cli.ts) : fiches SEO, sitemap, et
+# stats historiques lues par l'IA et la page course.
+#
+# Tourne ici et non plus sur le Worker Cloudflare : le cron-worker coupait
+# l'appel à 25 s et l'ETL ne terminait plus depuis l'été (tables figées au
+# 09/10/2026 : entraîneurs 27/06, jockeys 03/08, chevaux 09/09).
+#
+# Le garde-fou refuse d'écrire si plus de 10 % des fiches d'un type devaient
+# disparaître en une nuit : lancer d'abord un essai à blanc, puis relancer
+# avec « forcer_suppressions » si le rapport est conforme.
+
+on:
+  schedule:
+    - cron: "45 3 * * *"   # 3h45 UTC, après les arrivées du jour
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Essai à blanc (rapport seulement, aucune écriture)"
+        type: boolean
+        required: false
+        default: true
+      forcer_suppressions:
+        description: "Lever le garde-fou des suppressions (après lecture d'un essai à blanc)"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: seo-etl
+  cancel-in-progress: false
+
+jobs:
+  etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Bundle CLI (esbuild résout les alias @/)
+        run: >-
+          npx -y esbuild scripts/seo-etl-cli.ts
+          --bundle --platform=node --format=esm --target=node20
+          --tsconfig=tsconfig.json --packages=external
+          --outfile=seo-etl.mjs
+
+      - name: ETL fiches acteurs
+        run: node seo-etl.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Planifié : passage réel. Manuel : essai à blanc par défaut.
+          SEO_ETL_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          SEO_ETL_FORCER_SUPPRESSIONS: ${{ inputs.forcer_suppressions && 'true' || 'false' }}

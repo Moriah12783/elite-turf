@@ -133,7 +133,7 @@ crons = [
 
   # ── Monitoring & SEO ────────────────────────────────────────────────
   "*/30 * * * *",    # health-alerter (toutes les 30 min)
-  "45 3 * * *",      # seo-etl (sitemap + canonicals 3h45 nuit)
+  # seo-etl : sur GitHub Actions depuis le 09/10/2026 (.github/workflows/seo-etl.yml)
   "*/5 * * * *",     # accueil mis en cache (B3) : appel de « / » → régénération, jamais plus de ~5 min
   "40 9 * * 1",      # calibration-hebdo (lundi 9h40 UTC : scellé write-once de la semaine précédente, Radar)
   "2,7,12,17,22,27,32,37,42,47,52,57 * * * *",  # photo-selection : fige la Sélection stats 15 à 5 min avant chaque départ (bilan)

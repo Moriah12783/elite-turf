@@ -160,7 +160,7 @@ Réponse :
 | `13 9 * * *` | `/api/cron/rappel-expiration` | Rappel expiration matin |
 | `*/15 * * * *` | `/api/cron/paystack-recovery` | Recovery Paystack stuck |
 | `*/30 * * * *` | `/api/cron/health-alerter` | Health check |
-| `45 3 * * *` | `/api/cron/seo-etl` | SEO ETL nuit |
+| ~~`45 3 * * *`~~ | ~~`/api/cron/seo-etl`~~ | SEO ETL nuit — **sur GitHub Actions depuis le 09/10/2026** (`.github/workflows/seo-etl.yml`) : coupé à 25 s, il ne terminait plus |
 | `23 * * * *` | `/api/cron/welcome-emails` | Welcome emails horaires |
 | ~~`0 6` + `0 17 * * *`~~ | ~~`/api/cron/daily-push`~~ | Push notifications — **retiré le 07/10/2026** (message du matin faux, audience OneSignal vide) |
 
