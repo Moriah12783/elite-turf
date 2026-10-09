@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
-import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 
 /**
  * POST /api/admin/arrivees
  *
- * Crée ou met à jour une arrivée + ses rapports PMU pour une course donnée.
- * Cette route est utilisée par la page /admin/arrivees pour la saisie manuelle
- * ou la validation d'un pré-remplissage Geny.
+ * Crée ou met à jour l'arrivée (+ commentaire) d'une course donnée. Cette
+ * route est utilisée par la page /admin/arrivees pour la saisie manuelle ou la
+ * validation d'un pré-remplissage Geny.
+ *
+ * Jamais de rapports : ils viennent du seul PMU (runPmuRapportsSync), qui
+ * n'écrit que dans un `rapports_pmu` vide, et sont en lecture seule dans le
+ * formulaire (décision de Steph du 09/10/2026, après l'audit des rapports Geny
+ * faux). Un `rapports_pmu` reçu est ignoré.
  *
  * Side-effects :
  *  - Upsert dans `arrivees` (clé : course_id)
@@ -26,7 +30,6 @@ import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
 interface PostBody {
   course_id:      string;
   ordre_arrivee:  number[];
-  rapports_pmu?:  RapportsPMU | null;
   commentaire?:   string | null;
 }
 
@@ -77,19 +80,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Upsert dans arrivees ─────────────────────────────────────────────
-    // Note : la table arrivees a aussi des champs legacy rapport_quinte/
-    // quarte/tierce (numeric) qu'on extrait des rapports_pmu pour les
-    // garder consistants avec l'historique.
-    const rapports = body.rapports_pmu ?? null;
+    // Ni `rapports_pmu` ni les colonnes legacy rapport_quinte/quarte/tierce :
+    // clés ABSENTES, l'upsert laisse donc intact un rapport PMU déjà en base
+    // (même arrivé après l'ouverture de la page).
     const arriveePayload = {
-      course_id:       body.course_id,
-      ordre_arrivee:   body.ordre_arrivee,
-      rapport_quinte:  rapports?.quinte_plus?.ordre ?? null,
-      rapport_quarte:  rapports?.quarte_plus?.ordre ?? null,
-      rapport_tierce:  rapports?.tierce?.ordre ?? null,
-      rapports_pmu:    rapports,
-      commentaire:     body.commentaire?.trim() || null,
-      horodatage:      new Date().toISOString(),
+      course_id:     body.course_id,
+      ordre_arrivee: body.ordre_arrivee,
+      commentaire:   body.commentaire?.trim() || null,
+      horodatage:    new Date().toISOString(),
     };
 
     const { error: arriveeErr } = await supabase

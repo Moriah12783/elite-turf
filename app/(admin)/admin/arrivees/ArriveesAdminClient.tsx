@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronRight, Check, AlertCircle,
 } from "lucide-react";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
+import { jsonbRapportsToRapportsList } from "@/lib/rapports-pmu-format";
 
 interface CourseRow {
   id:                 string;
@@ -87,8 +88,14 @@ export default function ArriveesAdminClient({ course }: Props) {
 
   // ── Form state (initialisé depuis course existante) ─────────────────────
   const [arriveeText, setArriveeText] = useState(formatArrivee(course.arrivee_officielle));
-  const [rapports, setRapports] = useState<RapportsPMU>(course.rapports_pmu ?? {});
   const [commentaire, setCommentaire] = useState(course.commentaire ?? "");
+
+  // Rapports en LECTURE SEULE (décision de Steph du 09/10/2026) : ils viennent
+  // du seul PMU (runPmuRapportsSync) ; ceux de Geny étaient faux.
+  const rapportsAffiches = jsonbRapportsToRapportsList(
+    course.rapports_pmu,
+    course.arrivee_officielle ?? [],
+  );
 
   const reference = `R${course.numero_reunion}C${course.numero_course}`;
   const isQuinte = course.paris_disponibles?.includes("QUINTE_PLUS");
@@ -100,22 +107,6 @@ export default function ArriveesAdminClient({ course }: Props) {
   const currentArrivee = parseArriveeInput(arriveeText);
   const insufficientHorses =
     currentArrivee !== null && currentArrivee.length < horsesReq.min;
-
-  // ── Helper update du state rapports (immutable) ─────────────────────────
-  function updateRapport<K extends keyof RapportsPMU>(
-    key: K,
-    value: RapportsPMU[K] | null,
-  ) {
-    setRapports((prev) => {
-      const next = { ...prev };
-      if (value == null || (typeof value === "object" && Object.keys(value).length === 0)) {
-        delete next[key];
-      } else {
-        next[key] = value;
-      }
-      return next;
-    });
-  }
 
   // ── Action : Pré-remplir depuis Geny ────────────────────────────────────
   async function handlePrefillGeny() {
@@ -133,9 +124,8 @@ export default function ArriveesAdminClient({ course }: Props) {
         setError(data.error || "Erreur Geny");
         return;
       }
-      // Pré-remplit les champs du formulaire (sans sauver)
+      // Pré-remplit l'arrivée et le commentaire (sans sauver). Jamais les rapports.
       if (data.arrivee) setArriveeText(formatArrivee(data.arrivee));
-      if (data.rapports) setRapports(data.rapports);
       if (data.commentaire) setCommentaire(data.commentaire);
       setSuccess("✓ Données Geny récupérées — vérifie puis enregistre");
     } catch (err) {
@@ -168,7 +158,6 @@ export default function ArriveesAdminClient({ course }: Props) {
           body: JSON.stringify({
             course_id:     course.id,
             ordre_arrivee: arrivee,
-            rapports_pmu:  Object.keys(rapports).length > 0 ? rapports : null,
             commentaire:   commentaire.trim() || null,
           }),
         });
@@ -370,204 +359,31 @@ export default function ArriveesAdminClient({ course }: Props) {
             )}
           </div>
 
-          {/* Rapports — Quinté+ (toujours expandé si applicable) */}
-          {isQuinte && (
-            <details open className="card-base p-3">
-              <summary className="cursor-pointer font-semibold text-sm text-gold-primary flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Quinté+ <span className="text-xs text-text-muted">(expandé par défaut)</span>
-              </summary>
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <RapportField
-                  label="Ordre"
-                  value={rapports.quinte_plus?.ordre}
-                  onChange={(v) => updateRapport("quinte_plus", { ...rapports.quinte_plus, ordre: v ?? undefined })}
-                />
-                <RapportField
-                  label="Désordre"
-                  value={rapports.quinte_plus?.desordre}
-                  onChange={(v) => updateRapport("quinte_plus", { ...rapports.quinte_plus, desordre: v ?? undefined })}
-                />
-                <RapportField
-                  label="Bonus 4"
-                  value={rapports.quinte_plus?.bonus4}
-                  onChange={(v) => updateRapport("quinte_plus", { ...rapports.quinte_plus, bonus4: v ?? undefined })}
-                />
-                <RapportField
-                  label="Bonus 3"
-                  value={rapports.quinte_plus?.bonus3}
-                  onChange={(v) => updateRapport("quinte_plus", { ...rapports.quinte_plus, bonus3: v ?? undefined })}
-                />
-              </div>
-            </details>
-          )}
-
-          {/* Rapports — Quarté+ */}
-          {(isQuinte || isQuarte) && (
-            <details className="card-base p-3">
-              <summary className="cursor-pointer font-semibold text-sm text-text-primary">Quarté+</summary>
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <RapportField
-                  label="Ordre"
-                  value={rapports.quarte_plus?.ordre}
-                  onChange={(v) => updateRapport("quarte_plus", { ...rapports.quarte_plus, ordre: v ?? undefined })}
-                />
-                <RapportField
-                  label="Désordre"
-                  value={rapports.quarte_plus?.desordre}
-                  onChange={(v) => updateRapport("quarte_plus", { ...rapports.quarte_plus, desordre: v ?? undefined })}
-                />
-                <RapportField
-                  label="Bonus"
-                  value={rapports.quarte_plus?.bonus}
-                  onChange={(v) => updateRapport("quarte_plus", { ...rapports.quarte_plus, bonus: v ?? undefined })}
-                />
-              </div>
-            </details>
-          )}
-
-          {/* Rapports — Tiercé */}
-          {(isQuinte || isQuarte || isTierce) && (
-            <details className="card-base p-3">
-              <summary className="cursor-pointer font-semibold text-sm text-text-primary">Tiercé</summary>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <RapportField
-                  label="Ordre"
-                  value={rapports.tierce?.ordre}
-                  onChange={(v) => updateRapport("tierce", { ...rapports.tierce, ordre: v ?? undefined })}
-                />
-                <RapportField
-                  label="Désordre"
-                  value={rapports.tierce?.desordre}
-                  onChange={(v) => updateRapport("tierce", { ...rapports.tierce, desordre: v ?? undefined })}
-                />
-              </div>
-            </details>
-          )}
-
-          {/* Rapports — Simple */}
-          <details className="card-base p-3">
-            <summary className="cursor-pointer font-semibold text-sm text-text-primary">Simple</summary>
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className="block text-xs text-text-muted mb-1">Simple gagnant</label>
-                <RapportField
-                  label=""
-                  value={rapports.simple_gagnant}
-                  onChange={(v) => updateRapport("simple_gagnant", v ?? undefined)}
-                  inline
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1.5">Simple placé (1er, 2e, 3e)</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map((idx) => (
-                    <RapportField
-                      key={idx}
-                      label=""
-                      placeholder={`${idx + 1}${idx === 0 ? "er" : "e"}`}
-                      value={rapports.simple_place?.[idx]}
-                      onChange={(v) => {
-                        const arr = [...(rapports.simple_place ?? [])];
-                        if (v == null) {
-                          arr[idx] = 0; // marquer comme vide via 0
-                        } else {
-                          arr[idx] = v;
-                        }
-                        // Filtre les zeros pour stockage propre
-                        const cleaned = arr.filter((n) => n > 0);
-                        updateRapport("simple_place", cleaned.length > 0 ? cleaned : undefined);
-                      }}
-                      inline
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </details>
-
-          {/* Rapports — Couplé */}
-          <details className="card-base p-3">
-            <summary className="cursor-pointer font-semibold text-sm text-text-primary">Couplé</summary>
-            <div className="mt-3 space-y-3">
-              <div>
-                <label className="block text-xs text-text-muted mb-1">Couplé gagnant</label>
-                <RapportField
-                  label=""
-                  value={rapports.couple_gagnant}
-                  onChange={(v) => updateRapport("couple_gagnant", v ?? undefined)}
-                  inline
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1.5">Couplé placé (1-2, 1-3, 2-3)</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 1, 2].map((idx) => (
-                    <RapportField
-                      key={idx}
-                      label=""
-                      placeholder={["1-2", "1-3", "2-3"][idx]}
-                      value={rapports.couple_place?.[idx]}
-                      onChange={(v) => {
-                        const arr = [...(rapports.couple_place ?? [])];
-                        if (v == null) {
-                          arr[idx] = 0;
-                        } else {
-                          arr[idx] = v;
-                        }
-                        const cleaned = arr.filter((n) => n > 0);
-                        updateRapport("couple_place", cleaned.length > 0 ? cleaned : undefined);
-                      }}
-                      inline
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </details>
-
-          {/* Rapports — Trio + 2/4 */}
-          <details className="card-base p-3">
-            <summary className="cursor-pointer font-semibold text-sm text-text-primary">Trio &amp; 2 sur 4</summary>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <RapportField
-                label="Trio"
-                value={rapports.trio}
-                onChange={(v) => updateRapport("trio", v ?? undefined)}
-              />
-              <RapportField
-                label="2 sur 4"
-                value={rapports.deux_sur_quatre}
-                onChange={(v) => updateRapport("deux_sur_quatre", v ?? undefined)}
-              />
-            </div>
-          </details>
-
-          {/* Rapports — Multi */}
-          <details className="card-base p-3">
-            <summary className="cursor-pointer font-semibold text-sm text-text-primary">Multi</summary>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <RapportField
-                label="En 4"
-                value={rapports.multi?.en_4}
-                onChange={(v) => updateRapport("multi", { ...rapports.multi, en_4: v ?? undefined })}
-              />
-              <RapportField
-                label="En 5"
-                value={rapports.multi?.en_5}
-                onChange={(v) => updateRapport("multi", { ...rapports.multi, en_5: v ?? undefined })}
-              />
-              <RapportField
-                label="En 6"
-                value={rapports.multi?.en_6}
-                onChange={(v) => updateRapport("multi", { ...rapports.multi, en_6: v ?? undefined })}
-              />
-              <RapportField
-                label="En 7"
-                value={rapports.multi?.en_7}
-                onChange={(v) => updateRapport("multi", { ...rapports.multi, en_7: v ?? undefined })}
-              />
-            </div>
-          </details>
+          {/* Rapports PMU — lecture seule (décision de Steph du 09/10/2026) */}
+          <div className="card-base p-3">
+            <p className="font-semibold text-sm text-text-primary">Rapports PMU</p>
+            {rapportsAffiches.length > 0 ? (
+              <>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {rapportsAffiches.flatMap((r) => r.dividendes.map((d, i) => (
+                    <li key={`${r.typePari}-${i}`} className="flex justify-between gap-3">
+                      <span className="text-text-secondary">{r.label} · {d.combinaison}</span>
+                      <span className="font-mono text-text-primary">
+                        {d.rapport != null ? `${fmtEur(d.rapport)} €` : "—"}
+                      </span>
+                    </li>
+                  )))}
+                </ul>
+                <p className="mt-2 text-xs text-text-muted">
+                  Source : PMU (rapports définitifs). Non modifiables ici.
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-xs text-text-muted">
+                Aucun rapport en base. La synchro PMU les ajoute quand le PMU les publie.
+              </p>
+            )}
+          </div>
 
           {/* Commentaire */}
           <div>
@@ -584,63 +400,6 @@ export default function ArriveesAdminClient({ course }: Props) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Sous-composant : champ de rapport € ──────────────────────────────────────
-
-function RapportField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  inline,
-}: {
-  label:        string;
-  value:        number | undefined;
-  onChange:     (n: number | null) => void;
-  placeholder?: string;
-  inline?:      boolean;
-}) {
-  const [text, setText] = useState(value != null ? String(value) : "");
-
-  // Sync external value updates (pour prefill Geny)
-  if (value != null && text !== String(value) && text === "") {
-    setText(String(value));
-  }
-
-  function handleChange(s: string) {
-    setText(s);
-    const cleaned = s.replace(",", ".").trim();
-    if (cleaned === "") {
-      onChange(null);
-      return;
-    }
-    const n = parseFloat(cleaned);
-    if (!Number.isFinite(n) || n < 0) {
-      // input invalide : on ne met pas à jour le state parent (mais on garde le texte)
-      return;
-    }
-    onChange(Math.round(n * 100) / 100);
-  }
-
-  return (
-    <div className={inline ? "" : ""}>
-      {label && (
-        <label className="block text-xs text-text-muted mb-1">{label}</label>
-      )}
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="decimal"
-          value={text}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder={placeholder ?? "—"}
-          className="w-full pl-3 pr-7 py-1.5 rounded-lg bg-bg-card border border-border focus:border-gold-primary outline-none text-text-primary text-sm font-mono"
-        />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-text-muted">€</span>
-      </div>
     </div>
   );
 }
