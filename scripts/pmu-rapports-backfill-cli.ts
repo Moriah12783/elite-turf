@@ -3,7 +3,8 @@
  *
  * Remplissage ponctuel des rapports PMU définitifs (source API PMU officielle,
  * lib/sync/pmu-rapports.ts) dans `arrivees.rapports_pmu`. Remplace l'ancienne
- * version Geny (geny-rapports-backfill-cli.ts), bloquée par Geny (403).
+ * version Geny (geny-rapports-backfill-cli.ts), bloquée par Geny (403), aux
+ * rapports faux (audit du 09/10/2026) et supprimée le 09/10/2026.
  *
  * Lancé par le workflow manuel backfill-rapports.yml. N'écrase jamais un
  * rapport existant et n'alimente pas le ROI (propagation coupée).

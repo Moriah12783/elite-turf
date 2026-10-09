@@ -1,5 +1,6 @@
 /**
- * /admin/arrivees — Saisie manuelle des arrivées + rapports PMU.
+ * /admin/arrivees — Saisie manuelle des arrivées. Les rapports PMU y sont en
+ * lecture seule : ils viennent du seul PMU (runPmuRapportsSync, 09/10/2026).
  *
  * Stratégie SEO : Google adore les pages dynamiques avec contenu frais quotidien.
  * En remplissant les arrivées de 10 courses/jour (3 Elite Turf + 7 sélectionnées),
