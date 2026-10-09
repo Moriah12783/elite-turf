@@ -71,6 +71,12 @@ export interface Existant { slug: string; nom: string }
 export interface PlanEcritures {
   /** Slugs des fiches à supprimer (fusionnées dans une autre, ou orphelines). */
   suppressions: string[];
+  /**
+   * Fiches dont la clé doit être retirée AVANT l'écriture (suppressions, et
+   * fiches dont le slug passe à un autre acteur) : l'index unique sur `cle`
+   * refuserait sinon d'attribuer cette clé à son nouveau slug.
+   */
+  cleARetirer:  string[];
   /** Anciens slugs → clé de la fiche qui les remplace. */
   alias:        Array<{ slug: string; cle: string }>;
   nouvelles:    string[];
@@ -192,6 +198,39 @@ export function agregerEntites(type: EntiteType, lignes: LigneEtl[]): {
   return { voulues: Array.from(parSlug.values()), graphies, ecartees: musiques.size, collisions };
 }
 
+/**
+ * Garde l'adresse actuelle d'une fiche tant qu'elle reste celle d'une de ses
+ * graphies : « P.-C. Boudot » et « Pc.Boudot » sont deux casses mixtes, et la
+ * plus fréquente peut changer d'une nuit à l'autre — sans cette règle,
+ * /jockeys/p-c-boudot et /jockeys/pc-boudot se redirigeraient tour à tour.
+ * Une adresse polluée (poids, « (S) ») n'est jamais gardée.
+ */
+export function stabiliserSlugs(
+  type: EntiteType,
+  voulues: EntiteVoulue[],
+  existants: Existant[],
+  graphiesParCle: Map<string, Map<string, number>>,
+): EntiteVoulue[] {
+  const slugsParCle = new Map<string, string[]>();
+  for (const e of existants) {
+    const cle = cleActeur(type, e.nom);
+    if (cle) slugsParCle.set(cle, [...(slugsParCle.get(cle) ?? []), e.slug]);
+  }
+  const pris = new Set(voulues.map((v) => v.slug));
+  return voulues.map((v) => {
+    const actuels = slugsParCle.get(v.cle) ?? [];
+    if (actuels.includes(v.slug)) return v;
+    const admis = new Set(
+      Array.from(graphiesParCle.get(v.cle)?.keys() ?? []).map((g) => slugify(nettoyerNomActeur(type, g))),
+    );
+    const garde = actuels.filter((s) => admis.has(s) && !pris.has(s)).sort()[0];
+    if (!garde) return v;
+    pris.delete(v.slug);
+    pris.add(garde);
+    return { ...v, slug: garde };
+  });
+}
+
 export function planifierEcritures(
   type: EntiteType,
   existants: Existant[],
@@ -224,14 +263,18 @@ export function planifierEcritures(
 
   const nouvelles: string[] = [];
   const renommees: PlanEcritures["renommees"] = [];
+  const cleARetirer = [...suppressions];
   for (const v of voulues) {
     const e = existantParSlug.get(v.slug);
-    if (!e) nouvelles.push(v.slug);
-    else if (e.nom !== v.nom) renommees.push({ slug: v.slug, avant: e.nom, apres: v.nom });
+    if (!e) { nouvelles.push(v.slug); continue; }
+    if (e.nom !== v.nom) renommees.push({ slug: v.slug, avant: e.nom, apres: v.nom });
+    // Le slug passe à un autre acteur : sa clé actuelle doit être libérée d'abord.
+    if (cleActeur(type, e.nom) !== v.cle) cleARetirer.push(v.slug);
   }
 
   return {
     suppressions,
+    cleARetirer,
     alias: Array.from(alias.entries()).map(([slug, cle]) => ({ slug, cle })),
     nouvelles,
     renommees,
@@ -242,16 +285,24 @@ export function planifierEcritures(
 
 type Client = ReturnType<typeof createServiceClient>;
 
-/** Tout l'historique partants × courses, en une seule lecture paginée (ordre stable). */
+/**
+ * Tout l'historique partants × courses, en une seule lecture paginée par clé
+ * (id > dernier id lu) : une ligne supprimée ou insérée pendant la lecture
+ * (re-scrape d'une course) ne décale pas les pages suivantes.
+ */
 async function chargerLignes(supabase: Client): Promise<LigneEtl[]> {
   const out: LigneEtl[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
+  let dernierId: string | null = null;
+  for (;;) {
+    let requete = supabase
       .from("partants")
       .select("id, numero, nom_cheval, jockey, entraineur, course:courses!inner(id, date_course, statut, arrivee_officielle, arrivee_rangs, updated_at)")
       .order("id")
-      .range(from, from + PAGE - 1);
+      .limit(PAGE);
+    if (dernierId) requete = requete.gt("id", dernierId);
+    const { data, error } = await requete;
     if (error) throw new Error(`lecture partants: ${error.message}`);
+    if (data && data.length > 0) dernierId = (data[data.length - 1] as any).id;
     for (const row of (data ?? []) as any[]) {
       const c = Array.isArray(row.course) ? row.course[0] : row.course;
       if (!c) continue;
@@ -288,16 +339,21 @@ async function chargerExistants(supabase: Client, type: EntiteType): Promise<Exi
   return out;
 }
 
+/**
+ * Ordre d'écriture : on ne supprime qu'en dernier, et seulement si tout le
+ * reste est passé. Une exécution interrompue laisse au pire d'anciennes
+ * fiches en place (nettoyées la nuit suivante), jamais une adresse en 404.
+ */
 async function ecrire(
   supabase: Client,
   type: EntiteType,
   voulues: EntiteVoulue[],
   plan: PlanEcritures,
-): Promise<{ inserted: number; errors: number }> {
-  // 1. Suppressions d'abord : une clé passée à un autre slug libère l'ancien.
-  for (let i = 0; i < plan.suppressions.length; i += 200) {
-    const { error } = await supabase.from(type).delete().in("slug", plan.suppressions.slice(i, i + 200));
-    if (error) throw new Error(`suppression ${type}: ${error.message}`);
+): Promise<{ inserted: number; errors: number; suppressions_reportees: boolean }> {
+  // 1. Libérer les clés qui vont changer de fiche (index unique sur `cle`).
+  for (let i = 0; i < plan.cleARetirer.length; i += 200) {
+    const { error } = await supabase.from(type).update({ cle: null }).in("slug", plan.cleARetirer.slice(i, i + 200));
+    if (error) throw new Error(`libération des clés ${type}: ${error.message}`);
   }
 
   // 2. Fiches voulues.
@@ -316,7 +372,7 @@ async function ecrire(
     }
   }
 
-  // 3. Redirections : nouveaux alias, et retrait de ceux redevenus des fiches.
+  // 3. Redirections des anciennes adresses (leur cible existe désormais).
   const lignesAlias = plan.alias.map((a) => ({ type, slug: a.slug, cle: a.cle }));
   for (let i = 0; i < lignesAlias.length; i += CHUNK) {
     const { error } = await supabase
@@ -324,16 +380,36 @@ async function ecrire(
       .upsert(lignesAlias.slice(i, i + CHUNK), { onConflict: "type,slug" });
     if (error) throw new Error(`alias ${type}: ${error.message}`);
   }
+
+  // 4. Suppressions, en dernier — et pas si une fiche voulue n'a pas pu être
+  //    écrite : elle serait peut-être la cible d'une fiche supprimée.
+  const suppressions_reportees = errors > 0 && plan.suppressions.length > 0;
+  if (suppressions_reportees) {
+    console.error(`[seo-etl] ${type} : ${plan.suppressions.length} suppressions reportées (écritures en erreur)`);
+  } else {
+    for (let i = 0; i < plan.suppressions.length; i += 200) {
+      const { error } = await supabase.from(type).delete().in("slug", plan.suppressions.slice(i, i + 200));
+      if (error) throw new Error(`suppression ${type}: ${error.message}`);
+    }
+  }
+
+  // 5. Un alias redevenu une fiche n'a plus lieu d'être (lecture paginée :
+  //    plusieurs milliers d'alias jockeys).
   const slugsVoulus = new Set(voulues.map((v) => v.slug));
-  const { data: anciens, error: errAlias } = await supabase.from("acteurs_alias").select("slug").eq("type", type);
-  if (errAlias) throw new Error(`lecture alias ${type}: ${errAlias.message}`);
-  const redevenus = ((anciens ?? []) as Array<{ slug: string }>).map((a) => a.slug).filter((s) => slugsVoulus.has(s));
+  const redevenus: string[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("acteurs_alias").select("slug").eq("type", type).order("slug").range(from, from + PAGE - 1);
+    if (error) throw new Error(`lecture alias ${type}: ${error.message}`);
+    for (const a of (data ?? []) as Array<{ slug: string }>) if (slugsVoulus.has(a.slug)) redevenus.push(a.slug);
+    if (!data || data.length < PAGE) break;
+  }
   for (let i = 0; i < redevenus.length; i += 200) {
     const { error } = await supabase.from("acteurs_alias").delete().eq("type", type).in("slug", redevenus.slice(i, i + 200));
     if (error) throw new Error(`nettoyage alias ${type}: ${error.message}`);
   }
 
-  return { inserted, errors };
+  return { inserted, errors, suppressions_reportees };
 }
 
 /** Lance l'ETL pour un ou plusieurs types d'entités. */
@@ -357,8 +433,10 @@ export async function runSeoEtl(opts: EtlOptions = {}): Promise<{
 
   const results: EtlResult[] = [];
   for (const type of entites) {
-    const { voulues, graphies, ecartees, collisions } = agregerEntites(type, lignes);
+    const agregat = agregerEntites(type, lignes);
+    const { graphies, ecartees, collisions } = agregat;
     const existants = await chargerExistants(supabase, type);
+    const voulues = stabiliserSlugs(type, agregat.voulues, existants, graphies);
     const plan = planifierEcritures(type, existants, voulues, graphies);
 
     const seuil = Math.max(50, Math.floor(existants.length * SEUIL_SUPPRESSIONS));
@@ -369,7 +447,9 @@ export async function runSeoEtl(opts: EtlOptions = {}): Promise<{
       );
     }
 
-    const { inserted, errors } = dryRun ? { inserted: 0, errors: 0 } : await ecrire(supabase, type, voulues, plan);
+    const { inserted, errors } = dryRun
+      ? { inserted: 0, errors: 0 }
+      : await ecrire(supabase, type, voulues, plan);
     results.push({
       entite:           type,
       fiches:           voulues.length,

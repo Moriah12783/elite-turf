@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  agregerEntites, dedoublonnerLignes, planifierEcritures,
+  agregerEntites, dedoublonnerLignes, planifierEcritures, stabiliserSlugs,
   type LigneEtl, type EntiteVoulue,
 } from "./seo-etl";
 
@@ -76,6 +76,37 @@ describe("dedoublonnerLignes", () => {
   });
 });
 
+describe("stabiliserSlugs", () => {
+  const boudot: EntiteVoulue = {
+    cle: "pcboudot", slug: "p-c-boudot", nom: "P.-C. Boudot",
+    nb_courses: 9, nb_victoires: 2, nb_places: 4, derniere_course_at: "2026-10-08",
+  };
+  const graphies = new Map([["pcboudot", new Map([["P.-C. Boudot", 5], ["Pc.Boudot", 4]])]]);
+
+  it("garde l'adresse actuelle tant qu'elle est celle d'une graphie de l'acteur", () => {
+    // « Pc.Boudot » repasse devant certaines nuits : /jockeys/pc-boudot ne doit pas basculer.
+    const [v] = stabiliserSlugs("jockeys", [boudot], [{ slug: "pc-boudot", nom: "Pc.Boudot" }], graphies);
+    expect(v).toMatchObject({ slug: "pc-boudot", nom: "P.-C. Boudot" });
+  });
+  it("une adresse polluée (poids, « (S) ») n'est jamais gardée", () => {
+    const [v] = stabiliserSlugs("jockeys",
+      [{ ...boudot, cle: "cdemuro", slug: "c-demuro", nom: "C. Demuro" }],
+      [{ slug: "c-demuro-56-5", nom: "C. Demuro 56,5" }],
+      new Map([["cdemuro", new Map([["C. Demuro", 3], ["C. Demuro 56,5", 2]])]]));
+    expect(v.slug).toBe("c-demuro");
+  });
+  it("graphie disparue des partants : l'adresse suit la graphie choisie", () => {
+    const [v] = stabiliserSlugs("jockeys", [boudot], [{ slug: "pc-boudot", nom: "Pc.Boudot" }],
+      new Map([["pcboudot", new Map([["P.-C. Boudot", 5]])]]));
+    expect(v.slug).toBe("p-c-boudot");
+  });
+  it("n'empiète jamais sur l'adresse d'un autre acteur", () => {
+    const autre: EntiteVoulue = { ...boudot, cle: "autre", slug: "pc-boudot", nom: "Autre" };
+    const [v] = stabiliserSlugs("jockeys", [boudot, autre], [{ slug: "pc-boudot", nom: "Pc.Boudot" }], graphies);
+    expect(v.slug).toBe("p-c-boudot");
+  });
+});
+
 describe("planifierEcritures", () => {
   const voulue = (p: Partial<EntiteVoulue>): EntiteVoulue => ({
     cle: "cdemuro", slug: "c-demuro", nom: "C. Demuro",
@@ -99,6 +130,14 @@ describe("planifierEcritures", () => {
     const plan = planifierEcritures("jockeys", [{ slug: "reserviste-1", nom: "Réserviste 1" }], [voulue({})], graphies);
     expect(plan.suppressions).toEqual(["reserviste-1"]);
     expect(plan.alias.find((a) => a.slug === "reserviste-1")).toBeUndefined();
+  });
+
+  it("retire la clé des fiches supprimées et de celles qui changent de titulaire, avant d'écrire", () => {
+    const plan = planifierEcritures("jockeys",
+      [{ slug: "c-demuro", nom: "C. Demuro" }, { slug: "c-demuro-56-5", nom: "C. Demuro 56,5" },
+       { slug: "a-leduc-t", nom: "A. Leduc T" }], // même slug, autre clé (« aleduct »)
+      [voulue({}), voulue({ cle: "aleduc-t", slug: "a-leduc-t", nom: "A. Leduc (T)" })], graphies);
+    expect(plan.cleARetirer.sort()).toEqual(["a-leduc-t", "c-demuro-56-5"]);
   });
 
   it("repère les fiches nouvelles et les noms affichés qui changent", () => {
