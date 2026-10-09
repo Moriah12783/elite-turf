@@ -157,7 +157,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
     .select(`
       id, numero_reunion, numero_course, libelle,
       date_course, heure_depart, distance_metres,
-      categorie, terrain, nb_partants, statut, arrivee_officielle,
+      categorie, terrain, nb_partants, statut, arrivee_officielle, arrivee_rangs,
       paris_disponibles, jouable_afrique, nationale,
       hippodrome:hippodromes(id, nom, pays, ville),
       pronostics(id, niveau_acces, publie, type_pari),

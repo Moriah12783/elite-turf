@@ -22,6 +22,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import PageHero from "@/components/layout/PageHero";
 import { slugify, findBySlug } from "@/lib/seo/slugs";
 import { todayParis, formatDateLong, formatDateShort } from "@/lib/seo/dates";
+import { buildArriveePodium } from "@/lib/courses/arrivee";
+import { libelleRang } from "@/lib/courses/rangs";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -123,7 +125,7 @@ export default async function HippodromePage({ params }: PageProps) {
     .from("courses")
     .select(`
       id, numero_reunion, numero_course, libelle,
-      date_course, heure_depart, statut, arrivee_officielle,
+      date_course, heure_depart, statut, arrivee_officielle, arrivee_rangs,
       paris_disponibles
     `)
     .eq("hippodrome_id", hippo.id)
@@ -317,17 +319,19 @@ export default async function HippodromePage({ params }: PageProps) {
                             </span>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                            {c.arrivee_officielle.slice(0, 5).map((num: number, idx: number) => (
+                            {/* Les 5 premiers RANGS : deux 5es ex æquo sont montrés tous les deux. */}
+                            {buildArriveePodium(c.arrivee_officielle, [], c.arrivee_rangs).filter((p) => p.rank <= 5).map((p) => (
                               <span
-                                key={idx}
+                                key={p.numero}
+                                title={p.exAequo ? libelleRang(p.rank, true) : undefined}
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${
-                                  idx === 0
+                                  p.rank === 1
                                     ? "bg-status-win/15 text-status-win border border-status-win/30"
                                     : "bg-bg-card text-text-secondary border border-border"
                                 }`}
                               >
-                                <span className="text-text-muted">{idx + 1}.</span>
-                                <span className="font-bold">{num}</span>
+                                <span className="text-text-muted">{p.rank}{p.exAequo ? "=" : "."}</span>
+                                <span className="font-bold">{p.numero}</span>
                               </span>
                             ))}
                           </div>
