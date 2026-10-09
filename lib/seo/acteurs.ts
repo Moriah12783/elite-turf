@@ -16,6 +16,7 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/seo/slugs";
+import { resultatPartant } from "@/lib/courses/arrivee";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -77,7 +78,9 @@ export interface CourseLine {
   jockey:           string | null;
   entraineur:       string | null;
   nom_cheval:       string | null;
-  arrivee:          number | null; // position en arrivée (1, 2, 3, …) ou null
+  arrivee:          number | null; // rang officiel en arrivée (1, 2, 3, …, ex æquo compris) ou null
+  /** Rang partagé avec un autre cheval (dead heat) : « 5e ex æquo ». */
+  ex_aequo:         boolean;
   statut:           string;
 }
 
@@ -162,7 +165,7 @@ export async function getCoursesForEntite(
     .select(`
       numero, cote, jockey, entraineur, nom_cheval,
       course:courses!inner(
-        id, date_course, statut, numero_reunion, numero_course, libelle, arrivee_officielle,
+        id, date_course, statut, numero_reunion, numero_course, libelle, arrivee_officielle, arrivee_rangs,
         hippodrome:hippodromes(nom)
       )
     `)
@@ -172,11 +175,9 @@ export async function getCoursesForEntite(
   const lines = (data ?? []).map((row: any) => {
     const c = row.course;
     const hippo = Array.isArray(c?.hippodrome) ? c.hippodrome[0] : c?.hippodrome;
-    let arrivee: number | null = null;
-    if (Array.isArray(c?.arrivee_officielle) && c.arrivee_officielle.length > 0) {
-      const idx = c.arrivee_officielle.indexOf(row.numero);
-      arrivee = idx === -1 ? null : idx + 1;
-    }
+    // Rang officiel (ex æquo compris) : le 16, 5e ex æquo, n'est plus « 6e ».
+    const res = resultatPartant(row.numero, c?.arrivee_officielle, c?.arrivee_rangs);
+    const arrivee: number | null = res ? res.rang : null;
     return {
       course_id:        c.id,
       date_course:      c.date_course,
@@ -190,6 +191,7 @@ export async function getCoursesForEntite(
       entraineur:       row.entraineur,
       nom_cheval:       row.nom_cheval,
       arrivee,
+      ex_aequo:         res ? res.exAequo : false,
       statut:           c.statut,
     } as CourseLine;
   });

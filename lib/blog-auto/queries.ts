@@ -7,6 +7,7 @@
  */
 
 import { createServiceClient } from "@/lib/supabase/server";
+import { resultatPartant } from "@/lib/courses/arrivee";
 
 export interface TopJockey {
   nom:           string;
@@ -110,7 +111,7 @@ export async function getTopJockeysForPeriod(
     .from("partants")
     .select(`
       jockey, numero,
-      course:courses!inner(date_course, statut, arrivee_officielle)
+      course:courses!inner(date_course, statut, arrivee_officielle, arrivee_rangs)
     `)
     .not("jockey", "is", null)
     .gte("course.date_course", fromDate)
@@ -123,8 +124,8 @@ export async function getTopJockeysForPeriod(
   for (const row of (data ?? []) as any[]) {
     const nom = (row.jockey as string).trim();
     if (!nom) continue;
-    const arr = row.course?.arrivee_officielle;
-    const won = Array.isArray(arr) && arr.length > 0 && arr[0] === row.numero;
+    // Rang officiel : en dead heat, les deux vainqueurs gagnent.
+    const won = resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true;
     const cur = stats.get(nom) ?? { courses: 0, victoires: 0 };
     cur.courses += 1;
     if (won) cur.victoires += 1;
@@ -166,7 +167,7 @@ export async function getTopChevauxForPeriod(
     .from("partants")
     .select(`
       nom_cheval, numero,
-      course:courses!inner(date_course, statut, arrivee_officielle)
+      course:courses!inner(date_course, statut, arrivee_officielle, arrivee_rangs)
     `)
     .not("nom_cheval", "is", null)
     .gte("course.date_course", fromDate)
@@ -178,8 +179,8 @@ export async function getTopChevauxForPeriod(
   for (const row of (data ?? []) as any[]) {
     const nom = (row.nom_cheval as string).trim();
     if (!nom) continue;
-    const arr = row.course?.arrivee_officielle;
-    const won = Array.isArray(arr) && arr.length > 0 && arr[0] === row.numero;
+    // Rang officiel : en dead heat, les deux vainqueurs gagnent.
+    const won = resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true;
     const cur = stats.get(nom) ?? { courses: 0, victoires: 0 };
     cur.courses += 1;
     if (won) cur.victoires += 1;
@@ -279,7 +280,7 @@ export async function getHippodromeStats(slug: string): Promise<HippodromeStats 
 
   const { data: rawCoursesTotal } = await supabase
     .from("courses")
-    .select("id, date_course, statut, arrivee_officielle")
+    .select("id, date_course, statut, arrivee_officielle, arrivee_rangs")
     .eq("hippodrome_id", hippo.id)
     .neq("statut", "ANNULE")
     .order("date_course", { ascending: false })
@@ -300,16 +301,17 @@ export async function getHippodromeStats(slug: string): Promise<HippodromeStats 
       .limit(2000);
 
     // Récupérer arrivees pour les courses ciblées
-    const arriveeMap = new Map<string, number[]>();
+    const arriveeMap = new Map<string, { arrivee: number[]; rangs: number[] | null }>();
     for (const c of (rawCoursesTotal ?? []) as any[]) {
-      if (Array.isArray(c.arrivee_officielle)) arriveeMap.set(c.id, c.arrivee_officielle);
+      if (Array.isArray(c.arrivee_officielle)) arriveeMap.set(c.id, { arrivee: c.arrivee_officielle, rangs: c.arrivee_rangs ?? null });
     }
 
     const jockeyStats = new Map<string, { courses: number; victoires: number }>();
     const chevalStats = new Map<string, { courses: number; victoires: number }>();
     for (const p of (partants ?? []) as any[]) {
-      const arr = arriveeMap.get(p.course_id);
-      const won = Array.isArray(arr) && arr.length > 0 && arr[0] === p.numero;
+      const a = arriveeMap.get(p.course_id);
+      // Rang officiel : en dead heat, les deux vainqueurs gagnent.
+      const won = !!a && resultatPartant(p.numero, a.arrivee, a.rangs)?.victoire === true;
 
       if (p.jockey) {
         const nom = p.jockey.trim();

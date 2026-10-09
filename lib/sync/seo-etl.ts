@@ -14,6 +14,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/observability/logger";
 import { slugify } from "@/lib/seo/slugs";
 import { looksLikeMusique } from "@/lib/geny";
+import { resultatPartant } from "@/lib/courses/arrivee";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -85,7 +86,7 @@ async function computeWinStats(
   while (true) {
     const { data, error } = await supabase
       .from("partants")
-      .select(`numero, ${col}, course:courses!inner(arrivee_officielle, statut)`)
+      .select(`numero, ${col}, course:courses!inner(arrivee_officielle, arrivee_rangs, statut)`)
       .not(col, "is", null)
       .range(from, from + PAGE - 1);
     if (error) throw new Error(`win-stats ${col}: ${error.message}`);
@@ -97,13 +98,13 @@ async function computeWinStats(
       const arr = row.course?.arrivee_officielle;
       if (row.course?.statut !== "TERMINE" || !Array.isArray(arr) || arr.length === 0) continue;
 
-      const numero = row.numero;
-      const idxArr = arr.indexOf(numero);
-      if (idxArr === -1) continue;
+      // Rang officiel, ex æquo compris : un co-vainqueur gagne, un 3e ex æquo est placé.
+      const res = resultatPartant(row.numero, arr, row.course?.arrivee_rangs);
+      if (!res) continue;
 
       const prev = map.get(nom) ?? { victoires: 0, places: 0 };
-      if (idxArr === 0) prev.victoires += 1;
-      if (idxArr <  3) prev.places    += 1;
+      if (res.victoire) prev.victoires += 1;
+      if (res.place)    prev.places    += 1;
       map.set(nom, prev);
     }
     if (data.length < PAGE) break;
