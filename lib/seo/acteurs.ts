@@ -31,7 +31,7 @@ export const COL_MAP: Record<EntiteType, "nom_cheval" | "jockey" | "entraineur">
   entraineurs: "entraineur",
 };
 
-/** Colonnes générées de `partants` (migration 20261009_cles_acteurs). */
+/** Clés de `partants`, tenues par un déclencheur (migration 20261009_cles_acteurs). */
 export const CLE_COL: Record<EntiteType, "cheval_cle" | "jockey_cle" | "entraineur_cle"> = {
   chevaux:     "cheval_cle",
   jockeys:     "jockey_cle",
@@ -190,7 +190,7 @@ export async function getEntiteOuRediriger(type: EntiteType, slug: string): Prom
  * Charge l'historique des courses (dernières N) pour une entité.
  * Pourquoi on stocke en référentiel + on requête partants : pas de FK
  * (les syncs insèrent en bulk avec juste le nom). On cherche par CLÉ
- * (colonnes générées indexées partants.*_cle) : toutes les graphies des
+ * (colonnes indexées partants.*_cle, tenues par un déclencheur) : toutes les graphies des
  * sources, et l'historique complet avant tri — le plus gros jockey compte
  * ~1 100 lignes (l'ancien plafond de 500 lignes non triées faussait la
  * sélection des « dernières » courses).

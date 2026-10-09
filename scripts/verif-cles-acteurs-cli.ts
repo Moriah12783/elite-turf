@@ -2,7 +2,7 @@
  * scripts/verif-cles-acteurs-cli.ts
  *
  * Après la migration 20261009_cles_acteurs : vérifie, sur TOUTES les lignes de
- * `partants`, que les colonnes générées par Postgres (slug_acteur /
+ * `partants`, que les clés calculées par Postgres (slug_acteur /
  * cle_personne) donnent exactement les clés du TypeScript
  * (lib/seo/cles-acteurs.ts). Un écart = une fiche qui raterait des courses.
  * Lecture seule.
