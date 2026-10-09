@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ActeurDetailPage from "@/components/acteurs/ActeurDetailPage";
 import {
-  getEntiteBySlug, getCoursesForEntite, computeRichStats,
+  getEntiteOuRediriger, getCoursesForEntite, computeRichStats,
   buildActeurTitle, buildActeurDescription, isIndexable,
 } from "@/lib/seo/acteurs";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -26,13 +26,13 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const e = await getEntiteBySlug("chevaux", params.slug);
+  const e = await getEntiteOuRediriger("chevaux", params.slug);
   if (!e) return { title: "Cheval introuvable" };
 
   // ── Phase 1 : stats calculées à la volée depuis l'historique courses ──
   // Plus fiable que les colonnes BDD `nb_victoires`/`nb_places` qui sont
   // actuellement à 0 (job sync nightly absent). Bug GSC du 14/05/2026.
-  const rows = await getCoursesForEntite("chevaux", e.nom, 50);
+  const rows = await getCoursesForEntite("chevaux", e, 50);
   const stats = computeRichStats("chevaux", rows);
 
   return {
@@ -56,9 +56,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ChevauxDetail({ params }: PageProps) {
-  const entite = await getEntiteBySlug("chevaux", params.slug);
+  const entite = await getEntiteOuRediriger("chevaux", params.slug);
   if (!entite) notFound();
-  const rows = await getCoursesForEntite("chevaux", entite.nom, 50);
+  const rows = await getCoursesForEntite("chevaux", entite, 50);
   const stats = computeRichStats("chevaux", rows);
   return (
     <ActeurDetailPage

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ActeurDetailPage from "@/components/acteurs/ActeurDetailPage";
 import {
-  getEntiteBySlug, getCoursesForEntite, computeRichStats,
+  getEntiteOuRediriger, getCoursesForEntite, computeRichStats,
   buildActeurTitle, buildActeurDescription, isIndexable,
 } from "@/lib/seo/acteurs";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -25,10 +25,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const e = await getEntiteBySlug("entraineurs", params.slug);
+  const e = await getEntiteOuRediriger("entraineurs", params.slug);
   if (!e) return { title: "Entraîneur introuvable" };
 
-  const rows = await getCoursesForEntite("entraineurs", e.nom, 50);
+  const rows = await getCoursesForEntite("entraineurs", e, 50);
   const stats = computeRichStats("entraineurs", rows);
 
   return {
@@ -49,9 +49,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EntraineurDetail({ params }: PageProps) {
-  const entite = await getEntiteBySlug("entraineurs", params.slug);
+  const entite = await getEntiteOuRediriger("entraineurs", params.slug);
   if (!entite) notFound();
-  const rows = await getCoursesForEntite("entraineurs", entite.nom, 50);
+  const rows = await getCoursesForEntite("entraineurs", entite, 50);
   const stats = computeRichStats("entraineurs", rows);
   return (
     <ActeurDetailPage

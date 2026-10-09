@@ -14,14 +14,16 @@
  * Pattern : 3 queries Supabase parallèles (chevaux/jockeys/entraineurs)
  * avec filtre `.in("slug", [...])`. ZÉRO N+1. ~50-150ms total.
  *
- * Stratégie de matching : slug-based (déterministe via slugify(nom)).
+ * Stratégie de matching : par CLÉ d'identité (lib/seo/cles-acteurs.ts) — le
+ * partant « M.BARZALONA » (format PMU) trouve la fiche « M. Barzalona » ; le
+ * slug renvoyé est celui de la fiche (lien de la page course).
  * Si un cheval n'a pas encore d'entrée en table `chevaux` (course très récente,
  * cron pas encore passé), on retourne null pour ses stats historiques —
  * l'UI handle gracefully avec un fallback "Données en cours de constitution".
  */
 
 import { createServiceClient } from "@/lib/supabase/server";
-import { slugify } from "@/lib/seo/slugs";
+import { cleActeur, nettoyerNomActeur } from "@/lib/seo/cles-acteurs";
 import { parseMusique } from "./musique";
 import {
   MIN_COURSES_FIABLES,
@@ -82,36 +84,36 @@ export async function getCourseStatsEnrichies(
 
   const supabase = createServiceClient();
 
-  // ── 1. Extraire slugs uniques pour batch query ──────────────────────────
-  const chevauxSlugs    = Array.from(new Set(partants
-    .map((p) => slugify(p.nom_cheval)).filter(Boolean)));
-  const jockeysSlugs    = Array.from(new Set(partants
-    .map((p) => slugify(p.jockey ?? "")).filter(Boolean)));
-  const entraineursSlugs = Array.from(new Set(partants
-    .map((p) => slugify(p.entraineur ?? "")).filter(Boolean)));
+  // ── 1. Extraire les clés uniques pour batch query ───────────────────────
+  const chevauxCles    = Array.from(new Set(partants
+    .map((p) => cleActeur("chevaux", p.nom_cheval)).filter(Boolean)));
+  const jockeysCles    = Array.from(new Set(partants
+    .map((p) => cleActeur("jockeys", p.jockey)).filter(Boolean)));
+  const entraineursCles = Array.from(new Set(partants
+    .map((p) => cleActeur("entraineurs", p.entraineur)).filter(Boolean)));
 
   // ── 2. 3 queries parallèles ─────────────────────────────────────────────
   const [chevauxRes, jockeysRes, entraineursRes] = await Promise.all([
-    chevauxSlugs.length > 0
+    chevauxCles.length > 0
       ? supabase.from("chevaux")
-          .select("slug, nb_courses, nb_victoires, nb_places")
-          .in("slug", chevauxSlugs)
+          .select("cle, slug, nb_courses, nb_victoires, nb_places")
+          .in("cle", chevauxCles)
       : Promise.resolve({ data: [], error: null }),
-    jockeysSlugs.length > 0
+    jockeysCles.length > 0
       ? supabase.from("jockeys")
-          .select("slug, nb_courses, nb_victoires, nb_places, nom")
-          .in("slug", jockeysSlugs)
+          .select("cle, slug, nb_courses, nb_victoires, nb_places, nom")
+          .in("cle", jockeysCles)
       : Promise.resolve({ data: [], error: null }),
-    entraineursSlugs.length > 0
+    entraineursCles.length > 0
       ? supabase.from("entraineurs")
-          .select("slug, nb_courses, nb_victoires, nb_places, nom")
-          .in("slug", entraineursSlugs)
+          .select("cle, slug, nb_courses, nb_victoires, nb_places, nom")
+          .in("cle", entraineursCles)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  const chevauxMap     = new Map<string, any>((chevauxRes.data     ?? []).map((r: any) => [r.slug, r]));
-  const jockeysMap     = new Map<string, any>((jockeysRes.data     ?? []).map((r: any) => [r.slug, r]));
-  const entraineursMap = new Map<string, any>((entraineursRes.data ?? []).map((r: any) => [r.slug, r]));
+  const chevauxMap     = new Map<string, any>((chevauxRes.data     ?? []).map((r: any) => [r.cle, r]));
+  const jockeysMap     = new Map<string, any>((jockeysRes.data     ?? []).map((r: any) => [r.cle, r]));
+  const entraineursMap = new Map<string, any>((entraineursRes.data ?? []).map((r: any) => [r.cle, r]));
 
   // ── 3. Calculer maxInvCote pour normalisation du score "cote" ─────────
   // Le favori (cote la plus basse) a 1/cote le plus haut → contribution max
@@ -120,17 +122,14 @@ export async function getCourseStatsEnrichies(
 
   // ── 4. Enrichir chaque partant ──────────────────────────────────────────
   const enrichis: PartantEnrichi[] = partants.map((p) => {
-    const slugCheval     = slugify(p.nom_cheval);
-    const slugJockey     = slugify(p.jockey ?? "");
-    const slugEntraineur = slugify(p.entraineur ?? "");
+    const rowCheval     = chevauxMap.get(cleActeur("chevaux", p.nom_cheval));
+    const rowJockey     = jockeysMap.get(cleActeur("jockeys", p.jockey));
+    const rowEntraineur = entraineursMap.get(cleActeur("entraineurs", p.entraineur));
 
-    const rowCheval     = chevauxMap.get(slugCheval);
-    const rowJockey     = jockeysMap.get(slugJockey);
-    const rowEntraineur = entraineursMap.get(slugEntraineur);
-
-    const stats_cheval     = toStatsHistoriques(rowCheval     ? { ...rowCheval,     slug: slugCheval     } : null);
-    const stats_jockey     = toStatsHistoriques(rowJockey     ? { ...rowJockey,     slug: slugJockey     } : null);
-    const stats_entraineur = toStatsHistoriques(rowEntraineur ? { ...rowEntraineur, slug: slugEntraineur } : null);
+    // `slug` = celui de la fiche (lien), pas celui de la graphie du partant.
+    const stats_cheval     = toStatsHistoriques(rowCheval);
+    const stats_jockey     = toStatsHistoriques(rowJockey);
+    const stats_entraineur = toStatsHistoriques(rowEntraineur);
 
     const forme_musique = parseMusique(p.musique);
 
@@ -218,7 +217,7 @@ export async function getCourseStatsEnrichies(
     if (!p.jockey || !p.stats_jockey || p.stats_jockey.nb_courses < MIN_COURSES_FIABLES) continue;
     if (jockeysSeen.has(p.stats_jockey.slug)) continue;
     jockeysSeen.add(p.stats_jockey.slug);
-    top_jockeys.push({ ...p.stats_jockey, nom: p.jockey });
+    top_jockeys.push({ ...p.stats_jockey, nom: nettoyerNomActeur("jockeys", p.jockey) });
   }
   top_jockeys.sort((a, b) => (b.taux_victoire ?? 0) - (a.taux_victoire ?? 0));
 
@@ -228,7 +227,7 @@ export async function getCourseStatsEnrichies(
     if (!p.entraineur || !p.stats_entraineur || p.stats_entraineur.nb_courses < MIN_COURSES_FIABLES) continue;
     if (entraineursSeen.has(p.stats_entraineur.slug)) continue;
     entraineursSeen.add(p.stats_entraineur.slug);
-    top_entraineurs.push({ ...p.stats_entraineur, nom: p.entraineur });
+    top_entraineurs.push({ ...p.stats_entraineur, nom: nettoyerNomActeur("entraineurs", p.entraineur) });
   }
   top_entraineurs.sort((a, b) => (b.taux_victoire ?? 0) - (a.taux_victoire ?? 0));
 

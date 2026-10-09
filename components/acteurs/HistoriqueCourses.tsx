@@ -10,7 +10,8 @@
  */
 
 import Link from "next/link";
-import type { CourseLine, EntiteType, KnownSlugs } from "@/lib/seo/acteurs";
+import { slugActeurConnu, type CourseLine, type EntiteType, type KnownSlugs } from "@/lib/seo/acteurs";
+import { nettoyerNomActeur } from "@/lib/seo/cles-acteurs";
 import { slugify } from "@/lib/seo/slugs";
 
 interface Props {
@@ -25,28 +26,31 @@ interface Props {
 }
 
 /**
- * Cellule "nom d'acteur" : Link si le slug existe en BDD, sinon plain text.
- * Évite les 404 sur des acteurs qui n'auraient pas encore été syncés.
+ * Cellule "nom d'acteur" : Link si la fiche existe en BDD (cherchée par clé,
+ * toute graphie de la source), sinon plain text. Évite les 404 sur des acteurs
+ * qui n'auraient pas encore été syncés. Le nom est affiché sans le poids collé
+ * ni le glyphe d'icône des sources.
  */
 function ActeurCell({
-  nom, slug, type, validSlugs, className = "",
+  nom, type, knownSlugs, className = "",
 }: {
   nom:        string | null;
-  slug:       string;
   type:       EntiteType;
-  validSlugs: Set<string> | undefined;
+  knownSlugs: KnownSlugs | undefined;
   className?: string;
 }) {
-  if (!nom) return <span className="text-text-muted">—</span>;
-  if (!validSlugs || !validSlugs.has(slug)) {
-    return <span className={className}>{nom}</span>;
+  const affiche = nettoyerNomActeur(type, nom);
+  if (!affiche) return <span className="text-text-muted">—</span>;
+  const slug = slugActeurConnu(knownSlugs, type, nom);
+  if (!slug) {
+    return <span className={className}>{affiche}</span>;
   }
   return (
     <Link
       href={`/${type}/${slug}`}
       className={`${className} hover:text-gold-primary transition-colors underline-offset-2 hover:underline`}
     >
-      {nom}
+      {affiche}
     </Link>
   );
 }
@@ -138,9 +142,8 @@ export default function HistoriqueCourses({ type, rows, showJockey, showEntraine
                   <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">
                     <ActeurCell
                       nom={r.nom_cheval}
-                      slug={slugify(r.nom_cheval ?? "")}
                       type="chevaux"
-                      validSlugs={knownSlugs?.chevaux}
+                      knownSlugs={knownSlugs}
                     />
                   </td>
                 )}
@@ -148,9 +151,8 @@ export default function HistoriqueCourses({ type, rows, showJockey, showEntraine
                   <td className="py-2 px-3 text-text-secondary text-xs hidden lg:table-cell">
                     <ActeurCell
                       nom={r.jockey}
-                      slug={slugify(r.jockey ?? "")}
                       type="jockeys"
-                      validSlugs={knownSlugs?.jockeys}
+                      knownSlugs={knownSlugs}
                     />
                   </td>
                 )}
@@ -158,9 +160,8 @@ export default function HistoriqueCourses({ type, rows, showJockey, showEntraine
                   <td className="py-2 px-3 text-text-muted text-xs hidden xl:table-cell">
                     <ActeurCell
                       nom={r.entraineur}
-                      slug={slugify(r.entraineur ?? "")}
                       type="entraineurs"
-                      validSlugs={knownSlugs?.entraineurs}
+                      knownSlugs={knownSlugs}
                     />
                   </td>
                 )}
