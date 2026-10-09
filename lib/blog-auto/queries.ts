@@ -78,6 +78,8 @@ export interface CourseHighlight {
   numero_reunion: number;
   numero_course:  number;
   arrivee:        number[] | null;
+  /** Rangs officiels (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  rangs:          number[] | null;
   type:           "QUINTE_PLUS" | "AUTRE";
 }
 
@@ -219,7 +221,7 @@ export async function getQuintesForPeriod(
     .from("courses")
     .select(`
       id, date_course, libelle, numero_reunion, numero_course,
-      paris_disponibles, arrivee_officielle,
+      paris_disponibles, arrivee_officielle, arrivee_rangs,
       hippodrome:hippodromes(nom)
     `)
     .gte("date_course", fromDate)
@@ -237,6 +239,7 @@ export async function getQuintesForPeriod(
     numero_reunion: c.numero_reunion,
     numero_course:  c.numero_course,
     arrivee:        Array.isArray(c.arrivee_officielle) ? c.arrivee_officielle : null,
+    rangs:          Array.isArray(c.arrivee_rangs) ? c.arrivee_rangs : null,
     type:           "QUINTE_PLUS",
   }));
 }

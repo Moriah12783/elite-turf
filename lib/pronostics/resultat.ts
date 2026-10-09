@@ -91,38 +91,12 @@ export function calculerResultat(
   typePari: string | null | undefined,
   rangs?: number[] | null,
 ): ResultatPronostic {
-  const arr = Array.isArray(arrivee) ? arrivee : [];
+  const d = detailResultat(selection, arrivee, typePari, rangs);
+  const n = d.joues;
+  if (n === 0 || !Array.isArray(arrivee) || arrivee.length === 0) return "PERDANT";
 
-  // Une sélection saisie deux fois ne doit pas gonfler le score : on la réduit
-  // aux chevaux réellement distincts avant tout comptage.
-  const distincts: number[] = [];
-  const vus: Record<number, boolean> = {};
-  const brute = Array.isArray(selection) ? selection : [];
-  for (let i = 0; i < brute.length; i++) {
-    const c = brute[i];
-    if (!vus[c]) { vus[c] = true; distincts.push(c); }
-  }
-
-  const n = distincts.length;
-  if (n === 0 || arr.length === 0) return "PERDANT";
-
-  const topN = fenetreComparaison(typePari, n);
-
-  // Rang par rang : chaque groupe (un cheval, ou plusieurs ex æquo) apporte
-  // ses chevaux joués, dans la limite des places qu'il occupe dans la fenêtre.
-  // Un numéro répété dans une arrivée corrompue ne compte qu'une fois.
-  let trouves = 0;
-  const comptes: Record<number, boolean> = {};
-  const groupes = groupesArrivee(arr, rangs);
-  for (let g = 0; g < groupes.length && groupes[g].rang <= topN; g++) {
-    const places = Math.min(groupes[g].numeros.length, topN - groupes[g].rang + 1);
-    let joues = 0;
-    for (const numero of groupes[g].numeros) {
-      if (vus[numero] && !comptes[numero]) { comptes[numero] = true; joues++; }
-    }
-    trouves += Math.min(places, joues);
-  }
-
+  const topN = d.topN;
+  const trouves = d.trouves;
   const cible = n < topN ? n : topN;
   if (trouves === cible) return "GAGNANT";
 
@@ -139,4 +113,59 @@ export function calculerResultat(
   const seuilPartiel = topN >= 4 ? 3 : 2;
   if (trouves >= seuilPartiel) return "PARTIEL";
   return "PERDANT";
+}
+
+export interface DetailResultat {
+  /** Fenêtre de comparaison (3, 4 ou 5 places). */
+  topN: number;
+  /** Places de la fenêtre couvertes par la sélection : le compte qui décide du résultat. */
+  trouves: number;
+  /** Chevaux joués classés dans la fenêtre, dans l'ordre de la sélection (les deux ex æquo s'ils sont joués). */
+  chevaux: number[];
+  /** Chevaux distincts joués. */
+  joues: number;
+}
+
+/**
+ * Le détail du jugement, pour l'afficher (rapport journalier) : mêmes règles
+ * que `calculerResultat`, qui s'en sert. Rang par rang, chaque groupe (un
+ * cheval, ou plusieurs ex æquo) apporte ses chevaux joués dans la limite des
+ * places qu'il occupe dans la fenêtre.
+ */
+export function detailResultat(
+  selection: number[] | null | undefined,
+  arrivee: number[] | null | undefined,
+  typePari: string | null | undefined,
+  rangs?: number[] | null,
+): DetailResultat {
+  const arr = Array.isArray(arrivee) ? arrivee : [];
+
+  // Une sélection saisie deux fois ne doit pas gonfler le score : on la réduit
+  // aux chevaux réellement distincts avant tout comptage.
+  const distincts: number[] = [];
+  const vus: Record<number, boolean> = {};
+  const brute = Array.isArray(selection) ? selection : [];
+  for (let i = 0; i < brute.length; i++) {
+    const c = brute[i];
+    if (!vus[c]) { vus[c] = true; distincts.push(c); }
+  }
+
+  const topN = fenetreComparaison(typePari, distincts.length);
+
+  // Un numéro répété dans une arrivée corrompue ne compte qu'une fois.
+  let trouves = 0;
+  const comptes: Record<number, boolean> = {};
+  const dansFenetre: Record<number, boolean> = {};
+  const groupes = groupesArrivee(arr, rangs);
+  for (let g = 0; g < groupes.length && groupes[g].rang <= topN; g++) {
+    const places = Math.min(groupes[g].numeros.length, topN - groupes[g].rang + 1);
+    let joues = 0;
+    for (const numero of groupes[g].numeros) {
+      dansFenetre[numero] = true;
+      if (vus[numero] && !comptes[numero]) { comptes[numero] = true; joues++; }
+    }
+    trouves += Math.min(places, joues);
+  }
+
+  return { topN, trouves, chevaux: distincts.filter((c) => dansFenetre[c]), joues: distincts.length };
 }

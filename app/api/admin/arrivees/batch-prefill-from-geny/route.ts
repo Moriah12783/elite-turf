@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
-import { buildGenyUrlFromStored, safeRapport } from "@/lib/geny";
-import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
-import {
-  parseRapportsPMU,
-  parseCommentaire,
-  type RapportsPMU,
-} from "@/lib/sync/geny-rapports-parser";
+import { buildGenyUrlFromStored } from "@/lib/geny";
+import { parseArrivee, maxHorsesForParis, ligneArrivee } from "@/lib/sync/geny-arrivees";
+import { parseCommentaire } from "@/lib/sync/geny-rapports-parser";
 
 /**
  * POST /api/admin/arrivees/batch-prefill-from-geny
@@ -24,9 +20,13 @@ import {
  * Pour chaque course, fait :
  *   1. Fetch HTML Geny
  *   2. parseArrivee avec cap dynamique (7 Quinté+ / 6 autres)
- *   3. parseRapportsPMU + parseCommentaire (best-effort)
+ *   3. parseCommentaire (best-effort)
  *   4. Upsert dans `arrivees` → le trigger SQL trg_sync_arrivee_to_course
  *      sync automatiquement courses.arrivee_officielle + statut=TERMINE
+ *
+ * Aucun rapport n'est lu ni écrit : ceux de Geny étaient faux (audit du
+ * 09/10/2026). Ils viennent du seul PMU (runPmuRapportsSync, synchro horaire),
+ * qui n'écrit que dans un `rapports_pmu` vide — cf. ligneArrivee.
  *
  * Concurrence : pool de 4 workers en parallèle pour ne pas spam Geny.
  *
@@ -90,7 +90,7 @@ async function processInPool<T, R>(
 }
 
 type ParseOutcome =
-  | { ok: true; arrivee: number[]; rapports: RapportsPMU | null; commentaire: string | null }
+  | { ok: true; arrivee: number[]; commentaire: string | null }
   | { ok: false; reason: string };
 
 /**
@@ -165,18 +165,12 @@ async function fetchAndParseOne(course: CourseEligible): Promise<ParseOutcome> {
     return { ok: false, reason: `HTTP 200 mais 0 arrivee parsee (${html.length} o)` };
   }
 
-  let rapports: RapportsPMU | null = null;
-  try {
-    const r = parseRapportsPMU(html);
-    if (r && Object.keys(r).length > 0) rapports = r;
-  } catch { /* defensive */ }
-
   let commentaire: string | null = null;
   try {
     commentaire = parseCommentaire(html);
   } catch { /* defensive */ }
 
-  return { ok: true, arrivee, rapports, commentaire };
+  return { ok: true, arrivee, commentaire };
 }
 
 export async function POST(req: NextRequest) {
@@ -282,7 +276,6 @@ export async function POST(req: NextRequest) {
           reference:   ref,
           status:      "pending" as const,
           arrivee:     parsed.arrivee,
-          rapports:    parsed.rapports,
           commentaire: parsed.commentaire,
         };
       } catch (e) {
@@ -311,15 +304,11 @@ export async function POST(req: NextRequest) {
     }))];
 
     if (toSave.length > 0) {
-      const arriveeRows = toSave.map((r) => ({
-        course_id:       r.course_id,
-        ordre_arrivee:   r.arrivee,
-        rapport_quinte:  safeRapport(r.rapports?.quinte_plus?.ordre),
-        rapport_quarte:  safeRapport(r.rapports?.quarte_plus?.ordre),
-        rapport_tierce:  safeRapport(r.rapports?.tierce?.ordre),
-        rapports_pmu:    r.rapports,
-        commentaire:     r.commentaire?.trim() || null,
-        horodatage:      new Date().toISOString(),
+      // Même ligne que la synchro horaire : sans aucun rapport (cf. ligneArrivee).
+      const arriveeRows = toSave.map((r) => ligneArrivee({
+        courseId:    r.course_id,
+        arrivee:     r.arrivee,
+        commentaire: r.commentaire?.trim() || null,
       }));
 
       // Upsert one-shot. Le trigger SQL trg_sync_arrivee_to_course met à jour

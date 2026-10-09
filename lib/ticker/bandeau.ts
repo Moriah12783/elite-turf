@@ -23,6 +23,8 @@ export interface TickerItem {
   status: "win" | "partial" | "pending";
 }
 
+import { arriveeEnTexte } from "../courses/rangs";
+
 export interface CourseBandeau {
   id: string;
   numero_reunion: number;
@@ -30,6 +32,8 @@ export interface CourseBandeau {
   heure_depart: string | null;
   statut: string | null;
   arrivee_officielle: number[] | null;
+  /** Rangs officiels (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  arrivee_rangs?: number[] | null;
   nb_partants: number | null;
   hippodrome: { nom: string | null } | null;
 }
@@ -86,7 +90,8 @@ export function construireBandeau(opts: {
     const c = arrivees[i];
     items.push({
       label: etiquette(c),
-      result: `🏁 Arrivée : ${(c.arrivee_officielle as number[]).slice(0, 5).join(" - ")}`,
+      // Les 5 premiers RANGS : deux 5es ex æquo sont annoncés tous les deux.
+      result: `🏁 Arrivée : ${arriveeEnTexte(c.arrivee_officielle, c.arrivee_rangs, 5)}`,
       status: "win",
     });
   }

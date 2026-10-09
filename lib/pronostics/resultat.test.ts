@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculerResultat, fenetreComparaison } from "./resultat";
+import { calculerResultat, detailResultat, fenetreComparaison } from "./resultat";
 
 describe("fenetreComparaison", () => {
   // ⚠️ LE BOGUE HISTORIQUE : le code testait `includes("quinté")` — AVEC accent —
@@ -159,5 +159,26 @@ describe("calculerResultat — ex æquo (dead heat), règle de paiement du PMU",
 
   it("des rangs incohérents sont ignorés : on juge sur la position", () => {
     expect(calculerResultat([1, 5, 8, 4, 16], VERSAILLES, "QUINTE_PLUS", [1, 2, 3])).toBe("PARTIEL");
+  });
+});
+
+describe("detailResultat — ce que le rapport journalier affiche", () => {
+  // Prix de Versailles (08/10/2026) : 15 et 16 ex æquo 5es.
+  const VERSAILLES = [1, 5, 8, 4, 15, 16, 10];
+  const RANGS = [1, 2, 3, 4, 5, 5, 7];
+
+  it("pronostic Elite réel : 4 places couvertes, dont le 16 (5e ex æquo)", () => {
+    expect(detailResultat([8, 1, 5, 9, 3, 16, 11, 10], VERSAILLES, "QUINTE_PLUS", RANGS))
+      .toEqual({ topN: 5, trouves: 4, chevaux: [8, 1, 5, 16], joues: 8 });
+  });
+
+  it("sans rangs : la position, comme le jugement historique", () => {
+    expect(detailResultat([8, 1, 5, 9, 3, 16, 11, 10], VERSAILLES, "QUINTE_PLUS"))
+      .toEqual({ topN: 5, trouves: 3, chevaux: [8, 1, 5], joues: 8 });
+  });
+
+  it("les deux ex æquo joués : tous deux trouvés, une seule place comptée", () => {
+    expect(detailResultat([1, 5, 8, 15, 16, 9, 3], VERSAILLES, "QUINTE_PLUS", RANGS))
+      .toEqual({ topN: 5, trouves: 4, chevaux: [1, 5, 8, 15, 16], joues: 7 });
   });
 });

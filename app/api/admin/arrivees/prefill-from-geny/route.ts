@@ -2,20 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import { buildGenyUrlFromStored } from "@/lib/geny";
-import {
-  parseRapportsPMU,
-  parseCommentaire,
-  type RapportsPMU,
-} from "@/lib/sync/geny-rapports-parser";
+import { parseCommentaire } from "@/lib/sync/geny-rapports-parser";
 import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
 
 /**
  * POST /api/admin/arrivees/prefill-from-geny
  *
- * Récupère via Geny.com l'arrivée + les rapports PMU + le commentaire d'une
- * course donnée, et retourne ces données SANS LES SAUVEGARDER. C'est à l'admin
- * de valider/corriger via la UI puis de POST-er sur /api/admin/arrivees pour
- * persister.
+ * Récupère via Geny.com l'arrivée + le commentaire d'une course donnée, et
+ * retourne ces données SANS LES SAUVEGARDER. C'est à l'admin de valider/corriger
+ * via la UI puis de POST-er sur /api/admin/arrivees pour persister.
+ *
+ * Aucun rapport : ceux de Geny étaient faux (audit du 09/10/2026). Les rapports
+ * viennent du seul PMU (runPmuRapportsSync) et sont en lecture seule dans le
+ * formulaire (décision de Steph du 09/10/2026).
  *
  * Workflow :
  *  1. Admin clique "Pré-remplir depuis Geny" sur une course
@@ -25,8 +24,7 @@ import { parseArrivee, maxHorsesForParis } from "@/lib/sync/geny-arrivees";
  *  5. POST /api/admin/arrivees → persistance finale
  *
  * Rationale : on dissocie le "prefetch" du "save" pour permettre la review
- * humaine. Geny rate parfois des rapports (template variant) et l'admin a
- * besoin de pouvoir corriger avant insertion en DB.
+ * humaine : l'admin peut corriger l'arrivée avant insertion en DB.
  */
 
 const FETCH_TIMEOUT_MS = 8000;
@@ -41,7 +39,6 @@ interface PrefillResponse {
   ok:          true;
   source_url:  string;
   arrivee:     number[] | null;
-  rapports:    RapportsPMU | null;
   commentaire: string | null;
 }
 
@@ -198,7 +195,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Parse arrivée + rapports + commentaire (best-effort) ────────────
+    // ── Parse arrivée + commentaire (best-effort) ───────────────────────
     // On passe validNumbers (numéros des partants) au parser pour qu'il
     // filtre TOUT numéro qui n'est pas un partant valide → élimine
     // sidebars, rapports €, IDs et autres faux positifs.
@@ -220,14 +217,6 @@ export async function POST(req: NextRequest) {
       console.warn("[prefill-from-geny] parseArrivee failed:", err);
     }
 
-    let rapports: RapportsPMU | null = null;
-    try {
-      const r = parseRapportsPMU(html);
-      if (r && Object.keys(r).length > 0) rapports = r;
-    } catch (err) {
-      console.warn("[prefill-from-geny] parseRapportsPMU failed:", err);
-    }
-
     let commentaire: string | null = null;
     try {
       commentaire = parseCommentaire(html);
@@ -239,7 +228,6 @@ export async function POST(req: NextRequest) {
       ok:          true,
       source_url:  url,
       arrivee,
-      rapports,
       commentaire,
     };
     return NextResponse.json(payload);
