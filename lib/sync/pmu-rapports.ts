@@ -329,23 +329,41 @@ export async function fetchRapportsDefinitifs(
   /** « points_de_vente » : les prix des points de vente, ceux que donnait Geny. */
   source: SourceRapports = "internet",
 ): Promise<unknown | null> {
+  return (await fetchRapportsDefinitifsAvecStatut(dateISO, R, C, timeoutMs, source)).json;
+}
+
+/**
+ * Comme fetchRapportsDefinitifs, en disant pourquoi il n'y a rien : `absent`
+ * quand le PMU répond 204 — aucun rapport pour cette masse d'enjeux (course
+ * régionale jouée en points de vente seulement). Sinon : panne, ou course pas
+ * encore officialisée.
+ */
+export async function fetchRapportsDefinitifsAvecStatut(
+  dateISO: string,
+  R: number,
+  C: number,
+  timeoutMs = 15000,
+  source: SourceRapports = "internet",
+): Promise<{ json: unknown | null; absent: boolean }> {
   const specialisation = source === "internet" ? "INTERNET" : "OFFLINE";
   const chemin = `/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}/rapports-definitifs?specialisation=${specialisation}`;
+  let absent = false;
   for (const base of [PMU_PROXY, PMU_DIRECT]) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
       const res = await fetch(base + chemin, { headers: PMU_HEADERS, cache: "no-store", signal: ctrl.signal });
       clearTimeout(timer);
+      if (res.status === 204) { absent = true; continue; }
       if (!res.ok) continue;
       const json = await res.json();
-      if (Array.isArray(json) && json.length > 0) return json;
+      if (Array.isArray(json) && json.length > 0) return { json, absent: false };
     } catch {
       clearTimeout(timer);
       /* base suivante */
     }
   }
-  return null;
+  return { json: null, absent };
 }
 
 // ── Synchro : écrit les rapports manquants dans `arrivees.rapports_pmu` ─────

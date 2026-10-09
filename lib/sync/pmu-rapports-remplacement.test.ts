@@ -76,6 +76,11 @@ describe("deciderLigne — ère Geny (jusqu'au " + FIN_RAPPORTS_GENY + ")", () =
     expect(deciderLigne({ date: GENY, existant: fantome, resolution: trouvee, frais: null, doublon: false }).action).toBe("vider");
   });
 
+  it("le PMU ne publie aucun rapport internet (HTTP 204 : course régionale en points de vente seulement) → vidé", () => {
+    expect(deciderLigne({ date: GENY, existant: fantome, resolution: trouvee, frais: "absent", doublon: false }))
+      .toEqual({ action: "vider", motif: "le PMU ne publie aucun rapport internet pour cette course" });
+  });
+
   it("réseau : programme ou rapports PMU indisponibles → réessayer, jamais vider", () => {
     expect(deciderLigne({ date: GENY, existant: fantome, resolution: { etat: "pmu_indisponible" }, frais: null, doublon: false }).action).toBe("reessayer");
     expect(deciderLigne({ date: GENY, existant: fantome, resolution: trouvee, frais: "indisponible", doublon: false }).action).toBe("reessayer");
@@ -100,5 +105,6 @@ describe("deciderLigne — ère PMU (après le " + FIN_RAPPORTS_GENY + ")", () =
   it("invérifiable → laissé tel quel (ces rapports viennent déjà du PMU)", () => {
     expect(deciderLigne({ date: PMU_ERE, existant: sansCombinaisons, resolution: { etat: "introuvable" }, frais: null, doublon: false }).action).toBe("laisser");
     expect(deciderLigne({ date: PMU_ERE, existant: sansCombinaisons, resolution: trouvee, frais: officiel, doublon: true }).action).toBe("laisser");
+    expect(deciderLigne({ date: PMU_ERE, existant: sansCombinaisons, resolution: trouvee, frais: "absent", doublon: false }).action).toBe("laisser");
   });
 });

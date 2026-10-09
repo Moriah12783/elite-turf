@@ -19,7 +19,7 @@
  */
 import type { RapportsPMU } from "./geny-rapports-parser";
 import { concordeAvecPmu, fetchPmuArriveesDuJour, type ArriveeRangee } from "./pmu-arrivees";
-import { fetchRapportsDefinitifs, parseRapportsDefinitifs } from "./pmu-rapports";
+import { fetchRapportsDefinitifsAvecStatut, parseRapportsDefinitifs } from "./pmu-rapports";
 
 /** Dernière date de course aux rapports Geny (dernière écriture Geny : 28/07/2026). */
 export const FIN_RAPPORTS_GENY = "2026-07-27";
@@ -93,14 +93,15 @@ function montants(r: RapportsPMU): RapportsPMU {
 
 /**
  * PUR : que faire d'une ligne ? `frais` = rapports PMU convertis (null : rien
- * d'exploitable ; « indisponible » : l'API n'a pas répondu). Réseau en panne
- * → réessayer, jamais vider.
+ * d'exploitable ; « absent » : le PMU répond qu'il n'a aucun rapport internet,
+ * HTTP 204 — course régionale en points de vente seulement ; « indisponible » :
+ * l'API n'a pas répondu). Réseau en panne → réessayer, jamais vider.
  */
 export function deciderLigne(l: {
   date: string;
   existant: RapportsPMU;
   resolution: Resolution;
-  frais: RapportsPMU | null | "indisponible";
+  frais: RapportsPMU | null | "absent" | "indisponible";
   doublon: boolean;
 }): Action {
   const geny = l.date <= FIN_RAPPORTS_GENY;
@@ -109,6 +110,7 @@ export function deciderLigne(l: {
   if (l.resolution.etat === "introuvable") return inverifiable("aucune course PMU du jour n'a cette arrivée");
   if (l.resolution.etat === "ambigue") return inverifiable("plusieurs courses PMU ont cette arrivée");
   if (l.doublon) return inverifiable("deux courses en base pour une seule course PMU");
+  if (l.frais === "absent") return inverifiable("le PMU ne publie aucun rapport internet pour cette course");
   if (l.frais === "indisponible") return { action: "reessayer", motif: "rapports PMU indisponibles" };
   if (l.frais === null) return inverifiable("rapports PMU sans montant exploitable");
   // Ère PMU : la clé `combinaisons` (PR #388) manque aux lignes plus anciennes,
@@ -192,12 +194,12 @@ export async function runRemplacementRapports(opts: { ecrire?: boolean; depuis?:
   });
   const enDouble = doublons(resolues);
 
-  const frais: Record<string, RapportsPMU | null | "indisponible"> = {};
+  const frais: Record<string, RapportsPMU | null | "absent" | "indisponible"> = {};
   const aRecuperer = resolues.filter((x) => x.resolution.etat === "trouvee" && !enDouble.has(x.id));
   await enParallele(aRecuperer, 4, async (x) => {
     const r = x.resolution as { R: number; C: number };
-    const brut = await fetchRapportsDefinitifs(x.date, r.R, r.C);
-    frais[x.id] = brut ? parseRapportsDefinitifs(brut, x.c.arrivee_officielle || []) : "indisponible";
+    const { json, absent } = await fetchRapportsDefinitifsAvecStatut(x.date, r.R, r.C);
+    frais[x.id] = json ? parseRapportsDefinitifs(json, x.c.arrivee_officielle || []) : absent ? "absent" : "indisponible";
   });
 
   const plan: LignePlan[] = resolues.map((x) => {
