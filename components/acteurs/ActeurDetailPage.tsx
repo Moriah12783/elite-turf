@@ -364,7 +364,7 @@ export default async function ActeurDetailPage({ type, entite, rows, stats, hero
         )}
 
         {/* ── Partenaires fréquents (jockeys pour cheval, chevaux pour jockey/entr.) ── */}
-        <PartenairesFrequents type={type} partenaires={stats.partenaires_freq} />
+        <PartenairesFrequents type={type} partenaires={stats.partenaires_freq} knownSlugs={knownSlugs} />
 
         {/* ── Historique détaillé ─────────────────────────────────── */}
         <section>

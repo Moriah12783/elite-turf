@@ -33,6 +33,8 @@ const KNOWN_CRONS: Array<{
   { cronName: "rappel-expiration",    label: "Rappels expiration",      schedule: "10h Paris" },
   { cronName: "source-evidence-collector", label: "Preuves Afrique (collecte)", schedule: "≈8h15 Paris" },
   { cronName: "ia-pronostics-v2",          label: "Génération pronostics IA",   schedule: "≈8h45 Paris" },
+  // Fiches + stats historiques (IA, page course). scripts/seo-etl-cli.ts écrit dans cron_logs.
+  { cronName: "seo-etl",              label: "Fiches chevaux / jockeys / entraîneurs", schedule: "3h45 UTC", githubWorkflow: "seo-etl.yml" },
 ];
 
 export interface CronJobStatus {

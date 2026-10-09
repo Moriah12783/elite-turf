@@ -2,9 +2,11 @@
  * Helpers shared par /chevaux/[slug], /jockeys/[slug], /entraineurs/[slug].
  *
  * Stratégie de query :
- *   - Charger l'entité depuis sa table de référence (1 row par slug)
- *   - JOIN partants WHERE nom_cheval/jockey/entraineur = entité.nom
- *     Triplet (course → date, hippodrome, arrivee_officielle) en 1 query.
+ *   - Charger l'entité depuis sa table de référence (1 row par slug) ; un
+ *     ancien slug de fiche fusionnée redirige (308) vers la fiche actuelle.
+ *   - JOIN partants WHERE cheval_cle/jockey_cle/entraineur_cle = entité.cle
+ *     (toutes graphies des sources confondues, cf. lib/seo/cles-acteurs.ts),
+ *     une course saisie par deux sources n'apparaissant qu'une fois.
  *   - Calculer dernières courses + stats avancées (taux victoire, ROI, etc.)
  *
  * Phase 1 (mai 2026) — refonte fiches acteurs premium :
@@ -14,9 +16,12 @@
  *     gains, robe, etc.) → quand les colonnes seront peuplées, le UI suit.
  */
 
+import { permanentRedirect } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/seo/slugs";
 import { resultatPartant } from "@/lib/courses/arrivee";
+import { cleActeur, cleCheval, choisirGraphie } from "@/lib/seo/cles-acteurs";
+import { dedoublonnerApparitions } from "@/lib/seo/apparitions";
 
 export type EntiteType = "chevaux" | "jockeys" | "entraineurs";
 
@@ -24,6 +29,13 @@ export const COL_MAP: Record<EntiteType, "nom_cheval" | "jockey" | "entraineur">
   chevaux:     "nom_cheval",
   jockeys:     "jockey",
   entraineurs: "entraineur",
+};
+
+/** Clés de `partants`, tenues par un déclencheur (migration 20261009_cles_acteurs). */
+export const CLE_COL: Record<EntiteType, "cheval_cle" | "jockey_cle" | "entraineur_cle"> = {
+  chevaux:     "cheval_cle",
+  jockeys:     "jockey_cle",
+  entraineurs: "entraineur_cle",
 };
 
 export const ENTITE_LABEL: Record<EntiteType, { singular: string; plural: string }> = {
@@ -43,6 +55,8 @@ export interface Entite {
   id:        string;
   nom:       string;
   slug:      string;
+  /** Clé d'identité (lib/seo/cles-acteurs.ts), remplie par l'ETL ; null avant son passage. */
+  cle?:      string | null;
   nb_courses:         number | null;
   nb_victoires:       number | null;
   nb_places:          number | null;
@@ -133,8 +147,8 @@ export async function getEntiteBySlug(
 ): Promise<Entite | null> {
   const supabase = createServiceClient();
   const cols = type === "chevaux"
-    ? "id, nom, slug, nb_courses, nb_victoires, nb_places, derniere_course_at, age, sexe"
-    : "id, nom, slug, nb_courses, nb_victoires, nb_places, derniere_course_at";
+    ? "id, nom, slug, cle, nb_courses, nb_victoires, nb_places, derniere_course_at, age, sexe"
+    : "id, nom, slug, cle, nb_courses, nb_victoires, nb_places, derniere_course_at";
   const { data } = await supabase
     .from(type)
     .select(cols)
@@ -144,35 +158,83 @@ export async function getEntiteBySlug(
 }
 
 /**
+ * Slug actuel de la fiche qui a remplacé `slug` (fiche fusionnée par l'ETL :
+ * « c-demuro-56-5 » → « c-demuro »), ou null.
+ */
+export async function getSlugCanonique(type: EntiteType, slug: string): Promise<string | null> {
+  const supabase = createServiceClient();
+  const { data: alias } = await supabase
+    .from("acteurs_alias")
+    .select("cle")
+    .eq("type", type)
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!alias?.cle) return null;
+  const { data } = await supabase.from(type).select("slug").eq("cle", alias.cle).maybeSingle();
+  return (data?.slug as string | undefined) ?? null;
+}
+
+/**
+ * Entité de la page /<type>/<slug>. Un ancien slug de fiche fusionnée
+ * redirige de façon permanente (308) vers la fiche actuelle ; null = 404.
+ */
+export async function getEntiteOuRediriger(type: EntiteType, slug: string): Promise<Entite | null> {
+  const e = await getEntiteBySlug(type, slug);
+  if (e) return e;
+  const canon = await getSlugCanonique(type, slug);
+  if (canon && canon !== slug) permanentRedirect(`/${type}/${canon}`);
+  return null;
+}
+
+/**
  * Charge l'historique des courses (dernières N) pour une entité.
  * Pourquoi on stocke en référentiel + on requête partants : pas de FK
- * (pmu-sync inserts en bulk avec juste nom). Index sur partants.{col} rend
- * ce lookup ~1ms même sur 12k rows.
+ * (les syncs insèrent en bulk avec juste le nom). On cherche par CLÉ
+ * (colonnes indexées partants.*_cle, tenues par un déclencheur) : toutes les graphies des
+ * sources, et l'historique complet avant tri — le plus gros jockey compte
+ * ~1 100 lignes (l'ancien plafond de 500 lignes non triées faussait la
+ * sélection des « dernières » courses).
  */
 export async function getCoursesForEntite(
   type: EntiteType,
-  nom: string,
+  entite: Pick<Entite, "nom" | "cle">,
   limit = 50,
 ): Promise<CourseLine[]> {
-  const col = COL_MAP[type];
+  const cle = entite.cle || cleActeur(type, entite.nom);
+  if (!cle) return [];
   const supabase = createServiceClient();
 
-  // Note : Supabase JS ne supporte pas proprement order sur foreign table
-  // imbriquée avec .order("course(date_course)"). On récupère sans tri (cap 500
-  // pour conserver la diversité), puis tri en mémoire ci-dessous.
-  const { data } = await supabase
-    .from("partants")
-    .select(`
-      numero, cote, jockey, entraineur, nom_cheval,
-      course:courses!inner(
-        id, date_course, statut, numero_reunion, numero_course, libelle, arrivee_officielle, arrivee_rangs,
-        hippodrome:hippodromes(nom)
-      )
-    `)
-    .eq(col, nom)
-    .limit(500);
+  const PAGE = 1000;
+  const data: any[] = [];
+  for (let from = 0; from < 10 * PAGE; from += PAGE) {
+    const { data: page } = await supabase
+      .from("partants")
+      .select(`
+        numero, cote, jockey, entraineur, nom_cheval,
+        course:courses!inner(
+          id, date_course, statut, numero_reunion, numero_course, libelle, arrivee_officielle, arrivee_rangs, updated_at,
+          hippodrome:hippodromes(nom)
+        )
+      `)
+      .eq(CLE_COL[type], cle)
+      .order("id")
+      .range(from, from + PAGE - 1);
+    data.push(...(page ?? []));
+    if (!page || page.length < PAGE) break;
+  }
 
-  const lines = (data ?? []).map((row: any) => {
+  // Une course saisie par deux sources (« Casablanca » / « Anfa ») : une seule ligne.
+  const uniques = dedoublonnerApparitions(data, (row: any) => ({
+    course_id:   row.course?.id,
+    numero:      row.numero,
+    date_course: row.course?.date_course,
+    cheval_cle:  cleCheval(row.nom_cheval),
+    termine:     row.course?.statut === "TERMINE",
+    a_arrivee:   Array.isArray(row.course?.arrivee_officielle) && row.course.arrivee_officielle.length > 0,
+    maj:         row.course?.updated_at ?? null,
+  }));
+
+  const lines = uniques.map((row: any) => {
     const c = row.course;
     const hippo = Array.isArray(c?.hippodrome) ? c.hippodrome[0] : c?.hippodrome;
     // Rang officiel (ex æquo compris) : le 16, 5e ex æquo, n'est plus « 6e ».
@@ -211,48 +273,63 @@ export async function getCoursesForEntite(
  *
  * Stratégie : 4 queries `in()` parallèles, batchées par Promise.all. Sur 50
  * rows d'historique avec ~50 noms uniques de chaque type, ~50ms total.
+ * Acteurs cherchés par CLÉ : « M.BARZALONA » mène à la fiche « m-barzalona »,
+ * « Pc.Boudot » à « p-c-boudot ».
  */
 export interface KnownSlugs {
-  chevaux:     Set<string>;
-  jockeys:     Set<string>;
-  entraineurs: Set<string>;
+  /** clé d'identité → slug de la fiche */
+  chevaux:     Map<string, string>;
+  jockeys:     Map<string, string>;
+  entraineurs: Map<string, string>;
   hippodromes: Set<string>;
+}
+
+/** Slug de la fiche existante de l'acteur `nom` (toute graphie), sinon null. */
+export function slugActeurConnu(
+  known: KnownSlugs | undefined,
+  type: EntiteType,
+  nom: string | null | undefined,
+): string | null {
+  if (!known || !nom) return null;
+  return known[type].get(cleActeur(type, nom)) ?? null;
+}
+
+/** clé → slug des fiches existantes parmi `cles` (requêtes `in` par lots). */
+export async function slugsParCle(
+  supabase: ReturnType<typeof createServiceClient>,
+  type: EntiteType,
+  cles: Iterable<string>,
+): Promise<Map<string, string>> {
+  const liste = Array.from(new Set(Array.from(cles).filter(Boolean)));
+  const out = new Map<string, string>();
+  for (let i = 0; i < liste.length; i += 150) {
+    const { data } = await supabase.from(type).select("cle, slug").in("cle", liste.slice(i, i + 150));
+    for (const r of (data ?? []) as Array<{ cle: string | null; slug: string }>) {
+      if (r.cle && r.slug) out.set(r.cle, r.slug);
+    }
+  }
+  return out;
 }
 
 export async function getKnownSlugsForRows(rows: CourseLine[]): Promise<KnownSlugs> {
   const supabase = createServiceClient();
 
-  const chevauxNames     = new Set<string>();
-  const jockeysNames     = new Set<string>();
-  const entraineursNames = new Set<string>();
   const hippodromesNames = new Set<string>();
+  for (const r of rows) if (r.hippodrome_nom) hippodromesNames.add(r.hippodrome_nom);
 
-  for (const r of rows) {
-    if (r.nom_cheval)     chevauxNames.add(r.nom_cheval);
-    if (r.jockey)         jockeysNames.add(r.jockey);
-    if (r.entraineur)     entraineursNames.add(r.entraineur);
-    if (r.hippodrome_nom) hippodromesNames.add(r.hippodrome_nom);
-  }
-
-  const [chev, jock, entr, hipp] = await Promise.all([
-    chevauxNames.size > 0
-      ? supabase.from("chevaux").select("slug").in("nom", Array.from(chevauxNames))
-      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
-    jockeysNames.size > 0
-      ? supabase.from("jockeys").select("slug").in("nom", Array.from(jockeysNames))
-      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
-    entraineursNames.size > 0
-      ? supabase.from("entraineurs").select("slug").in("nom", Array.from(entraineursNames))
-      : Promise.resolve({ data: [] as Array<{ slug: string }> }),
+  const [chevaux, jockeys, entraineurs, hipp] = await Promise.all([
+    slugsParCle(supabase, "chevaux",     rows.map((r) => cleActeur("chevaux", r.nom_cheval))),
+    slugsParCle(supabase, "jockeys",     rows.map((r) => cleActeur("jockeys", r.jockey))),
+    slugsParCle(supabase, "entraineurs", rows.map((r) => cleActeur("entraineurs", r.entraineur))),
     hippodromesNames.size > 0
       ? supabase.from("hippodromes").select("nom").in("nom", Array.from(hippodromesNames))
       : Promise.resolve({ data: [] as Array<{ nom: string }> }),
   ]);
 
   return {
-    chevaux:     new Set((chev.data ?? []).map((r: any) => r.slug).filter(Boolean)),
-    jockeys:     new Set((jock.data ?? []).map((r: any) => r.slug).filter(Boolean)),
-    entraineurs: new Set((entr.data ?? []).map((r: any) => r.slug).filter(Boolean)),
+    chevaux,
+    jockeys,
+    entraineurs,
     // Hippodromes : pas de colonne `slug` en BDD, on slugifie le nom
     hippodromes: new Set((hipp.data ?? []).map((r: any) => slugify(r.nom)).filter(Boolean)),
   };
@@ -340,14 +417,23 @@ export function computeRichStats(
   const hippodromes_freq = Array.from(hippoMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   // ── Top partenaires (jockeys pour cheval, chevaux pour jockey/entraîneur) ──
-  const partMap = new Map<string, number>();
+  // Regroupés par clé : « M. Barzalona » et « M.BARZALONA » font un seul partenaire.
+  const typePartenaire: EntiteType = type === "chevaux" ? "jockeys" : "chevaux";
+  const partMap = new Map<string, { n: number; graphies: Map<string, number> }>();
   for (const r of rows) {
-    let key: string | null = null;
-    if (type === "chevaux") key = r.jockey;
-    else key = r.nom_cheval;
-    if (key) partMap.set(key, (partMap.get(key) ?? 0) + 1);
+    const nom = type === "chevaux" ? r.jockey : r.nom_cheval;
+    const cle = cleActeur(typePartenaire, nom);
+    if (!nom || !cle) continue;
+    const p = partMap.get(cle) ?? { n: 0, graphies: new Map<string, number>() };
+    p.n += 1;
+    p.graphies.set(nom, (p.graphies.get(nom) ?? 0) + 1);
+    partMap.set(cle, p);
   }
-  const partenaires_freq = Array.from(partMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const partenaires_freq = Array.from(partMap.values())
+    .map((p): [string, number] => [choisirGraphie(typePartenaire, p.graphies.entries()), p.n])
+    .filter(([nom]) => nom !== "")
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
 
   // ── Forme récente : 10 dernières positions (rows déjà triées DESC) ──
   const forme_recente = rows.slice(0, 10).map((r) => r.arrivee);

@@ -4,23 +4,27 @@
  *   - Pour un jockey ou entraîneur : chevaux les plus montés/entraînés
  *
  * Affichage en pills compactes, scrollable horizontalement sur mobile.
- * SEO : ce sont des liens internes vers d'autres fiches du même type
- * (mailage interne, distribution PageRank).
+ * SEO : ce sont des liens internes vers d'autres fiches (maillage interne,
+ * distribution PageRank) — seulement vers une fiche qui existe (cherchée par
+ * clé), sinon pastille sans lien.
  */
 
 import Link from "next/link";
 import { Users } from "lucide-react";
-import type { EntiteType } from "@/lib/seo/acteurs";
-import { slugify } from "@/lib/seo/slugs";
+import { slugActeurConnu, type EntiteType, type KnownSlugs } from "@/lib/seo/acteurs";
 
 interface Props {
   /** Type de l'entité courante (détermine vers où on link). */
   type:        EntiteType;
   /** [(nom, nb_courses_ensemble), ...] trié desc. */
   partenaires: Array<[string, number]>;
+  /** Fiches existantes (getKnownSlugsForRows) ; absent → pastilles sans lien. */
+  knownSlugs?: KnownSlugs;
 }
 
-export default function PartenairesFrequents({ type, partenaires }: Props) {
+const PASTILLE = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-elevated border border-border";
+
+export default function PartenairesFrequents({ type, partenaires, knownSlugs }: Props) {
   if (partenaires.length === 0) return null;
 
   // Cible des liens : pour un cheval, on link vers les jockeys.
@@ -45,13 +49,9 @@ export default function PartenairesFrequents({ type, partenaires }: Props) {
 
       <div className="flex flex-wrap gap-2">
         {partenaires.map(([nom, count]) => {
-          const slug = slugify(nom);
-          return (
-            <Link
-              key={nom}
-              href={`/${targetType}/${slug}`}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-elevated hover:bg-bg-hover border border-border hover:border-gold-primary/40 transition-colors group"
-            >
+          const slug = slugActeurConnu(knownSlugs, targetType, nom);
+          const contenu = (
+            <>
               <span className="text-text-primary group-hover:text-gold-light text-xs font-medium">
                 {nom}
               </span>
@@ -59,6 +59,16 @@ export default function PartenairesFrequents({ type, partenaires }: Props) {
               <span className="text-gold-primary font-mono font-bold text-xs">
                 {count}
               </span>
+            </>
+          );
+          if (!slug) return <span key={nom} className={PASTILLE}>{contenu}</span>;
+          return (
+            <Link
+              key={nom}
+              href={`/${targetType}/${slug}`}
+              className={`${PASTILLE} hover:bg-bg-hover hover:border-gold-primary/40 transition-colors group`}
+            >
+              {contenu}
             </Link>
           );
         })}

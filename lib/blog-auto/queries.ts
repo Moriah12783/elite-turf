@@ -8,6 +8,52 @@
 
 import { createServiceClient } from "@/lib/supabase/server";
 import { resultatPartant } from "@/lib/courses/arrivee";
+import { slugsParCle, type EntiteType } from "@/lib/seo/acteurs";
+import { cleActeur, cleCheval, choisirGraphie } from "@/lib/seo/cles-acteurs";
+import { dedoublonnerApparitions } from "@/lib/seo/apparitions";
+
+/**
+ * Regroupe des apparitions par acteur — par CLÉ, toutes graphies des sources
+ * confondues (« M.BARZALONA » = « M. Barzalona ») — avec la graphie affichée
+ * de la fiche. Les acteurs sans fiche sont écartés (pas de lien mort).
+ */
+async function agregerParActeur(
+  supabase: ReturnType<typeof createServiceClient>,
+  type: EntiteType,
+  lignes: Array<{ nom: string | null | undefined; gagne: boolean }>,
+): Promise<Array<{ nom: string; slug: string; courses: number; victoires: number }>> {
+  const parCle = new Map<string, { graphies: Map<string, number>; courses: number; victoires: number }>();
+  for (const l of lignes) {
+    const nom = l.nom?.trim();
+    const cle = cleActeur(type, nom);
+    if (!nom || !cle) continue;
+    const a = parCle.get(cle) ?? { graphies: new Map<string, number>(), courses: 0, victoires: 0 };
+    a.graphies.set(nom, (a.graphies.get(nom) ?? 0) + 1);
+    a.courses += 1;
+    if (l.gagne) a.victoires += 1;
+    parCle.set(cle, a);
+  }
+  const slugs = await slugsParCle(supabase, type, parCle.keys());
+  const out: Array<{ nom: string; slug: string; courses: number; victoires: number }> = [];
+  for (const [cle, a] of Array.from(parCle.entries())) {
+    const slug = slugs.get(cle);
+    if (slug) out.push({ nom: choisirGraphie(type, a.graphies.entries()), slug, courses: a.courses, victoires: a.victoires });
+  }
+  return out;
+}
+
+/** Une course saisie par deux sources ne compte qu'une fois (lib/seo/apparitions.ts). */
+function uniquesParCourse(rows: any[]): any[] {
+  return dedoublonnerApparitions(rows, (r: any) => ({
+    course_id:   r.course?.id,
+    numero:      r.numero,
+    date_course: r.course?.date_course,
+    cheval_cle:  cleCheval(r.nom_cheval),
+    termine:     r.course?.statut === "TERMINE",
+    a_arrivee:   Array.isArray(r.course?.arrivee_officielle) && r.course.arrivee_officielle.length > 0,
+    maj:         r.course?.updated_at ?? null,
+  }));
+}
 
 export interface TopJockey {
   nom:           string;
@@ -112,8 +158,8 @@ export async function getTopJockeysForPeriod(
   const { data } = await supabase
     .from("partants")
     .select(`
-      jockey, numero,
-      course:courses!inner(date_course, statut, arrivee_officielle, arrivee_rangs)
+      jockey, nom_cheval, numero,
+      course:courses!inner(id, date_course, statut, arrivee_officielle, arrivee_rangs, updated_at)
     `)
     .not("jockey", "is", null)
     .gte("course.date_course", fromDate)
@@ -121,39 +167,14 @@ export async function getTopJockeysForPeriod(
     .eq("course.statut", "TERMINE")
     .limit(2000);
 
-  // Agréger
-  const stats = new Map<string, { courses: number; victoires: number }>();
-  for (const row of (data ?? []) as any[]) {
-    const nom = (row.jockey as string).trim();
-    if (!nom) continue;
+  const jockeys = await agregerParActeur(supabase, "jockeys", uniquesParCourse(data ?? []).map((row: any) => ({
+    nom:   row.jockey,
     // Rang officiel : en dead heat, les deux vainqueurs gagnent.
-    const won = resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true;
-    const cur = stats.get(nom) ?? { courses: 0, victoires: 0 };
-    cur.courses += 1;
-    if (won) cur.victoires += 1;
-    stats.set(nom, cur);
-  }
+    gagne: resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true,
+  })));
 
-  // Slugify on-the-fly via la table jockeys (1 lookup)
-  const noms = Array.from(stats.keys());
-  const slugMap = new Map<string, string>();
-  if (noms.length > 0) {
-    const { data: jockeys } = await supabase
-      .from("jockeys")
-      .select("nom, slug")
-      .in("nom", noms);
-    for (const j of (jockeys ?? [])) slugMap.set(j.nom, j.slug);
-  }
-
-  return Array.from(stats.entries())
-    .map(([nom, s]) => ({
-      nom,
-      slug:      slugMap.get(nom) ?? "",
-      victoires: s.victoires,
-      courses:   s.courses,
-      taux:      s.courses > 0 ? (s.victoires / s.courses) * 100 : 0,
-    }))
-    .filter((j) => j.slug !== "")
+  return jockeys
+    .map((j) => ({ ...j, taux: j.courses > 0 ? (j.victoires / j.courses) * 100 : 0 }))
     .sort((a, b) => b.victoires - a.victoires || b.courses - a.courses)
     .slice(0, limit);
 }
@@ -169,7 +190,7 @@ export async function getTopChevauxForPeriod(
     .from("partants")
     .select(`
       nom_cheval, numero,
-      course:courses!inner(date_course, statut, arrivee_officielle, arrivee_rangs)
+      course:courses!inner(id, date_course, statut, arrivee_officielle, arrivee_rangs, updated_at)
     `)
     .not("nom_cheval", "is", null)
     .gte("course.date_course", fromDate)
@@ -177,36 +198,14 @@ export async function getTopChevauxForPeriod(
     .eq("course.statut", "TERMINE")
     .limit(2000);
 
-  const stats = new Map<string, { courses: number; victoires: number }>();
-  for (const row of (data ?? []) as any[]) {
-    const nom = (row.nom_cheval as string).trim();
-    if (!nom) continue;
+  const chevaux = await agregerParActeur(supabase, "chevaux", uniquesParCourse(data ?? []).map((row: any) => ({
+    nom:   row.nom_cheval,
     // Rang officiel : en dead heat, les deux vainqueurs gagnent.
-    const won = resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true;
-    const cur = stats.get(nom) ?? { courses: 0, victoires: 0 };
-    cur.courses += 1;
-    if (won) cur.victoires += 1;
-    stats.set(nom, cur);
-  }
+    gagne: resultatPartant(row.numero, row.course?.arrivee_officielle, row.course?.arrivee_rangs)?.victoire === true,
+  })));
 
-  const noms = Array.from(stats.keys());
-  const slugMap = new Map<string, string>();
-  if (noms.length > 0) {
-    const { data: chevaux } = await supabase
-      .from("chevaux")
-      .select("nom, slug")
-      .in("nom", noms);
-    for (const c of (chevaux ?? [])) slugMap.set(c.nom, c.slug);
-  }
-
-  return Array.from(stats.entries())
-    .map(([nom, s]) => ({
-      nom,
-      slug:      slugMap.get(nom) ?? "",
-      victoires: s.victoires,
-      courses:   s.courses,
-    }))
-    .filter((c) => c.slug !== "" && c.victoires > 0)
+  return chevaux
+    .filter((c) => c.victoires > 0)
     .sort((a, b) => b.victoires - a.victoires)
     .slice(0, limit);
 }
@@ -309,60 +308,17 @@ export async function getHippodromeStats(slug: string): Promise<HippodromeStats 
       if (Array.isArray(c.arrivee_officielle)) arriveeMap.set(c.id, { arrivee: c.arrivee_officielle, rangs: c.arrivee_rangs ?? null });
     }
 
-    const jockeyStats = new Map<string, { courses: number; victoires: number }>();
-    const chevalStats = new Map<string, { courses: number; victoires: number }>();
-    for (const p of (partants ?? []) as any[]) {
+    const lignes = ((partants ?? []) as any[]).map((p) => {
       const a = arriveeMap.get(p.course_id);
       // Rang officiel : en dead heat, les deux vainqueurs gagnent.
-      const won = !!a && resultatPartant(p.numero, a.arrivee, a.rangs)?.victoire === true;
-
-      if (p.jockey) {
-        const nom = p.jockey.trim();
-        const cur = jockeyStats.get(nom) ?? { courses: 0, victoires: 0 };
-        cur.courses += 1;
-        if (won) cur.victoires += 1;
-        jockeyStats.set(nom, cur);
-      }
-      if (p.nom_cheval) {
-        const nom = p.nom_cheval.trim();
-        const cur = chevalStats.get(nom) ?? { courses: 0, victoires: 0 };
-        cur.courses += 1;
-        if (won) cur.victoires += 1;
-        chevalStats.set(nom, cur);
-      }
-    }
-
-    // Récupérer slugs
-    const jockeyNames = Array.from(jockeyStats.keys());
-    const chevalNames = Array.from(chevalStats.keys());
-    const [{ data: jocks }, { data: chevs }] = await Promise.all([
-      jockeyNames.length > 0
-        ? supabase.from("jockeys").select("nom, slug").in("nom", jockeyNames)
-        : Promise.resolve({ data: [] as any[] }),
-      chevalNames.length > 0
-        ? supabase.from("chevaux").select("nom, slug").in("nom", chevalNames)
-        : Promise.resolve({ data: [] as any[] }),
+      return { jockey: p.jockey, nom_cheval: p.nom_cheval, gagne: !!a && resultatPartant(p.numero, a.arrivee, a.rangs)?.victoire === true };
+    });
+    const [jockeys, chevaux] = await Promise.all([
+      agregerParActeur(supabase, "jockeys", lignes.map((l) => ({ nom: l.jockey, gagne: l.gagne }))),
+      agregerParActeur(supabase, "chevaux", lignes.map((l) => ({ nom: l.nom_cheval, gagne: l.gagne }))),
     ]);
-    const jockSlugMap = new Map((jocks ?? []).map((j: any) => [j.nom, j.slug]));
-    const chevSlugMap = new Map((chevs ?? []).map((c: any) => [c.nom, c.slug]));
-
-    topJockeys = Array.from(jockeyStats.entries())
-      .map(([nom, s]) => ({
-        nom, slug: jockSlugMap.get(nom) ?? "",
-        victoires: s.victoires, courses: s.courses,
-      }))
-      .filter((j) => j.slug !== "")
-      .sort((a, b) => b.courses - a.courses)
-      .slice(0, 6);
-
-    topChevaux = Array.from(chevalStats.entries())
-      .map(([nom, s]) => ({
-        nom, slug: chevSlugMap.get(nom) ?? "",
-        victoires: s.victoires, courses: s.courses,
-      }))
-      .filter((c) => c.slug !== "")
-      .sort((a, b) => b.courses - a.courses)
-      .slice(0, 6);
+    topJockeys = jockeys.sort((a, b) => b.courses - a.courses).slice(0, 6);
+    topChevaux = chevaux.sort((a, b) => b.courses - a.courses).slice(0, 6);
   }
 
   return {
