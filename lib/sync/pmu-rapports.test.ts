@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseRapportsDefinitifs, estCandidate, aCompleterCombinaisons, lignesPrincipales, combinaisonsMultiples, sourceDesRapports } from "./pmu-rapports";
+import { parseRapportsDefinitifs, estCandidate, aCompleterCombinaisons, lignesPrincipales, combinaisonsMultiples, sourceDesRapports, identiteCourse } from "./pmu-rapports";
 import { computeRapportGagnant } from "@/lib/pmu-rapports-gagnant";
 
 // Vrais rapports définitifs PMU du Quinté+ du 01/10/2026 (Prix Céréaliste, Auteuil R1C1).
@@ -188,5 +188,34 @@ describe("aCompleterCombinaisons — rapports déjà en base d'une course avec e
     expect(aCompleterCombinaisons({ ...base, arrivee_rangs: null })).toBe(false);
     expect(aCompleterCombinaisons({ ...base, arrivees: { id: "a1", rapports_pmu: null } })).toBe(false);
     expect(aCompleterCombinaisons({ ...base, hippodrome: { pays: "Maroc" } })).toBe(false);
+  });
+});
+
+// Audit du 09/10/2026 : la numérotation des réunions en base diffère parfois
+// de celle du PMU (07/06 : Strasbourg, Rambouillet et Dax notées « R9 » en
+// base, R12/R11/R10 au PMU). Interroger le PMU avec nos R/C peut donc ramener
+// les rapports d'une AUTRE course : on ne les écrit que si l'arrivée concorde.
+describe("identiteCourse — les rapports PMU sont-ils ceux de notre course ?", () => {
+  const pmu = new Map([["1|8", { arrivee: [2, 7, 4, 6, 1, 9], rangs: [1, 2, 3, 3, 5, 6] }]]);
+
+  it("même arrivée (ex æquo compris) → ok", () => {
+    expect(identiteCourse([2, 7, 4, 6, 1], 1, 8, pmu)).toBe("ok");
+    expect(identiteCourse([2, 7, 6, 4], 1, 8, pmu)).toBe("ok"); // deux 3es dans l'autre ordre
+  });
+
+  it("autre arrivée au même R/C → autre_course", () => {
+    expect(identiteCourse([6, 2, 4], 1, 8, pmu)).toBe("autre_course");
+  });
+
+  it("R/C inconnu du PMU ce jour-là → autre_course", () => {
+    expect(identiteCourse([2, 7, 4], 9, 1, pmu)).toBe("autre_course");
+  });
+
+  it("programme PMU indisponible (Map vide) → pmu_indisponible, jamais « autre course »", () => {
+    expect(identiteCourse([2, 7, 4], 1, 8, new Map())).toBe("pmu_indisponible");
+  });
+
+  it("seuls les 3 premiers comptent : une 6e place différente ne change pas la course", () => {
+    expect(identiteCourse([2, 7, 4, 6, 1, 11], 1, 8, pmu)).toBe("ok");
   });
 });

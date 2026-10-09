@@ -20,7 +20,7 @@
  * de base du PMU (Quarté+ 1,50 €, Quinté+ 2 €…).
  */
 import type { CombinaisonPayee, RapportsPMU, SourceRapports } from "./geny-rapports-parser";
-import { isoVersDdmmyyyy } from "./pmu-arrivees";
+import { cleRC, concordeAvecPmu, fetchPmuArriveesDuJour, isoVersDdmmyyyy, type ArriveeRangee } from "./pmu-arrivees";
 
 interface RapportBrut {
   libelle?: string;
@@ -207,6 +207,26 @@ export function sourceDesRapports(
   return null;
 }
 
+/**
+ * PUR : les rapports PMU de R/C sont-ils ceux de notre course ? La numérotation
+ * des réunions en base diffère parfois de celle du PMU (07/06/2026 : Strasbourg,
+ * Rambouillet et Dax notées « R9 » en base, R12/R11/R10 au PMU) : nos R/C
+ * peuvent désigner une AUTRE course. On compare nos 3 premiers à l'arrivée
+ * définitive du PMU au même R/C (deux ex æquo pouvant être inversés). Programme
+ * PMU indisponible (Map vide) ≠ « autre course » : on ne conclut rien.
+ */
+export function identiteCourse(
+  arrivee: number[] | null | undefined,
+  R: number,
+  C: number,
+  arriveesPmu: Map<string, ArriveeRangee>,
+): "ok" | "autre_course" | "pmu_indisponible" {
+  if (arriveesPmu.size === 0) return "pmu_indisponible";
+  const off = arriveesPmu.get(cleRC(R, C));
+  if (!off || !Array.isArray(arrivee)) return "autre_course";
+  return concordeAvecPmu(arrivee.slice(0, 3), off) ? "ok" : "autre_course";
+}
+
 /** Rapports dans l'ordre des combinaisons attendues (ex. « 15-3 », « 15-14 »…). */
 function selonCombinaisons(rapports: RapportBrut[], combinaisons: string[]): number[] | undefined {
   const out: number[] = [];
@@ -354,6 +374,8 @@ export interface RapportsSyncResult {
   indisponibles: number;
   echecs: number;
   dry_run: boolean;
+  /** Arrivée différente au même R/C chez le PMU (cf. identiteCourse) : rien d'écrit. */
+  autres_courses: number;
   /** Ex æquo : rapports déjà en base complétés de leurs combinaisons (montants inchangés). */
   combinaisons_ajoutees: number;
   /** Ex æquo : rapports en base dont aucune source PMU ne retrouve les montants (Geny) — non touchés. */
@@ -465,9 +487,25 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
     aCompleter = aCompleter.slice(0, Math.max(0, opts.limite - candidates.length));
   }
 
-  let ecrits = 0, indisponibles = 0, echecs = 0, avecPlusieurs = 0;
+  // Arrivées définitives PMU, un appel par jour : garde-fou d'identité.
+  const arriveesParJour = new Map<string, Map<string, ArriveeRangee>>();
+  const arriveesDuJour = async (date: string): Promise<Map<string, ArriveeRangee>> => {
+    let m = arriveesParJour.get(date);
+    if (!m) { m = await fetchPmuArriveesDuJour(date); arriveesParJour.set(date, m); }
+    return m;
+  };
+
+  let ecrits = 0, indisponibles = 0, echecs = 0, avecPlusieurs = 0, autresCourses = 0;
   for (const c of candidates) {
-    const brut = await fetchRapportsDefinitifs(c.date_course, c.numero_reunion as number, c.numero_course as number);
+    const R = c.numero_reunion as number, C = c.numero_course as number;
+    const identite = identiteCourse(c.arrivee_officielle, R, C, await arriveesDuJour(c.date_course));
+    if (identite === "pmu_indisponible") { indisponibles++; continue; }
+    if (identite === "autre_course") {
+      autresCourses++;
+      console.warn(`[pmu-rapports] ${c.date_course} R${R}C${C} : arrivée différente au PMU, rapports non écrits`);
+      continue;
+    }
+    const brut = await fetchRapportsDefinitifs(c.date_course, R, C);
     const rapports = brut ? parseRapportsDefinitifs(brut, c.arrivee_officielle || []) : null;
     if (!rapports) { indisponibles++; continue; }
     if (rapports.combinaisons && rapports.combinaisons.lignes.length > 0) avecPlusieurs++;
@@ -518,6 +556,7 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
 
   return {
     depuis: opts.depuis, jusqua, portee, candidates: candidates.length + aCompleter.length, ecrits, indisponibles, echecs, dry_run: dryRun,
+    autres_courses: autresCourses,
     combinaisons_ajoutees: combinaisonsAjoutees, sources_inconnues: sourcesInconnues, avec_plusieurs_combinaisons: avecPlusieurs,
   };
 }
