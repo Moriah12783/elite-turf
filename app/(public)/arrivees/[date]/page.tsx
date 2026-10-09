@@ -30,6 +30,7 @@ import { buildNewsArticleJsonLd } from "@/lib/seo/newsarticle-jsonld";
 import { buildSportsEventJsonLd } from "@/lib/seo/sportsevent-jsonld";
 import { dedupeArriveeCourses, groupByCanonicalHippodrome } from "@/lib/courses/arrivees-group";
 import type { RapportsPMU } from "@/lib/sync/geny-rapports-parser";
+import { casesQuinte, plusieursCombinaisons } from "@/lib/rapports-pmu-format";
 
 // Format un rapport en EUR français : 4500 → "4 500,00 €"
 function formatEuro(amount: number | null | undefined): string {
@@ -308,14 +309,9 @@ export default async function ArriveesPage({ params }: PageProps) {
             <ArriveePodium arrivee={quinte.arrivee_officielle} partants={quinte.partants} rangs={quinte.arrivee_rangs} />
 
             {/* Rapports Quinté+ — affichage compact des dividendes principaux */}
-            {quinte.rapports_pmu?.quinte_plus && (
+            {casesQuinte(quinte.rapports_pmu).length > 0 && (
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { label: "Ordre",    value: quinte.rapports_pmu.quinte_plus.ordre,    accent: true },
-                  { label: "Désordre", value: quinte.rapports_pmu.quinte_plus.desordre, accent: false },
-                  { label: "Bonus 4",  value: quinte.rapports_pmu.quinte_plus.bonus4,   accent: false },
-                  { label: "Bonus 3",  value: quinte.rapports_pmu.quinte_plus.bonus3,   accent: false },
-                ].filter((r) => r.value != null).map((r) => (
+                {casesQuinte(quinte.rapports_pmu).map((r) => (
                   <div
                     key={r.label}
                     className={`px-3 py-2 rounded-lg text-center ${
@@ -378,12 +374,16 @@ export default async function ArriveesPage({ params }: PageProps) {
                     // selon ce qui est dispo (Quinté > Quarté > Tiercé > Couplé G > Trio > Simple G).
                     const rp = c.rapports_pmu as RapportsPMU | null;
                     const headlines: { label: string; value: number; accent?: boolean }[] = [];
-                    if (rp?.quinte_plus?.ordre  != null) headlines.push({ label: "Quinté+ Ordre",    value: rp.quinte_plus.ordre,  accent: true });
-                    if (rp?.quarte_plus?.ordre  != null) headlines.push({ label: "Quarté+ Ordre",    value: rp.quarte_plus.ordre });
-                    if (rp?.tierce?.ordre        != null) headlines.push({ label: "Tiercé Ordre",     value: rp.tierce.ordre });
-                    if (rp?.couple_gagnant       != null) headlines.push({ label: "Couplé Gagnant",   value: rp.couple_gagnant });
-                    if (rp?.trio                 != null) headlines.push({ label: "Trio",             value: rp.trio });
-                    if (rp?.simple_gagnant       != null) headlines.push({ label: "Simple Gagnant",   value: rp.simple_gagnant });
+                    // Ex æquo : le montant n'est qu'une des combinaisons payées → signalé
+                    // (le détail est sur la fiche course, onglet Arrivées & Rapports).
+                    const ea = (label: string, pari: Parameters<typeof plusieursCombinaisons>[1]) =>
+                      rp && plusieursCombinaisons(rp, pari) ? `${label} (ex æquo)` : label;
+                    if (rp?.quinte_plus?.ordre  != null) headlines.push({ label: ea("Quinté+ Ordre", "QUINTE_PLUS"), value: rp.quinte_plus.ordre,  accent: true });
+                    if (rp?.quarte_plus?.ordre  != null) headlines.push({ label: ea("Quarté+ Ordre", "QUARTE_PLUS"), value: rp.quarte_plus.ordre });
+                    if (rp?.tierce?.ordre        != null) headlines.push({ label: ea("Tiercé Ordre", "TIERCE"),      value: rp.tierce.ordre });
+                    if (rp?.couple_gagnant       != null) headlines.push({ label: ea("Couplé Gagnant", "COUPLE_GAGNANT"), value: rp.couple_gagnant });
+                    if (rp?.trio                 != null) headlines.push({ label: ea("Trio", "TRIO"),                value: rp.trio });
+                    if (rp?.simple_gagnant       != null) headlines.push({ label: ea("Simple Gagnant", "SIMPLE_GAGNANT"), value: rp.simple_gagnant });
                     const top3 = headlines.slice(0, 3);
 
                     return (

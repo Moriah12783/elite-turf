@@ -13,6 +13,9 @@
  *   BACKFILL_SINCE  YYYY-MM-DD (défaut : 30 jours en arrière)
  *   BACKFILL_LIMIT  plafond de courses (optionnel)
  *   BACKFILL_DRY_RUN true = ne rien écrire
+ *   BACKFILL_EX_AEQUO true = seulement les courses avec ex æquo (rangs en base) :
+ *                    rapports manquants + combinaisons multiples ajoutées aux
+ *                    rapports existants (montants jamais réécrits)
  */
 import { runPmuRapportsSync } from "@/lib/sync/pmu-rapports";
 import { todayParisISO } from "@/lib/paris-date";
@@ -31,6 +34,7 @@ async function main(): Promise<void> {
     portee: process.env.BACKFILL_SCOPE === "all" ? "toutes" : "quinte",
     limite: Number.isFinite(limite) && limite > 0 ? limite : undefined,
     dryRun: process.env.BACKFILL_DRY_RUN === "true",
+    exAequoSeulement: process.env.BACKFILL_EX_AEQUO === "true",
   });
   console.log("✅ RESULT", JSON.stringify(result));
   if (result.echecs > 0) process.exit(1);

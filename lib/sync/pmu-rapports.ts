@@ -19,7 +19,7 @@
  * `dividendePourUnEuro` (centimes pour 1 €), donc indépendantes de la mise
  * de base du PMU (Quarté+ 1,50 €, Quinté+ 2 €…).
  */
-import type { RapportsPMU } from "./geny-rapports-parser";
+import type { CombinaisonPayee, RapportsPMU, SourceRapports } from "./geny-rapports-parser";
 import { isoVersDdmmyyyy } from "./pmu-arrivees";
 
 interface RapportBrut {
@@ -43,6 +43,168 @@ function euros(r: RapportBrut | undefined, mise = 1): number | undefined {
 function trouver(rapports: RapportBrut[], motif: RegExp): RapportBrut | undefined {
   for (let i = 0; i < rapports.length; i++) if (motif.test(rapports[i].libelle || "")) return rapports[i];
   return undefined;
+}
+
+/**
+ * Libellé PMU réduit à sa nature : « e-Quinté+ Ordre » → « ordre »,
+ * « e-Tiercé Désordre » → « désordre », « e-Simple Gagnant » → « simple gagnant ».
+ * Les variantes gardent leur suffixe (« ordre + e-tirelire », « 1 np »).
+ */
+function nature(libelle: string | undefined): string {
+  return String(libelle || "")
+    .trim()
+    .replace(/^e-/i, "")
+    .toLowerCase()
+    .replace(/^(tiercé|quarté\+|quinté\+)\s*/, "")
+    .trim();
+}
+
+/**
+ * Rapport « Ordre » ou « Désordre » d'un Tiercé / Quarté+ / Quinté+, au libellé
+ * exact. Le PMU liste parfois « Quinté+ Ordre + e-Tirelire » AVANT l'ordre
+ * simple, et `/ordre/` le prenait : à Deauville (30/08/2026), 2 × 6 070,60 €
+ * au lieu de 2 × 2 297,10 €.
+ */
+function trouverOrdre(rapports: RapportBrut[], cible: "ordre" | "désordre"): RapportBrut | undefined {
+  for (let i = 0; i < rapports.length; i++) if (nature(rapports[i].libelle) === cible) return rapports[i];
+  return undefined;
+}
+
+// ── Ex æquo : toutes les combinaisons payées (08/10/2026) ─────────────────────
+
+const PARIS_PRINCIPAUX: Record<string, CombinaisonPayee["pari"]> = {
+  SIMPLE_GAGNANT: "SIMPLE_GAGNANT",
+  SIMPLE_PLACE: "SIMPLE_PLACE",
+  COUPLE_GAGNANT: "COUPLE_GAGNANT",
+  COUPLE_PLACE: "COUPLE_PLACE",
+  TRIO: "TRIO",
+  TIERCE: "TIERCE",
+  QUARTE_PLUS: "QUARTE_PLUS",
+  QUINTE_PLUS: "QUINTE_PLUS",
+};
+
+/** Nature de la ligne principale des paris sans ordre ni désordre. */
+const NATURE_SIMPLE: Record<string, string> = {
+  SIMPLE_GAGNANT: "simple gagnant",
+  SIMPLE_PLACE: "simple placé",
+  COUPLE_GAGNANT: "couplé gagnant",
+  COUPLE_PLACE: "couplé placé",
+  TRIO: "trio",
+};
+
+/**
+ * PUR : toutes les lignes payées des paris dont la combinaison dépend de
+ * l'arrivée (simples, couplés, trio, ordre et désordre des Tiercé, Quarté+,
+ * Quinté+), pour une source. Bonus, multi, 2 sur 4, variantes « NP » et
+ * Tirelire sont écartés. Unités de `RapportsPMU` : Quinté+ pour 2 €.
+ */
+export function lignesPrincipales(json: unknown, source: SourceRapports): CombinaisonPayee[] {
+  if (!Array.isArray(json)) return [];
+  const out: CombinaisonPayee[] = [];
+  for (const p of json as PariBrut[]) {
+    const brut = String((p && p.typePari) || "");
+    const internet = brut.indexOf("E_") === 0;
+    if (internet !== (source === "internet")) continue;
+    const pari = PARIS_PRINCIPAUX[internet ? brut.slice(2) : brut];
+    if (!pari || !Array.isArray(p.rapports)) continue;
+    const mise = pari === "QUINTE_PLUS" ? 2 : 1;
+    for (const r of p.rapports) {
+      const n = nature(r.libelle);
+      const rapport = euros(r, mise);
+      const combinaison = String(r.combinaison || "").trim();
+      if (rapport === undefined || !combinaison) continue;
+      if (NATURE_SIMPLE[pari]) {
+        if (n === NATURE_SIMPLE[pari]) out.push({ pari, combinaison, rapport });
+      } else if (n === "ordre" || n === "désordre") {
+        out.push({ pari, type: n === "ordre" ? "ordre" : "desordre", combinaison, rapport });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * PUR : ne garde que les paris où l'ex æquo multiplie les combinaisons payées
+ * (plus d'un simple ou couplé gagnant, d'un trio, d'un ordre ou d'un désordre ;
+ * plus de trois placés ou couplés placés). Ailleurs, les champs historiques
+ * de `RapportsPMU` suffisent.
+ */
+export function combinaisonsMultiples(lignes: CombinaisonPayee[]): CombinaisonPayee[] {
+  const compte: Record<string, number> = {};
+  for (const l of lignes) {
+    const cle = `${l.pari}|${l.type || ""}`;
+    compte[cle] = (compte[cle] || 0) + 1;
+  }
+  const multiples: Record<string, boolean> = {};
+  for (const cle of Object.keys(compte)) {
+    const pari = cle.split("|")[0];
+    const seuil = pari === "SIMPLE_PLACE" || pari === "COUPLE_PLACE" ? 3 : 1;
+    if (compte[cle] > seuil) multiples[pari] = true;
+  }
+  return lignes.filter((l) => multiples[l.pari]);
+}
+
+interface Repere {
+  pari: CombinaisonPayee["pari"];
+  type?: "ordre" | "desordre";
+  valeur: number | undefined;
+}
+
+/**
+ * Montants en base qui identifient la source, en deux paliers : d'abord ordre
+ * et désordre des Tiercé, Quarté+, Quinté+ (sûrs, y compris chez Geny), puis,
+ * pour une course sans ces paris, les simples et couplés.
+ */
+function reperes(r: RapportsPMU): Repere[][] {
+  const simples: Repere[] = [
+    { pari: "SIMPLE_GAGNANT", valeur: r.simple_gagnant },
+    { pari: "COUPLE_GAGNANT", valeur: r.couple_gagnant },
+  ];
+  for (const v of r.simple_place || []) simples.push({ pari: "SIMPLE_PLACE", valeur: v });
+  for (const v of r.couple_place || []) simples.push({ pari: "COUPLE_PLACE", valeur: v });
+  return [
+    [
+      { pari: "QUINTE_PLUS", type: "ordre", valeur: r.quinte_plus?.ordre },
+      { pari: "QUINTE_PLUS", type: "desordre", valeur: r.quinte_plus?.desordre },
+      { pari: "QUARTE_PLUS", type: "ordre", valeur: r.quarte_plus?.ordre },
+      { pari: "QUARTE_PLUS", type: "desordre", valeur: r.quarte_plus?.desordre },
+      { pari: "TIERCE", type: "ordre", valeur: r.tierce?.ordre },
+      { pari: "TIERCE", type: "desordre", valeur: r.tierce?.desordre },
+    ],
+    simples,
+  ];
+}
+
+/**
+ * PUR : de quelle source (masse d'enjeux) viennent des rapports DÉJÀ en base ?
+ * Geny donnait les prix des points de vente, l'API PMU ceux d'internet : on ne
+ * mélange jamais les deux dans un même rapport. Une source concorde si au
+ * moins deux de ses montants valent ceux en base et si les écarts (ex. un
+ * ordre « Tirelire » mal lu) restent minoritaires. Les simples et couplés de
+ * Geny ne correspondent à aucune source PMU : seuls, ils ne tranchent rien.
+ * null si aucune source ne concorde.
+ */
+export function sourceDesRapports(
+  existant: RapportsPMU,
+  parSource: Partial<Record<SourceRapports, CombinaisonPayee[]>>,
+): SourceRapports | null {
+  const sources: SourceRapports[] = ["internet", "points_de_vente"];
+  for (const palier of reperes(existant)) {
+    for (const source of sources) {
+      const lignes = parSource[source];
+      if (!lignes || lignes.length === 0) continue;
+      let accords = 0, ecarts = 0;
+      for (const r of palier) {
+        if (typeof r.valeur !== "number") continue;
+        const memes = lignes.filter((l) => l.pari === r.pari && l.type === r.type);
+        if (memes.length === 0) continue;
+        if (memes.some((l) => Math.abs(l.rapport - (r.valeur as number)) < 0.011)) accords++;
+        else ecarts++;
+      }
+      if (accords >= 2 && ecarts * 2 < accords) return source;
+    }
+  }
+  return null;
 }
 
 /** Rapports dans l'ordre des combinaisons attendues (ex. « 15-3 », « 15-14 »…). */
@@ -73,8 +235,8 @@ export function parseRapportsDefinitifs(json: unknown, arrivee: number[]): Rappo
   const quinte = parType["E_QUINTE_PLUS"];
   if (quinte) {
     const q = {
-      ordre: euros(trouver(quinte, /ordre/i), 2),
-      desordre: euros(trouver(quinte, /d[ée]sordre/i), 2),
+      ordre: euros(trouverOrdre(quinte, "ordre"), 2),
+      desordre: euros(trouverOrdre(quinte, "désordre"), 2),
       bonus4: euros(trouver(quinte, /bonus\s*4/i), 2),
       bonus3: euros(trouver(quinte, /bonus\s*3/i), 2),
     };
@@ -84,8 +246,8 @@ export function parseRapportsDefinitifs(json: unknown, arrivee: number[]): Rappo
   const quarte = parType["E_QUARTE_PLUS"];
   if (quarte) {
     const q = {
-      ordre: euros(trouver(quarte, /ordre/i)),
-      desordre: euros(trouver(quarte, /d[ée]sordre/i)),
+      ordre: euros(trouverOrdre(quarte, "ordre")),
+      desordre: euros(trouverOrdre(quarte, "désordre")),
       bonus: euros(trouver(quarte, /bonus/i)),
     };
     if (q.ordre !== undefined || q.desordre !== undefined) out.quarte_plus = q;
@@ -93,7 +255,7 @@ export function parseRapportsDefinitifs(json: unknown, arrivee: number[]): Rappo
 
   const tierce = parType["E_TIERCE"];
   if (tierce) {
-    const t = { ordre: euros(trouver(tierce, /ordre/i)), desordre: euros(trouver(tierce, /d[ée]sordre/i)) };
+    const t = { ordre: euros(trouverOrdre(tierce, "ordre")), desordre: euros(trouverOrdre(tierce, "désordre")) };
     if (t.ordre !== undefined || t.desordre !== undefined) out.tierce = t;
   }
 
@@ -119,7 +281,10 @@ export function parseRapportsDefinitifs(json: unknown, arrivee: number[]): Rappo
     if (couplés) out.couple_place = couplés;
   }
 
-  return Object.keys(out).length > 0 ? out : null;
+  if (Object.keys(out).length === 0) return null;
+  // Ex æquo : les autres combinaisons payées ([] = vérifié, aucune).
+  out.combinaisons = { source: "internet", lignes: combinaisonsMultiples(lignesPrincipales(json, "internet")) };
+  return out;
 }
 
 const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
@@ -136,8 +301,16 @@ const PMU_HEADERS = {
  * bloquée en direct). null si indisponibles (course pas encore officialisée,
  * API en panne) : l'appelant NE DOIT PAS en conclure « pas de rapport ».
  */
-export async function fetchRapportsDefinitifs(dateISO: string, R: number, C: number, timeoutMs = 15000): Promise<unknown | null> {
-  const chemin = `/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}/rapports-definitifs?specialisation=INTERNET`;
+export async function fetchRapportsDefinitifs(
+  dateISO: string,
+  R: number,
+  C: number,
+  timeoutMs = 15000,
+  /** « points_de_vente » : les prix des points de vente, ceux que donnait Geny. */
+  source: SourceRapports = "internet",
+): Promise<unknown | null> {
+  const specialisation = source === "internet" ? "INTERNET" : "OFFLINE";
+  const chemin = `/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}/rapports-definitifs?specialisation=${specialisation}`;
   for (const base of [PMU_PROXY, PMU_DIRECT]) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -167,6 +340,8 @@ export interface RapportsSyncOptions {
   /** Plafond de courses traitées (test). */
   limite?: number;
   dryRun?: boolean;
+  /** Seulement les courses avec ex æquo (rangs en base) : rattrapage de l'historique. */
+  exAequoSeulement?: boolean;
 }
 
 export interface RapportsSyncResult {
@@ -179,6 +354,12 @@ export interface RapportsSyncResult {
   indisponibles: number;
   echecs: number;
   dry_run: boolean;
+  /** Ex æquo : rapports déjà en base complétés de leurs combinaisons (montants inchangés). */
+  combinaisons_ajoutees: number;
+  /** Ex æquo : rapports en base dont aucune source PMU ne retrouve les montants (Geny) — non touchés. */
+  sources_inconnues: number;
+  /** Ex æquo : courses où le PMU paie effectivement plusieurs combinaisons. */
+  avec_plusieurs_combinaisons: number;
 }
 
 interface CourseCandidate {
@@ -189,6 +370,8 @@ interface CourseCandidate {
   nationale: number | null;
   paris_disponibles: string[] | null;
   arrivee_officielle: number[] | null;
+  /** Rangs officiels (ex æquo), NULL = ordre strict — cf. lib/courses/rangs. */
+  arrivee_rangs?: number[] | null;
   hippodrome: { pays: string | null } | { pays: string | null }[] | null;
   arrivees: { id: string; rapports_pmu: unknown } | { id: string; rapports_pmu: unknown }[] | null;
 }
@@ -204,11 +387,31 @@ export function estCandidate(c: CourseCandidate, portee: "quinte" | "toutes"): b
   if (!c.numero_reunion || !c.numero_course) return false;
   const a = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
   if (!a || a.rapports_pmu != null) return false;
-  if (portee === "quinte") {
-    const quintePlus = Array.isArray(c.paris_disponibles) && c.paris_disponibles.indexOf("QUINTE_PLUS") !== -1;
-    return c.nationale === 1 || quintePlus;
-  }
-  return true;
+  return portee === "toutes" || estQuinte(c);
+}
+
+function estQuinte(c: CourseCandidate): boolean {
+  const quintePlus = Array.isArray(c.paris_disponibles) && c.paris_disponibles.indexOf("QUINTE_PLUS") !== -1;
+  return c.nationale === 1 || quintePlus;
+}
+
+function aDesRangs(c: CourseCandidate): boolean {
+  return Array.isArray(c.arrivee_rangs) && c.arrivee_rangs.length > 0;
+}
+
+/**
+ * Course française avec ex æquo (rangs en base) dont les rapports, déjà en
+ * base, n'ont pas encore leurs combinaisons multiples. On leur AJOUTE la clé
+ * `combinaisons`, sans toucher aux montants existants. PUR (testé).
+ */
+export function aCompleterCombinaisons(c: CourseCandidate): boolean {
+  const h = Array.isArray(c.hippodrome) ? c.hippodrome[0] : c.hippodrome;
+  if (!h || h.pays !== "France") return false;
+  if (!aDesRangs(c)) return false;
+  if (!c.numero_reunion || !c.numero_course) return false;
+  const a = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
+  if (!a || a.rapports_pmu == null || typeof a.rapports_pmu !== "object") return false;
+  return !("combinaisons" in (a.rapports_pmu as Record<string, unknown>));
 }
 
 /**
@@ -236,7 +439,7 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
   for (let debut = 0; ; debut += PAGE) {
     let requete = supabase
       .from("courses")
-      .select("id, date_course, numero_reunion, numero_course, nationale, paris_disponibles, arrivee_officielle, hippodrome:hippodromes(pays), arrivees(id, rapports_pmu)")
+      .select("id, date_course, numero_reunion, numero_course, nationale, paris_disponibles, arrivee_officielle, arrivee_rangs, hippodrome:hippodromes(pays), arrivees(id, rapports_pmu)")
       .gte("date_course", opts.depuis)
       .lte("date_course", jusqua)
       .not("arrivee_officielle", "is", null);
@@ -253,14 +456,21 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
     if (page.length < PAGE) break;
   }
 
-  let candidates = lues.filter((c) => estCandidate(c, portee));
-  if (opts.limite && opts.limite > 0) candidates = candidates.slice(0, opts.limite);
+  const exAequo = opts.exAequoSeulement === true;
+  let candidates = lues.filter((c) => estCandidate(c, portee) && (!exAequo || aDesRangs(c)));
+  // Ex æquo : rapports déjà en base, à compléter de leurs combinaisons.
+  let aCompleter = lues.filter((c) => aCompleterCombinaisons(c) && (portee === "toutes" || estQuinte(c)));
+  if (opts.limite && opts.limite > 0) {
+    candidates = candidates.slice(0, opts.limite);
+    aCompleter = aCompleter.slice(0, Math.max(0, opts.limite - candidates.length));
+  }
 
-  let ecrits = 0, indisponibles = 0, echecs = 0;
+  let ecrits = 0, indisponibles = 0, echecs = 0, avecPlusieurs = 0;
   for (const c of candidates) {
     const brut = await fetchRapportsDefinitifs(c.date_course, c.numero_reunion as number, c.numero_course as number);
     const rapports = brut ? parseRapportsDefinitifs(brut, c.arrivee_officielle || []) : null;
     if (!rapports) { indisponibles++; continue; }
+    if (rapports.combinaisons && rapports.combinaisons.lignes.length > 0) avecPlusieurs++;
     if (dryRun) { ecrits++; continue; }
     const a = Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees;
     const { error: e } = await supabase
@@ -272,5 +482,42 @@ export async function runPmuRapportsSync(opts: RapportsSyncOptions): Promise<Rap
     else ecrits++;
   }
 
-  return { depuis: opts.depuis, jusqua, portee, candidates: candidates.length, ecrits, indisponibles, echecs, dry_run: dryRun };
+  // Les montants en base ne sont JAMAIS réécrits : on ajoute seulement la clé
+  // `combinaisons`, prise dans la même source (masse d'enjeux) qu'eux.
+  let combinaisonsAjoutees = 0, sourcesInconnues = 0;
+  for (const c of aCompleter) {
+    const a = (Array.isArray(c.arrivees) ? c.arrivees[0] : c.arrivees) as { id: string; rapports_pmu: unknown };
+    const existant = a.rapports_pmu as RapportsPMU;
+    const R = c.numero_reunion as number;
+    const C = c.numero_course as number;
+    const parSource: Partial<Record<SourceRapports, CombinaisonPayee[]>> = {};
+    const internet = await fetchRapportsDefinitifs(c.date_course, R, C);
+    if (internet) parSource.internet = lignesPrincipales(internet, "internet");
+    let source = sourceDesRapports(existant, parSource);
+    if (!source) {
+      const pdv = await fetchRapportsDefinitifs(c.date_course, R, C, 15000, "points_de_vente");
+      if (pdv) parSource.points_de_vente = lignesPrincipales(pdv, "points_de_vente");
+      source = sourceDesRapports(existant, parSource);
+    }
+    if (!parSource.internet && !parSource.points_de_vente) { indisponibles++; continue; }
+    if (!source) { sourcesInconnues++; continue; }
+    const lignes = combinaisonsMultiples(parSource[source] as CombinaisonPayee[]);
+    if (lignes.length > 0) avecPlusieurs++;
+    if (dryRun) { combinaisonsAjoutees++; continue; }
+    const { data: touchees, error: e } = await supabase
+      .from("arrivees")
+      .update({ rapports_pmu: { ...existant, combinaisons: { source, lignes } } })
+      .eq("id", a.id)
+      .not("rapports_pmu", "is", null)
+      .select("id");
+    if (e || !touchees || touchees.length === 0) {
+      echecs++;
+      console.warn(`[pmu-rapports] combinaisons ${c.date_course} R${R}C${C} : ${e ? e.message : "aucune ligne modifiée"}`);
+    } else combinaisonsAjoutees++;
+  }
+
+  return {
+    depuis: opts.depuis, jusqua, portee, candidates: candidates.length + aCompleter.length, ecrits, indisponibles, echecs, dry_run: dryRun,
+    combinaisons_ajoutees: combinaisonsAjoutees, sources_inconnues: sourcesInconnues, avec_plusieurs_combinaisons: avecPlusieurs,
+  };
 }
