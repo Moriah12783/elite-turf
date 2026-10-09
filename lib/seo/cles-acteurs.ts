@@ -19,8 +19,11 @@
  *
  * ⚠️ Miroir SQL : `public.slug_acteur` et `public.cle_personne`
  * (supabase/migrations/20261009_cles_acteurs.sql) calculent les mêmes clés
- * dans les colonnes générées `partants.cheval_cle/jockey_cle/entraineur_cle`.
- * Toute modification ici doit être reportée là (et inversement).
+ * dans `partants.cheval_cle/jockey_cle/entraineur_cle`. Toute modification ici
+ * doit être reportée là (et inversement). Pour que les deux moteurs de regex
+ * donnent le même résultat, aucun `\s` ni `\d` : les espaces exotiques sont
+ * d'abord ramenés à l'espace simple, et les chiffres écrits [0-9] (en base,
+ * `\d` reconnaît aussi « ٣ »).
  *
  * Pur, sans I/O.
  */
@@ -29,13 +32,15 @@ import { slugify } from "@/lib/seo/slugs";
 import type { EntiteType } from "@/lib/seo/acteurs";
 
 /** Glyphes d'icônes (zone à usage privé Unicode) collés par Geny. */
-const GLYPHES_PRIVES = /[-]/g;
+const GLYPHES_PRIVES = /[\uE000-\uF8FF]/g;
+/** Blancs autres que l'espace simple (insécable, fine, tabulation…). */
+const ESPACES = /[\t\n\v\f\r\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF]/g;
 /** Poids collé au jockey par Geny : « C. Demuro 57,5 ». */
-const POIDS_FIN = /\s+\d+(?:[.,]\d+)?\s*$/;
+const POIDS_FIN = / +[0-9]+(?:[.,][0-9]+)? *$/;
 /** Statut PMU des entraîneurs de galop : « M.SEROR (S) ». */
-const STATUT_PMU = /\s*\(S\)\s*$/;
+const STATUT_PMU = / *\(S\) *$/;
 /** Dernière parenthèse du nom : homonyme « (T) », « (G) », pays… */
-const SUFFIXE = /\s*\(([^()]*)\)\s*$/;
+const SUFFIXE = / *\(([^()]*)\) *$/;
 
 export function cleCheval(nom: string | null | undefined): string {
   return slugify(nom);
@@ -43,7 +48,7 @@ export function cleCheval(nom: string | null | undefined): string {
 
 export function clePersonne(nom: string | null | undefined): string {
   if (!nom) return "";
-  let base = nom.replace(POIDS_FIN, "").replace(STATUT_PMU, "");
+  let base = nom.replace(ESPACES, " ").replace(POIDS_FIN, "").replace(STATUT_PMU, "");
   const m = SUFFIXE.exec(base);
   const suffixe = m ? slugify(m[1]) : "";
   if (m) base = base.slice(0, m.index);
@@ -60,9 +65,9 @@ export function cleActeur(type: EntiteType, nom: string | null | undefined): str
 /** Nom affichable : sans glyphe, poids ni statut PMU. Ne touche jamais à la casse. */
 export function nettoyerNomActeur(type: EntiteType, nom: string | null | undefined): string {
   if (!nom) return "";
-  let s = nom.replace(GLYPHES_PRIVES, "").replace(/ /g, " ");
+  let s = nom.replace(GLYPHES_PRIVES, "").replace(ESPACES, " ");
   if (type !== "chevaux") s = s.replace(POIDS_FIN, "").replace(STATUT_PMU, "");
-  return s.replace(/\s+/g, " ").trim();
+  return s.replace(/ +/g, " ").trim();
 }
 
 /** Casse mixte = au moins une majuscule ET une minuscule (« Stan Le Grand »). */

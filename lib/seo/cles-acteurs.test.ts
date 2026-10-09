@@ -12,7 +12,7 @@ describe("cleCheval", () => {
     expect(cleCheval("Jeek d'Acadie")).toBe("jeek-d-acadie");
   });
   it("ignore le glyphe privé Geny en fin de nom", () => {
-    expect(cleCheval("Isla ")).toBe("isla");
+    expect(cleCheval("Isla \uE901")).toBe("isla");
   });
   it("garde le pays d'origine : « BELGIQUE (SWE) » n'est pas « Belgique »", () => {
     expect(cleCheval("BELGIQUE (SWE)")).not.toBe(cleCheval("Belgique"));
@@ -37,6 +37,14 @@ describe("clePersonne", () => {
   it("retire le poids collé au jockey par Geny", () => {
     expect(clePersonne("C. Demuro 57,5")).toBe(clePersonne("C. Demuro"));
     expect(clePersonne("A. Crastus 52")).toBe(clePersonne("A. Crastus"));
+  });
+  it("même résultat avec un espace insécable ou une tabulation (parité avec la base)", () => {
+    expect(clePersonne("C. Demuro\u00A057,5")).toBe("cdemuro");
+    expect(clePersonne("C. Demuro 57,5\u202F")).toBe("cdemuro");
+    expect(clePersonne("M.SEROR\t(S)")).toBe("mseror");
+  });
+  it("un chiffre non latin n'est pas un poids, et ne survit pas au slug", () => {
+    expect(clePersonne("A. Jabafi ٣")).toBe("ajabafi");
   });
   it("retire le statut PMU « (S) » (même entraîneur avec ou sans)", () => {
     expect(clePersonne("M.SEROR (S)")).toBe(clePersonne("M. Seror"));
@@ -69,8 +77,8 @@ describe("cleActeur", () => {
 
 describe("nettoyerNomActeur", () => {
   it("cheval : retire le glyphe privé et les espaces en trop", () => {
-    expect(nettoyerNomActeur("chevaux", "Ad Debel ")).toBe("Ad Debel");
-    expect(nettoyerNomActeur("chevaux", "Gran Habano ")).toBe("Gran Habano");
+    expect(nettoyerNomActeur("chevaux", "Ad Debel \uE901")).toBe("Ad Debel");
+    expect(nettoyerNomActeur("chevaux", "Gran\u00A0Habano ")).toBe("Gran Habano");
   });
   it("cheval : garde le pays d'origine", () => {
     expect(nettoyerNomActeur("chevaux", "BELGIQUE (SWE)")).toBe("BELGIQUE (SWE)");
@@ -97,7 +105,7 @@ describe("choisirGraphie (décision D1 de Steph, 09/10/2026)", () => {
   });
   it("compte ensemble les graphies identiques une fois nettoyées", () => {
     // 5 + 4 « Isla » (glyphes) dépassent les 6 « Isla »… mais c'est la même graphie
-    expect(choisirGraphie("chevaux", [["Isla ", 5], ["Isla ", 4], ["Isla", 6], ["ISLA", 20]])).toBe("Isla");
+    expect(choisirGraphie("chevaux", [["Isla \uE901", 5], ["Isla \uE900", 4], ["Isla", 6], ["ISLA", 20]])).toBe("Isla");
     expect(choisirGraphie("jockeys", [["C. Demuro 57,5", 50], ["C. Demuro 56", 40], ["C. Demuro", 30], ["C.DEMURO", 60]]))
       .toBe("C. Demuro");
   });
