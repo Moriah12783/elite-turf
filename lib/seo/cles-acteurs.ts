@@ -67,7 +67,7 @@ export function nettoyerNomActeur(type: EntiteType, nom: string | null | undefin
 
 /** Casse mixte = au moins une majuscule ET une minuscule (« Stan Le Grand »). */
 function casseMixte(s: string): boolean {
-  return /\p{Lu}/u.test(s) && /\p{Ll}/u.test(s);
+  return s !== s.toLowerCase() && s !== s.toUpperCase();
 }
 
 /**
@@ -87,13 +87,14 @@ export function choisirGraphie(
     if (nom) comptes.set(nom, (comptes.get(nom) ?? 0) + n);
   }
   let meilleur = "";
-  let meilleurRang: [number, number] = [-1, -1];
+  let meilleurRang: number[] = [-1, -1, -1];
   for (const [nom, n] of Array.from(comptes.entries())) {
-    const rang: [number, number] = [casseMixte(nom) ? 1 : 0, n];
-    const mieux = rang[0] !== meilleurRang[0] ? rang[0] > meilleurRang[0]
-      : rang[1] !== meilleurRang[1] ? rang[1] > meilleurRang[1]
-      // Égalité parfaite : ordre alphabétique, pour un résultat stable d'une nuit à l'autre.
-      : nom.localeCompare(meilleur, "fr") < 0;
+    // À égalité de fréquence, la graphie la plus riche (accents, ponctuation :
+    // « B. O'Neill » plutôt que « B O'Neill »), puis l'ordre alphabétique pour
+    // un résultat stable d'une nuit à l'autre.
+    const rang = [casseMixte(nom) ? 1 : 0, n, nom.normalize("NFD").length];
+    const i = rang.findIndex((v, k) => v !== meilleurRang[k]);
+    const mieux = i >= 0 ? rang[i] > meilleurRang[i] : nom.localeCompare(meilleur, "fr") < 0;
     if (mieux) { meilleur = nom; meilleurRang = rang; }
   }
   return meilleur;

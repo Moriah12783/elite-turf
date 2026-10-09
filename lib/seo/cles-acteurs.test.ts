@@ -101,9 +101,13 @@ describe("choisirGraphie (décision D1 de Steph, 09/10/2026)", () => {
     expect(choisirGraphie("jockeys", [["C. Demuro 57,5", 50], ["C. Demuro 56", 40], ["C. Demuro", 30], ["C.DEMURO", 60]]))
       .toBe("C. Demuro");
   });
+  it("à égalité de fréquence, la graphie la plus riche (accents, ponctuation)", () => {
+    expect(choisirGraphie("jockeys", [["B O'Neill", 1], ["B. O'Neill", 1]])).toBe("B. O'Neill");
+    expect(choisirGraphie("jockeys", [["A. Lemaitre", 2], ["A. Lemaître", 2]])).toBe("A. Lemaître");
+  });
   it("égalité parfaite : résultat stable quel que soit l'ordre d'entrée", () => {
-    const a = choisirGraphie("jockeys", [["A. Lemaitre", 2], ["A. Lemaître", 2]]);
-    const b = choisirGraphie("jockeys", [["A. Lemaître", 2], ["A. Lemaitre", 2]]);
+    const a = choisirGraphie("chevaux", [["Izio d'echal", 2], ["Izio d'Echal", 2]]);
+    const b = choisirGraphie("chevaux", [["Izio d'Echal", 2], ["Izio d'echal", 2]]);
     expect(a).toBe(b);
   });
   it("aucune graphie exploitable → chaîne vide", () => {
