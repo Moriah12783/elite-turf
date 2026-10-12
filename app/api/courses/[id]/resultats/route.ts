@@ -1,7 +1,7 @@
 /**
  * GET /api/courses/[id]/resultats
  * Retourne l'arrivée officielle + les rapports PMU complets + commentaire.
- * Utilisé par CourseTabsClient onglet "Arrivées & Rapports".
+ * Utilisé par CourseTabsClient onglet "Arrivées" (arrivée et rapports).
  *
  * Sources, par ordre de priorité (champ `source`, voir SourceResultats) :
  *  1. Table `arrivees` → "pmu-definitifs" : rapports_pmu JSONB = rapports

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, TrendingUp, Trophy, RefreshCw,
   ExternalLink, Users, Star, CheckCircle2,
-  AlertCircle, ChevronUp, ChevronDown, Lock, Zap, Sparkles,
+  AlertCircle, ChevronUp, ChevronDown, Lock, Zap, Sparkles, Coins,
 } from "lucide-react";
 import Link from "next/link";
 import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
@@ -14,6 +14,9 @@ import { delaiRafraichissement } from "@/lib/courses/cotes-live";
 import { estPlace } from "@/lib/courses/arrivee";
 import { libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
 import { libelleSourceResultats, type SourceResultats } from "@/lib/rapports-pmu-format";
+import {
+  allocationEnMilliers, auNiveauDuJour, libellePlace, type ChevalPerformances, type PerformancePmu,
+} from "@/lib/courses/performances-pmu";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -58,7 +61,7 @@ interface Rapport {
   dividendes: Dividende[];
 }
 
-type Tab = "partants" | "selection" | "cotes" | "arrivees" | "stats";
+type Tab = "partants" | "selection" | "cotes" | "allocations" | "arrivees" | "stats";
 
 interface Props {
   courseId: string;
@@ -633,7 +636,7 @@ function CotesBars({ items, maxCote }: { items: CoteItem[]; maxCote: number }) {
   );
 }
 
-// ── Tab : Arrivées & Rapports ──────────────────────────────────────────────
+// ── Tab : Arrivées (et rapports) ──────────────────────────────────────────────
 
 const POSITION_COLORS = [
   "bg-yellow-500/20 border-yellow-500/50 text-yellow-400",   // 1er
@@ -1014,6 +1017,160 @@ function TabNotreSelection({ items, motif }: { items: NotreSelectionItem[]; moti
   );
 }
 
+// ── Tab : Allocations ──────────────────────────────────────────────────────
+// Allocation et place des dernières courses de chaque partant (PMU, 5 au plus).
+// Une musique régulière ne dit pas face à quel lot elle a été obtenue.
+
+interface AllocationsData {
+  allocationJour: number | null;
+  chevaux: ChevalPerformances[];
+  message: string | null;
+}
+
+const NB_COURSES_ALLOCATIONS = 5;
+
+/** 50900 → « 50 900 € ». */
+function eurosFr(n: number): string {
+  return `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ")} €`;
+}
+
+/** « 20/09/26 », à l'heure de Paris. */
+function dateCourse(ms: number | null): string | null {
+  if (ms === null) return null;
+  return new Date(ms).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: "Europe/Paris" });
+}
+
+function CaseAllocation({ perf, allocationJour }: { perf: PerformancePmu | undefined; allocationJour: number | null }) {
+  if (!perf) return <td className="px-2 py-2 text-center text-text-muted text-xs">—</td>;
+  const date = dateCourse(perf.date);
+  const info = [date, perf.hippodrome].filter(Boolean).join(" · ");
+  const podium = perf.place !== null && perf.place <= 3;
+  return (
+    <td className="px-2 py-2 text-center whitespace-nowrap" title={info || undefined}>
+      <p className={`text-xs tabular-nums ${auNiveauDuJour(perf.allocation, allocationJour) ? "text-gold-light font-bold" : "text-text-secondary"}`}>
+        {perf.allocation === null ? "?" : allocationEnMilliers(perf.allocation)}
+      </p>
+      <p className={`text-[11px] ${podium ? "text-status-win font-semibold" : "text-text-muted"}`}>{libellePlace(perf)}</p>
+      {date && <p className="text-text-muted/70 text-[9px] tabular-nums">{date.slice(0, 5)}</p>}
+    </td>
+  );
+}
+
+function TabAllocations({ courseId }: { courseId: string }) {
+  const [data, setData]       = useState<AllocationsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res  = await fetch(`/api/courses/${courseId}/allocations`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erreur inconnue");
+      setData({
+        allocationJour: json.allocationJour ?? null,
+        chevaux:        json.chevaux ?? [],
+        message:        json.message ?? null,
+      });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="p-8 flex flex-col items-center gap-3">
+        <RefreshCw className="w-6 h-6 text-gold-primary animate-spin" />
+        <p className="text-text-muted text-sm">Récupération de l'historique PMU…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <AlertCircle className="w-6 h-6 text-status-loss mx-auto mb-2" />
+        <p className="text-text-secondary text-sm mb-1">Allocations non disponibles</p>
+        <p className="text-text-muted text-xs mb-4">{error}</p>
+        <button onClick={load} className="inline-flex items-center gap-1.5 px-4 py-2 bg-bg-elevated hover:bg-bg-hover border border-border rounded-xl text-text-secondary text-sm transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Réessayer
+        </button>
+      </div>
+    );
+  }
+
+  if (!data || data.chevaux.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Coins className="w-8 h-8 text-text-muted mx-auto mb-3" />
+        <p className="text-text-secondary text-sm font-medium mb-1">Allocations non disponibles</p>
+        <p className="text-text-muted text-xs">{data?.message ?? "Le PMU ne donne pas l'historique des partants de cette course."}</p>
+      </div>
+    );
+  }
+
+  const colonnes = Array.from({ length: NB_COURSES_ALLOCATIONS }, (_, i) => i);
+
+  return (
+    <div className="p-4 sm:p-5">
+      <div className="mb-4">
+        {data.allocationJour !== null && (
+          <p className="text-text-secondary text-sm">
+            Allocation de la course du jour : <span className="text-gold-light font-bold">{eurosFr(data.allocationJour)}</span>
+          </p>
+        )}
+        <p className="text-text-muted text-xs mt-1 leading-relaxed">
+          Allocation et place des {NB_COURSES_ALLOCATIONS} dernières courses de chaque cheval, de la plus récente à la plus ancienne (source PMU).
+          {data.allocationJour !== null && <> En doré : course au moins aussi dotée que celle du jour.</>}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-border text-text-muted text-[10px] uppercase tracking-wider">
+              <th className="px-2 py-2 font-semibold">N°</th>
+              <th className="px-2 py-2 font-semibold">Cheval</th>
+              {colonnes.map((i) => (
+                <th key={i} className="px-2 py-2 font-semibold text-center whitespace-nowrap">
+                  {i === 0 ? "Dernière" : `${i + 1}e dern.`}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.chevaux.map((ch) => (
+              <tr key={ch.numero} className="border-b border-border/50 last:border-0">
+                <td className="px-2 py-2">
+                  <span className="w-7 h-7 rounded-full border border-border bg-bg-elevated inline-flex items-center justify-center text-text-secondary text-xs font-bold">
+                    {ch.numero}
+                  </span>
+                </td>
+                <td className="px-2 py-2 text-text-primary text-xs font-semibold min-w-[120px]">{ch.nom ?? "—"}</td>
+                {ch.courses.length === 0 ? (
+                  <td colSpan={NB_COURSES_ALLOCATIONS} className="px-2 py-2 text-text-muted text-xs">Aucune course connue</td>
+                ) : (
+                  colonnes.map((i) => <CaseAllocation key={i} perf={ch.courses[i]} allocationJour={data.allocationJour} />)
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-text-muted text-[11px] mt-4 leading-relaxed">
+        k€ = milliers d'euros. À lire avec la musique : une même place n'a pas la même valeur selon l'allocation de la course.
+        Sur ordinateur, survolez une case pour voir l'hippodrome.
+      </p>
+    </div>
+  );
+}
+
 // ── Composant principal ────────────────────────────────────────────────────
 
 export default function CourseTabsClient({
@@ -1040,7 +1197,9 @@ export default function CourseTabsClient({
     { id: "partants",  label: "Partants",           icon: Users,     badge: totalPartants > 0 ? String(totalPartants) : undefined },
     { id: "selection", label: "Sélection stats",    icon: Sparkles },
     { id: "cotes",     label: "Côtes en direct",    icon: TrendingUp },
-    { id: "arrivees",  label: "Arrivées & Rapports", icon: Trophy },
+    { id: "allocations", label: "Allocations",      icon: Coins },
+    // « Arrivées & Rapports » raccourci le 12/10/2026 : les 6 onglets doivent tenir sur une ligne.
+    { id: "arrivees",  label: "Arrivées",           icon: Trophy },
     { id: "stats",     label: "Statistiques",       icon: BarChart3 },
   ];
   const tabs = allTabs.filter((t) => !(t.id === "selection" && hideNotreSelection));
@@ -1081,6 +1240,9 @@ export default function CourseTabsClient({
       )}
       {activeTab === "cotes" && (
         <TabCotes courseId={courseId} partants={partants} />
+      )}
+      {activeTab === "allocations" && (
+        <TabAllocations courseId={courseId} />
       )}
       {activeTab === "arrivees" && (
         <TabArrivees
