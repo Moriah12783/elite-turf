@@ -43,6 +43,8 @@ export interface LigneMusique {
   fautes: number | null;
   /** « Base ⭐ », « Base », « Value Pro », « Value Elite » ou « Value Pro + Elite » ; null sinon. */
   retenu: string | null;
+  /** Allocations (euros) des dernières courses, de la plus récente à la plus ancienne ; null si inconnues. */
+  allocations: Array<number | null> | null;
 }
 
 export interface ResumeBrouillons {
@@ -54,6 +56,8 @@ export interface ResumeBrouillons {
   heureGmt: string;
   releve: string | null;
   confiance: Confiance;
+  /** Allocation de la course du jour (euros) ; null si inconnue. */
+  allocationJour: number | null;
   pro: { base: ChevalResume[]; values: ChevalResume[] };
   elite: { base: ChevalResume[]; values: ChevalResume[]; ecartes: ChevalResume[]; completeAvecFautifs: boolean };
   /** Tous les chevaux, classés par cote, non-partants à la fin. */
@@ -111,12 +115,32 @@ function placeHtml(p: string): string {
   return echapper(p);
 }
 
-/** Tableau des musiques de tous les chevaux (option A, décision de Steph du 07/10/2026). */
-function tableauMusiques(lignes: LigneMusique[]): string {
+/** 50900 → « 50 900 ». */
+function milliers(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+/** 19200 → « 19 » (milliers d'euros) ; en gras si la course valait au moins celle du jour. */
+function allocationHtml(a: number | null, jour: number | null): string {
+  if (a === null) return "?";
+  const k = Math.round(a / 1000);
+  const t = k < 1 ? "&lt;1" : String(k);
+  return jour !== null && a >= jour ? `<b>${t}</b>` : t;
+}
+
+/**
+ * Tableau des musiques de tous les chevaux (option A, décision de Steph du
+ * 07/10/2026) ; allocations des dernières courses ajoutées le 12/10/2026 pour
+ * voir qui monte ou descend de catégorie.
+ */
+function tableauMusiques(lignes: LigneMusique[], allocationJour: number | null): string {
   if (lignes.length === 0) return "";
+  const avecAllocations = lignes.some((l) => l.allocations !== null);
   const th = (t: string) => `<th style="text-align:left;padding:3px 8px;border-bottom:1px solid #ccc">${t}</th>`;
   const td = (t: string) => `<td style="padding:3px 8px;border-bottom:1px solid #eee">${t}</td>`;
-  const entete = ["N°", "Cheval", "Cote", "Marché", "7 dernières", "Fautes", "Retenu"].map(th).join("");
+  const colonnes = ["N°", "Cheval", "Cote", "Marché", "7 dernières", "Fautes"]
+    .concat(avecAllocations ? ["Alloc. (k€)"] : [])
+    .concat(["Retenu"]);
   const corps = lignes.map((l) => "<tr>" + [
     td(String(l.numero)),
     td(echapper(l.nom)),
@@ -124,11 +148,19 @@ function tableauMusiques(lignes: LigneMusique[]): string {
     td(l.rang === null ? "—" : `${l.rang}${l.exAequo ? "=" : ""}`),
     td(l.places === null ? "inconnue" : l.places.map(placeHtml).join(" ")),
     td(l.fautes === null ? "—" : String(l.fautes)),
+  ].concat(avecAllocations
+    ? [td(l.allocations === null ? "—" : l.allocations.map((a) => allocationHtml(a, allocationJour)).join(" · "))]
+    : [],
+  ).concat([
     td(l.retenu ? echapper(l.retenu) : ""),
-  ].join("") + "</tr>").join("");
+  ]).join("") + "</tr>").join("");
+  const legendeAllocations = !avecAllocations
+    ? ""
+    : ` Alloc. : allocation des dernières courses en milliers d'euros, de la plus récente à la plus ancienne${
+      allocationJour === null ? "" : ` ; en gras, au moins celle du jour (${milliers(allocationJour)} €)`}.`;
   return `<h3 style="margin:20px 0 4px">Musiques des partants</h3>`
-    + `<p style="margin:0 0 6px;font-size:12px;color:#555">7 dernières courses, de la plus récente à la plus ancienne. 0 = au-delà du 9e ; D = disqualifié, A = arrêté, T = tombé. « = » : même cote qu'un autre partant.</p>`
-    + `<table style="border-collapse:collapse;font-size:13px">${entete}${corps}</table>`;
+    + `<p style="margin:0 0 6px;font-size:12px;color:#555">7 dernières courses, de la plus récente à la plus ancienne. 0 = au-delà du 9e ; D = disqualifié, A = arrêté, T = tombé. « = » : même cote qu'un autre partant.${legendeAllocations}</p>`
+    + `<table style="border-collapse:collapse;font-size:13px">${colonnes.map(th).join("")}${corps}</table>`;
 }
 
 /** Textes prévus, à copier tels quels : lignes conservées (décision de Steph du 08/10/2026). */
@@ -172,7 +204,7 @@ export function emailBrouillons(r: ResumeBrouillons, liens: LiensBrouillons | nu
     morceaux.push(blocLiens(liens));
     morceaux.push("<p>Rien n'est publié : relisez, puis cliquez « Publier ».</p>");
   }
-  morceaux.push(tableauMusiques(r.partants));
+  morceaux.push(tableauMusiques(r.partants, r.allocationJour));
   return { subject, html: morceaux.filter(Boolean).join("\n") };
 }
 

@@ -37,7 +37,16 @@ export interface CoursePmu {
   conditionSexe: string | null;
   /** Départ prévu (ms UTC). */
   heureDepart: number | null;
+  /** Allocation totale de la course (euros). */
+  allocation: number | null;
 }
+
+/**
+ * Allocations (euros) des dernières courses de chaque cheval, par numéro, de la
+ * plus récente à la plus ancienne ; `null` pour une course sans montant. Un
+ * cheval sans course connue est absent.
+ */
+export type AllocationsPmu = Record<number, Array<number | null>>;
 
 function positif(v: unknown): number | null {
   const n = Number(v);
@@ -84,24 +93,52 @@ export function lireCoursePmu(json: unknown): CoursePmu | null {
     distance: positif(c.distance),
     conditionSexe: texte(c.conditionSexe),
     heureDepart: positif(c.heureDepart),
+    allocation: positif(c.montantPrix),
   };
   return out.specialite || out.distance || out.heureDepart ? out : null;
 }
 
-/** Partants et course PMU. `participants: null` = PMU injoignable. */
+/**
+ * PUR : réponse `/performances-detaillees/pretty` du PMU → allocations des
+ * dernières courses (le PMU en donne 5 au plus). Sert à voir, dans l'e-mail à
+ * Steph, quel cheval monte ou descend de catégorie.
+ */
+export function lireAllocationsPmu(json: unknown): AllocationsPmu {
+  const liste = json && typeof json === "object" ? (json as { participants?: unknown }).participants : null;
+  const out: AllocationsPmu = {};
+  if (!Array.isArray(liste)) return out;
+  for (const brut of liste as any[]) {
+    const numero = Number(brut?.numPmu);
+    const courses = brut?.coursesCourues;
+    if (!Number.isFinite(numero) || numero <= 0 || !Array.isArray(courses) || courses.length === 0) continue;
+    out[numero] = (courses as any[])
+      .map((c, i) => ({ date: positif(c?.date), rang: i, allocation: positif(c?.allocation) }))
+      .sort((a, b) => (a.date !== null && b.date !== null && b.date !== a.date ? b.date - a.date : a.rang - b.rang))
+      .map((c) => c.allocation);
+  }
+  return out;
+}
+
+/**
+ * Partants, course et allocations PMU. `participants: null` = PMU injoignable.
+ * `allocations: null` = performances indisponibles : simple confort de lecture,
+ * leur absence ne bloque rien.
+ */
 export async function chargerDonneesPmu(
   dateISO: string,
   R: number,
   C: number,
   timeoutMs = 8000,
-): Promise<{ participants: ParticipantPmu[] | null; course: CoursePmu | null }> {
+): Promise<{ participants: ParticipantPmu[] | null; course: CoursePmu | null; allocations: AllocationsPmu | null }> {
   const base = `/rest/client/1/programme/${isoVersDdmmyyyy(dateISO)}/R${R}/C${C}`;
-  const [jsonParticipants, jsonCourse] = await Promise.all([
+  const [jsonParticipants, jsonCourse, jsonPerformances] = await Promise.all([
     fetchPmuJson(`${base}/participants`, timeoutMs),
     fetchPmuJson(base, timeoutMs),
+    fetchPmuJson(`${base}/performances-detaillees/pretty`, timeoutMs),
   ]);
   return {
     participants: jsonParticipants === null ? null : lireParticipantsPmu(jsonParticipants),
     course: jsonCourse === null ? null : lireCoursePmu(jsonCourse),
+    allocations: jsonPerformances === null ? null : lireAllocationsPmu(jsonPerformances),
   };
 }

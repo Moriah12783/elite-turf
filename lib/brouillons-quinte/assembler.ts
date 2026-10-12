@@ -6,7 +6,7 @@ import { memesPartants, memeNom, nomCheval } from "@/lib/pmu-cotes";
 import { cotesPlausibles } from "@/lib/cotes/fiabilite";
 import { buildSelectionDetail, type SelectionDetailRow } from "@/lib/pronostics/selection-detail";
 import type { NotreSelectionItem } from "@/lib/courses/notre-selection";
-import type { ParticipantPmu } from "./pmu";
+import type { AllocationsPmu, ParticipantPmu } from "./pmu";
 import { SOURCE_BROUILLON } from "./fenetre";
 import {
   versChevauxClasses, decouperPro, choisirValuesElite, confianceDuMarche,
@@ -77,6 +77,8 @@ export interface EntreeAssemblage {
   ctx: Omit<ContexteCourse, "releveCotes">;
   /** Les 8 favoris dans l'ordre du marché (buildNotreSelection). */
   top8: NotreSelectionItem[];
+  /** Allocations des dernières courses par numéro ; absentes ou null = PMU muet, rien n'est bloqué. */
+  allocations?: AllocationsPmu | null;
 }
 
 export type ResultatAssemblage =
@@ -104,6 +106,7 @@ function tableauPartants(
   participants: ParticipantPmu[],
   classes: ChevalClasse[],
   retenus: { pivot: number; base: number[]; valuesPro: number[]; valuesElite: number[] },
+  allocations: AllocationsPmu | null,
 ): LigneMusique[] {
   const rangClasse: Record<number, number> = {};
   for (const c of classes) rangClasse[c.numero] = c.rang;
@@ -137,6 +140,7 @@ function tableauPartants(
       places,
       fautes: places === null ? null : places.filter(estFaute).length,
       retenu: p.nonPartant ? null : retenu(p.numero),
+      allocations: allocations && allocations[p.numero] ? allocations[p.numero] : null,
     };
   };
 
@@ -202,6 +206,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
       heureGmt: heureGmt(e.ctx.departUtc.getTime()),
       releve: releveCotes === null ? null : heureGmt(releveCotes),
       confiance,
+      allocationJour: e.ctx.coursePmu ? e.ctx.coursePmu.allocation : null,
       pro: { base: pro.base.map(resume), values: pro.values.map(resume) },
       elite: {
         base: elite.base.map(resume),
@@ -214,7 +219,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
         base: pro.base,
         valuesPro: pro.values,
         valuesElite: elite.values,
-      }),
+      }, e.allocations ?? null),
       textes: { courte, pro: textePro, elite: texteElite },
     },
   };

@@ -103,7 +103,7 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
     expect(t.map((l) => l.numero)).toEqual([17, 16, 5, 13, 10, 15, 18, 11, 14, 2, 7, 4, 3, 8, 6, 9, 1, 12]);
     expect(t[0]).toEqual({
       numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false,
-      places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐",
+      places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐", allocations: null,
     });
     expect(t[17]).toMatchObject({ numero: 12, nom: "JUNON DE LOU", nonPartant: true, rang: null });
   });
@@ -141,6 +141,7 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
       heureGmt: "11h55",
       releve: "11h55",
       confiance: "MOYEN",
+      allocationJour: 59000,
       pro: {
         base,
         values: [{ numero: 13, nom: "IDOLE ELDE" }, { numero: 10, nom: "JUSTICIA SMART" }, { numero: 15, nom: "IXELLE BLEUE" }],
@@ -160,6 +161,32 @@ describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
       pro: r.pro.analyse_texte,
       elite: r.elite.analyse_texte,
     });
+  });
+
+  it("allocations des dernières courses : reportées sur chaque ligne du tableau, null si inconnues", () => {
+    const avec = assemblerBrouillons({
+      courseId: "course-1", ctx: CTX_ROUTE, top8: TOP8,
+      allocations: { 17: [59000, 44000, null], 2: [21000] },
+    });
+    if (!avec.ok) throw new Error(`assemblage refusé : ${avec.raison}`);
+    const ligne = (n: number) => avec.resume.partants.find((l) => l.numero === n)!;
+    expect(ligne(17).allocations).toEqual([59000, 44000, null]);
+    expect(ligne(2).allocations).toEqual([21000]);
+    expect(ligne(16).allocations).toBeNull();
+  });
+
+  it("allocations indisponibles (PMU muet) : null partout, le reste est inchangé", () => {
+    const sans = assemblerBrouillons({ courseId: "course-1", ctx: CTX_ROUTE, top8: TOP8, allocations: null });
+    if (!sans.ok) throw new Error(`assemblage refusé : ${sans.raison}`);
+    expect(sans.resume.partants.every((l) => l.allocations === null)).toBe(true);
+    expect(sans.pro).toEqual(r.pro);
+    expect(sans.elite).toEqual(r.elite);
+  });
+
+  it("allocation du jour inconnue quand la course PMU manque", () => {
+    const sans = assemblerBrouillons({ courseId: "course-1", ctx: { ...CTX_ROUTE, coursePmu: null }, top8: TOP8 });
+    if (!sans.ok) throw new Error(`assemblage refusé : ${sans.raison}`);
+    expect(sans.resume.allocationJour).toBeNull();
   });
 
   it("moins de 8 favoris → refus", () => {
