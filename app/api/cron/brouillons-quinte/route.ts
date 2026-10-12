@@ -175,6 +175,7 @@ export async function GET(req: NextRequest) {
     const resultat = assemblerBrouillons({
       courseId: quinte.id,
       top8,
+      allocations: pmu.allocations,
       ctx: {
         dateISO: quinte.date_course,
         prix,

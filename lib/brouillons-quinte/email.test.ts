@@ -11,6 +11,7 @@ const R: ResumeBrouillons = {
   heureGmt: "11h55",
   releve: "11h55",
   confiance: "MOYEN",
+  allocationJour: 59000,
   pro: {
     base: BASE,
     values: [{ numero: 13, nom: "IDOLE ELDE" }, { numero: 10, nom: "JUSTICIA SMART" }, { numero: 15, nom: "IXELLE BLEUE" }],
@@ -22,12 +23,12 @@ const R: ResumeBrouillons = {
     completeAvecFautifs: false,
   },
   partants: [
-    { numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false, places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐" },
-    { numero: 10, nom: "JUSTICIA SMART", nonPartant: false, cote: 10, rang: 5, exAequo: false, places: ["4", "0", "D", "D", "D", "5", "D"], fautes: 4, retenu: "Value Pro" },
-    { numero: 11, nom: "JALOUZ D'OLIVERIE", nonPartant: false, cote: 15, rang: 8, exAequo: true, places: ["9", "2", "0", "2", "2", "0", "9"], fautes: 0, retenu: "Value Elite" },
-    { numero: 14, nom: "INES DE LA ROUVRE", nonPartant: false, cote: 15, rang: 9, exAequo: true, places: ["6", "7", "4", "1", "2", "4", "8"], fautes: 0, retenu: null },
-    { numero: 3, nom: "SANS MUSIQUE", nonPartant: false, cote: 57, rang: 13, exAequo: false, places: null, fautes: null, retenu: null },
-    { numero: 12, nom: "JUNON DE LOU", nonPartant: true, cote: 6.8, rang: null, exAequo: false, places: ["4", "5", "D", "5", "D", "1", "2"], fautes: 2, retenu: null },
+    { numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false, places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐", allocations: [59000, 96000, 44000, 59500, 21000] },
+    { numero: 10, nom: "JUSTICIA SMART", nonPartant: false, cote: 10, rang: 5, exAequo: false, places: ["4", "0", "D", "D", "D", "5", "D"], fautes: 4, retenu: "Value Pro", allocations: [19200, null, 15400] },
+    { numero: 11, nom: "JALOUZ D'OLIVERIE", nonPartant: false, cote: 15, rang: 8, exAequo: true, places: ["9", "2", "0", "2", "2", "0", "9"], fautes: 0, retenu: "Value Elite", allocations: null },
+    { numero: 14, nom: "INES DE LA ROUVRE", nonPartant: false, cote: 15, rang: 9, exAequo: true, places: ["6", "7", "4", "1", "2", "4", "8"], fautes: 0, retenu: null, allocations: [400] },
+    { numero: 3, nom: "SANS MUSIQUE", nonPartant: false, cote: 57, rang: 13, exAequo: false, places: null, fautes: null, retenu: null, allocations: null },
+    { numero: 12, nom: "JUNON DE LOU", nonPartant: true, cote: 6.8, rang: null, exAequo: false, places: ["4", "5", "D", "5", "D", "1", "2"], fautes: 2, retenu: null, allocations: null },
   ],
   textes: {
     courte: "Trot attelé, 2 850 m, 17 partantes. Pivot : IMAGE D'ATALANTE (n°17), favorite.",
@@ -76,6 +77,50 @@ describe("tableau des musiques des partants (option A du 07/10)", () => {
 
   it("sans partants : pas de tableau", () => {
     expect(emailBrouillons({ ...R, partants: [] }, LIENS).html).not.toContain("Musiques des partants");
+  });
+});
+
+describe("allocations des dernières courses (demande de Steph du 12/10)", () => {
+  const html = emailBrouillons(R, LIENS).html;
+
+  it("colonne « Alloc. (k€) » : milliers d'euros, de la plus récente à la plus ancienne", () => {
+    expect(html).toContain("Alloc. (k€)");
+    expect(html).toContain("19 · ? · 15");
+  });
+
+  it("en gras : les courses dont l'allocation atteint au moins celle du jour", () => {
+    expect(html).toContain("<b>59</b> · <b>96</b> · 44 · <b>60</b> · 21");
+  });
+
+  it("allocation inférieure à 1 000 € : « <1 »", () => {
+    expect(html).toContain("&lt;1");
+  });
+
+  it("cheval sans allocation connue : tiret", () => {
+    const ligne11 = html.slice(html.indexOf("JALOUZ D&#39;OLIVERIE", html.indexOf("Musiques des partants")));
+    expect(ligne11.slice(0, ligne11.indexOf("</tr>"))).toContain(">—<");
+  });
+
+  it("légende : allocation du jour rappelée", () => {
+    expect(html).toContain("allocation des dernières courses en milliers d'euros");
+    expect(html).toContain("celle du jour (59 000 €)");
+  });
+
+  it("aussi dans l'essai à blanc", () => {
+    expect(emailBrouillons(R, null).html).toContain("Alloc. (k€)");
+  });
+
+  it("aucune allocation connue (PMU muet) : ni colonne ni légende", () => {
+    const sans = emailBrouillons({ ...R, partants: R.partants.map((l) => ({ ...l, allocations: null })) }, LIENS).html;
+    expect(sans).not.toContain("Alloc.");
+    expect(sans).not.toContain("allocation des dernières courses");
+    expect(sans).toContain("Musiques des partants");
+  });
+
+  it("allocation du jour inconnue : montants affichés, rien en gras", () => {
+    const sans = emailBrouillons({ ...R, allocationJour: null }, LIENS).html;
+    expect(sans).toContain("59 · 96 · 44 · 60 · 21");
+    expect(sans).not.toContain("celle du jour");
   });
 });
 

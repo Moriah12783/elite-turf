@@ -1,0 +1,191 @@
+{
+  "allure": "GALOP",
+  "participants": [
+    {
+      "numPmu": 3,
+      "nomCheval": "MORPHEWAN",
+      "coursesCourues": [
+        {
+          "date": 1789250400000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "ParisLongchamp",
+          "nomPrix": "SUPER HANDICAP DE LA RENTREE",
+          "discipline": "PLAT",
+          "allocation": 96000,
+          "distance": 2000,
+          "nbParticipants": 18,
+          "tempsDuPremier": 123850,
+          "etatTerrain": "Bon"
+        },
+        {
+          "date": 1787090400000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "LA TESTE DE BUCH",
+          "nomPrix": "PRIX DE L'HIPPODROME DE SAN SEBASTIEN",
+          "discipline": "PLAT",
+          "allocation": 13700,
+          "distance": 2200,
+          "nbParticipants": 7,
+          "tempsDuPremier": 140760,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1785016800000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "MONT DE MARSAN",
+          "nomPrix": "PRIX LE JOURNAL \"LE VEINARD\"",
+          "discipline": "PLAT",
+          "allocation": 50900,
+          "distance": 2000,
+          "nbParticipants": 16,
+          "tempsDuPremier": 130400,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1780178400000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "CHANTILLY",
+          "nomPrix": "RMC GRAND HANDICAP DE CHANTILLY",
+          "discipline": "PLAT",
+          "allocation": 72000,
+          "distance": 2000,
+          "nbParticipants": 18,
+          "tempsDuPremier": 119650,
+          "etatTerrain": "Bon"
+        },
+        {
+          "date": 1778364000000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "ParisLongchamp",
+          "nomPrix": "SUPER HANDICAP DU PRINTEMPS",
+          "discipline": "PLAT",
+          "allocation": 96000,
+          "distance": 2000,
+          "nbParticipants": 20,
+          "tempsDuPremier": 123690,
+          "etatTerrain": "Très souple"
+        }
+      ]
+    },
+    {
+      "numPmu": 4,
+      "nomCheval": "PLATA D OCTOBRE",
+      "coursesCourues": [
+        {
+          "date": 1789941600000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "VICHY",
+          "nomPrix": "PRIX CHARLES GIRAUDON",
+          "discipline": "PLAT",
+          "allocation": 19200,
+          "distance": 2000,
+          "nbParticipants": 14,
+          "tempsDuPremier": 124600,
+          "etatTerrain": "Souple"
+        },
+        {
+          "date": 1788386400000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "VICHY",
+          "nomPrix": "PRIX DE GRAVESON",
+          "discipline": "PLAT",
+          "allocation": 19200,
+          "distance": 2000,
+          "nbParticipants": 13,
+          "tempsDuPremier": 129400,
+          "etatTerrain": "Souple"
+        },
+        {
+          "date": 1785708000000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "VICHY",
+          "nomPrix": "PRIX DE LA FOUILLOUSE",
+          "discipline": "PLAT",
+          "allocation": 16300,
+          "distance": 2000,
+          "nbParticipants": 13,
+          "tempsDuPremier": 128700,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1784584800000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "VICHY",
+          "nomPrix": "PRIX LE HAKA (PRIX RENE BARDET)",
+          "discipline": "PLAT",
+          "allocation": 15400,
+          "distance": 2000,
+          "nbParticipants": 15,
+          "tempsDuPremier": 124870,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1781906400000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "MARSEILLE PONT DE VIVAUX",
+          "nomPrix": "PRIX DE RHONE-ALPES",
+          "discipline": "PLAT",
+          "allocation": 16300,
+          "distance": 2000,
+          "nbParticipants": 13,
+          "tempsDuPremier": 127510,
+          "etatTerrain": "PSF Standard"
+        }
+      ]
+    },
+    {
+      "numPmu": 7,
+      "nomCheval": "SOUS INFLUENCE",
+      "coursesCourues": [
+        {
+          "date": 1790632800000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "MARSEILLE-BORELY",
+          "nomPrix": "PRIX HENRI CABASSU",
+          "discipline": "PLAT",
+          "allocation": 15400,
+          "distance": 1700,
+          "nbParticipants": 10,
+          "tempsDuPremier": 105380,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1787004000000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "DEAUVILLE-LA TOUQUES",
+          "nomPrix": "PRIX DU CHAMBELLAN DE NORMANDIE",
+          "discipline": "PLAT",
+          "allocation": 18200,
+          "distance": 1600,
+          "nbParticipants": 10,
+          "tempsDuPremier": 97570,
+          "etatTerrain": "Bon souple"
+        },
+        {
+          "date": 1784757600000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "VICHY",
+          "nomPrix": "PRX DU DOMAINE DE SAINTE-PHILOMENE - PRIX DE JALIGNY",
+          "discipline": "PLAT",
+          "allocation": 15400,
+          "distance": 2000,
+          "nbParticipants": 9,
+          "tempsDuPremier": 125240,
+          "etatTerrain": "Souple"
+        },
+        {
+          "date": 1781647200000,
+          "timezoneOffset": 7200000,
+          "hippodrome": "SALON-DE-PROVENCE",
+          "nomPrix": "PRIX ARMAND MOSSE",
+          "discipline": "PLAT",
+          "allocation": 15400,
+          "distance": 1800,
+          "nbParticipants": 10,
+          "tempsDuPremier": 109700,
+          "etatTerrain": "Bon souple"
+        }
+      ]
+    }
+  ]
+}
