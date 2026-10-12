@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   BarChart3, TrendingUp, Trophy, RefreshCw,
   ExternalLink, Users, Star, CheckCircle2,
-  AlertCircle, ChevronUp, ChevronDown, Lock, Zap, Sparkles, Coins,
+  AlertCircle, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Lock, Zap, Sparkles, Coins,
 } from "lucide-react";
 import Link from "next/link";
 import type { CourseStatsEnrichies } from "@/lib/courses/stats-types";
@@ -17,6 +17,7 @@ import { libelleSourceResultats, type SourceResultats } from "@/lib/rapports-pmu
 import {
   allocationEnMilliers, auNiveauDuJour, libellePlace, type ChevalPerformances, type PerformancePmu,
 } from "@/lib/courses/performances-pmu";
+import { bordsCaches, pasDeDefilement } from "@/lib/courses/onglets-defilement";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -129,6 +130,7 @@ function TabButton({
 }) {
   return (
     <button
+      data-onglet={id}
       onClick={() => onClick(id)}
       className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all ${
         active
@@ -1204,21 +1206,80 @@ export default function CourseTabsClient({
   ];
   const tabs = allTabs.filter((t) => !(t.id === "selection" && hideNotreSelection));
 
+  // Sur téléphone, les onglets défilent sans barre visible : un dégradé et une
+  // flèche signalent ceux qui restent hors de vue (12/10/2026).
+  const barreRef = useRef<HTMLDivElement>(null);
+  const [bords, setBords] = useState({ gauche: false, droite: false });
+
+  const mesurer = useCallback(() => {
+    const el = barreRef.current;
+    if (!el) return;
+    const b = bordsCaches({ scrollLeft: el.scrollLeft, clientWidth: el.clientWidth, scrollWidth: el.scrollWidth });
+    setBords((avant) => (avant.gauche === b.gauche && avant.droite === b.droite ? avant : b));
+  }, []);
+
+  useEffect(() => {
+    mesurer();
+    window.addEventListener("resize", mesurer);
+    return () => window.removeEventListener("resize", mesurer);
+  }, [mesurer, tabs.length]);
+
+  /** Défilement animé, sauf si le visiteur a demandé moins d'animations. */
+  const animation = (): ScrollBehavior =>
+    typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
+  const defiler = (sens: 1 | -1) => {
+    const el = barreRef.current;
+    if (el) el.scrollBy({ left: sens * pasDeDefilement(el.clientWidth), behavior: animation() });
+  };
+
+  /** Ouvre l'onglet et le recentre dans la barre (sans faire défiler la page). */
+  const choisir = (id: Tab) => {
+    setActiveTab(id);
+    const barre = barreRef.current;
+    const bouton = barre?.querySelector<HTMLElement>(`[data-onglet="${id}"]`);
+    if (!barre || !bouton) return;
+    const gauche = bouton.getBoundingClientRect().left - barre.getBoundingClientRect().left + barre.scrollLeft;
+    barre.scrollTo({ left: gauche - (barre.clientWidth - bouton.offsetWidth) / 2, behavior: animation() });
+  };
+
   return (
     <div className="card-base overflow-hidden">
       {/* Barre d'onglets */}
-      <div className="flex overflow-x-auto border-b border-border bg-bg-elevated/30 scrollbar-hide">
-        {tabs.map((tab) => (
-          <TabButton
-            key={tab.id}
-            id={tab.id}
-            active={activeTab === tab.id}
-            label={tab.label}
-            icon={tab.icon}
-            badge={tab.badge}
-            onClick={setActiveTab}
-          />
-        ))}
+      <div className="relative border-b border-border bg-bg-elevated/30">
+        <div ref={barreRef} onScroll={mesurer} className="flex overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
+            <TabButton
+              key={tab.id}
+              id={tab.id}
+              active={activeTab === tab.id}
+              label={tab.label}
+              icon={tab.icon}
+              badge={tab.badge}
+              onClick={choisir}
+            />
+          ))}
+        </div>
+        {bords.gauche && (
+          <button
+            type="button"
+            aria-label="Voir les onglets précédents"
+            onClick={() => defiler(-1)}
+            className="absolute inset-y-0 left-0 w-10 flex items-center justify-start pl-1 bg-gradient-to-r from-bg-card via-bg-card/90 to-transparent text-gold-light"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        {bords.droite && (
+          <button
+            type="button"
+            aria-label="Voir les onglets suivants"
+            onClick={() => defiler(1)}
+            className="absolute inset-y-0 right-0 w-10 flex items-center justify-end pr-1 bg-gradient-to-l from-bg-card via-bg-card/90 to-transparent text-gold-light"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Contenu */}
