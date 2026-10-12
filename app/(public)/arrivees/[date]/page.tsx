@@ -375,7 +375,7 @@ export default async function ArriveesPage({ params }: PageProps) {
                     const rp = c.rapports_pmu as RapportsPMU | null;
                     const headlines: { label: string; value: number; accent?: boolean }[] = [];
                     // Ex æquo : le montant n'est qu'une des combinaisons payées → signalé
-                    // (le détail est sur la fiche course, onglet Arrivées & Rapports).
+                    // (le détail est sur la fiche course, onglet Arrivées).
                     const ea = (label: string, pari: Parameters<typeof plusieursCombinaisons>[1]) =>
                       rp && plusieursCombinaisons(rp, pari) ? `${label} (ex æquo)` : label;
                     if (rp?.quinte_plus?.ordre  != null) headlines.push({ label: ea("Quinté+ Ordre", "QUINTE_PLUS"), value: rp.quinte_plus.ordre,  accent: true });

@@ -8,6 +8,7 @@
  */
 import { fetchPmuJson } from "@/lib/pmu-cotes";
 import { isoVersDdmmyyyy } from "@/lib/sync/pmu-arrivees";
+import { lirePerformancesPmu } from "@/lib/courses/performances-pmu";
 
 export interface ParticipantPmu {
   numero: number;
@@ -104,17 +105,9 @@ export function lireCoursePmu(json: unknown): CoursePmu | null {
  * Steph, quel cheval monte ou descend de catégorie.
  */
 export function lireAllocationsPmu(json: unknown): AllocationsPmu {
-  const liste = json && typeof json === "object" ? (json as { participants?: unknown }).participants : null;
   const out: AllocationsPmu = {};
-  if (!Array.isArray(liste)) return out;
-  for (const brut of liste as any[]) {
-    const numero = Number(brut?.numPmu);
-    const courses = brut?.coursesCourues;
-    if (!Number.isFinite(numero) || numero <= 0 || !Array.isArray(courses) || courses.length === 0) continue;
-    out[numero] = (courses as any[])
-      .map((c, i) => ({ date: positif(c?.date), rang: i, allocation: positif(c?.allocation) }))
-      .sort((a, b) => (a.date !== null && b.date !== null && b.date !== a.date ? b.date - a.date : a.rang - b.rang))
-      .map((c) => c.allocation);
+  for (const cheval of lirePerformancesPmu(json)) {
+    if (cheval.courses.length > 0) out[cheval.numero] = cheval.courses.map((c) => c.allocation);
   }
   return out;
 }

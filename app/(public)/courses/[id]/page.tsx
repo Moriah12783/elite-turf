@@ -317,7 +317,8 @@ export default async function CourseDetailPage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-bg-primary" />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 relative z-10 pb-16">
+      {/* max-w-6xl depuis le 12/10/2026 : les 6 onglets doivent tenir sur une ligne (« Statistiques » était coupé). */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-10 pb-16">
         {/* Retour */}
         <Link
           href={`/courses?date=${c.date_course}`}
@@ -474,7 +475,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
               <NotreSelectionPromo items={notreSelection} variant="banner" />
             )}
 
-            {/* ── Onglets : Partants / Côtes / Arrivées & Rapports / Statistiques ── */}
+            {/* ── Onglets : Partants / Sélection / Côtes / Allocations / Arrivées / Statistiques ── */}
             <CourseTabsClient
               courseId={c.id}
               partants={partants}

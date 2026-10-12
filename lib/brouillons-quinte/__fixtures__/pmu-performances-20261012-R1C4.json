@@ -15,7 +15,29 @@
           "distance": 2000,
           "nbParticipants": 18,
           "tempsDuPremier": 123850,
-          "etatTerrain": "Bon"
+          "etatTerrain": "Bon",
+          "participants": [
+            {
+              "numPmu": 3,
+              "place": {
+                "place": 6,
+                "rawValue": "DP",
+                "statusArrivee": "NON_PLACE"
+              },
+              "nomCheval": "MORPHEWAN",
+              "nomJockey": "A.POUCHIN",
+              "poidsJockey": 57.5,
+              "corde": 16,
+              "distanceAvecPrecedent": {
+                "knownValue": "ENCOLURE",
+                "rawValue": "Encolure"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 62110,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1787090400000,
@@ -27,7 +49,26 @@
           "distance": 2200,
           "nbParticipants": 7,
           "tempsDuPremier": 140760,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 3,
+              "place": {
+                "place": 1,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "MORPHEWAN",
+              "nomJockey": "F.GUY",
+              "poidsJockey": 67,
+              "corde": 1,
+              "distanceAvecPrecedent": null,
+              "itsHim": true,
+              "reductionKilometrique": 63980,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1785016800000,
@@ -39,7 +80,29 @@
           "distance": 2000,
           "nbParticipants": 16,
           "tempsDuPremier": 130400,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 2,
+              "place": {
+                "place": 4,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "MORPHEWAN",
+              "nomJockey": "H.BESNIER",
+              "poidsJockey": 60,
+              "corde": 8,
+              "distanceAvecPrecedent": {
+                "knownValue": "UNE_LONGUEUR",
+                "rawValue": "1 L"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 65450,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_AUSTRALIENNES"
+            }
+          ]
         },
         {
           "date": 1780178400000,
@@ -51,7 +114,29 @@
           "distance": 2000,
           "nbParticipants": 18,
           "tempsDuPremier": 119650,
-          "etatTerrain": "Bon"
+          "etatTerrain": "Bon",
+          "participants": [
+            {
+              "numPmu": 8,
+              "place": {
+                "place": 7,
+                "rawValue": "DP",
+                "statusArrivee": "NON_PLACE"
+              },
+              "nomCheval": "MORPHEWAN",
+              "nomJockey": "T.PICCONE",
+              "poidsJockey": 55.5,
+              "corde": 1,
+              "distanceAvecPrecedent": {
+                "knownValue": "UN_NEZ",
+                "rawValue": "Nez"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 59990,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_AUSTRALIENNES"
+            }
+          ]
         },
         {
           "date": 1778364000000,
@@ -63,7 +148,29 @@
           "distance": 2000,
           "nbParticipants": 20,
           "tempsDuPremier": 123690,
-          "etatTerrain": "Très souple"
+          "etatTerrain": "Très souple",
+          "participants": [
+            {
+              "numPmu": 7,
+              "place": {
+                "place": 13,
+                "rawValue": "DP",
+                "statusArrivee": "NON_PLACE"
+              },
+              "nomCheval": "MORPHEWAN",
+              "nomJockey": "C.SOUMILLON",
+              "poidsJockey": 57,
+              "corde": 17,
+              "distanceAvecPrecedent": {
+                "knownValue": "ENCOLURE",
+                "rawValue": "Encolure"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 62790,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         }
       ]
     },
@@ -81,7 +188,26 @@
           "distance": 2000,
           "nbParticipants": 14,
           "tempsDuPremier": 124600,
-          "etatTerrain": "Souple"
+          "etatTerrain": "Souple",
+          "participants": [
+            {
+              "numPmu": 7,
+              "place": {
+                "place": 1,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "PLATA D OCTOBRE",
+              "nomJockey": "H.BOUTIN",
+              "poidsJockey": 58,
+              "corde": 3,
+              "distanceAvecPrecedent": null,
+              "itsHim": true,
+              "reductionKilometrique": 62300,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1788386400000,
@@ -93,7 +219,29 @@
           "distance": 2000,
           "nbParticipants": 13,
           "tempsDuPremier": 129400,
-          "etatTerrain": "Souple"
+          "etatTerrain": "Souple",
+          "participants": [
+            {
+              "numPmu": 9,
+              "place": {
+                "place": 5,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "PLATA D OCTOBRE",
+              "nomJockey": "H.BOUTIN",
+              "poidsJockey": 57,
+              "corde": 5,
+              "distanceAvecPrecedent": {
+                "knownValue": "UN_NEZ",
+                "rawValue": "Nez"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 64750,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1785708000000,
@@ -105,7 +253,26 @@
           "distance": 2000,
           "nbParticipants": 13,
           "tempsDuPremier": 128700,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 2,
+              "place": {
+                "place": 1,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "PLATA D OCTOBRE",
+              "nomJockey": "H.BOUTIN",
+              "poidsJockey": 62,
+              "corde": 4,
+              "distanceAvecPrecedent": null,
+              "itsHim": true,
+              "reductionKilometrique": 64350,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1784584800000,
@@ -117,7 +284,26 @@
           "distance": 2000,
           "nbParticipants": 15,
           "tempsDuPremier": 124870,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 5,
+              "place": {
+                "place": 1,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "PLATA D OCTOBRE",
+              "nomJockey": "H.BOUTIN",
+              "poidsJockey": 58.5,
+              "corde": 4,
+              "distanceAvecPrecedent": null,
+              "itsHim": true,
+              "reductionKilometrique": 62430,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         },
         {
           "date": 1781906400000,
@@ -129,7 +315,29 @@
           "distance": 2000,
           "nbParticipants": 13,
           "tempsDuPremier": 127510,
-          "etatTerrain": "PSF Standard"
+          "etatTerrain": "PSF Standard",
+          "participants": [
+            {
+              "numPmu": 11,
+              "place": {
+                "place": 4,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "PLATA D OCTOBRE",
+              "nomJockey": "H.BOUTIN",
+              "poidsJockey": 60,
+              "corde": 1,
+              "distanceAvecPrecedent": {
+                "knownValue": "INCONNU",
+                "rawValue": "Tête"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 63790,
+              "distanceParcourue": null,
+              "oeillere": "SANS_OEILLERES"
+            }
+          ]
         }
       ]
     },
@@ -147,7 +355,29 @@
           "distance": 1700,
           "nbParticipants": 10,
           "tempsDuPremier": 105380,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 1,
+              "place": {
+                "place": 2,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "SOUS INFLUENCE",
+              "nomJockey": "M.VELON",
+              "poidsJockey": 60,
+              "corde": 2,
+              "distanceAvecPrecedent": {
+                "knownValue": "QUATRE_LONGUEURS",
+                "rawValue": "4 L"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 62350,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_CLASSIQUE"
+            }
+          ]
         },
         {
           "date": 1787004000000,
@@ -159,7 +389,29 @@
           "distance": 1600,
           "nbParticipants": 10,
           "tempsDuPremier": 97570,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 8,
+              "place": {
+                "place": 2,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "SOUS INFLUENCE",
+              "nomJockey": "M.BARZALONA",
+              "poidsJockey": 56,
+              "corde": 7,
+              "distanceAvecPrecedent": {
+                "knownValue": "ENCOLURE",
+                "rawValue": "Encolure"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 61020,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_CLASSIQUE"
+            }
+          ]
         },
         {
           "date": 1784757600000,
@@ -171,7 +423,29 @@
           "distance": 2000,
           "nbParticipants": 9,
           "tempsDuPremier": 125240,
-          "etatTerrain": "Souple"
+          "etatTerrain": "Souple",
+          "participants": [
+            {
+              "numPmu": 1,
+              "place": {
+                "place": 4,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "SOUS INFLUENCE",
+              "nomJockey": "M.BARZALONA",
+              "poidsJockey": 60,
+              "corde": 9,
+              "distanceAvecPrecedent": {
+                "knownValue": "TROIS_QUARTS_DE_LONGUEUR",
+                "rawValue": "3/4 L"
+              },
+              "itsHim": true,
+              "reductionKilometrique": 62800,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_CLASSIQUE"
+            }
+          ]
         },
         {
           "date": 1781647200000,
@@ -183,7 +457,26 @@
           "distance": 1800,
           "nbParticipants": 10,
           "tempsDuPremier": 109700,
-          "etatTerrain": "Bon souple"
+          "etatTerrain": "Bon souple",
+          "participants": [
+            {
+              "numPmu": 1,
+              "place": {
+                "place": 1,
+                "rawValue": "DP",
+                "statusArrivee": "PLACE"
+              },
+              "nomCheval": "SOUS INFLUENCE",
+              "nomJockey": "M.GRANDIN",
+              "poidsJockey": 60,
+              "corde": 3,
+              "distanceAvecPrecedent": null,
+              "itsHim": true,
+              "reductionKilometrique": 60940,
+              "distanceParcourue": null,
+              "oeillere": "OEILLERES_CLASSIQUE"
+            }
+          ]
         }
       ]
     }
