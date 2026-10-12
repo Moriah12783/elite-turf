@@ -13,6 +13,7 @@ import TabStatsRich from "@/components/courses/TabStatsRich";
 import { delaiRafraichissement } from "@/lib/courses/cotes-live";
 import { estPlace } from "@/lib/courses/arrivee";
 import { libelleRang, rangsEffectifs } from "@/lib/courses/rangs";
+import { libelleSourceResultats, type SourceResultats } from "@/lib/rapports-pmu-format";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -652,7 +653,7 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
     arrivee:     ArriveeItem[];
     rapports:    Rapport[];
     commentaire: string | null;
-    source:      string | null;
+    source:      SourceResultats | null;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
@@ -726,12 +727,8 @@ function TabArrivees({ courseId, statut, arriveeOfficielle, partants }: {
   const commentaire = data?.commentaire ?? null;
   const source      = data?.source ?? null;
 
-  // Label "source" lisible : geny-scrape (officiel) > pmu > supabase
-  const sourceLabel = source === "geny-scrape"
-    ? "Geny.com (officiel)"
-    : source === "pmu"
-      ? "API PMU"
-      : "Base Elite Turf";
+  // Label "source" lisible : pmu-definitifs (base) > pmu (direct) > supabase
+  const sourceLabel = libelleSourceResultats(source);
 
   return (
     <div className="divide-y divide-border/30">

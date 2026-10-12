@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { casesQuinte, jsonbRapportsToRapportsList, plusieursCombinaisons } from "./rapports-pmu-format";
+import { casesQuinte, jsonbRapportsToRapportsList, libelleSourceResultats, plusieursCombinaisons } from "./rapports-pmu-format";
 import { combinaisonsMultiples, lignesPrincipales, parseRapportsDefinitifs } from "./sync/pmu-rapports";
 import type { RapportsPMU } from "./sync/geny-rapports-parser";
 
@@ -31,6 +31,22 @@ describe("casesQuinte — grille Quinté+ de la page des arrivées", () => {
       { label: "Bonus 3", value: 6.2, accent: false },
     ]);
     expect(casesQuinte({ tierce: { ordre: 1 } })).toEqual([]);
+  });
+});
+
+describe("libelleSourceResultats — « Source : » sous les rapports", () => {
+  it("rapports en base : le PMU (définitifs), plus Geny depuis le 09/10/2026", () => {
+    expect(libelleSourceResultats("pmu-definitifs")).toBe("PMU (rapports définitifs)");
+  });
+
+  it("repli en direct sur l'API PMU, puis base sans rapport", () => {
+    expect(libelleSourceResultats("pmu")).toBe("API PMU");
+    expect(libelleSourceResultats("supabase")).toBe("Base Elite Turf");
+  });
+
+  it("valeur absente ou inconnue (ancienne réponse) : jamais « Geny »", () => {
+    expect(libelleSourceResultats(null)).toBe("Base Elite Turf");
+    expect(libelleSourceResultats("geny-scrape")).toBe("Base Elite Turf");
   });
 });
 
