@@ -55,7 +55,7 @@
 
 ---
 
-### Tâche 1 : lecture stricte d'Argon et identification de la course
+### Task 1: lecture stricte d'Argon et identification de la course
 
 **Files :**
 - Create : `lib/brouillons-quinte/argon.ts`, `lib/brouillons-quinte/argon.test.ts`, les 3 fixtures JSON et `lib/brouillons-quinte/__fixtures__/themis.ts`
@@ -138,7 +138,7 @@ Les variantes se fabriquent par copie profonde de `ARGON_JSON` (`JSON.parse(JSON
 - [ ] **Étape 5 : relancer les tests**, qui doivent passer.
 - [ ] **Étape 6 : committer** — `feat(brouillons-argon): lecture stricte d'Argon et identification de la course`.
 
-### Tâche 2 : composition PRO / ELITE et confiance
+### Task 2: composition PRO / ELITE et confiance
 
 **Files :** Create `lib/brouillons-quinte/composition-argon.ts`, `lib/brouillons-quinte/composition-argon.test.ts`
 
@@ -198,7 +198,7 @@ it("confianceArgon : 5 et 4 → ELEVE, 3 → MOYEN, 2 et 1 → FAIBLE", …);
 - [ ] **Étape 4 : vérifier que les tests passent.**
 - [ ] **Étape 5 : committer** — `feat(brouillons-argon): composition Pro (4 bases + 2 values) et Elite (values et associés)`.
 
-### Tâche 3 : textes à 4 bases, values et associés
+### Task 3: textes à 4 bases, values et associés
 
 **Files :** Modify `lib/brouillons-quinte/commentaires.ts` (`analyseComplete`, `ligneCheval` ; suppression de `ligneEcarte`), `lib/brouillons-quinte/commentaires.test.ts`
 
@@ -241,7 +241,7 @@ Avec `c(n)` = `{ numero: n, nom, rang }`, où le rang au marché vient des cotes
 - [ ] **Étape 2 : vérifier l'échec**, puis **modifier `commentaires.ts`**, puis **vérifier que les tests passent** (`npx vitest run lib/brouillons-quinte/commentaires.test.ts`).
 - [ ] **Étape 3 : committer** — `feat(brouillons-argon): textes à 4 bases, values et associés`.
 
-### Tâche 4 : e-mails (associés, avis d'Argon, nouveaux échecs)
+### Task 4: e-mails (associés, avis d'Argon, nouveaux échecs)
 
 **Files :** Modify `lib/brouillons-quinte/email.ts`, `lib/brouillons-quinte/email.test.ts`
 
@@ -269,7 +269,7 @@ Avec `c(n)` = `{ numero: n, nom, rang }`, où le rang au marché vient des cotes
 - [ ] **Étape 2 : vérifier l'échec**, puis **modifier `email.ts`**, puis **vérifier que les tests passent.**
 - [ ] **Étape 3 : committer** — `feat(brouillons-argon): e-mails avec associés, avis d'Argon et échecs Argon`.
 
-### Tâche 5 : assemblage à partir d'Argon
+### Task 5: assemblage à partir d'Argon
 
 **Files :** Modify `lib/brouillons-quinte/assembler.ts`, `lib/brouillons-quinte/assembler.test.ts`, `lib/brouillons-quinte/selection.ts`, `lib/brouillons-quinte/selection.test.ts`, `lib/brouillons-quinte/fenetre.ts`
 
@@ -314,7 +314,7 @@ it("textes identiques aux brouillons (resume.textes)", …);
 - [ ] **Étape 2 : vérifier l'échec**, puis **modifier `assembler.ts`, `selection.ts`, `fenetre.ts`**, puis **vérifier que les tests passent** (`npx vitest run lib/brouillons-quinte`).
 - [ ] **Étape 3 : committer** — `feat(brouillons-argon): assemblage des brouillons à partir d'Argon`.
 
-### Tâche 6 : source ARGON et étanchéité
+### Task 6: source ARGON et étanchéité
 
 **Files :** Create `supabase/migrations/20261016_pronostics_source_argon.sql` ; Modify `lib/brouillons-quinte/fenetre.ts` (+ test), `app/api/cron/ia-auto-publish/route.ts:42`, `app/api/admin/ai-review/[id]/publish/route.ts:251`, `app/api/admin/pronostics/bulk/route.ts:190`
 
@@ -327,7 +327,7 @@ it("textes identiques aux brouillons (resume.textes)", …);
 - [ ] **Étape 4 : vérifier le filtre sur la vraie base, en lecture seule** : compter les lignes de `pronostics` avec le client Supabase et `.or(FILTRE_HORS_BROUILLONS)`, puis comparer avec `select count(*) from pronostics where source is null or source not in ('AUTO-MARCHE','ARGON')`. Les deux nombres doivent être égaux et proches du total (aujourd'hui aucune ligne `AUTO-MARCHE` ni `ARGON`).
 - [ ] **Étape 5 : committer** — `feat(brouillons-argon): origine ARGON et étanchéité commune`.
 
-### Tâche 7 : lecture réseau d'Argon et branchement de la route
+### Task 7: lecture réseau d'Argon et branchement de la route
 
 **Files :** Modify `lib/brouillons-quinte/argon.ts` (+ test), `app/api/cron/brouillons-quinte/route.ts` ; `.env.example` si le dépôt en a un (lignes `ARGON_API_URL=`, `ARGON_ACCESS_CLIENT_ID=`, `ARGON_ACCESS_CLIENT_SECRET=` sans valeur)
 
@@ -357,7 +357,7 @@ it("textes identiques aux brouillons (resume.textes)", …);
   Noter le résultat réel dans le compte rendu. Si le Quinté+ du jour n'est pas encore scellé, l'attendu est `skipped: donnees_insuffisantes, raison: argon_non_scelle`.
 - [ ] **Étape 6 : committer** — `feat(brouillons-argon): le robot T-90 lit l'édition scellée d'Argon`.
 
-### Tâche 8 : contrôles finaux, PR et mise en route
+### Task 8: contrôles finaux, PR et mise en route
 
 - [ ] **Étape 1 :** `npx tsc --noEmit`, `npm run build`, `npx vitest run` : tout vert, sortie relevée.
 - [ ] **Étape 2 :** relecture finale de toute la branche par un relecteur neuf, et correction de ses remarques importantes.
