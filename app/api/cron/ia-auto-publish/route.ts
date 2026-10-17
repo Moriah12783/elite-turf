@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { logCronStart } from "@/lib/cron-logger";
+import { FILTRE_HORS_BROUILLONS } from "@/lib/brouillons-quinte/fenetre";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
       `)
       .eq("publie", false)
       // Les brouillons du Quinté+ préparés à T-90 attendent Steph : jamais publiés ici.
-      .or("source.is.null,source.neq.AUTO-MARCHE");
+      .or(FILTRE_HORS_BROUILLONS);
 
     if (fetchErr) throw new Error(`Fetch drafts: ${fetchErr.message}`);
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { minutesAvantDepart, dansFenetre, dernierPassage, gardeFous, situer, type EtatDuJour } from "./fenetre";
+import { minutesAvantDepart, dansFenetre, dernierPassage, gardeFous, situer, FILTRE_HORS_BROUILLONS, type EtatDuJour } from "./fenetre";
 import { parisVersUtc } from "@/lib/paris-date";
 
 const DEPART = parisVersUtc("2026-10-07", "13:55:00")!;
@@ -81,5 +81,18 @@ describe("gardeFous (spec §4 et §10)", () => {
 
   it("e-mail d'échec déjà parti → plus d'essai ce jour-là", () => {
     expect(gardeFous({ ...vide, echecEnvoye: true })).toEqual({ action: "arreter", raison: "echec_deja_signale" });
+  });
+});
+
+describe("étanchéité des brouillons (spec du 16/10/2026, §10)", () => {
+  const vide: EtatDuJour = { existants: [], pretsEnvoye: false, echecEnvoye: false };
+
+  it("filtre commun : garde les lignes sans source, exclut AUTO-MARCHE et ARGON", () => {
+    expect(FILTRE_HORS_BROUILLONS).toBe("source.is.null,source.not.in.(AUTO-MARCHE,ARGON)");
+  });
+
+  it("une ancienne ligne AUTO-MARCHE n'est pas prise pour un brouillon Argon", () => {
+    expect(gardeFous({ ...vide, existants: [{ id: "a", niveau_acces: "PRO", publie: false, source: "AUTO-MARCHE" }] }))
+      .toEqual({ action: "preparer" });
   });
 });

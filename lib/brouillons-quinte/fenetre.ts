@@ -14,6 +14,14 @@ export const DERNIER_PASSAGE_SOUS = 65;
 /** Valeur de `pronostics.source` des brouillons préparés par Argon (spec du 16/10/2026, §10). */
 export const SOURCE_BROUILLON = "ARGON";
 
+/**
+ * Filtre PostgREST (`.or(...)`) qui écarte TOUS les brouillons préparés à T-90,
+ * anciens (AUTO-MARCHE) et Argon : aucun mécanisme de publication automatique
+ * ne doit les reprendre. `source.is.null` garde les lignes sans origine, qu'un
+ * simple `not.in` exclurait (vérifié en base le 07/10/2026 : 358 lignes contre 116).
+ */
+export const FILTRE_HORS_BROUILLONS = "source.is.null,source.not.in.(AUTO-MARCHE,ARGON)";
+
 /** Un PRO ou un ELITE publié sur le Quinté+ : Steph a déjà fait le travail. */
 const NIVEAUX_BLOQUANTS = ["PRO", "ELITE"];
 
