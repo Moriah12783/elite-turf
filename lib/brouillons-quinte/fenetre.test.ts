@@ -65,13 +65,13 @@ describe("gardeFous (spec §4 et §10)", () => {
     expect(gardeFous({ ...vide, existants: [ligne("x", "PRO", false, null), ligne("y", "GRATUIT", true, null)] })).toEqual({ action: "preparer" });
   });
 
-  it("brouillons AUTO-MARCHE déjà là → déjà préparé, avec leurs identifiants", () => {
-    expect(gardeFous({ ...vide, existants: [ligne("a", "PRO", false, "AUTO-MARCHE"), ligne("b", "ELITE", false, "AUTO-MARCHE")] }))
+  it("brouillons ARGON déjà là → déjà préparé, avec leurs identifiants", () => {
+    expect(gardeFous({ ...vide, existants: [ligne("a", "PRO", false, "ARGON"), ligne("b", "ELITE", false, "ARGON")] }))
       .toEqual({ action: "deja_prepare", idPro: "a", idElite: "b" });
   });
 
-  it("un brouillon AUTO-MARCHE publié par Steph → arrêt « déjà publié »", () => {
-    expect(gardeFous({ ...vide, existants: [ligne("a", "PRO", true, "AUTO-MARCHE"), ligne("b", "ELITE", false, "AUTO-MARCHE")] }))
+  it("un brouillon ARGON publié par Steph → arrêt « déjà publié »", () => {
+    expect(gardeFous({ ...vide, existants: [ligne("a", "PRO", true, "ARGON"), ligne("b", "ELITE", false, "ARGON")] }))
       .toEqual({ action: "arreter", raison: "deja_publie" });
   });
 

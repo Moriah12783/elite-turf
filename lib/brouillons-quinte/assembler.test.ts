@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { controlerDonneesPmu, assemblerBrouillons } from "./assembler";
-import { analyseCourte } from "./commentaires";
-import { CTX, CTX_ROUTE, PARTICIPANTS, TOP8 } from "./__fixtures__/gobelins";
+import { controlerDonneesPmu, assemblerBrouillons, type EntreeAssemblage } from "./assembler";
+import { trouverCourseArgon, type CourseArgon } from "./argon";
+import { PARTICIPANTS } from "./__fixtures__/gobelins";
+import { ARGON_JSON, CIBLE_THEMIS, CTX_THEMIS } from "./__fixtures__/themis";
 
 /** Partants de la base tels que la route les lit (numéro + nom). */
 const BASE = PARTICIPANTS.map((p) => ({ numero: p.numero, nom_cheval: p.nom }));
@@ -48,148 +49,114 @@ describe("controlerDonneesPmu", () => {
   });
 });
 
-describe("assemblerBrouillons — Quinté+ du 07/10/2026 au départ", () => {
-  const r = assemblerBrouillons({ courseId: "course-1", ctx: CTX_ROUTE, top8: TOP8 });
+
+/** La course du Prix Thémis lue chez Argon (vraie réponse du 16/10/2026). */
+function argonThemis(): CourseArgon {
+  const r = trouverCourseArgon(ARGON_JSON, CIBLE_THEMIS);
+  if (!r.ok) throw new Error(r.raison);
+  return r.course;
+}
+
+function assembler(entree: Partial<EntreeAssemblage> = {}) {
+  return assemblerBrouillons({ courseId: "course-themis", ctx: CTX_THEMIS, argon: argonThemis(), allocations: null, ...entree });
+}
+
+describe("assemblerBrouillons — Prix Thémis du 16/10/2026 (édition T-90 d'Argon)", () => {
+  const r = assembler();
   if (!r.ok) throw new Error(`assemblage refusé : ${r.raison}`);
 
-  it("Pro : 17 ⭐, 16, 5 en base ; 13, 10, 15 en values", () => {
-    expect(r.pro.selection).toEqual([17, 16, 5, 13, 10, 15]);
+  it("PRO : 3-6-12-13 + 7-4, pivot 3, confiance ELEVE (5 étoiles), source ARGON, non publié", () => {
+    expect(r.pro.selection).toEqual([3, 6, 12, 13, 7, 4]);
     expect(r.pro.selection_detail).toEqual([
-      { number: 17, role: "BASE", name: "IMAGE D'ATALANTE", pivot: true },
-      { number: 16, role: "BASE", name: "JAIN MAB" },
-      { number: 5, role: "BASE", name: "JEUNE ORANGE COTON" },
-      { number: 13, role: "OUTSIDER", name: "IDOLE ELDE" },
-      { number: 10, role: "OUTSIDER", name: "JUSTICIA SMART" },
-      { number: 15, role: "OUTSIDER", name: "IXELLE BLEUE" },
+      { number: 3, role: "BASE", name: "EMINENT KRONOS", pivot: true },
+      { number: 6, role: "BASE", name: "DOMENIK JET" },
+      { number: 12, role: "BASE", name: "JALENDRA DE MALAC" },
+      { number: 13, role: "BASE", name: "COLBERT WF" },
+      { number: 7, role: "OUTSIDER", name: "KEROSEN DU GERS" },
+      { number: 4, role: "OUTSIDER", name: "KISS ME AGAIN" },
     ]);
-  });
-
-  it("Elite : même base ; 15, 18, 11 en values", () => {
-    expect(r.elite.niveau_acces).toBe("ELITE");
-    expect(r.elite.selection).toEqual([17, 16, 5, 15, 18, 11]);
-    expect(r.elite.selection_detail!.filter((d) => d.role === "OUTSIDER").map((d) => d.number)).toEqual([15, 18, 11]);
-  });
-
-  it("brouillons jamais publiés, origine AUTO-MARCHE, confiance Moyen", () => {
-    for (const l of [r.pro, r.elite]) {
-      expect(l.publie).toBe(false);
-      expect(l.date_publication).toBeNull();
-      expect(l.source).toBe("AUTO-MARCHE");
-      expect(l.auteur_id).toBeNull();
-      expect(l.type_pari).toBe("QUINTE_PLUS");
-      expect(l.course_id).toBe("course-1");
-      expect(l.confiance).toBe("MOYEN");
-    }
-  });
-
-  it("textes : analyse courte commune, analyse complète propre à chaque niveau, relevé calculé", () => {
-    expect(r.pro.analyse_courte).toBe(analyseCourte(CTX, { numero: 17, nom: "IMAGE D'ATALANTE", rang: 1 }));
-    expect(r.elite.analyse_courte).toBe(r.pro.analyse_courte);
-    expect(r.pro.analyse_texte).toContain("Cotes PMU relevées à 11h55 GMT");
-    expect(r.elite.analyse_texte).toContain("n°11 JALOUZ D'OLIVERIE — driver L. BAUDOUIN, entraîneur J.M. BAUDOUIN. 8e du marché.");
-    expect(r.pro.analyse_texte).not.toContain("Retenue pour sa cote");
-  });
-
-  it("le n°12, non partant, n'apparaît nulle part", () => {
-    for (const l of [r.pro, r.elite]) {
-      expect(l.selection).not.toContain(12);
-      expect(l.analyse_texte).not.toContain("JUNON");
-      expect(l.analyse_courte).not.toContain("JUNON");
-    }
-  });
-
-  it("tableau des musiques : tous les chevaux, classés par cote, non-partant à la fin", () => {
-    const t = r.resume.partants;
-    expect(t.map((l) => l.numero)).toEqual([17, 16, 5, 13, 10, 15, 18, 11, 14, 2, 7, 4, 3, 8, 6, 9, 1, 12]);
-    expect(t[0]).toEqual({
-      numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false,
-      places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐", allocations: null,
-    });
-    expect(t[17]).toMatchObject({ numero: 12, nom: "JUNON DE LOU", nonPartant: true, rang: null });
-  });
-
-  it("ex-aequo signalés : n°11 (retenu) et n°14 à 15", () => {
-    const t = r.resume.partants;
-    expect(t.find((l) => l.numero === 11)).toMatchObject({ rang: 8, exAequo: true, retenu: "Value Elite" });
-    expect(t.find((l) => l.numero === 14)).toMatchObject({ rang: 9, exAequo: true, retenu: null, places: ["6", "7", "4", "1", "2", "4", "8"] });
-  });
-
-  it("le n°2 hors sélection : sa musique sur 7 courses est visible", () => {
-    expect(r.resume.partants.find((l) => l.numero === 2)).toMatchObject({
-      rang: 10, cote: 23, places: ["2", "1", "5", "7", "0", "2", "3"], fautes: 0, retenu: null,
+    expect(r.pro).toMatchObject({
+      course_id: "course-themis", niveau_acces: "PRO", type_pari: "QUINTE_PLUS",
+      confiance: "ELEVE", source: "ARGON", publie: false, date_publication: null, auteur_id: null,
     });
   });
 
-  it("fautes comptées sur les 7 courses ; chevaux retenus en Pro, en Elite ou dans les deux", () => {
-    const ligne = (n: number) => r.resume.partants.find((l) => l.numero === n)!;
-    expect(ligne(10)).toMatchObject({ fautes: 4, retenu: "Value Pro" });
-    expect(ligne(16).retenu).toBe("Base");
-    expect(ligne(13).retenu).toBe("Value Pro");
-    expect(ligne(15).retenu).toBe("Value Pro + Elite");
-    expect(ligne(18).retenu).toBe("Value Elite");
+  it("ELITE : 3-6-12-13 + values 11-14 + associés 7-4, rôles ASSOCIE, aucun couplé", () => {
+    expect(r.elite.selection).toEqual([3, 6, 12, 13, 11, 14, 7, 4]);
+    expect(r.elite.selection_detail).toEqual([
+      { number: 3, role: "BASE", name: "EMINENT KRONOS", pivot: true },
+      { number: 6, role: "BASE", name: "DOMENIK JET" },
+      { number: 12, role: "BASE", name: "JALENDRA DE MALAC" },
+      { number: 13, role: "BASE", name: "COLBERT WF" },
+      { number: 11, role: "OUTSIDER", name: "READLY LAVEC" },
+      { number: 14, role: "OUTSIDER", name: "KAMEHAMEHA" },
+      { number: 7, role: "ASSOCIE", name: "KEROSEN DU GERS" },
+      { number: 4, role: "ASSOCIE", name: "KISS ME AGAIN" },
+    ]);
+    expect(JSON.stringify(r.elite.selection_detail)).not.toContain("couple");
+    expect(r.elite).toMatchObject({ niveau_acces: "ELITE", source: "ARGON", publie: false });
   });
 
-  it("résumé pour l'e-mail", () => {
-    const base = [{ numero: 17, nom: "IMAGE D'ATALANTE" }, { numero: 16, nom: "JAIN MAB" }, { numero: 5, nom: "JEUNE ORANGE COTON" }];
-    const { partants: _tableau, textes: _textes, ...resume } = r.resume;
-    expect(resume).toEqual({
-      jour: "2026-10-07",
-      prix: "Prix des Gobelins",
-      hippodrome: "Enghien",
-      reunion: 1,
-      course: 1,
-      heureGmt: "11h55",
-      releve: "11h55",
-      confiance: "MOYEN",
-      allocationJour: 59000,
-      pro: {
-        base,
-        values: [{ numero: 13, nom: "IDOLE ELDE" }, { numero: 10, nom: "JUSTICIA SMART" }, { numero: 15, nom: "IXELLE BLEUE" }],
-      },
-      elite: {
-        base,
-        values: [{ numero: 15, nom: "IXELLE BLEUE" }, { numero: 18, nom: "JOIE DE LA COTE" }, { numero: 11, nom: "JALOUZ D'OLIVERIE" }],
-        ecartes: [],
-        completeAvecFautifs: false,
-      },
+  it("résumé : avis d'Argon (scellée à 16:45, 5 étoiles, decision recopiée) et allocation du jour 68 000", () => {
+    expect(r.resume.argon).toEqual({
+      lockGmt: "16:45",
+      argon8: [
+        { numero: 3, nom: "EMINENT KRONOS" }, { numero: 6, nom: "DOMENIK JET" }, { numero: 12, nom: "JALENDRA DE MALAC" },
+        { numero: 13, nom: "COLBERT WF" }, { numero: 7, nom: "KEROSEN DU GERS" }, { numero: 4, nom: "KISS ME AGAIN" },
+        { numero: 11, nom: "READLY LAVEC" }, { numero: 14, nom: "KAMEHAMEHA" },
+      ],
+      etoiles: 5,
+      deconseillee: false,
+      decision: "⭐ COUPLE MAITRE: 3 (NC) - 6 (4e 🔵) · 🎯 SNIPER: N°12 (NC)",
+      nonPartants: [],
     });
+    expect(r.resume.allocationJour).toBe(68000);
+    expect(r.resume.confiance).toBe("ELEVE");
+    expect(r.resume.elite.associes.map((c) => c.numero)).toEqual([7, 4]);
+    expect(r.resume.releve).toBe("18h15");
   });
 
-  it("résumé : les textes des brouillons, pour l'essai à blanc", () => {
-    expect(r.resume.textes).toEqual({
-      courte: r.pro.analyse_courte,
-      pro: r.pro.analyse_texte,
-      elite: r.elite.analyse_texte,
-    });
+  it("tableau : « Value Pro · Associé » pour 7 et 4, « Value Elite » pour 11 et 14", () => {
+    const retenu = (n: number) => r.resume.partants.find((l) => l.numero === n)!.retenu;
+    expect([3, 6, 12, 13].map(retenu)).toEqual(["Base ⭐", "Base", "Base", "Base"]);
+    expect([7, 4].map(retenu)).toEqual(["Value Pro · Associé", "Value Pro · Associé"]);
+    expect([11, 14].map(retenu)).toEqual(["Value Elite", "Value Elite"]);
+    expect(retenu(1)).toBeNull();
   });
 
-  it("allocations des dernières courses : reportées sur chaque ligne du tableau, null si inconnues", () => {
-    const avec = assemblerBrouillons({
-      courseId: "course-1", ctx: CTX_ROUTE, top8: TOP8,
-      allocations: { 17: [59000, 44000, null], 2: [21000] },
-    });
-    if (!avec.ok) throw new Error(`assemblage refusé : ${avec.raison}`);
-    const ligne = (n: number) => avec.resume.partants.find((l) => l.numero === n)!;
-    expect(ligne(17).allocations).toEqual([59000, 44000, null]);
-    expect(ligne(2).allocations).toEqual([21000]);
-    expect(ligne(16).allocations).toBeNull();
+  it("tableau : ordre du marché (cote croissante, à égalité le numéro)", () => {
+    expect(r.resume.partants.slice(0, 6).map((l) => [l.numero, l.rang])).toEqual([[3, 1], [6, 2], [4, 3], [7, 4], [12, 5], [11, 6]]);
   });
 
-  it("allocations indisponibles (PMU muet) : null partout, le reste est inchangé", () => {
-    const sans = assemblerBrouillons({ courseId: "course-1", ctx: CTX_ROUTE, top8: TOP8, allocations: null });
-    if (!sans.ok) throw new Error(`assemblage refusé : ${sans.raison}`);
-    expect(sans.resume.partants.every((l) => l.allocations === null)).toBe(true);
-    expect(sans.pro).toEqual(r.pro);
-    expect(sans.elite).toEqual(r.elite);
+  it("textes identiques aux brouillons (resume.textes)", () => {
+    expect(r.resume.textes).toEqual({ courte: r.pro.analyse_courte, pro: r.pro.analyse_texte, elite: r.elite.analyse_texte });
+    expect(r.elite.analyse_texte).toContain("LES ASSOCIÉS");
+    expect(r.pro.analyse_texte).not.toContain("LES ASSOCIÉS");
   });
 
-  it("allocation du jour inconnue quand la course PMU manque", () => {
-    const sans = assemblerBrouillons({ courseId: "course-1", ctx: { ...CTX_ROUTE, coursePmu: null }, top8: TOP8 });
-    if (!sans.ok) throw new Error(`assemblage refusé : ${sans.raison}`);
-    expect(sans.resume.allocationJour).toBeNull();
+  it("un non-partant (n°6) : nonPartants [6] dans le résumé, Elite à 7 chevaux", () => {
+    const parts = CTX_THEMIS.participants.map((p) => (p.numero === 6 ? { ...p, nonPartant: true } : p));
+    const np = assembler({ ctx: { ...CTX_THEMIS, participants: parts } });
+    if (!np.ok) throw new Error(np.raison);
+    expect(np.pro.selection).toEqual([3, 12, 13, 7, 4, 11]);
+    expect(np.elite.selection).toEqual([3, 12, 13, 7, 11, 14, 4]);
+    expect(np.resume.argon.nonPartants).toEqual([{ numero: 6, nom: "DOMENIK JET" }]);
   });
 
-  it("moins de 8 favoris → refus", () => {
-    expect(assemblerBrouillons({ courseId: "x", ctx: CTX_ROUTE, top8: TOP8.slice(0, 7) })).toEqual({ ok: false, raison: "cotes_indisponibles" });
+  it("trois non-partants : argon_partants_insuffisants", () => {
+    const parts = CTX_THEMIS.participants.map((p) => ([6, 7, 4].indexOf(p.numero) !== -1 ? { ...p, nonPartant: true } : p));
+    expect(assembler({ ctx: { ...CTX_THEMIS, participants: parts } })).toEqual({ ok: false, raison: "argon_partants_insuffisants" });
+  });
+
+  it("cheval retenu sans cote PMU : cotes_indisponibles (aucun « Xe du marché » inventé)", () => {
+    const parts = CTX_THEMIS.participants.map((p) => (p.numero === 14 ? { ...p, cote: null } : p));
+    expect(assembler({ ctx: { ...CTX_THEMIS, participants: parts } })).toEqual({ ok: false, raison: "cotes_indisponibles" });
+  });
+
+  it("course déconseillée et 3 étoiles : repris dans le résumé, confiance MOYEN", () => {
+    const d = assembler({ argon: { ...argonThemis(), deconseillee: true, etoiles: 3 } });
+    if (!d.ok) throw new Error(d.raison);
+    expect(d.resume.argon.deconseillee).toBe(true);
+    expect(d.pro.confiance).toBe("MOYEN");
   });
 });
