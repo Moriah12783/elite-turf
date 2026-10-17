@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { trouverCourseArgon, controlerChevauxArgon, type CourseArgon } from "./argon";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { trouverCourseArgon, controlerChevauxArgon, chargerArgon, type CourseArgon } from "./argon";
 import { ARGON_JSON, CIBLE_THEMIS, PARTICIPANTS_THEMIS } from "./__fixtures__/themis";
 
 /** Copie modifiable de la vraie réponse d'Argon. */
@@ -124,5 +124,69 @@ describe("controlerChevauxArgon", () => {
 
   it("numéro de argon8 absent du PMU : incohérent", () => {
     expect(controlerChevauxArgon(courseLue(), PARTICIPANTS_THEMIS.filter((p) => p.numero !== 14))).toBe("argon_partants_incoherents");
+  });
+});
+
+describe("chargerArgon (lecture réseau)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.ARGON_API_URL;
+    delete process.env.ARGON_ACCESS_CLIENT_ID;
+    delete process.env.ARGON_ACCESS_CLIENT_SECRET;
+  });
+
+  const reponse = (corps: string, statut = 200, type = "application/json; charset=utf-8") =>
+    new Response(corps, { status: statut, headers: { "content-type": type } });
+
+  function espion(r: () => Promise<Response>) {
+    const f = vi.fn((_url: string, _init: any) => r());
+    vi.stubGlobal("fetch", f);
+    return f;
+  }
+
+  it("URL par défaut, sans jeton : pas d'en-têtes Access ; JSON valide → objet", async () => {
+    const f = espion(async () => reponse('{"status":"ok","races":[]}'));
+    expect(await chargerArgon()).toEqual({ status: "ok", races: [] });
+    const [url, init] = f.mock.calls[0];
+    expect(url).toBe("https://argon.elite-turf.fr/api/races");
+    expect(init.headers["CF-Access-Client-Id"]).toBeUndefined();
+    expect(init.headers["CF-Access-Client-Secret"]).toBeUndefined();
+  });
+
+  it("jeton de service présent : en-têtes CF-Access-Client-Id et CF-Access-Client-Secret envoyés", async () => {
+    process.env.ARGON_ACCESS_CLIENT_ID = "id-de-test.access";
+    process.env.ARGON_ACCESS_CLIENT_SECRET = "secret-de-test";
+    const f = espion(async () => reponse('{"status":"ok","races":[]}'));
+    await chargerArgon();
+    const [, init] = f.mock.calls[0];
+    expect(init.headers["CF-Access-Client-Id"]).toBe("id-de-test.access");
+    expect(init.headers["CF-Access-Client-Secret"]).toBe("secret-de-test");
+  });
+
+  it("ARGON_API_URL définie : c'est elle qui est lue", async () => {
+    process.env.ARGON_API_URL = "https://argon.exemple.test/api/races";
+    const f = espion(async () => reponse('{"status":"ok","races":[]}'));
+    await chargerArgon();
+    expect(f.mock.calls[0][0]).toBe("https://argon.exemple.test/api/races");
+  });
+
+  it("page HTML de connexion Cloudflare Access (200, text/html) → null, jamais lue comme des données", async () => {
+    espion(async () => reponse("<!DOCTYPE html><title>Cloudflare Access</title>", 200, "text/html; charset=UTF-8"));
+    expect(await chargerArgon()).toBeNull();
+  });
+
+  it("Argon en erreur (503) → null", async () => {
+    espion(async () => reponse('{"error":"maintenance"}', 503));
+    expect(await chargerArgon()).toBeNull();
+  });
+
+  it("JSON illisible → null", async () => {
+    espion(async () => reponse("{pas du json"));
+    expect(await chargerArgon()).toBeNull();
+  });
+
+  it("erreur réseau → null", async () => {
+    espion(async () => { throw new TypeError("fetch failed"); });
+    expect(await chargerArgon()).toBeNull();
   });
 });

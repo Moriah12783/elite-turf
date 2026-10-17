@@ -148,3 +148,35 @@ export function controlerChevauxArgon(course: CourseArgon, participants: Partici
   }
   return null;
 }
+
+const URL_ARGON_PAR_DEFAUT = "https://argon.elite-turf.fr/api/races";
+
+/**
+ * Lecture réseau d'Argon (`ARGON_API_URL`, par défaut l'API publique). Si
+ * `ARGON_ACCESS_CLIENT_ID` et `ARGON_ACCESS_CLIENT_SECRET` sont définis (jeton
+ * de service Cloudflare Access, posés par Steph comme secrets du Worker), ils
+ * partent dans les en-têtes CF-Access-*. `null` = Argon injoignable : erreur
+ * réseau, délai dépassé, statut d'erreur, ou réponse qui n'est pas du JSON
+ * (la page de connexion Access, par exemple, arrive en 200 text/html).
+ */
+export async function chargerArgon(timeoutMs = 15000): Promise<unknown | null> {
+  const url = process.env.ARGON_API_URL || URL_ARGON_PAR_DEFAUT;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const id = process.env.ARGON_ACCESS_CLIENT_ID;
+  const secret = process.env.ARGON_ACCESS_CLIENT_SECRET;
+  if (id && secret) {
+    headers["CF-Access-Client-Id"] = id;
+    headers["CF-Access-Client-Secret"] = secret;
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { headers, cache: "no-store", signal: ctrl.signal });
+    if (!res.ok || (res.headers.get("content-type") || "").indexOf("application/json") === -1) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
