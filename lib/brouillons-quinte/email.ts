@@ -4,8 +4,10 @@
  * sont faits par la route.
  */
 import type { Confiance } from "./selection";
+import type { RaisonArgon } from "./argon";
 
 export type RaisonEchec =
+  | RaisonArgon
   | "pmu_injoignable"
   | "course_pmu_non_reconnue"
   | "partants_incoherents"
@@ -18,8 +20,14 @@ export const RAISONS_LISIBLES: Record<RaisonEchec, string> = {
   course_pmu_non_reconnue: "la course PMU ne correspond pas à la nôtre (chevaux différents)",
   partants_incoherents: "les partants de notre base ne correspondent pas à ceux du PMU (numéros ou noms)",
   cotes_factices: "les cotes PMU semblent factices",
-  cotes_indisponibles: "moins de 8 chevaux ont une cote PMU",
+  cotes_indisponibles: "des chevaux n'ont pas de cote PMU",
   erreur: "erreur technique",
+  argon_injoignable: "Argon ne répond pas",
+  argon_format_inattendu: "la réponse d'Argon n'a pas le format attendu",
+  argon_course_introuvable: "Argon ne connaît pas ce Quinté+",
+  argon_non_scelle: "l'édition T-90 d'Argon n'a pas été scellée à temps",
+  argon_partants_incoherents: "les chevaux d'Argon ne correspondent pas aux partants du PMU",
+  argon_partants_insuffisants: "moins de 6 chevaux d'Argon sont partants",
 };
 
 export interface ChevalResume {
@@ -41,7 +49,7 @@ export interface LigneMusique {
   places: string[] | null;
   /** Fautes (D, A, T) parmi ces places ; null si musique inconnue. */
   fautes: number | null;
-  /** « Base ⭐ », « Base », « Value Pro », « Value Elite » ou « Value Pro + Elite » ; null sinon. */
+  /** « Base ⭐ », « Base », « Value Pro », « Value Elite », « Value Pro + Elite », « Associé » ou « Value Pro · Associé » ; null sinon. */
   retenu: string | null;
   /** Allocations (euros) des dernières courses, de la plus récente à la plus ancienne ; null si inconnues. */
   allocations: Array<number | null> | null;
@@ -59,7 +67,19 @@ export interface ResumeBrouillons {
   /** Allocation de la course du jour (euros) ; null si inconnue. */
   allocationJour: number | null;
   pro: { base: ChevalResume[]; values: ChevalResume[] };
-  elite: { base: ChevalResume[]; values: ChevalResume[]; ecartes: ChevalResume[]; completeAvecFautifs: boolean };
+  elite: { base: ChevalResume[]; values: ChevalResume[]; associes: ChevalResume[] };
+  /** Avis d'Argon, recopié pour information (jamais posé dans les brouillons). */
+  argon: {
+    /** Heure GMT du scellement de l'édition T-90, « 16:45 » ; null si Argon ne la donne pas. */
+    lockGmt: string | null;
+    argon8: ChevalResume[];
+    etoiles: number;
+    /** Argon déconseille de jouer la course. */
+    deconseillee: boolean;
+    decision: string | null;
+    /** Chevaux d'Argon non partants selon le PMU. */
+    nonPartants: ChevalResume[];
+  };
   /** Tous les chevaux, classés par cote, non-partants à la fin. */
   partants: LigneMusique[];
   /** Textes des brouillons (analyse courte commune + analyses complètes), montrés dans l'essai à blanc. */
@@ -96,10 +116,38 @@ function chevaux(liste: ChevalResume[], pivot: number | null): string {
   return liste.map((c) => `n°${c.numero} ${echapper(c.nom)}${c.numero === pivot ? " (pivot)" : ""}`).join(", ");
 }
 
-function blocSelection(titre: string, sel: { base: ChevalResume[]; values: ChevalResume[] }): string {
+function blocSelection(niveau: "Pro" | "Elite", sel: { base: ChevalResume[]; values: ChevalResume[]; associes?: ChevalResume[] }): string {
   const pivot = sel.base.length > 0 ? sel.base[0].numero : null;
-  return `<h3 style="margin:16px 0 4px">${titre}</h3>`
-    + `<p style="margin:0">★ Base : ${chevaux(sel.base, pivot)}<br>◇ Values : ${chevaux(sel.values, null)}</p>`;
+  const associes = sel.associes ?? [];
+  const total = sel.base.length + sel.values.length + associes.length;
+  return `<h3 style="margin:16px 0 4px">${niveau} (${total} chevaux)</h3>`
+    + `<p style="margin:0">★ Base : ${chevaux(sel.base, pivot)}<br>◇ Values : ${chevaux(sel.values, null)}`
+    + (associes.length > 0 ? `<br>🤝 Associés : ${chevaux(associes, null)}` : "")
+    + "</p>";
+}
+
+/** « n°6 » ; « n°6 et n°7 ». */
+function numerosEt(liste: ChevalResume[]): string {
+  const n = liste.map((c) => `n°${c.numero}`);
+  return n.length <= 1 ? n.join("") : `${n.slice(0, -1).join(", ")} et ${n[n.length - 1]}`;
+}
+
+/** Alerte en tête : un cheval d'Argon est non partant, l'Elite est incomplet. */
+function alerteNonPartants(r: ResumeBrouillons): string {
+  const np = r.argon.nonPartants;
+  if (np.length === 0) return "";
+  const total = r.elite.base.length + r.elite.values.length + r.elite.associes.length;
+  return `<p><strong>⚠️ ${numerosEt(np)} ${np.length > 1 ? "non partants" : "non partant"} : Elite à ${total} chevaux, ajoute un cheval avant de publier.</strong></p>`;
+}
+
+/** Avis d'Argon, pour information : Steph choisit le couplé lui-même. */
+function blocAvisArgon(a: ResumeBrouillons["argon"]): string {
+  const scellee = a.lockGmt ? `Édition T-90 scellée à ${echapper(a.lockGmt)} GMT` : "Édition T-90 scellée";
+  const etoiles = `${a.etoiles} ${a.etoiles > 1 ? "étoiles" : "étoile"}`;
+  return `<h3 style="margin:16px 0 4px">Avis d'Argon (pour information)</h3>`
+    + `<p style="margin:0">${scellee} : ${a.argon8.map((c) => c.numero).join(" · ")}<br>${etoiles}`
+    + (a.decision ? ` · ${echapper(a.decision)}` : "")
+    + "</p>";
 }
 
 /** 3.8 → « 3,8 » ; 10 → « 10 ». */
@@ -182,21 +230,18 @@ function blocLiens(l: LiensBrouillons): string {
 
 /** « prêts » (avec liens) ou essai à blanc (`liens = null`). */
 export function emailBrouillons(r: ResumeBrouillons, liens: LiensBrouillons | null): { subject: string; html: string } {
-  const subject = liens === null
+  const objet = liens === null
     ? `[ESSAI À BLANC] Brouillons du Quinté+ — ${r.prix}`
     : `Brouillons du Quinté+ prêts — ${r.prix} (${r.heureGmt} GMT)`;
+  const subject = r.argon.deconseillee ? `⚠️ Argon déconseille de jouer cette course — ${objet}` : objet;
   const morceaux = [
+    alerteNonPartants(r),
     `<p><strong>${echapper(r.prix)}</strong> — ${echapper(r.hippodrome)} (R${r.reunion}C${r.course}), départ ${r.heureGmt} GMT.</p>`,
     `<p>${r.releve ? `Cotes PMU relevées à ${r.releve} GMT` : "Cotes PMU"} · confiance proposée : ${LIBELLES_CONFIANCE[r.confiance]}.</p>`,
-    blocSelection("Pro (6 chevaux)", r.pro),
-    blocSelection("Elite (6 chevaux)", r.elite),
+    blocSelection("Pro", r.pro),
+    blocSelection("Elite", r.elite),
+    blocAvisArgon(r.argon),
   ];
-  if (r.elite.ecartes.length > 0) {
-    morceaux.push(`<p>Non retenus pour leurs fautes : ${chevaux(r.elite.ecartes, null)}.</p>`);
-  }
-  if (r.elite.completeAvecFautifs) {
-    morceaux.push("<p>⚠️ Moins de 3 values sans fautes : l'Elite a été complété avec des chevaux fautifs. À vérifier.</p>");
-  }
   if (liens === null) {
     morceaux.push("<p>Rien n'a été créé : l'interrupteur BROUILLONS_QUINTE_ENABLED est fermé.</p>");
     morceaux.push(blocTextes(r.textes));

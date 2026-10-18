@@ -36,6 +36,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
 import type { AnalyseWriterResult, ElitePlanDeJeu, NiveauAcces } from "@/lib/ai-pronostics/types";
 import { sanitizeForPublic } from "@/lib/ai-pronostics/public-tone";
+import { FILTRE_HORS_BROUILLONS } from "@/lib/brouillons-quinte/fenetre";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
@@ -246,9 +247,9 @@ export async function POST(req: NextRequest, ctx: { params: { id: string } }) {
     .select("id")
     .eq("course_id",    draft.course_id)
     .eq("niveau_acces", niveauLegacy)
-    // Un brouillon AUTO-MARCHE (préparé à T-90) attend la relecture de Steph :
+    // Un brouillon préparé à T-90 (AUTO-MARCHE ou ARGON) attend la relecture de Steph :
     // ne jamais le reprendre ni le publier avec le contenu de l'IA.
-    .or("source.is.null,source.neq.AUTO-MARCHE")
+    .or(FILTRE_HORS_BROUILLONS)
     .maybeSingle();
 
   const pronosticPayload = {

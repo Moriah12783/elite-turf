@@ -1,12 +1,17 @@
 /**
  * GET /api/cron/brouillons-quinte
  *
- * Brouillons automatiques du Quinté+ à ~T-90 (spec
- * docs/superpowers/specs/2026-10-07-brouillons-quinte-design.md).
+ * Brouillons automatiques du Quinté+ à ~T-90, préparés à partir de l'édition
+ * T-90 scellée du moteur Argon (spec docs/superpowers/specs/2026-10-16-brouillons-argon-design.md ;
+ * mécanique d'origine : 2026-10-07-brouillons-quinte-design.md).
  * Toutes les 5 min (elite-turf-crons, minutes 4, 9, … 59). Une fois par
- * Quinté+ : un brouillon PRO et un brouillon ELITE (source AUTO-MARCHE, jamais
+ * Quinté+ : un brouillon PRO et un brouillon ELITE (source ARGON, jamais
  * publiés), puis un e-mail à Steph. Interrupteur BROUILLONS_QUINTE_ENABLED
  * fermé (absent) = essai à blanc : rien n'est écrit, l'e-mail le dit.
+ *
+ * Argon : ARGON_API_URL (par défaut https://argon.elite-turf.fr/api/races) ;
+ * ARGON_ACCESS_CLIENT_ID / ARGON_ACCESS_CLIENT_SECRET = jeton de service
+ * Cloudflare Access, secrets du Worker posés par Steph (jamais dans le code).
  *
  * `?apercu=1` (Bearer requis) : calcule et renvoie les brouillons en JSON, sans
  * fenêtre, sans garde-fous, sans écriture ni e-mail (seul cron_logs en garde
@@ -18,14 +23,12 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { logCronStart } from "@/lib/cron-logger";
 import { todayParisISO, parisVersUtc } from "@/lib/paris-date";
 import { pickQuinteDuJour } from "@/lib/turf/course-vedette";
-import { getCourseStatsEnrichies } from "@/lib/courses/getCourseStatsEnrichies";
-import { buildNotreSelection } from "@/lib/courses/notre-selection";
 import { sendEmail, APP_URL } from "@/lib/email";
 import { chargerDonneesPmu } from "@/lib/brouillons-quinte/pmu";
 import {
   situer, dansFenetre, dernierPassage, gardeFous, type PronosticExistant,
 } from "@/lib/brouillons-quinte/fenetre";
-import { appliquerCotesPmu } from "@/lib/brouillons-quinte/selection";
+import { chargerArgon, trouverCourseArgon, controlerChevauxArgon } from "@/lib/brouillons-quinte/argon";
 import { controlerDonneesPmu, assemblerBrouillons } from "@/lib/brouillons-quinte/assembler";
 import {
   emailBrouillons, emailEchec, emailRelance, typeJournal,
@@ -85,10 +88,14 @@ export async function GET(req: NextRequest) {
   let prix = "Quinté+";
   let heure = "";
 
-  /** Données PMU insuffisantes : nouvel essai au passage suivant ; e-mail d'échec au dernier. */
-  async function donneesInsuffisantes(raison: RaisonEchec) {
+  /**
+   * Données insuffisantes : nouvel essai au passage suivant ; e-mail d'échec au
+   * dernier. `immediat` : la situation ne se réparera pas d'elle-même (chevaux
+   * d'Argon incohérents avec le PMU) → e-mail dès ce passage (spec du 16/10, §12).
+   */
+  async function donneesInsuffisantes(raison: RaisonEchec, opts: { immediat?: boolean } = {}) {
     let email: string | null = null;
-    if (!apercu && dernierPassage(minutes)) {
+    if (!apercu && (opts.immediat ? dansFenetre(minutes) : dernierPassage(minutes))) {
       email = await envoyerUneFois(supabase, jour, "echec", emailEchec({ jour, prix, heureGmt: heure, raison }));
     }
     await cronLog.finish("skip", { reason: "donnees_insuffisantes", raison, minutes, email, jour });
@@ -165,16 +172,26 @@ export async function GET(req: NextRequest) {
     const raison = controlerDonneesPmu(base, pmu.participants);
     if (raison || !pmu.participants) return await donneesInsuffisantes(raison ?? "pmu_injoignable");
 
-    // 4. Les 8 favoris, dans l'ordre de la Sélection stats du site (non-partants exclus en amont)
-    const avecCotes = appliquerCotesPmu(base, pmu.participants).filter((p: any) => !p.non_partant);
-    const stats = await getCourseStatsEnrichies(avecCotes);
-    const top8 = buildNotreSelection(stats.partants);
+    // 4. L'édition T-90 scellée d'Argon, contrôlée (spec du 16/10/2026, §6 et §7)
+    const hippo = Array.isArray(quinte.hippodrome) ? quinte.hippodrome[0] : quinte.hippodrome;
+    const jsonArgon = await chargerArgon();
+    if (jsonArgon === null) return await donneesInsuffisantes("argon_injoignable");
+    const trouve = trouverCourseArgon(jsonArgon, {
+      dateISO: quinte.date_course,
+      reunion: quinte.numero_reunion,
+      course: quinte.numero_course,
+      hippodrome: hippo?.nom ?? "",
+    });
+    if (!trouve.ok) return await donneesInsuffisantes(trouve.raison);
+    const argon = trouve.course;
+    if (!argon.t90.sealed) return await donneesInsuffisantes("argon_non_scelle");
+    const incoherent = controlerChevauxArgon(argon, pmu.participants);
+    if (incoherent) return await donneesInsuffisantes(incoherent, { immediat: true });
 
     // 5. Brouillons et textes
-    const hippo = Array.isArray(quinte.hippodrome) ? quinte.hippodrome[0] : quinte.hippodrome;
     const resultat = assemblerBrouillons({
       courseId: quinte.id,
-      top8,
+      argon,
       allocations: pmu.allocations,
       ctx: {
         dateISO: quinte.date_course,
@@ -199,7 +216,10 @@ export async function GET(req: NextRequest) {
     // 6. Interrupteur : fermé = essai à blanc, rien n'est écrit
     if (process.env.BROUILLONS_QUINTE_ENABLED !== "true") {
       const email = await envoyerUneFois(supabase, jour, "blanc", emailBrouillons(resultat.resume, null));
-      await cronLog.finish("success", { dry_run: true, email, pro: resultat.pro.selection, elite: resultat.elite.selection, minutes, jour });
+      await cronLog.finish("success", {
+        dry_run: true, email, pro: resultat.pro.selection, elite: resultat.elite.selection,
+        argon8: argon.t90.argon8, etoiles: argon.etoiles, minutes, jour,
+      });
       return NextResponse.json({ ok: true, dryRun: true, email });
     }
 
@@ -213,7 +233,7 @@ export async function GET(req: NextRequest) {
     const idPro = lignes.find((l) => l.niveau_acces === "PRO")?.id ?? null;
     const idElite = lignes.find((l) => l.niveau_acces === "ELITE")?.id ?? null;
     const email = await envoyerUneFois(supabase, jour, "prets", emailBrouillons(resultat.resume, liensVers(idPro, idElite)));
-    await cronLog.finish("success", { drafts_created: [idPro, idElite], email, minutes, jour });
+    await cronLog.finish("success", { drafts_created: [idPro, idElite], email, argon8: argon.t90.argon8, etoiles: argon.etoiles, minutes, jour });
     return NextResponse.json({ ok: true, brouillons: [idPro, idElite], email });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

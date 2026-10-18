@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { analyseCourte, analyseComplete, heureGmt, MOTS_INTERDITS, type ChevalCommente, type ContexteCourse } from "./commentaires";
 import { CTX, PARTICIPANTS } from "./__fixtures__/gobelins";
+import { CTX_THEMIS } from "./__fixtures__/themis";
 
 const c = (numero: number, rang: number): ChevalCommente => ({
   numero, rang, nom: PARTICIPANTS.find((p) => p.numero === numero)!.nom,
@@ -11,7 +12,7 @@ const VALUES_ELITE = [c(15, 6), c(18, 7), c(11, 8)];
 const PRO = analyseComplete(CTX, "PRO", BASE, VALUES_PRO, []);
 const ELITE = analyseComplete(CTX, "ELITE", BASE, VALUES_ELITE, []);
 /** Variante avec un écarté, pour la phrase « n'est pas retenue ». */
-const ELITE_ECARTE = analyseComplete(CTX, "ELITE", BASE, VALUES_ELITE, [c(10, 5)]);
+const ELITE_ASSOCIE = analyseComplete(CTX, "ELITE", BASE, VALUES_ELITE, [c(10, 5)]);
 /** Le n°12 remis partant : le groupe reculé redevient la suite 10 à 18. */
 const AVEC_12 = PARTICIPANTS.map((p) => (p.numero === 12 ? { ...p, nonPartant: false } : p));
 
@@ -61,9 +62,9 @@ describe("analyseComplete — Pro du 07/10/2026", () => {
   });
 
   it("les values", () => {
-    expect(PRO).toContain("n°13 IDOLE ELDE — driver M. MOTTIER, entraîneur N. LEMETAYER. 4e du marché. A gagné 2 de ses 5 dernières courses, sans faute.");
-    expect(PRO).toContain("n°10 JUSTICIA SMART — driver M. ABRIVARD, entraîneur J. DUBREIL. 5e du marché. 3 fautes sur ses 5 dernières courses.");
-    expect(PRO).toContain("n°15 IXELLE BLEUE — driver TH. BRIAND, entraîneur Antoine TRIHOLLET. 6e du marché. A gagné 1 de ses 5 dernières courses ; 1 faute sur ses 5 dernières courses.");
+    expect(PRO).toContain("n°13 IDOLE ELDE — driver M. MOTTIER, entraîneur N. LEMETAYER. 4e du marché. A gagné 2 de ses 5 dernières courses, sans faute. Retenue en value.");
+    expect(PRO).toContain("n°10 JUSTICIA SMART — driver M. ABRIVARD, entraîneur J. DUBREIL. 5e du marché. 3 fautes sur ses 5 dernières courses. Retenue en value.");
+    expect(PRO).toContain("n°15 IXELLE BLEUE — driver TH. BRIAND, entraîneur Antoine TRIHOLLET. 6e du marché. A gagné 1 de ses 5 dernières courses ; 1 faute sur ses 5 dernières courses. Retenue en value.");
   });
 
   it("à savoir", () => {
@@ -74,24 +75,27 @@ describe("analyseComplete — Pro du 07/10/2026", () => {
     const i = ["LA COURSE", "LA BASE", "LES VALUES", "À SAVOIR"].map((t) => PRO.indexOf(t));
     expect(i.every((x) => x >= 0)).toBe(true);
     expect(i).toEqual(i.slice().sort((a, b) => a - b));
-    expect(PRO).not.toContain("Retenue pour sa cote");
-    expect(PRO).not.toContain("n'est pas retenue");
+    expect(PRO).not.toContain("LES ASSOCIÉS");
+    expect(PRO).not.toContain("pour sa cote");
   });
 });
 
 describe("analyseComplete — Elite du 07/10/2026", () => {
-  it("values retenues pour leur cote", () => {
-    expect(ELITE).toContain("n°15 IXELLE BLEUE — driver TH. BRIAND, entraîneur Antoine TRIHOLLET. 6e du marché. A gagné 1 de ses 5 dernières courses ; 1 faute sur ses 5 dernières courses. Retenue pour sa cote parmi nos 8.");
-    expect(ELITE).toContain("n°18 JOIE DE LA COTE — driver E. RAFFIN, entraîneur S. LALOUM. 7e du marché. Dans les 3 premières 2 fois sur ses 5 dernières courses, sans faute. Retenue pour sa cote parmi nos 8.");
-    expect(ELITE).toContain("n°11 JALOUZ D'OLIVERIE — driver L. BAUDOUIN, entraîneur J.M. BAUDOUIN. 8e du marché. Dans les 3 premières 3 fois sur ses 5 dernières courses, sans faute. Retenue pour sa cote parmi nos 8.");
+  it("values : « Retenue en value », plus de « pour sa cote »", () => {
+    expect(ELITE).toContain("n°15 IXELLE BLEUE — driver TH. BRIAND, entraîneur Antoine TRIHOLLET. 6e du marché. A gagné 1 de ses 5 dernières courses ; 1 faute sur ses 5 dernières courses. Retenue en value.");
+    expect(ELITE).toContain("n°18 JOIE DE LA COTE — driver E. RAFFIN, entraîneur S. LALOUM. 7e du marché. Dans les 3 premières 2 fois sur ses 5 dernières courses, sans faute. Retenue en value.");
+    expect(ELITE).toContain("n°11 JALOUZ D'OLIVERIE — driver L. BAUDOUIN, entraîneur J.M. BAUDOUIN. 8e du marché. Dans les 3 premières 3 fois sur ses 5 dernières courses, sans faute. Retenue en value.");
+    expect(ELITE).not.toContain("pour sa cote");
   });
 
-  it("aucun écarté ce jour-là : pas de phrase « n'est pas retenue »", () => {
-    expect(ELITE).not.toContain("n'est pas retenue");
+  it("sans associé : pas de section LES ASSOCIÉS", () => {
+    expect(ELITE).not.toContain("LES ASSOCIÉS");
   });
 
-  it("un écarté est nommé, avec ses fautes", () => {
-    expect(ELITE_ECARTE).toContain("n°10 JUSTICIA SMART (5e du marché) n'est pas retenue : 3 fautes sur ses 5 dernières courses.");
+  it("un associé : section LES ASSOCIÉS avant À SAVOIR, « Associée à la base »", () => {
+    expect(ELITE_ASSOCIE).toContain("LES ASSOCIÉS\nn°10 JUSTICIA SMART — driver M. ABRIVARD, entraîneur J. DUBREIL. 5e du marché. 3 fautes sur ses 5 dernières courses. Associée à la base.");
+    expect(ELITE_ASSOCIE.indexOf("LES ASSOCIÉS")).toBeLessThan(ELITE_ASSOCIE.indexOf("À SAVOIR"));
+    expect(ELITE_ASSOCIE.indexOf("LES VALUES")).toBeLessThan(ELITE_ASSOCIE.indexOf("LES ASSOCIÉS"));
   });
 });
 
@@ -123,7 +127,7 @@ describe("distances (phrase de recul seulement s'il y a plusieurs distances)", (
 });
 
 describe("garanties (spec §7)", () => {
-  const TEXTES = [PRO, ELITE, ELITE_ECARTE, analyseCourte(CTX, BASE[0])];
+  const TEXTES = [PRO, ELITE, ELITE_ASSOCIE, analyseCourte(CTX, BASE[0])];
 
   it("aucun numéro absent des données", () => {
     const connus = PARTICIPANTS.map((p) => p.numero);
@@ -135,7 +139,7 @@ describe("garanties (spec §7)", () => {
   });
 
   it("chaque cheval cité porte son nom PMU", () => {
-    for (const t of [PRO, ELITE, ELITE_ECARTE]) {
+    for (const t of [PRO, ELITE, ELITE_ASSOCIE]) {
       const lignes = t.split("\n").filter((l) => /^(⭐ )?n°\d+ /.test(l));
       expect(lignes.length).toBeGreaterThanOrEqual(6);
       for (const l of lignes) {
@@ -199,14 +203,66 @@ describe("Review Focus — données incomplètes ou différentes", () => {
     );
     const t = analyseComplete(mixte, "ELITE", BASE, VALUES_ELITE, [c(10, 5)]);
     expect(t).toContain("Favori du marché. Dans les 3 premiers 4 fois sur ses 5 dernières courses");
-    expect(t).toContain("Retenu pour sa cote parmi nos 8.");
-    expect(t).toContain("n°10 JUSTICIA SMART (5e du marché) n'est pas retenu : 3 fautes");
-    expect(t).not.toMatch(/premières|Retenue|Favorite|partantes/);
+    expect(t).toContain("Retenu en value.");
+    expect(t).toContain("n°10 JUSTICIA SMART — driver M. ABRIVARD, entraîneur J. DUBREIL. 5e du marché. 3 fautes sur ses 5 dernières courses. Associé à la base.");
+    expect(t).not.toMatch(/premières|Retenue|Associée|Favorite|partantes/);
   });
 
   it("musique absente : pas de phrase de forme", () => {
     const parts = PARTICIPANTS.map((p) => (p.numero === 13 ? { ...p, musique: null } : p));
     const t = analyseComplete({ ...CTX, participants: parts }, "PRO", BASE, VALUES_PRO, []);
-    expect(t).toContain("n°13 IDOLE ELDE — driver M. MOTTIER, entraîneur N. LEMETAYER. 4e du marché.\n");
+    expect(t).toContain("n°13 IDOLE ELDE — driver M. MOTTIER, entraîneur N. LEMETAYER. 4e du marché. Retenue en value.\n");
+  });
+});
+
+describe("analyseComplete — Prix Thémis du 16/10/2026 (brouillons Argon)", () => {
+  // Rang au marché selon les cotes PMU de la fixture (égalités à 11 départagées par le numéro).
+  const RANGS: Record<number, number> = { 3: 1, 6: 2, 4: 3, 7: 4, 12: 5, 11: 6, 13: 7, 14: 10 };
+  const t = (n: number): ChevalCommente => ({ numero: n, nom: CTX_THEMIS.participants.find((p) => p.numero === n)!.nom, rang: RANGS[n] });
+  const ctx: ContexteCourse = { ...CTX_THEMIS, releveCotes: Date.UTC(2026, 9, 16, 18, 15, 30) };
+  const bases = [t(3), t(6), t(12), t(13)];
+  const proTexte = analyseComplete(ctx, "PRO", bases, [t(7), t(4)], []);
+  const eliteTexte = analyseComplete(ctx, "ELITE", bases, [t(11), t(14)], [t(7), t(4)]);
+
+  it("analyse courte du Prix Thémis (vraies données)", () => {
+    expect(analyseCourte(ctx, t(3))).toBe(
+      "Trot attelé, 2 850 m, 15 partants. Pivot : EMINENT KRONOS (n°3, F. NIVARD), favori. Les n°11 à 15 partent avec 25 m de recul.",
+    );
+  });
+
+  it("pivot d'Argon qui n'est pas le favori du marché : son rang, jamais « favori »", () => {
+    const p12 = CTX_THEMIS.participants.find((p) => p.numero === 12)!;
+    const courte = analyseCourte(ctx, t(12));
+    expect(courte).toContain(`Pivot : ${p12.nom} (n°12, ${p12.driver}), 5e du marché.`);
+    expect(courte).not.toMatch(/favori/i);
+    // Repli le plus court (nom trop long) : même règle.
+    expect(analyseCourte(ctx, { numero: 12, rang: 5, nom: "X".repeat(170) })).toBe("Pivot : n°12, 5e du marché.");
+  });
+
+  it("ELITE : 4 lignes dans LA BASE, values « Retenu en value », section LES ASSOCIÉS", () => {
+    const sections = eliteTexte.split("\n\n");
+    expect(sections.map((x) => x.split("\n")[0])).toEqual(["LA COURSE", "LA BASE", "LES VALUES", "LES ASSOCIÉS", "À SAVOIR"]);
+    expect(sections[1].split("\n")).toHaveLength(5);
+    expect(sections[2]).toContain("n°11 READLY LAVEC — driver B. ROCHARD, entraîneur O.J. ANDERSSON. 6e du marché.");
+    expect(sections[2]).toContain("Retenu en value.");
+    expect(sections[3]).toContain("n°7 KEROSEN DU GERS");
+    expect(sections[3]).toContain("Associé à la base.");
+  });
+
+  it("PRO : pas de section LES ASSOCIÉS, values « Retenu en value »", () => {
+    expect(proTexte.split("\n\n").map((x) => x.split("\n")[0])).toEqual(["LA COURSE", "LA BASE", "LES VALUES", "À SAVOIR"]);
+    expect(proTexte).toContain("n°4 KISS ME AGAIN — driver A. BARRIER, entraîneur K. CHAMPENOIS. 3e du marché.");
+  });
+
+  it("femelle (n°12 JALENDRA DE MALAC) en value : « Retenue en value. »", () => {
+    const x = analyseComplete(ctx, "ELITE", [t(3), t(6), t(13), t(7)], [t(12), t(14)], [t(4)]);
+    expect(x).toMatch(/n°12 JALENDRA DE MALAC[^\n]*Retenue en value\./);
+  });
+
+  it("aucun chiffre d'Argon ni mot interdit dans les textes", () => {
+    for (const x of [proTexte, eliteTexte]) {
+      expect(x).not.toMatch(/%|avantage|étoile|probabilit/i);
+      for (const m of MOTS_INTERDITS) expect(x.toLowerCase()).not.toContain(m);
+    }
   });
 });

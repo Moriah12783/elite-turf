@@ -42,6 +42,7 @@ import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { todayParisISO } from "@/lib/paris-date";
 import { requireAdminAuth } from "@/lib/auth/checkAdminAuth";
+import { FILTRE_HORS_BROUILLONS } from "@/lib/brouillons-quinte/fenetre";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
@@ -186,8 +187,8 @@ export async function POST(req: NextRequest) {
       .from("pronostics")
       .select("id, course_id, selection")
       .in("course_id", courseIds)
-      // Jamais de reprise d'un brouillon AUTO-MARCHE (préparé à T-90, en attente de Steph).
-      .or("source.is.null,source.neq.AUTO-MARCHE");
+      // Jamais de reprise d'un brouillon préparé à T-90 (AUTO-MARCHE ou ARGON, en attente de Steph).
+      .or(FILTRE_HORS_BROUILLONS);
     for (const p of existing ?? []) {
       // On garde le premier pronostic trouvé par course (cas pas de doublon attendu mais safe)
       if (!existingByCourseId.has(p.course_id)) {

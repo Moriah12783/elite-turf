@@ -19,8 +19,15 @@ const R: ResumeBrouillons = {
   elite: {
     base: BASE,
     values: [{ numero: 15, nom: "IXELLE BLEUE" }, { numero: 18, nom: "JOIE DE LA COTE" }, { numero: 11, nom: "JALOUZ D'OLIVERIE" }],
-    ecartes: [],
-    completeAvecFautifs: false,
+    associes: [],
+  },
+  argon: {
+    lockGmt: "16:45",
+    argon8: [3, 6, 12, 13, 7, 4, 11, 14].map((numero) => ({ numero, nom: `CHEVAL ${numero}` })),
+    etoiles: 5,
+    deconseillee: false,
+    decision: "⭐ COUPLE MAITRE: 3 - 6 · 🎯 SNIPER: N°12 (9.3/1)",
+    nonPartants: [],
   },
   partants: [
     { numero: 17, nom: "IMAGE D'ATALANTE", nonPartant: false, cote: 3.8, rang: 1, exAequo: false, places: ["2", "3", "2", "2", "8", "4", "0"], fautes: 0, retenu: "Base ⭐", allocations: [59000, 96000, 44000, 59500, 21000] },
@@ -33,7 +40,7 @@ const R: ResumeBrouillons = {
   textes: {
     courte: "Trot attelé, 2 850 m, 17 partantes. Pivot : IMAGE D'ATALANTE (n°17), favorite.",
     pro: "LA COURSE\nQuinté+ du mardi 7 octobre 2026.\n\nLA BASE\n⭐ n°17 IMAGE D'ATALANTE. Notre pivot.",
-    elite: "LA COURSE\nQuinté+ du mardi 7 octobre 2026.\n\nLES VALUES\nn°11 JALOUZ D'OLIVERIE. Retenue pour sa cote parmi nos 8.",
+    elite: "LA COURSE\nQuinté+ du mardi 7 octobre 2026.\n\nLES VALUES\nn°11 JALOUZ D'OLIVERIE. Retenue en value.",
   },
 };
 const LIENS: LiensBrouillons = {
@@ -137,11 +144,6 @@ describe("e-mails à Steph", () => {
     expect(m.html).not.toContain("Non retenus");
   });
 
-  it("écartés : nommés", () => {
-    const m = emailBrouillons({ ...R, elite: { ...R.elite, ecartes: [{ numero: 10, nom: "JUSTICIA SMART" }] } }, LIENS);
-    expect(m.html).toContain("Non retenus pour leurs fautes : n°10 JUSTICIA SMART");
-  });
-
   it("à blanc : aucun lien, interrupteur rappelé", () => {
     const m = emailBrouillons(R, null);
     expect(m.subject).toBe("[ESSAI À BLANC] Brouillons du Quinté+ — Prix des Gobelins");
@@ -157,7 +159,7 @@ describe("e-mails à Steph", () => {
     expect(html).toContain("Analyse complète — Elite");
     expect(html).toContain("Pivot : IMAGE D&#39;ATALANTE (n°17), favorite.");
     expect(html).toContain("LA BASE\n⭐ n°17 IMAGE D&#39;ATALANTE. Notre pivot.");
-    expect(html).toContain("n°11 JALOUZ D&#39;OLIVERIE. Retenue pour sa cote parmi nos 8.");
+    expect(html).toContain("n°11 JALOUZ D&#39;OLIVERIE. Retenue en value.");
     expect(html).toContain("white-space:pre-wrap");
   });
 
@@ -175,11 +177,6 @@ describe("e-mails à Steph", () => {
     const html = emailBrouillons({ ...R, textes: { ...R.textes, pro: "<script>x</script>" } }, null).html;
     expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
     expect(html).not.toContain("<script>");
-  });
-
-  it("complété avec des fautifs : signalé", () => {
-    const m = emailBrouillons({ ...R, elite: { ...R.elite, completeAvecFautifs: true } }, LIENS);
-    expect(m.html).toContain("complété avec des chevaux fautifs");
   });
 
   it("relance : liens vers les seuls brouillons qui existent", () => {
@@ -210,5 +207,77 @@ describe("e-mails à Steph", () => {
     expect(typeJournal("2026-10-07", "prets")).toBe("BROUILLONS_QUINTE_2026-10-07");
     expect(typeJournal("2026-10-07", "blanc")).toBe("BROUILLONS_QUINTE_BLANC_2026-10-07");
     expect(typeJournal("2026-10-07", "echec")).toBe("BROUILLONS_QUINTE_ECHEC_2026-10-07");
+  });
+});
+
+describe("brouillons Argon (spec du 16/10/2026, §11)", () => {
+  const ASSOCIES = [{ numero: 14, nom: "INES DE LA ROUVRE" }, { numero: 2, nom: "JOYAU D'ESPRIT" }];
+  const AVEC_ASSOCIES: ResumeBrouillons = { ...R, elite: { ...R.elite, associes: ASSOCIES } };
+
+  it("titres : « Pro (6 chevaux) » et « Elite (n chevaux) » selon bases + values + associés", () => {
+    expect(emailBrouillons(R, LIENS).html).toContain("Pro (6 chevaux)");
+    expect(emailBrouillons(R, LIENS).html).toContain("Elite (6 chevaux)");
+    expect(emailBrouillons(AVEC_ASSOCIES, LIENS).html).toContain("Elite (8 chevaux)");
+  });
+
+  it("Elite : ligne « 🤝 Associés » ; Pro et Elite sans associé : pas de ligne", () => {
+    expect(emailBrouillons(AVEC_ASSOCIES, LIENS).html).toContain("🤝 Associés : n°14 INES DE LA ROUVRE, n°2 JOYAU D&#39;ESPRIT");
+    expect(emailBrouillons(R, LIENS).html).not.toContain("Associés");
+  });
+
+  it("plus de blocs « écartés » ni « fautifs »", () => {
+    const html = emailBrouillons(R, LIENS).html;
+    expect(html).not.toContain("Non retenus");
+    expect(html).not.toContain("fautifs");
+  });
+
+  it("avis d'Argon pour information : scellement, 8 chevaux, étoiles, decision échappée", () => {
+    const html = emailBrouillons({ ...R, argon: { ...R.argon, decision: "<b>COUPLE MAITRE</b>: 3 - 6" } }, LIENS).html;
+    expect(html).toContain("Avis d'Argon (pour information)");
+    expect(html).toContain("Édition T-90 scellée à 16:45 GMT : 3 · 6 · 12 · 13 · 7 · 4 · 11 · 14");
+    expect(html).toContain("5 étoiles");
+    expect(html).toContain("&lt;b&gt;COUPLE MAITRE&lt;/b&gt;: 3 - 6");
+    expect(html).not.toContain("<b>COUPLE");
+  });
+
+  it("une seule étoile : au singulier ; heure de scellement inconnue : pas d'heure", () => {
+    const html = emailBrouillons({ ...R, argon: { ...R.argon, etoiles: 1, lockGmt: null } }, LIENS).html;
+    expect(html).toContain("1 étoile");
+    expect(html).not.toContain("1 étoiles");
+    expect(html).toContain("Édition T-90 scellée : 3 · 6");
+  });
+
+  it("un non-partant : alerte en tête, Elite à 7 chevaux", () => {
+    const sept: ResumeBrouillons = {
+      ...R,
+      elite: { ...R.elite, associes: [{ numero: 14, nom: "INES DE LA ROUVRE" }] },
+      argon: { ...R.argon, nonPartants: [{ numero: 6, nom: "DOMENIK JET" }] },
+    };
+    const html = emailBrouillons(sept, LIENS).html;
+    expect(html).toContain("⚠️ n°6 non partant : Elite à 7 chevaux, ajoute un cheval avant de publier.");
+    expect(html.indexOf("non partant")).toBeLessThan(html.indexOf("Pro (6 chevaux)"));
+  });
+
+  it("deux non-partants : « n°6 et n°7 non partants »", () => {
+    const html = emailBrouillons({ ...R, argon: { ...R.argon, nonPartants: [{ numero: 6, nom: "A" }, { numero: 7, nom: "B" }] } }, LIENS).html;
+    expect(html).toContain("⚠️ n°6 et n°7 non partants : Elite à 6 chevaux, ajoute un cheval avant de publier.");
+  });
+
+  it("course déconseillée par Argon : objet préfixé (prêts et essai à blanc)", () => {
+    const d: ResumeBrouillons = { ...R, argon: { ...R.argon, deconseillee: true } };
+    expect(emailBrouillons(d, LIENS).subject).toBe("⚠️ Argon déconseille de jouer cette course — Brouillons du Quinté+ prêts — Prix des Gobelins (11h55 GMT)");
+    expect(emailBrouillons(d, null).subject).toBe("⚠️ Argon déconseille de jouer cette course — [ESSAI À BLANC] Brouillons du Quinté+ — Prix des Gobelins");
+    expect(emailBrouillons(R, LIENS).subject).toBe("Brouillons du Quinté+ prêts — Prix des Gobelins (11h55 GMT)");
+  });
+
+  it("échecs Argon : raisons lisibles", () => {
+    const objet = (raison: Parameters<typeof emailEchec>[0]["raison"]) =>
+      emailEchec({ jour: "2026-10-16", prix: "Prix Thémis", heureGmt: "18h15", raison }).subject;
+    expect(objet("argon_injoignable")).toBe("Brouillons du Quinté+ NON préparés — Argon ne répond pas");
+    expect(objet("argon_format_inattendu")).toBe("Brouillons du Quinté+ NON préparés — la réponse d'Argon n'a pas le format attendu");
+    expect(objet("argon_course_introuvable")).toBe("Brouillons du Quinté+ NON préparés — Argon ne connaît pas ce Quinté+");
+    expect(objet("argon_non_scelle")).toBe("Brouillons du Quinté+ NON préparés — l'édition T-90 d'Argon n'a pas été scellée à temps");
+    expect(objet("argon_partants_incoherents")).toBe("Brouillons du Quinté+ NON préparés — les chevaux d'Argon ne correspondent pas aux partants du PMU");
+    expect(objet("argon_partants_insuffisants")).toBe("Brouillons du Quinté+ NON préparés — moins de 6 chevaux d'Argon sont partants");
   });
 });

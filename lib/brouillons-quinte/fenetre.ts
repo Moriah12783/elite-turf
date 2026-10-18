@@ -11,8 +11,16 @@ export const FENETRE_MAX = 95;
 /** En dessous : dernier passage de la fenêtre → l'e-mail d'échec part. */
 export const DERNIER_PASSAGE_SOUS = 65;
 
-/** Valeur de `pronostics.source` des brouillons (spec §8). */
-export const SOURCE_BROUILLON = "AUTO-MARCHE";
+/** Valeur de `pronostics.source` des brouillons préparés par Argon (spec du 16/10/2026, §10). */
+export const SOURCE_BROUILLON = "ARGON";
+
+/**
+ * Filtre PostgREST (`.or(...)`) qui écarte TOUS les brouillons préparés à T-90,
+ * anciens (AUTO-MARCHE) et Argon : aucun mécanisme de publication automatique
+ * ne doit les reprendre. `source.is.null` garde les lignes sans origine, qu'un
+ * simple `not.in` exclurait (vérifié en base le 07/10/2026 : 358 lignes contre 116).
+ */
+export const FILTRE_HORS_BROUILLONS = "source.is.null,source.not.in.(AUTO-MARCHE,ARGON)";
 
 /** Un PRO ou un ELITE publié sur le Quinté+ : Steph a déjà fait le travail. */
 const NIVEAUX_BLOQUANTS = ["PRO", "ELITE"];
@@ -75,7 +83,7 @@ export type Garde =
 /**
  * PUR : décide du passage. Ordre :
  * 1. un PRO ou un ELITE publié → arrêt (Steph a publié, pas de doublon) ;
- * 2. des brouillons AUTO-MARCHE existent → « déjà préparé » (la route relance
+ * 2. des brouillons ARGON existent → « déjà préparé » (la route relance
  *    l'e-mail « prêts » s'il n'est pas parti) ;
  * 3. e-mail « prêts » parti mais plus de brouillons → Steph les a supprimés :
  *    on ne les recrée pas ;

@@ -197,10 +197,11 @@ function tete(ctx: ContexteCourse, avecAges: boolean): string {
  */
 export function analyseCourte(ctx: ContexteCourse, pivot: ChevalCommente): string {
   const p = trouver(ctx, pivot.numero);
-  const favori = feminin(p) ? "favorite" : "favori";
+  // Le pivot d'Argon n'est pas toujours le favori du marché : son rang, comme dans l'analyse complète.
+  const marche = pivot.rang === 1 ? (feminin(p) ? "favorite" : "favori") : `${pivot.rang}e du marché`;
   const debut = `${tete(ctx, false)}.`;
-  const avecDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}${p && p.driver ? `, ${p.driver}` : ""}), ${favori}.`;
-  const sansDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}), ${favori}.`;
+  const avecDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}${p && p.driver ? `, ${p.driver}` : ""}), ${marche}.`;
+  const sansDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}), ${marche}.`;
   const recul = phraseReculCourte(groupesDistance(partantsDe(ctx)), champFeminin(ctx));
   const essais: Array<Array<string | null>> = [
     [debut, avecDriver, recul],
@@ -212,7 +213,7 @@ export function analyseCourte(ctx: ContexteCourse, pivot: ChevalCommente): strin
     const t = morceaux.filter((x): x is string => !!x).join(" ");
     if (t.length <= ANALYSE_COURTE_MAX) return t;
   }
-  return `Pivot : n°${pivot.numero}, ${favori}.`;
+  return `Pivot : n°${pivot.numero}, ${marche}.`;
 }
 
 function surSesDernieres(n: number): string {
@@ -239,7 +240,7 @@ function formeEtFautes(b: BilanMusique | null, fem: boolean): string {
   return forme ? `${forme}, sans faute` : "";
 }
 
-function ligneCheval(ctx: ContexteCourse, c: ChevalCommente, opts: { pivot: boolean; valueElite: boolean }): string {
+function ligneCheval(ctx: ContexteCourse, c: ChevalCommente, opts: { pivot: boolean; role: "base" | "value" | "associe" }): string {
   const p = trouver(ctx, c.numero);
   const fem = feminin(p);
   const libelle = libelleActeur(ctx);
@@ -251,16 +252,9 @@ function ligneCheval(ctx: ContexteCourse, c: ChevalCommente, opts: { pivot: bool
   const forme = formeEtFautes(analyserMusique(p ? p.musique : null), fem);
   if (forme) ligne += ` ${forme}.`;
   if (opts.pivot) ligne += " Notre pivot.";
-  if (opts.valueElite) ligne += ` ${fem ? "Retenue" : "Retenu"} pour sa cote parmi nos 8.`;
+  if (opts.role === "value") ligne += ` ${fem ? "Retenue" : "Retenu"} en value.`;
+  if (opts.role === "associe") ligne += ` ${fem ? "Associée" : "Associé"} à la base.`;
   return ligne;
-}
-
-function ligneEcarte(ctx: ContexteCourse, c: ChevalCommente): string {
-  const p = trouver(ctx, c.numero);
-  const b = analyserMusique(p ? p.musique : null);
-  const retenu = feminin(p) ? "retenue" : "retenu";
-  if (!b) return `n°${c.numero} ${c.nom} (${c.rang}e du marché) n'est pas ${retenu}.`;
-  return `n°${c.numero} ${c.nom} (${c.rang}e du marché) n'est pas ${retenu} : ${b.fautes} faute${b.fautes > 1 ? "s" : ""} ${surSesDernieres(b.courses)}.`;
 }
 
 function sectionCourse(ctx: ContexteCourse): string[] {
@@ -281,22 +275,27 @@ function sectionCourse(ctx: ContexteCourse): string[] {
   return lignes;
 }
 
-/** PUR : analyse complète (texte brut, sections séparées par une ligne vide). */
+/**
+ * PUR : analyse complète (texte brut, sections séparées par une ligne vide).
+ * Brouillons Argon (spec du 16/10/2026, §9) : la base de 4, les values, puis
+ * les associés (Elite seulement, section omise s'il n'y en a pas).
+ */
 export function analyseComplete(
   ctx: ContexteCourse,
   niveau: "PRO" | "ELITE",
-  base: ChevalCommente[],
+  bases: ChevalCommente[],
   values: ChevalCommente[],
-  ecartes: ChevalCommente[],
+  associes: ChevalCommente[],
 ): string {
   const releve = ctx.releveCotes ? `Cotes PMU relevées à ${heureGmt(ctx.releveCotes)} GMT, indicatives` : "Cotes PMU indicatives";
   const blocs: string[][] = [
     ["LA COURSE"].concat(sectionCourse(ctx)),
-    ["LA BASE"].concat(base.map((c, i) => ligneCheval(ctx, c, { pivot: i === 0, valueElite: false }))),
-    ["LES VALUES"]
-      .concat(values.map((c) => ligneCheval(ctx, c, { pivot: false, valueElite: niveau === "ELITE" })))
-      .concat(niveau === "ELITE" ? ecartes.map((c) => ligneEcarte(ctx, c)) : []),
-    ["À SAVOIR", `${releve} : elles évoluent jusqu'au départ. Le jeu comporte des risques : jouez responsable.`],
+    ["LA BASE"].concat(bases.map((c, i) => ligneCheval(ctx, c, { pivot: i === 0, role: "base" }))),
+    ["LES VALUES"].concat(values.map((c) => ligneCheval(ctx, c, { pivot: false, role: "value" }))),
   ];
+  if (niveau === "ELITE" && associes.length > 0) {
+    blocs.push(["LES ASSOCIÉS"].concat(associes.map((c) => ligneCheval(ctx, c, { pivot: false, role: "associe" }))));
+  }
+  blocs.push(["À SAVOIR", `${releve} : elles évoluent jusqu'au départ. Le jeu comporte des risques : jouez responsable.`]);
   return blocs.map((b) => b.join("\n")).join("\n\n");
 }
