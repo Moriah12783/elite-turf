@@ -230,6 +230,15 @@ describe("analyseComplete — Prix Thémis du 16/10/2026 (brouillons Argon)", ()
     );
   });
 
+  it("pivot d'Argon qui n'est pas le favori du marché : son rang, jamais « favori »", () => {
+    const p12 = CTX_THEMIS.participants.find((p) => p.numero === 12)!;
+    const courte = analyseCourte(ctx, t(12));
+    expect(courte).toContain(`Pivot : ${p12.nom} (n°12, ${p12.driver}), 5e du marché.`);
+    expect(courte).not.toMatch(/favori/i);
+    // Repli le plus court (nom trop long) : même règle.
+    expect(analyseCourte(ctx, { numero: 12, rang: 5, nom: "X".repeat(170) })).toBe("Pivot : n°12, 5e du marché.");
+  });
+
   it("ELITE : 4 lignes dans LA BASE, values « Retenu en value », section LES ASSOCIÉS", () => {
     const sections = eliteTexte.split("\n\n");
     expect(sections.map((x) => x.split("\n")[0])).toEqual(["LA COURSE", "LA BASE", "LES VALUES", "LES ASSOCIÉS", "À SAVOIR"]);

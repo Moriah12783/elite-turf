@@ -197,10 +197,11 @@ function tete(ctx: ContexteCourse, avecAges: boolean): string {
  */
 export function analyseCourte(ctx: ContexteCourse, pivot: ChevalCommente): string {
   const p = trouver(ctx, pivot.numero);
-  const favori = feminin(p) ? "favorite" : "favori";
+  // Le pivot d'Argon n'est pas toujours le favori du marché : son rang, comme dans l'analyse complète.
+  const marche = pivot.rang === 1 ? (feminin(p) ? "favorite" : "favori") : `${pivot.rang}e du marché`;
   const debut = `${tete(ctx, false)}.`;
-  const avecDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}${p && p.driver ? `, ${p.driver}` : ""}), ${favori}.`;
-  const sansDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}), ${favori}.`;
+  const avecDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}${p && p.driver ? `, ${p.driver}` : ""}), ${marche}.`;
+  const sansDriver = `Pivot : ${pivot.nom} (n°${pivot.numero}), ${marche}.`;
   const recul = phraseReculCourte(groupesDistance(partantsDe(ctx)), champFeminin(ctx));
   const essais: Array<Array<string | null>> = [
     [debut, avecDriver, recul],
@@ -212,7 +213,7 @@ export function analyseCourte(ctx: ContexteCourse, pivot: ChevalCommente): strin
     const t = morceaux.filter((x): x is string => !!x).join(" ");
     if (t.length <= ANALYSE_COURTE_MAX) return t;
   }
-  return `Pivot : n°${pivot.numero}, ${favori}.`;
+  return `Pivot : n°${pivot.numero}, ${marche}.`;
 }
 
 function surSesDernieres(n: number): string {
