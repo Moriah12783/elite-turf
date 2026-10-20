@@ -28,6 +28,7 @@ export const RAISONS_LISIBLES: Record<RaisonEchec, string> = {
   argon_non_scelle: "l'édition T-90 d'Argon n'a pas été scellée à temps",
   argon_partants_incoherents: "les chevaux d'Argon ne correspondent pas aux partants du PMU",
   argon_partants_insuffisants: "moins de 6 chevaux d'Argon sont partants",
+  argon_t90_manquee: "Argon a manqué son édition T-90",
 };
 
 export interface ChevalResume {

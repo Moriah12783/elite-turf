@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { trouverCourseArgon, controlerChevauxArgon, chargerArgon, type CourseArgon } from "./argon";
+import { trouverCourseArgon, controlerChevauxArgon, chargerArgon, raisonT90, type CourseArgon } from "./argon";
 import { ARGON_JSON, CIBLE_THEMIS, PARTICIPANTS_THEMIS } from "./__fixtures__/themis";
+import argonJson20 from "./__fixtures__/argon-races-20261020.json";
 
 /** Copie modifiable de la vraie réponse d'Argon. */
 const copie = (): any => JSON.parse(JSON.stringify(ARGON_JSON));
@@ -25,7 +26,7 @@ function courseLue(j: unknown = ARGON_JSON): CourseArgon {
 describe("trouverCourseArgon — vraie réponse d'Argon du 16/10/2026", () => {
   it("trouve le Prix Thémis : T-90 scellée à 16:45, 8 chevaux, 5 étoiles, course jouable", () => {
     const c = courseLue();
-    expect(c.t90).toEqual({ argon8: [3, 6, 12, 13, 7, 4, 11, 14], sealed: true, lockGmt: "16:45" });
+    expect(c.t90).toEqual({ argon8: [3, 6, 12, 13, 7, 4, 11, 14], sealed: true, lockGmt: "16:45", statut: null });
     expect(c.etoiles).toBe(5);
     expect(c.deconseillee).toBe(false);
     expect(c.sniper).toEqual({ numero: 12, cote: 11 });
@@ -104,6 +105,70 @@ describe("trouverCourseArgon — vraie réponse d'Argon du 16/10/2026", () => {
 
   it("coureur sans nom : format inattendu", () => {
     expect(lire(avec((c) => { c.runners[0].name = ""; }))).toEqual(FORMAT);
+  });
+});
+
+describe("nouveau format d'Argon : statut des éditions (vraie réponse du 20/10/2026)", () => {
+  // SCELLEE : Les Sables d'Olonne R4C8 du 19/10 ; MANQUEE : Agen R8C8 du 19/10 ; PROVISOIRE : Prix des Equidays du 20/10.
+  const copie20 = (): any => JSON.parse(JSON.stringify(argonJson20));
+  const SABLES = { dateISO: "2026-10-19", reunion: 4, course: 8, hippodrome: "Les Sables d'Olonne" };
+  const AGEN = { dateISO: "2026-10-19", reunion: 8, course: 8, hippodrome: "Agen La Garenne" };
+  const EQUIDAYS = { dateISO: "2026-10-20", reunion: 1, course: 1, hippodrome: "Clairefontaine-Deauville" };
+  const t90De = (j: any, cible: typeof SABLES): any =>
+    j.races.find((r: any) => r.date === cible.dateISO && r.reunion === cible.reunion && r.course_num === cible.course).editions_schedule.T90;
+  function lue(cible: typeof SABLES, modifier?: (t90: any) => void): CourseArgon {
+    const j = copie20();
+    if (modifier) modifier(t90De(j, cible));
+    const r = trouverCourseArgon(j, cible);
+    if (!r.ok) throw new Error(r.raison);
+    return r.course;
+  }
+  const lire20 = (cible: typeof SABLES, modifier: (t90: any) => void) => {
+    const j = copie20();
+    modifier(t90De(j, cible));
+    return trouverCourseArgon(j, cible);
+  };
+
+  it("T-90 SCELLEE : lue, rien à attendre", () => {
+    const c = lue(SABLES);
+    expect(c.t90).toEqual({ argon8: [9, 10, 13, 11, 2, 12, 7, 15], sealed: true, lockGmt: "17:00", statut: "SCELLEE" });
+    expect(raisonT90(c)).toBeNull();
+  });
+
+  it("T-90 MANQUEE (aucun cheval) : lue, raison argon_t90_manquee — pas « format inattendu »", () => {
+    const c = lue(AGEN);
+    expect(c.t90).toMatchObject({ argon8: [], sealed: false, statut: "MANQUEE" });
+    expect(raisonT90(c)).toBe("argon_t90_manquee");
+  });
+
+  it("T-90 PROVISOIRE avant le scellement : on attend le passage suivant", () => {
+    const c = lue(EQUIDAYS);
+    expect(c.t90).toMatchObject({ sealed: false, statut: "PROVISOIRE", lockGmt: "10:25" });
+    expect(raisonT90(c)).toBe("argon_non_scelle");
+  });
+
+  it("édition non scellée sans chevaux (NON_VERIFIEE, argon8 vide) : on attend", () => {
+    const c = lue(EQUIDAYS, (t) => { t.statut = "NON_VERIFIEE"; t.argon8 = []; });
+    expect(raisonT90(c)).toBe("argon_non_scelle");
+  });
+
+  it("sealed et statut contradictoires : format inattendu", () => {
+    expect(lire20(SABLES, (t) => { t.statut = "PROVISOIRE"; })).toEqual(FORMAT);
+    expect(lire20(EQUIDAYS, (t) => { t.statut = "SCELLEE"; })).toEqual(FORMAT);
+  });
+
+  it("édition scellée avec 7 chevaux : toujours format inattendu", () => {
+    expect(lire20(SABLES, (t) => { t.argon8.pop(); })).toEqual(FORMAT);
+  });
+
+  it("statut d'un type inattendu, ou chevaux non entiers dans une édition non scellée : format inattendu", () => {
+    expect(lire20(SABLES, (t) => { t.statut = 3; })).toEqual(FORMAT);
+    expect(lire20(EQUIDAYS, (t) => { t.argon8[0] = "2"; })).toEqual(FORMAT);
+  });
+
+  it("ancien format sans statut (16/10) : statut null, la T-90 scellée suffit", () => {
+    expect(raisonT90(courseLue())).toBeNull();
+    expect(raisonT90(courseLue(avec((c) => { c.editions_schedule.T90.sealed = false; })))).toBe("argon_non_scelle");
   });
 });
 

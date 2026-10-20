@@ -21,7 +21,11 @@ export interface CourseArgon {
   reunion: number;
   course: number;
   hippodrome: string;
-  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null };
+  /**
+   * `statut` (depuis le 19/10/2026) : SCELLEE, PROVISOIRE, MANQUEE, NON_VERIFIEE ;
+   * null pour l'ancien format. `argon8` n'a ses 8 chevaux garantis que si `sealed`.
+   */
+  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null };
   coureurs: CoureurArgon[];
   /** 1 à 5. */
   etoiles: number;
@@ -38,7 +42,8 @@ export type RaisonArgon =
   | "argon_course_introuvable"
   | "argon_non_scelle"
   | "argon_partants_incoherents"
-  | "argon_partants_insuffisants";
+  | "argon_partants_insuffisants"
+  | "argon_t90_manquee";
 
 export interface CibleArgon {
   /** Date de la course (Paris), AAAA-MM-JJ. */
@@ -50,6 +55,8 @@ export interface CibleArgon {
 }
 
 const TAILLE_ARGON = 8;
+const STATUT_SCELLEE = "SCELLEE";
+const STATUT_MANQUEE = "MANQUEE";
 
 function entierPositif(v: unknown): v is number {
   return typeof v === "number" && Number.isInteger(v) && v > 0;
@@ -75,10 +82,17 @@ function texteOuNul(v: unknown): string | null | undefined {
 function lireCourse(r: any): CourseArgon | null {
   const t90 = r?.editions_schedule?.T90;
   if (!t90 || typeof t90 !== "object") return null;
-  const argon8 = t90.argon8;
-  if (!Array.isArray(argon8) || argon8.length !== TAILLE_ARGON || !argon8.every(entierPositif)) return null;
-  if (argon8.some((n: number, i: number) => argon8.indexOf(n) !== i)) return null;
   if (typeof t90.sealed !== "boolean") return null;
+  const statut = texteOuNul(t90.statut);
+  if (statut === undefined) return null;
+  // Scellée ⇔ statut SCELLEE : un désaccord des deux champs est une réponse anormale.
+  if (statut !== null && t90.sealed !== (statut === STATUT_SCELLEE)) return null;
+  // Les 8 chevaux ne sont exigés qu'une fois l'édition scellée : avant (PROVISOIRE)
+  // ou si Argon l'a manquée (MANQUEE), la liste peut être vide ou incomplète.
+  const argon8 = t90.argon8;
+  if (!Array.isArray(argon8) || !argon8.every(entierPositif)) return null;
+  if (argon8.some((n: number, i: number) => argon8.indexOf(n) !== i)) return null;
+  if (t90.sealed && argon8.length !== TAILLE_ARGON) return null;
   const lockGmt = texteOuNul(t90.lock_gmt);
   if (lockGmt === undefined) return null;
 
@@ -105,7 +119,7 @@ function lireCourse(r: any): CourseArgon | null {
     reunion: r.reunion,
     course: r.course_num,
     hippodrome: r.hippodrome,
-    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt },
+    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt, statut },
     coureurs,
     etoiles,
     deconseillee: r.is_no_bet,
@@ -133,6 +147,16 @@ export function trouverCourseArgon(
   if (candidates.length > 1) return { ok: false, raison: "argon_format_inattendu" };
   const course = lireCourse(candidates[0]);
   return course ? { ok: true, course } : { ok: false, raison: "argon_format_inattendu" };
+}
+
+/**
+ * PUR : l'édition T-90 est-elle utilisable ? null = scellée ;
+ * `argon_t90_manquee` = Argon a raté sa capture (elle ne viendra plus) ;
+ * `argon_non_scelle` = pas encore scellée, nouvel essai au passage suivant.
+ */
+export function raisonT90(course: CourseArgon): "argon_t90_manquee" | "argon_non_scelle" | null {
+  if (course.t90.sealed) return null;
+  return course.t90.statut === STATUT_MANQUEE ? "argon_t90_manquee" : "argon_non_scelle";
 }
 
 /**

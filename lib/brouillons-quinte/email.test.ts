@@ -279,5 +279,6 @@ describe("brouillons Argon (spec du 16/10/2026, §11)", () => {
     expect(objet("argon_non_scelle")).toBe("Brouillons du Quinté+ NON préparés — l'édition T-90 d'Argon n'a pas été scellée à temps");
     expect(objet("argon_partants_incoherents")).toBe("Brouillons du Quinté+ NON préparés — les chevaux d'Argon ne correspondent pas aux partants du PMU");
     expect(objet("argon_partants_insuffisants")).toBe("Brouillons du Quinté+ NON préparés — moins de 6 chevaux d'Argon sont partants");
+    expect(objet("argon_t90_manquee")).toBe("Brouillons du Quinté+ NON préparés — Argon a manqué son édition T-90");
   });
 });
