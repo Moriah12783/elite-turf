@@ -28,3 +28,14 @@ export const PRO_OFFRE_LABEL = PRONOSTIC_EXPERT_DU_JOUR;
 
 /** Phrase officielle de l'offre Elite — reprise de PLAN_CONFIG (features). */
 export const ELITE_OFFRE_LABEL = "Tout le Pack Pro + le plan de jeu Elite chaque jour";
+
+/**
+ * Contenu du plan de jeu Elite — SOURCE UNIQUE des textes d'offre (FAQ,
+ * bandeaux, e-mails, fiches à cases). Décision de Steph du 16/10/2026, avec les
+ * brouillons préparés par Argon à T-90 (spec 2026-10-16-brouillons-argon) :
+ * 8 chevaux, la base de 4, les values et les associés. Le couplé n'est pas
+ * promis : Steph l'indique course par course.
+ * Avant (06/10/2026) : « 6 chevaux, avec la base de 3 chevaux et les values ».
+ */
+export const PLAN_DE_JEU_ELITE =
+  "8 chevaux, avec la base de 4 chevaux pour le champ réduit ou total, les values et les associés";

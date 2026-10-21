@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { PLAN_CONFIG } from "@/types";
+import { PLAN_DE_JEU_ELITE } from "@/lib/pricing";
 import PaiementButton from "@/components/abonnements/PaiementButton";
 import PageHero from "@/components/layout/PageHero";
 import { PROMO } from "@/lib/promo";
@@ -47,7 +48,7 @@ const ABONNEMENTS_FAQ = [
   {
     question: "Quelle est la différence entre Starter, Pro et Elite ?",
     answer:
-      "Starter et Pro donnent accès au même pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+ : 6 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le plan de jeu : 6 chevaux, avec la base de 3 chevaux pour le champ réduit ou total, et les values.",
+      `Starter et Pro donnent accès au même pronostic expert quotidien, à jouer en Tiercé, Quarté+ et Quinté+ : 6 chevaux classés par ordre de confiance, avec l'analyse. Seule la durée change : 7 jours pour Starter (65 €), 30 jours pour Pro (152 €). Elite (208 €, 30 jours) comprend tout le Pro et ajoute chaque jour le plan de jeu : ${PLAN_DE_JEU_ELITE}.`,
   },
   {
     question: "Quel plan choisir si je suis débutant ?",
