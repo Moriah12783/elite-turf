@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { trouverCourseArgon, controlerChevauxArgon, chargerArgon, raisonT90, type CourseArgon } from "./argon";
+import { trouverCourseArgon, controlerChevauxArgon, chargerArgon, raisonT90, t90Definitive, type CourseArgon } from "./argon";
 import { ARGON_JSON, CIBLE_THEMIS, PARTICIPANTS_THEMIS } from "./__fixtures__/themis";
 import argonJson20 from "./__fixtures__/argon-races-20261020.json";
 
@@ -139,6 +139,21 @@ describe("nouveau format d'Argon : statut des éditions (vraie réponse du 20/10
     const c = lue(AGEN);
     expect(c.t90).toMatchObject({ argon8: [], sealed: false, statut: "MANQUEE" });
     expect(raisonT90(c)).toBe("argon_t90_manquee");
+  });
+
+  it("T-90 PARTIELLE (50 à 90 % de cotes, aucun cheval servi) : raison argon_t90_partielle, définitive", () => {
+    // Forme servie par Argon depuis le 19/10 au soir : argon8 vide, valeurs dans argon8_partiel.
+    const c = lue(AGEN, (t) => { t.statut = "PARTIELLE"; t.argon8 = []; t.argon8_partiel = [1, 2, 3, 4, 5, 6, 7, 8]; t.cotes_pct = 72; });
+    expect(c.t90).toMatchObject({ argon8: [], sealed: false, statut: "PARTIELLE" });
+    expect(raisonT90(c)).toBe("argon_t90_partielle");
+    expect(t90Definitive("argon_t90_partielle")).toBe(true);
+  });
+
+  it("T-90 en attente de cotes (EN_ATTENTE_COTES) : on attend le passage suivant", () => {
+    const c = lue(EQUIDAYS, (t) => { t.statut = "EN_ATTENTE_COTES"; t.argon8 = []; });
+    expect(raisonT90(c)).toBe("argon_non_scelle");
+    expect(t90Definitive("argon_non_scelle")).toBe(false);
+    expect(t90Definitive("argon_t90_manquee")).toBe(true);
   });
 
   it("T-90 PROVISOIRE avant le scellement : on attend le passage suivant", () => {
