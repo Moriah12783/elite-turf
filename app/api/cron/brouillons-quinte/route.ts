@@ -28,7 +28,7 @@ import { chargerDonneesPmu } from "@/lib/brouillons-quinte/pmu";
 import {
   situer, dansFenetre, dernierPassage, gardeFous, type PronosticExistant,
 } from "@/lib/brouillons-quinte/fenetre";
-import { chargerArgon, trouverCourseArgon, controlerChevauxArgon, raisonT90 } from "@/lib/brouillons-quinte/argon";
+import { chargerArgon, trouverCourseArgon, controlerChevauxArgon, raisonT90, t90Definitive } from "@/lib/brouillons-quinte/argon";
 import { controlerDonneesPmu, assemblerBrouillons } from "@/lib/brouillons-quinte/assembler";
 import {
   emailBrouillons, emailEchec, emailRelance, typeJournal,
@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
     const argon = trouve.course;
     // Pas encore scellée : nouvel essai. Manquée par Argon : elle ne viendra plus, e-mail tout de suite.
     const attente = raisonT90(argon);
-    if (attente) return await donneesInsuffisantes(attente, { immediat: attente === "argon_t90_manquee" });
+    if (attente) return await donneesInsuffisantes(attente, { immediat: t90Definitive(attente) });
     const incoherent = controlerChevauxArgon(argon, pmu.participants);
     if (incoherent) return await donneesInsuffisantes(incoherent, { immediat: true });
 

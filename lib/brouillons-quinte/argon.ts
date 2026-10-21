@@ -22,8 +22,9 @@ export interface CourseArgon {
   course: number;
   hippodrome: string;
   /**
-   * `statut` (depuis le 19/10/2026) : SCELLEE, PROVISOIRE, MANQUEE, NON_VERIFIEE ;
-   * null pour l'ancien format. `argon8` n'a ses 8 chevaux garantis que si `sealed`.
+   * `statut` (depuis le 19/10/2026) : SCELLEE, PROVISOIRE, MANQUEE, NON_VERIFIEE,
+   * EN_ATTENTE_COTES, PARTIELLE (depuis le 19/10 au soir) ; null pour l'ancien format.
+   * `argon8` n'a ses 8 chevaux garantis que si `sealed`.
    */
   t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null };
   coureurs: CoureurArgon[];
@@ -43,7 +44,8 @@ export type RaisonArgon =
   | "argon_non_scelle"
   | "argon_partants_incoherents"
   | "argon_partants_insuffisants"
-  | "argon_t90_manquee";
+  | "argon_t90_manquee"
+  | "argon_t90_partielle";
 
 export interface CibleArgon {
   /** Date de la course (Paris), AAAA-MM-JJ. */
@@ -57,6 +59,12 @@ export interface CibleArgon {
 const TAILLE_ARGON = 8;
 const STATUT_SCELLEE = "SCELLEE";
 const STATUT_MANQUEE = "MANQUEE";
+/**
+ * Édition figée avec seulement 50 à 90 % des partants cotés au PMU pendant sa
+ * fenêtre (règle d'Argon du 19/10/2026, comme prono.elite-turf.fr). Définitive :
+ * elle ne deviendra jamais SCELLEE, et Argon l'exclut de sa sélection affichée.
+ */
+const STATUT_PARTIELLE = "PARTIELLE";
 
 function entierPositif(v: unknown): v is number {
   return typeof v === "number" && Number.isInteger(v) && v > 0;
@@ -152,11 +160,19 @@ export function trouverCourseArgon(
 /**
  * PUR : l'édition T-90 est-elle utilisable ? null = scellée ;
  * `argon_t90_manquee` = Argon a raté sa capture (elle ne viendra plus) ;
+ * `argon_t90_partielle` = figée avec trop peu de cotes PMU (elle ne viendra plus) ;
  * `argon_non_scelle` = pas encore scellée, nouvel essai au passage suivant.
  */
-export function raisonT90(course: CourseArgon): "argon_t90_manquee" | "argon_non_scelle" | null {
+export function raisonT90(course: CourseArgon): "argon_t90_manquee" | "argon_t90_partielle" | "argon_non_scelle" | null {
   if (course.t90.sealed) return null;
-  return course.t90.statut === STATUT_MANQUEE ? "argon_t90_manquee" : "argon_non_scelle";
+  if (course.t90.statut === STATUT_MANQUEE) return "argon_t90_manquee";
+  if (course.t90.statut === STATUT_PARTIELLE) return "argon_t90_partielle";
+  return "argon_non_scelle";
+}
+
+/** PUR : l'attente ne se réparera pas d'elle-même → e-mail d'échec immédiat. */
+export function t90Definitive(raison: "argon_t90_manquee" | "argon_t90_partielle" | "argon_non_scelle"): boolean {
+  return raison !== "argon_non_scelle";
 }
 
 /**

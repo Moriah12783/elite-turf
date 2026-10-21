@@ -29,6 +29,7 @@ export const RAISONS_LISIBLES: Record<RaisonEchec, string> = {
   argon_partants_incoherents: "les chevaux d'Argon ne correspondent pas aux partants du PMU",
   argon_partants_insuffisants: "moins de 6 chevaux d'Argon sont partants",
   argon_t90_manquee: "Argon a manqué son édition T-90",
+  argon_t90_partielle: "l'édition T-90 d'Argon est partielle (trop peu de cotes PMU)",
 };
 
 export interface ChevalResume {
