@@ -12,7 +12,7 @@ import { SOURCE_BROUILLON } from "./fenetre";
 import { TAILLE_SELECTION, type Confiance } from "./selection";
 import type { CourseArgon } from "./argon";
 import { composerArgon, confianceArgon, type CompositionArgon } from "./composition-argon";
-import { analyseCourte, analyseComplete, heureGmt, type ChevalCommente, type ContexteCourse } from "./commentaires";
+import { analyseCourte, analyseComplete, heureGmt, type AvisArgon, type ChevalCommente, type ContexteCourse } from "./commentaires";
 import type { RaisonEchec, ResumeBrouillons, ChevalResume, LigneMusique } from "./email";
 import { dernieresPlaces, estFaute } from "./musique";
 
@@ -181,9 +181,18 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
     const maj = parNumero[n].coteMaj;
     if (maj !== null && (releveCotes === null || maj > releveCotes)) releveCotes = maj;
   }
-  const ctx: ContexteCourse = { ...e.ctx, releveCotes };
+  const ctx: ContexteCourse = { ...e.ctx, releveCotes, allocations: e.allocations ?? null };
   const confiance = confianceArgon(e.argon.etoiles);
-  const courte = analyseCourte(ctx, commente(comp.pivot));
+  const nbElite = comp.bases.length + comp.valuesElite.length + comp.associes.length;
+  const courte = analyseCourte(ctx, commente(comp.pivot), nbElite);
+  // Plan de jeu Elite : couplé maître et sniper de l'édition T-90 scellée ; à défaut, le sniper du moment.
+  const prono = e.argon.t90.prono;
+  const avis: AvisArgon = {
+    couple: prono && prono.coupleMaitre ? prono.bases.slice(0, 2) : null,
+    sniper: prono && prono.sniper !== null
+      ? { numero: prono.sniper, cote: prono.sniperCote }
+      : e.argon.sniper,
+  };
 
   const ligne = (niveau: "PRO" | "ELITE", values: number[], associes: number[], texte: string): LigneBrouillon => {
     const selection = comp.bases.concat(values, associes);
@@ -209,7 +218,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
   };
 
   const textePro = analyseComplete(ctx, "PRO", comp.bases.map(commente), comp.valuesPro.map(commente), []);
-  const texteElite = analyseComplete(ctx, "ELITE", comp.bases.map(commente), comp.valuesElite.map(commente), comp.associes.map(commente));
+  const texteElite = analyseComplete(ctx, "ELITE", comp.bases.map(commente), comp.valuesElite.map(commente), comp.associes.map(commente), avis);
 
   return {
     ok: true,
