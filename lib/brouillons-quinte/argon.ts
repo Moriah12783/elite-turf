@@ -26,7 +26,7 @@ export interface CourseArgon {
    * EN_ATTENTE_COTES, PARTIELLE (depuis le 19/10 au soir) ; null pour l'ancien format.
    * `argon8` n'a ses 8 chevaux garantis que si `sealed`.
    */
-  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null };
+  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null; prono: PronoArgon | null };
   coureurs: CoureurArgon[];
   /** 1 à 5. */
   etoiles: number;
@@ -35,6 +35,18 @@ export interface CourseArgon {
   /** Avis d'Argon (couplé maître, sniper), recopié tel quel dans l'e-mail. */
   decision: string | null;
   sniper: { numero: number; cote: number | null } | null;
+}
+
+/**
+ * Pronostic complet scellé avec l'édition T-90 (Argon, depuis le 20/10/2026) :
+ * couplé maître et sniper repris dans le plan de jeu Elite. Lecture SOUPLE :
+ * absent ou mal formé = null, sans jamais bloquer les brouillons.
+ */
+export interface PronoArgon {
+  bases: number[];
+  coupleMaitre: boolean;
+  sniper: number | null;
+  sniperCote: number | null;
 }
 
 export type RaisonArgon =
@@ -86,6 +98,16 @@ function texteOuNul(v: unknown): string | null | undefined {
   return typeof v === "string" ? v : undefined;
 }
 
+/** PUR : pronostic scellé de l'édition, lu souplement ; null si absent ou inexploitable. */
+function lirePronoArgon(p: any): PronoArgon | null {
+  if (!p || typeof p !== "object") return null;
+  const bases = Array.isArray(p.bases) ? (p.bases as unknown[]).filter(entierPositif) : [];
+  const sniper = entierPositif(p.sniper_num) ? p.sniper_num : null;
+  const cote = nombreOuNul(p.sniper_odds);
+  if (bases.length === 0 && sniper === null) return null;
+  return { bases: bases.slice(0, 2), coupleMaitre: p.is_master === true && bases.length >= 2, sniper, sniperCote: cote === undefined ? null : cote };
+}
+
 /** PUR : la course retenue, lue strictement ; null si un champ n'a pas le format attendu. */
 function lireCourse(r: any): CourseArgon | null {
   const t90 = r?.editions_schedule?.T90;
@@ -127,7 +149,7 @@ function lireCourse(r: any): CourseArgon | null {
     reunion: r.reunion,
     course: r.course_num,
     hippodrome: r.hippodrome,
-    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt, statut },
+    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt, statut, prono: t90.sealed ? lirePronoArgon(t90.prono) : null },
     coureurs,
     etoiles,
     deconseillee: r.is_no_bet,
