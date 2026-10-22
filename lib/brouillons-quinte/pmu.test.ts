@@ -3,6 +3,9 @@ import { lireParticipantsPmu, lireCoursePmu, lireAllocationsPmu } from "./pmu";
 import participantsJson from "./__fixtures__/pmu-participants-20261007-R1C1.json";
 import courseJson from "./__fixtures__/pmu-course-20261007-R1C1.json";
 import performancesJson from "./__fixtures__/pmu-performances-20261012-R1C4.json";
+import participantsPlat from "./__fixtures__/pmu-participants-20261020-R1C1.json";
+import coursePlat from "./__fixtures__/pmu-course-20261020-R1C1.json";
+import courseObstacle from "./__fixtures__/pmu-course-20261022-R1C1.json";
 
 describe("lireParticipantsPmu — vraie réponse PMU, Quinté+ du 07/10/2026 au départ", () => {
   const p = lireParticipantsPmu(participantsJson);
@@ -25,6 +28,10 @@ describe("lireParticipantsPmu — vraie réponse PMU, Quinté+ du 07/10/2026 au 
       sexe: "FEMELLES",
       age: 8,
       distance: 2900,
+      deferre: "PROTEGE_ANTERIEURS",
+      poids: null,
+      corde: null,
+      valeurHandicap: null,
     });
   });
 
@@ -57,7 +64,31 @@ describe("lireParticipantsPmu — vraie réponse PMU, Quinté+ du 07/10/2026 au 
   });
 });
 
+describe("lireParticipantsPmu — plat : Quinté+ de Clairefontaine du 20/10/2026", () => {
+  const p = lireParticipantsPmu(participantsPlat);
+
+  it("poids en kg, corde et valeur de handicap", () => {
+    expect(p.find((x) => x.numero === 2)).toMatchObject({ nom: "NITY GALESTE", poids: 60, corde: 3, valeurHandicap: 41 });
+    expect(p.find((x) => x.numero === 15)).toMatchObject({ nom: "ZARABABY", poids: 52.5, corde: 2, valeurHandicap: 33.5 });
+  });
+
+  it("le n°7 MOONEY VISION est non partant", () => {
+    expect(p.filter((x) => x.nonPartant).map((x) => x.numero)).toEqual([7]);
+  });
+});
+
 describe("lireCoursePmu", () => {
+  it("obstacle : le PMU dit « OBSTACLE », la discipline précise (STEEPLECHASE) est retenue — Auteuil du 22/10/2026", () => {
+    expect(lireCoursePmu(courseObstacle)).toMatchObject({ specialite: "STEEPLECHASE", distance: 3600, categorie: "HANDICAP_DE_CATEGORIE", terrain: "Très souple" });
+    expect(lireCoursePmu({ specialite: "OBSTACLE", discipline: "HAIES", distance: 3500 })!.specialite).toBe("HAIES");
+    expect(lireCoursePmu({ specialite: "OBSTACLE", distance: 3500 })!.specialite).toBe("OBSTACLE");
+    expect(lireCoursePmu({ specialite: "TROT_ATTELE", discipline: "ATTELE", distance: 2700 })!.specialite).toBe("TROT_ATTELE");
+  });
+
+  it("plat : corde, catégorie et état du terrain", () => {
+    expect(lireCoursePmu(coursePlat)).toMatchObject({ specialite: "PLAT", distance: 2400, corde: "CORDE_DROITE", terrain: "Très souple" });
+  });
+
   it("lit libellé, spécialité, distance, sexe des partants, heure de départ et allocation", () => {
     expect(lireCoursePmu(courseJson)).toEqual({
       libelle: "PRIX DES GOBELINS",
@@ -66,6 +97,10 @@ describe("lireCoursePmu", () => {
       conditionSexe: "FEMELLES",
       heureDepart: 1791374100000,
       allocation: 59000,
+      corde: "CORDE_GAUCHE",
+      categorie: "INCONNU",
+      terrain: null,
+      parcours: null,
     });
   });
 

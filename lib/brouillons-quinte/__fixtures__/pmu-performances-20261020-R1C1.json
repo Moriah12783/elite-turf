@@ -1,0 +1,733 @@
+{
+ "allure": "GALOP",
+ "participants": [
+  {
+   "numPmu": 1,
+   "nomCheval": "YACOMO",
+   "coursesCourues": [
+    {
+     "date": 1789855200000,
+     "hippodrome": "STRASBOURG",
+     "nomPrix": "GRAND PRIX REGION GRAND EST - 12E ETAPE DU DEFI DU GALOP-G.CAMPRUBI",
+     "discipline": "PLAT",
+     "allocation": 54900,
+     "distance": 2100
+    },
+    {
+     "date": 1788213600000,
+     "hippodrome": "BADEN-BADEN",
+     "nomPrix": "Preis der BBAG Jährlings-Auktion 2026 - BBAG Auktionsrennen",
+     "discipline": "PLAT",
+     "allocation": 52000,
+     "distance": 2400
+    },
+    {
+     "date": 1786658400000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX DES 20 ANS DE RADIO BALANCES (GRAND PRIX DE CLAIREFONTAINE)",
+     "discipline": "PLAT",
+     "allocation": 50300,
+     "distance": 2400
+    },
+    {
+     "date": 1783202400000,
+     "hippodrome": "HAMBOURG HORN",
+     "nomPrix": "DEUTSCHES DERBY",
+     "discipline": "PLAT",
+     "allocation": 650000,
+     "distance": 2400
+    },
+    {
+     "date": 1780696800000,
+     "hippodrome": "BADEN-BADEN",
+     "nomPrix": "Japan Racing Association Derby-Trial",
+     "discipline": "PLAT",
+     "allocation": 55000,
+     "distance": 2000
+    }
+   ]
+  },
+  {
+   "numPmu": 2,
+   "nomCheval": "NITY GALESTE",
+   "coursesCourues": [
+    {
+     "date": 1790978400000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "QATAR PRIX DE LA PLACE DES VOSGES",
+     "discipline": "PLAT",
+     "allocation": 72000,
+     "distance": 2500
+    },
+    {
+     "date": 1789250400000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "SUPER HANDICAP DE LA RENTREE",
+     "discipline": "PLAT",
+     "allocation": 96000,
+     "distance": 2000
+    },
+    {
+     "date": 1788127200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE SAINT-PAIR-DU-MONT",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1787004000000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "PRIX DE KEENELAND (PRIX D'AVRANCHES)",
+     "discipline": "PLAT",
+     "allocation": 25600,
+     "distance": 2000
+    },
+    {
+     "date": 1781215200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX RESCOUSSE",
+     "discipline": "PLAT",
+     "allocation": 25600,
+     "distance": 2400
+    }
+   ]
+  },
+  {
+   "numPmu": 3,
+   "nomCheval": "MAKAN",
+   "coursesCourues": [
+    {
+     "date": 1790460000000,
+     "hippodrome": "AMIENS",
+     "nomPrix": "PRIX YVES SAINT MARTIN",
+     "discipline": "PLAT",
+     "allocation": 15600,
+     "distance": 2200
+    },
+    {
+     "date": 1788732000000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX PLEBEN",
+     "discipline": "PLAT",
+     "allocation": 20100,
+     "distance": 2400
+    },
+    {
+     "date": 1785967200000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX DE SAINT-PALAIS",
+     "discipline": "PLAT",
+     "allocation": 15600,
+     "distance": 1850
+    },
+    {
+     "date": 1777500000000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DE VIROFLAY",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 2000
+    },
+    {
+     "date": 1775340000000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX JUIGNE",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 2100
+    }
+   ]
+  },
+  {
+   "numPmu": 4,
+   "nomCheval": "ZARLAND",
+   "coursesCourues": [
+    {
+     "date": 1790373600000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "PRIX BLACK DANCER",
+     "discipline": "PLAT",
+     "allocation": 15600,
+     "distance": 2400
+    },
+    {
+     "date": 1780956000000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX BENJAMIN BOUTIN",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 1800
+    },
+    {
+     "date": 1779919200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "SOSAFE PRIX DES EPINETTES",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2100
+    },
+    {
+     "date": 1777500000000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DE VIROFLAY",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 2000
+    },
+    {
+     "date": 1775167200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX EMPERY",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 2100
+    }
+   ]
+  },
+  {
+   "numPmu": 5,
+   "nomCheval": "MY HABITUDE",
+   "coursesCourues": [
+    {
+     "date": 1791410400000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE VERSAILLES",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2000
+    },
+    {
+     "date": 1790546400000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX LESIEUR (PRIX DU CHENE)",
+     "discipline": "PLAT",
+     "allocation": 16300,
+     "distance": 2400
+    },
+    {
+     "date": 1789077600000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX FITERARI",
+     "discipline": "PLAT",
+     "allocation": 20200,
+     "distance": 2500
+    },
+    {
+     "date": 1787954400000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX DU JURY DE LA REVELATION (PRIX DE JERSEY)",
+     "discipline": "PLAT",
+     "allocation": 20200,
+     "distance": 2200
+    },
+    {
+     "date": 1787176800000,
+     "hippodrome": "LE LION D'ANGERS",
+     "nomPrix": "PRIX DE LA VEZ",
+     "discipline": "PLAT",
+     "allocation": 16300,
+     "distance": 2400
+    }
+   ]
+  },
+  {
+   "numPmu": 6,
+   "nomCheval": "ARANYANI",
+   "coursesCourues": [
+    {
+     "date": 1791410400000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE VERSAILLES",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2000
+    },
+    {
+     "date": 1788386400000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DE NEUILLY",
+     "discipline": "PLAT",
+     "allocation": 26900,
+     "distance": 2000
+    },
+    {
+     "date": 1785362400000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX DU QUEBEC",
+     "discipline": "PLAT",
+     "allocation": 20100,
+     "distance": 2400
+    },
+    {
+     "date": 1782511200000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "PRIX DE LA FOSSE AUX BICHES",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 1900
+    },
+    {
+     "date": 1780696800000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX DE L'INFORMATEUR (PRIX DE LA FOSSE DES MARIANNES)",
+     "discipline": "PLAT",
+     "allocation": 24700,
+     "distance": 2400
+    }
+   ]
+  },
+  {
+   "numPmu": 7,
+   "nomCheval": "MOONEY VISION",
+   "coursesCourues": [
+    {
+     "date": 1790200800000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DE FRESNOY-LA-RIVIERE",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 2400
+    },
+    {
+     "date": 1785794400000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "PRIX DES GORGES DE LA VIRE",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 3000
+    },
+    {
+     "date": 1782943200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX HOCQUELUS",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 3000
+    },
+    {
+     "date": 1779919200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DU MAIL",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 2700
+    }
+   ]
+  },
+  {
+   "numPmu": 8,
+   "nomCheval": "MARIE LA CROIX",
+   "coursesCourues": [
+    {
+     "date": 1787954400000,
+     "hippodrome": "TARBES",
+     "nomPrix": "PRIX PATRICK LAPIQUE",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2100
+    },
+    {
+     "date": 1784671200000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX DU CHAROLAIS",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2000
+    },
+    {
+     "date": 1780696800000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "PRIX THEODORE RAVIER",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2000
+    },
+    {
+     "date": 1777672800000,
+     "hippodrome": "MARSEILLE PONT DE VIVAUX",
+     "nomPrix": "PRIX DES COLOMBES",
+     "discipline": "PLAT",
+     "allocation": 13700,
+     "distance": 2000
+    },
+    {
+     "date": 1776636000000,
+     "hippodrome": "FONTAINEBLEAU",
+     "nomPrix": "PRIX DU COEUR (PRIX DES NOISETIERS)",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 1600
+    }
+   ]
+  },
+  {
+   "numPmu": 9,
+   "nomCheval": "TAKERYA",
+   "coursesCourues": [
+    {
+     "date": 1789423200000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DES VINEUX",
+     "discipline": "PLAT",
+     "allocation": 21000,
+     "distance": 2400
+    },
+    {
+     "date": 1784930400000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX JEAN BOULARD",
+     "discipline": "PLAT",
+     "allocation": 20100,
+     "distance": 2000
+    },
+    {
+     "date": 1776376800000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "HENRI MATISSE COOLMORE PRIX CLEOPATRE",
+     "discipline": "PLAT",
+     "allocation": 73200,
+     "distance": 2100
+    },
+    {
+     "date": 1773097200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX GRIS PERLE",
+     "discipline": "PLAT",
+     "allocation": 25600,
+     "distance": 2000
+    },
+    {
+     "date": 1764630000000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "PRIX DU GRAND CHESNAY",
+     "discipline": "PLAT",
+     "allocation": 27400,
+     "distance": 1900
+    }
+   ]
+  },
+  {
+   "numPmu": 10,
+   "nomCheval": "BABADOO",
+   "coursesCourues": [
+    {
+     "date": 1789423200000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "PRIX TOP WORLD",
+     "discipline": "PLAT",
+     "allocation": 13700,
+     "distance": 2200
+    },
+    {
+     "date": 1787954400000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX DU JURY DE LA REVELATION (PRIX DE JERSEY)",
+     "discipline": "PLAT",
+     "allocation": 20200,
+     "distance": 2200
+    },
+    {
+     "date": 1786053600000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX DU CONCOURS \"PEIGNEZ CLAIREFONTAINE\"-PX DU CHEMIN DE L'HIPPODROME",
+     "discipline": "PLAT",
+     "allocation": 20200,
+     "distance": 2200
+    },
+    {
+     "date": 1784584800000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX SELLERIE EQUIRACING (PRIX DE L'HIPPODROME DE CASABLANCA",
+     "discipline": "PLAT",
+     "allocation": 26900,
+     "distance": 2400
+    },
+    {
+     "date": 1783029600000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX PETIT FUTE (PRIX DU CHEMIN DU MARAIS)",
+     "discipline": "PLAT",
+     "allocation": 18200,
+     "distance": 1800
+    }
+   ]
+  },
+  {
+   "numPmu": 11,
+   "nomCheval": "ENTLEBUCH",
+   "coursesCourues": [
+    {
+     "date": 1791410400000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE VERSAILLES",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2000
+    },
+    {
+     "date": 1789423200000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DES VINEUX",
+     "discipline": "PLAT",
+     "allocation": 21000,
+     "distance": 2400
+    },
+    {
+     "date": 1788127200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE SAINT-PAIR-DU-MONT",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1786312800000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX GENYBET SUPER TOP 5 (PRIX DE LA COTE DE NACRE)",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1785016800000,
+     "hippodrome": "LE TOUQUET",
+     "nomPrix": "PRIX HENRI VAN DE POELE",
+     "discipline": "PLAT",
+     "allocation": 11000,
+     "distance": 2100
+    }
+   ]
+  },
+  {
+   "numPmu": 12,
+   "nomCheval": "SORELINO",
+   "coursesCourues": [
+    {
+     "date": 1789250400000,
+     "hippodrome": "STRASBOURG",
+     "nomPrix": "PRIX CREDIT MUTUEL (PRIX DES VOSGES)",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2000
+    },
+    {
+     "date": 1788127200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DES PYRENEES",
+     "discipline": "PLAT",
+     "allocation": 18300,
+     "distance": 2000
+    },
+    {
+     "date": 1787090400000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX AQUIS CALIDIS",
+     "discipline": "PLAT",
+     "allocation": 15600,
+     "distance": 2000
+    },
+    {
+     "date": 1785103200000,
+     "hippodrome": "VITTEL",
+     "nomPrix": "PRIX MINNIE DE BEAUVAU CRAON",
+     "discipline": "PLAT",
+     "allocation": 10100,
+     "distance": 2100
+    },
+    {
+     "date": 1780610400000,
+     "hippodrome": "NANCY",
+     "nomPrix": "PRIX HENRI DORY (PORTE HERE)",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2500
+    }
+   ]
+  },
+  {
+   "numPmu": 13,
+   "nomCheval": "ADICTA",
+   "coursesCourues": [
+    {
+     "date": 1789250400000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DE L'HOTEL DU CHEVALIER-DU-GUET",
+     "discipline": "PLAT",
+     "allocation": 33600,
+     "distance": 2000
+    },
+    {
+     "date": 1787436000000,
+     "hippodrome": "DAX",
+     "nomPrix": "PRIX GRAND DAX 1ERE DESTINATION THERMALE DE FRANCE",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2300
+    },
+    {
+     "date": 1785708000000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "ABEILLE NOIRE DE NORMANDIE - PRIX DES GARDENIAS",
+     "discipline": "PLAT",
+     "allocation": 22100,
+     "distance": 2400
+    },
+    {
+     "date": 1784066400000,
+     "hippodrome": "LA TESTE DE BUCH",
+     "nomPrix": "PRIX CLEAR NETTOYAGE",
+     "discipline": "PLAT",
+     "allocation": 15600,
+     "distance": 1600
+    },
+    {
+     "date": 1777586400000,
+     "hippodrome": "MADRID",
+     "nomPrix": "Premio Howden",
+     "discipline": "PLAT",
+     "allocation": 25500,
+     "distance": 2100
+    }
+   ]
+  },
+  {
+   "numPmu": 14,
+   "nomCheval": "EXELMANS",
+   "coursesCourues": [
+    {
+     "date": 1788127200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE SAINT-PAIR-DU-MONT",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1786312800000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX GENYBET SUPER TOP 5 (PRIX DE LA COTE DE NACRE)",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1783720800000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX PIERRE LEPEUDRY",
+     "discipline": "PLAT",
+     "allocation": 20100,
+     "distance": 2200
+    },
+    {
+     "date": 1782338400000,
+     "hippodrome": "LA TESTE DE BUCH",
+     "nomPrix": "PRIX DS AUTOMOBILES - DS STORE ARCACHON",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 2200
+    },
+    {
+     "date": 1770159600000,
+     "hippodrome": "CAGNES-SUR-MER",
+     "nomPrix": "PRIX DE L'ESTEREL",
+     "discipline": "PLAT",
+     "allocation": 21000,
+     "distance": 2150
+    }
+   ]
+  },
+  {
+   "numPmu": 15,
+   "nomCheval": "ZARABABY",
+   "coursesCourues": [
+    {
+     "date": 1790200800000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DE FRESNOY-LA-RIVIERE",
+     "discipline": "PLAT",
+     "allocation": 24000,
+     "distance": 2400
+    },
+    {
+     "date": 1788127200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DE SAINT-MARTIN-DU-CHENE",
+     "discipline": "PLAT",
+     "allocation": 26900,
+     "distance": 2400
+    },
+    {
+     "date": 1786312800000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX GENY.COM (PRIX DE LA COTE D'ALBATRE)",
+     "discipline": "PLAT",
+     "allocation": 26900,
+     "distance": 2400
+    },
+    {
+     "date": 1784584800000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX IMPERATRICE EUGENIE",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2400
+    },
+    {
+     "date": 1781733600000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DU NABOB",
+     "discipline": "PLAT",
+     "allocation": 52800,
+     "distance": 2200
+    }
+   ]
+  },
+  {
+   "numPmu": 16,
+   "nomCheval": "MICKAEL D'OO",
+   "coursesCourues": [
+    {
+     "date": 1790546400000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX LESIEUR (PRIX DU CHENE)",
+     "discipline": "PLAT",
+     "allocation": 16300,
+     "distance": 2400
+    },
+    {
+     "date": 1788386400000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DE NEUILLY",
+     "discipline": "PLAT",
+     "allocation": 26900,
+     "distance": 2000
+    },
+    {
+     "date": 1786658400000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX CHARLES DE VEAUCE",
+     "discipline": "PLAT",
+     "allocation": 16500,
+     "distance": 2400
+    },
+    {
+     "date": 1782856800000,
+     "hippodrome": "NANTES",
+     "nomPrix": "DERBY DE L'OUEST",
+     "discipline": "PLAT",
+     "allocation": 27400,
+     "distance": 2400
+    },
+    {
+     "date": 1773961200000,
+     "hippodrome": "LE MANS",
+     "nomPrix": "PRIX DU CANTON DE SAVIGNE-L'EVEQUE (PX S.C. DE LA CHARTRE-SUR-LE-LOIR)",
+     "discipline": "PLAT",
+     "allocation": 20100,
+     "distance": 2300
+    }
+   ]
+  }
+ ]
+}
