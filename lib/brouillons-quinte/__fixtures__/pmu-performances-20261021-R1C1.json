@@ -1,0 +1,587 @@
+{
+ "allure": "TROT",
+ "participants": [
+  {
+   "numPmu": 1,
+   "nomCheval": "ENEA FONT",
+   "coursesCourues": [
+    {
+     "date": 1790546400000,
+     "hippodrome": "ENGHIEN",
+     "nomPrix": "PRIX DE LA BOURSE",
+     "discipline": "ATTELE",
+     "allocation": 46000,
+     "distance": 2875
+    },
+    {
+     "date": 1787090400000,
+     "hippodrome": "LAVAL",
+     "nomPrix": "PRIX DU PERIGORD",
+     "discipline": "ATTELE",
+     "allocation": 60000,
+     "distance": 2850
+    },
+    {
+     "date": 1778018400000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX DE NIORT",
+     "discipline": "ATTELE",
+     "allocation": 49000,
+     "distance": 2700
+    },
+    {
+     "date": 1776981600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DE MONDONVILLE",
+     "discipline": "ATTELE",
+     "allocation": 25000,
+     "distance": 2950
+    }
+   ]
+  },
+  {
+   "numPmu": 2,
+   "nomCheval": "I AM PHYT'S",
+   "coursesCourues": [
+    {
+     "date": 1791669600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DE LA CITE DE L'ESPACE",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2150
+    },
+    {
+     "date": 1790978400000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "PRIX DE WOLVEGA",
+     "discipline": "ATTELE",
+     "allocation": 22000,
+     "distance": 2550
+    },
+    {
+     "date": 1789855200000,
+     "hippodrome": "AGEN LA GARENNE",
+     "nomPrix": "PRIX DE L'AGGLOMERATION D'AGEN",
+     "discipline": "ATTELE",
+     "allocation": 22000,
+     "distance": 2050
+    },
+    {
+     "date": 1789250400000,
+     "hippodrome": "CASTELSARRASIN",
+     "nomPrix": "GRAND PRIX V AND B",
+     "discipline": "ATTELE",
+     "allocation": 20000,
+     "distance": 2375
+    },
+    {
+     "date": 1788386400000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "PRIX IDAO DE TILLARD",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2400
+    }
+   ]
+  },
+  {
+   "numPmu": 3,
+   "nomCheval": "INVICTUS NAR",
+   "coursesCourues": [
+    {
+     "date": 1791669600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DE LA CITE DE L'ESPACE",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2150
+    },
+    {
+     "date": 1789768800000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX ADN TRAVAUX PUBLICS (CRITERIUM)",
+     "discipline": "ATTELE",
+     "allocation": 8000,
+     "distance": 1609
+    },
+    {
+     "date": 1787436000000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "PRIX PIERRE VIGNEAUX",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2400
+    },
+    {
+     "date": 1786312800000,
+     "hippodrome": "CASTERA-VERDUZAN",
+     "nomPrix": "GRAND PRIX DE LARROQUE SAINT-SERNIN",
+     "discipline": "ATTELE",
+     "allocation": 24000,
+     "distance": 2800
+    },
+    {
+     "date": 1784325600000,
+     "hippodrome": "BIARRITZ",
+     "nomPrix": "PRIX DU PRESIDENT ODRIOZOLA",
+     "discipline": "ATTELE",
+     "allocation": 23000,
+     "distance": 2150
+    }
+   ]
+  },
+  {
+   "numPmu": 4,
+   "nomCheval": "HARLEM DE L'ITON",
+   "coursesCourues": [
+    {
+     "date": 1791151200000,
+     "hippodrome": "CASTERA-VERDUZAN",
+     "nomPrix": "PRIX PHARMACIE ALBARET",
+     "discipline": "ATTELE",
+     "allocation": 10000,
+     "distance": 2800
+    },
+    {
+     "date": 1789768800000,
+     "hippodrome": "LANGON-LIBOURNE",
+     "nomPrix": "PRIX ALAIN SAINT-BLANCARD",
+     "discipline": "ATTELE",
+     "allocation": 10000,
+     "distance": 2800
+    },
+    {
+     "date": 1787781600000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "PRIX DU MUGEL",
+     "discipline": "ATTELE",
+     "allocation": 27000,
+     "distance": 3000
+    },
+    {
+     "date": 1786917600000,
+     "hippodrome": "CAGNES-SUR-MER",
+     "nomPrix": "PRIX FLORENCE LECELLIER",
+     "discipline": "ATTELE",
+     "allocation": 29000,
+     "distance": 2925
+    },
+    {
+     "date": 1785103200000,
+     "hippodrome": "CAGNES-SUR-MER",
+     "nomPrix": "PRIX DE TRASTEVERE",
+     "discipline": "ATTELE",
+     "allocation": 33000,
+     "distance": 2700
+    }
+   ]
+  },
+  {
+   "numPmu": 5,
+   "nomCheval": "GHOST DE BEAULIEU",
+   "coursesCourues": [
+    {
+     "date": 1791756000000,
+     "hippodrome": "CASTERA-VERDUZAN",
+     "nomPrix": "PRIX DALLA VEDOVA",
+     "discipline": "ATTELE",
+     "allocation": 24000,
+     "distance": 2800
+    },
+    {
+     "date": 1791064800000,
+     "hippodrome": "AGEN LA GARENNE",
+     "nomPrix": "PRIX DE SAINT-HILAIRE-DE-LUSIGNAN",
+     "discipline": "ATTELE",
+     "allocation": 22000,
+     "distance": 2625
+    },
+    {
+     "date": 1790373600000,
+     "hippodrome": "NIMES",
+     "nomPrix": "PRIX GENYBET",
+     "discipline": "ATTELE",
+     "allocation": 21000,
+     "distance": 2750
+    },
+    {
+     "date": 1788645600000,
+     "hippodrome": "HYERES",
+     "nomPrix": "PRIX SEPTEMBRE ENSOLEILLE",
+     "discipline": "ATTELE",
+     "allocation": 24000,
+     "distance": 2650
+    },
+    {
+     "date": 1786140000000,
+     "hippodrome": "AIX LES BAINS",
+     "nomPrix": "PRIX DU SEMNOZ",
+     "discipline": "ATTELE",
+     "allocation": 10000,
+     "distance": 2725
+    }
+   ]
+  },
+  {
+   "numPmu": 6,
+   "nomCheval": "IRRATI DUEM",
+   "coursesCourues": [
+    {
+     "date": 1791669600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DE LA CITE DE L'ESPACE",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2150
+    },
+    {
+     "date": 1791064800000,
+     "hippodrome": "AGEN LA GARENNE",
+     "nomPrix": "PRIX DE SAINT-HILAIRE-DE-LUSIGNAN",
+     "discipline": "ATTELE",
+     "allocation": 22000,
+     "distance": 2625
+    },
+    {
+     "date": 1780696800000,
+     "hippodrome": "VILLENEUVE SUR LOT",
+     "nomPrix": "PRIX DE LA VILLE DE VILLENEUVE-SUR-LOT",
+     "discipline": "ATTELE",
+     "allocation": 23000,
+     "distance": 2625
+    },
+    {
+     "date": 1778968800000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "PRIX JEAN-MAURICE BETEAU",
+     "discipline": "ATTELE",
+     "allocation": 26000,
+     "distance": 2550
+    },
+    {
+     "date": 1778104800000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "PRIX DE L'ISLE SUR SORGUE",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2300
+    }
+   ]
+  },
+  {
+   "numPmu": 7,
+   "nomCheval": "INCREDIBLE GO",
+   "coursesCourues": [
+    {
+     "date": 1791669600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DE LA CITE DE L'ESPACE",
+     "discipline": "ATTELE",
+     "allocation": 30000,
+     "distance": 2150
+    },
+    {
+     "date": 1790028000000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX HAMALE",
+     "discipline": "ATTELE",
+     "allocation": 18000,
+     "distance": 2850
+    },
+    {
+     "date": 1789336800000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "GRAND PRIX JEAN DUMOUCH",
+     "discipline": "ATTELE",
+     "allocation": 38000,
+     "distance": 2550
+    },
+    {
+     "date": 1788472800000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX PANDORA",
+     "discipline": "ATTELE",
+     "allocation": 52000,
+     "distance": 2700
+    },
+    {
+     "date": 1787349600000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX DE BELLEY",
+     "discipline": "ATTELE",
+     "allocation": 18000,
+     "distance": 2100
+    }
+   ]
+  },
+  {
+   "numPmu": 8,
+   "nomCheval": "ICARE DE PHYT'S",
+   "coursesCourues": [
+    {
+     "date": 1791151200000,
+     "hippodrome": "ENGHIEN",
+     "nomPrix": "PRIX DU PONT DES ARTS",
+     "discipline": "ATTELE",
+     "allocation": 59000,
+     "distance": 2875
+    },
+    {
+     "date": 1789682400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GRAND PRIX BARON D'ARDEUIL AOC BUZET",
+     "discipline": "ATTELE",
+     "allocation": 35000,
+     "distance": 2950
+    },
+    {
+     "date": 1788040800000,
+     "hippodrome": "VILLENEUVE SUR LOT",
+     "nomPrix": "GRAND PRIX BARON D'ARDEUIL AOC BUZET",
+     "discipline": "ATTELE",
+     "allocation": 26000,
+     "distance": 2625
+    },
+    {
+     "date": 1787781600000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "PRIX LUGOLIN",
+     "discipline": "ATTELE",
+     "allocation": 35000,
+     "distance": 2300
+    },
+    {
+     "date": 1780437600000,
+     "hippodrome": "LAVAL",
+     "nomPrix": "PRIX HENRI DESMONTILS - PX PMU LE ROYAL",
+     "discipline": "MONTE",
+     "allocation": 39000,
+     "distance": 2850
+    }
+   ]
+  },
+  {
+   "numPmu": 9,
+   "nomCheval": "HELIOS D'ELA",
+   "coursesCourues": [
+    {
+     "date": 1791669600000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GRAND PRIX DYNAVENA",
+     "discipline": "ATTELE",
+     "allocation": 53000,
+     "distance": 2950
+    },
+    {
+     "date": 1774393200000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "GRAND NATIONAL DU TROT",
+     "discipline": "ATTELE",
+     "allocation": 90000,
+     "distance": 3000
+    },
+    {
+     "date": 1769209200000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX DE VITTEL",
+     "discipline": "ATTELE",
+     "allocation": 68000,
+     "distance": 2700
+    },
+    {
+     "date": 1766703600000,
+     "hippodrome": "BORDEAUX-LE BOUSCAT",
+     "nomPrix": "GRAND PRIX D'HIVER",
+     "discipline": "ATTELE",
+     "allocation": 53000,
+     "distance": 2650
+    },
+    {
+     "date": 1753567200000,
+     "hippodrome": "EAUZE",
+     "nomPrix": "GRAND PRIX DE LA VILLE D'EAUZE",
+     "discipline": "ATTELE",
+     "allocation": 27000,
+     "distance": 3025
+    }
+   ]
+  },
+  {
+   "numPmu": 10,
+   "nomCheval": "FREEDOM (NOR)",
+   "coursesCourues": [
+    {
+     "date": 1790892000000,
+     "hippodrome": "PARIS-VINCENNES",
+     "nomPrix": "PRIX CHARLEY MILLS",
+     "discipline": "ATTELE",
+     "allocation": 75000,
+     "distance": 2700
+    },
+    {
+     "date": 1787868000000,
+     "hippodrome": "LES SABLES D'OLONNE",
+     "nomPrix": "PRIX LOUIS BESSIERE",
+     "discipline": "ATTELE",
+     "allocation": 33000,
+     "distance": 2000
+    },
+    {
+     "date": 1787090400000,
+     "hippodrome": "LAVAL",
+     "nomPrix": "PRIX DE BEAUNE",
+     "discipline": "ATTELE",
+     "allocation": 68000,
+     "distance": 2850
+    },
+    {
+     "date": 1780610400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GRAND PRIX DU CAPITOLE",
+     "discipline": "ATTELE",
+     "allocation": 53000,
+     "distance": 2950
+    },
+    {
+     "date": 1778277600000,
+     "hippodrome": "CAEN",
+     "nomPrix": "PRIX GEORGES DREUX",
+     "discipline": "ATTELE",
+     "allocation": 40000,
+     "distance": 2450
+    }
+   ]
+  },
+  {
+   "numPmu": 11,
+   "nomCheval": "GALANT DE CAREL",
+   "coursesCourues": [
+    {
+     "date": 1783202400000,
+     "hippodrome": "HYERES",
+     "nomPrix": "PRIX DU DOMAINE LOLICE",
+     "discipline": "ATTELE",
+     "allocation": 43000,
+     "distance": 2650
+    },
+    {
+     "date": 1781560800000,
+     "hippodrome": "HYERES",
+     "nomPrix": "PRIX JACQUES CROTTE",
+     "discipline": "ATTELE",
+     "allocation": 43000,
+     "distance": 2650
+    },
+    {
+     "date": 1780610400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GRAND PRIX DU CAPITOLE",
+     "discipline": "ATTELE",
+     "allocation": 53000,
+     "distance": 2950
+    },
+    {
+     "date": 1780092000000,
+     "hippodrome": "AGEN LA GARENNE",
+     "nomPrix": "GRAND PRIX DYNAVENA",
+     "discipline": "ATTELE",
+     "allocation": 39000,
+     "distance": 2625
+    },
+    {
+     "date": 1778796000000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "PRIX DE MARIGNANE",
+     "discipline": "ATTELE",
+     "allocation": 45000,
+     "distance": 3000
+    }
+   ]
+  },
+  {
+   "numPmu": 12,
+   "nomCheval": "GERICAULT",
+   "coursesCourues": [
+    {
+     "date": 1790287200000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GD PX DYNAVENA - GD PX DES VENDANGES",
+     "discipline": "ATTELE",
+     "allocation": 39000,
+     "distance": 2950
+    },
+    {
+     "date": 1787522400000,
+     "hippodrome": "CASTERA-VERDUZAN",
+     "nomPrix": "PRIX DYNAVENA-GD PX DE CASTERA VERDUZAN",
+     "discipline": "ATTELE",
+     "allocation": 35000,
+     "distance": 2150
+    },
+    {
+     "date": 1784498400000,
+     "hippodrome": "CAGNES-SUR-MER",
+     "nomPrix": "PRIX CAGNOTTEAUTISME.COM(BAIE DES ANGES)",
+     "discipline": "ATTELE",
+     "allocation": 43000,
+     "distance": 2925
+    },
+    {
+     "date": 1780610400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "GRAND PRIX DU CAPITOLE",
+     "discipline": "ATTELE",
+     "allocation": 53000,
+     "distance": 2950
+    }
+   ]
+  },
+  {
+   "numPmu": 13,
+   "nomCheval": "ICARE DU BERYL",
+   "coursesCourues": [
+    {
+     "date": 1790892000000,
+     "hippodrome": "MARSEILLE-BORELY",
+     "nomPrix": "PRIX DES URSINIAS",
+     "discipline": "ATTELE",
+     "allocation": 45000,
+     "distance": 3000
+    },
+    {
+     "date": 1789682400000,
+     "hippodrome": "CAVAILLON",
+     "nomPrix": "GRAND PRIX DE TROT DE CAVAILLON",
+     "discipline": "ATTELE",
+     "allocation": 38000,
+     "distance": 2600
+    },
+    {
+     "date": 1788386400000,
+     "hippodrome": "BEAUMONT-DE-LOMAGNE",
+     "nomPrix": "GRAND PRIX DE BEAUMONT DE LOMAGNE",
+     "discipline": "ATTELE",
+     "allocation": 52000,
+     "distance": 2550
+    },
+    {
+     "date": 1787522400000,
+     "hippodrome": "CASTERA-VERDUZAN",
+     "nomPrix": "PRIX DYNAVENA-GD PX DE CASTERA VERDUZAN",
+     "discipline": "ATTELE",
+     "allocation": 35000,
+     "distance": 2150
+    },
+    {
+     "date": 1784412000000,
+     "hippodrome": "ROYAN-LA PALMYRE",
+     "nomPrix": "GRAND PRIX JEAN-MAURICE BETEAU",
+     "discipline": "ATTELE",
+     "allocation": 50000,
+     "distance": 3100
+    }
+   ]
+  }
+ ]
+}

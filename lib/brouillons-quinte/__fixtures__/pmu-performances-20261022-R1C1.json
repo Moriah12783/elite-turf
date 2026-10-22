@@ -1,0 +1,701 @@
+{
+ "allure": "GALOP",
+ "participants": [
+  {
+   "numPmu": 1,
+   "nomCheval": "KING PINEAU",
+   "coursesCourues": [
+    {
+     "date": 1778882400000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX SAINT-SAUVEUR",
+     "discipline": "STEEPLECHASE",
+     "allocation": 98000,
+     "distance": 4400
+    },
+    {
+     "date": 1776549600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX DU PRESIDENT DE LA REPUBLIQUE (GROUPE III)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 235000,
+     "distance": 4700
+    },
+    {
+     "date": 1772838000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "GRAND STEEPLE-CHASE MASTERS - PRIX TROYTOWN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 145000,
+     "distance": 4400
+    },
+    {
+     "date": 1763247600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX FONDEUR",
+     "discipline": "STEEPLECHASE",
+     "allocation": 130000,
+     "distance": 4400
+    },
+    {
+     "date": 1760738400000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX GENERAL DONNIO",
+     "discipline": "STEEPLECHASE",
+     "allocation": 88000,
+     "distance": 4400
+    }
+   ]
+  },
+  {
+   "numPmu": 2,
+   "nomCheval": "JUVAL",
+   "coursesCourues": [
+    {
+     "date": 1789682400000,
+     "hippodrome": "MOULINS",
+     "nomPrix": "PRIX PRETTY TIGER",
+     "discipline": "STEEPLECHASE",
+     "allocation": 28000,
+     "distance": 3800
+    },
+    {
+     "date": 1751407200000,
+     "hippodrome": "DAX",
+     "nomPrix": "PRIX GERALD DE GEOFFRE - GRAND STEEPLE-CHASE DE DAX",
+     "discipline": "STEEPLECHASE",
+     "allocation": 62000,
+     "distance": 4100
+    },
+    {
+     "date": 1743976800000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX FIRE LIGHT II",
+     "discipline": "STEEPLECHASE",
+     "allocation": 26000,
+     "distance": 3500
+    },
+    {
+     "date": 1742079600000,
+     "hippodrome": "MONT DE MARSAN",
+     "nomPrix": "PRIX DES DONNEURS DE SANG",
+     "discipline": "STEEPLECHASE",
+     "allocation": 15000,
+     "distance": 4200
+    },
+    {
+     "date": 1740265200000,
+     "hippodrome": "MAURE DE BRETAGNE",
+     "nomPrix": "PRIX GEORGES DE JACQUELIN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 15000,
+     "distance": 4200
+    }
+   ]
+  },
+  {
+   "numPmu": 3,
+   "nomCheval": "KEASY STORM",
+   "coursesCourues": [
+    {
+     "date": 1790460000000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX ICI MAYENNE (PRIX CLAUDE ROUGET)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 28000,
+     "distance": 4200
+    },
+    {
+     "date": 1787695200000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX LATITUDE GPS (GRAND STEEPLE-CHASE DE LA VILLE DE DEAUVILLE)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 87000,
+     "distance": 4500
+    },
+    {
+     "date": 1786572000000,
+     "hippodrome": "LE LION D'ANGERS",
+     "nomPrix": "OSARUS - PRIX PIERRE PELTIER ET U MASTER",
+     "discipline": "STEEPLECHASE",
+     "allocation": 28000,
+     "distance": 3900
+    },
+    {
+     "date": 1783634400000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "GRANDE COURSE DE HAIES DE DIEPPE",
+     "discipline": "HAIE",
+     "allocation": 83000,
+     "distance": 3800
+    },
+    {
+     "date": 1780264800000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX DE L'AILLY",
+     "discipline": "HAIE",
+     "allocation": 34000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 4,
+   "nomCheval": "LAKADAME",
+   "coursesCourues": [
+    {
+     "date": 1789596000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX LANISTE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 4400
+    },
+    {
+     "date": 1787695200000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX LATITUDE GPS (GRAND STEEPLE-CHASE DE LA VILLE DE DEAUVILLE)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 87000,
+     "distance": 4500
+    },
+    {
+     "date": 1785535200000,
+     "hippodrome": "SAINT MALO",
+     "nomPrix": "PRIX PIERRE-LOUIS DE MAUPERTUIS",
+     "discipline": "HAIE",
+     "allocation": 21000,
+     "distance": 3900
+    },
+    {
+     "date": 1782252000000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "POPPYNOURS BY CAROLINE DURAND (PRIX SPIROU)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 32000,
+     "distance": 3900
+    },
+    {
+     "date": 1780264800000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX CHOQUET",
+     "discipline": "HAIE",
+     "allocation": 32000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 5,
+   "nomCheval": "L'ARRABIATO",
+   "coursesCourues": [
+    {
+     "date": 1790460000000,
+     "hippodrome": "MERANO",
+     "nomPrix": "LXXII Gran Corsa Siepi Di Merano-Mem. G. Zibellini",
+     "discipline": "HAIE",
+     "allocation": 100000,
+     "distance": 4000
+    },
+    {
+     "date": 1787695200000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX LATITUDE GPS (GRAND STEEPLE-CHASE DE LA VILLE DE DEAUVILLE)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 87000,
+     "distance": 4500
+    },
+    {
+     "date": 1785103200000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "GENYBET - PRIX RIDEO",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 3900
+    },
+    {
+     "date": 1782856800000,
+     "hippodrome": "LA TESTE DE BUCH",
+     "nomPrix": "GRANDE COURSE DE HAIES DE LA TESTE",
+     "discipline": "HAIE",
+     "allocation": 49000,
+     "distance": 3900
+    },
+    {
+     "date": 1763247600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX CACAO",
+     "discipline": "STEEPLECHASE",
+     "allocation": 98000,
+     "distance": 4400
+    }
+   ]
+  },
+  {
+   "numPmu": 6,
+   "nomCheval": "DREAM DU LEMO",
+   "coursesCourues": [
+    {
+     "date": 1789164000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX UCELLO II",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 3500
+    },
+    {
+     "date": 1775685600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX DE SAUMUR",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 3500
+    },
+    {
+     "date": 1773183600000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX GASTON DE LA MOTTE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 3850
+    },
+    {
+     "date": 1744236000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX DE PAU",
+     "discipline": "HAIE",
+     "allocation": 110000,
+     "distance": 3900
+    }
+   ]
+  },
+  {
+   "numPmu": 7,
+   "nomCheval": "MANIYSA BLEUE",
+   "coursesCourues": [
+    {
+     "date": 1791237600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX SAPIN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 3500
+    },
+    {
+     "date": 1782252000000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "LA TERRASSE BY LA BOUTIQUE GOURMANDE (PRIX JACQUES PEILLON)",
+     "discipline": "HAIE",
+     "allocation": 48000,
+     "distance": 3600
+    },
+    {
+     "date": 1780696800000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "PRIX CLAUDE GINDRE - GRAND STEEPLE CHASE DE LYON",
+     "discipline": "STEEPLECHASE",
+     "allocation": 62000,
+     "distance": 4100
+    },
+    {
+     "date": 1777672800000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX QUOMODO",
+     "discipline": "HAIE",
+     "allocation": 61000,
+     "distance": 3600
+    }
+   ]
+  },
+  {
+   "numPmu": 8,
+   "nomCheval": "ELIAN",
+   "coursesCourues": [
+    {
+     "date": 1790892000000,
+     "hippodrome": "DAX",
+     "nomPrix": "PRIX JOSEPH DE LAURENS",
+     "discipline": "STEEPLECHASE",
+     "allocation": 26000,
+     "distance": 3800
+    },
+    {
+     "date": 1788732000000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX LESIEUR (PRIX COURANT D'AIR)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 26000,
+     "distance": 4100
+    },
+    {
+     "date": 1775426400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX FIRE LIGHT II",
+     "discipline": "STEEPLECHASE",
+     "allocation": 24000,
+     "distance": 3500
+    },
+    {
+     "date": 1773788400000,
+     "hippodrome": "TOULOUSE",
+     "nomPrix": "PRIX DU TOUCH",
+     "discipline": "STEEPLECHASE",
+     "allocation": 26000,
+     "distance": 4200
+    },
+    {
+     "date": 1770505200000,
+     "hippodrome": "MAURE DE BRETAGNE",
+     "nomPrix": "PRIX AL CAPONE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 14000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 9,
+   "nomCheval": "HERALISTE",
+   "coursesCourues": [
+    {
+     "date": 1790460000000,
+     "hippodrome": "MERANO",
+     "nomPrix": "LXXXVII Gran Premio Merano Alto Adige",
+     "discipline": "STEEPLECHASE",
+     "allocation": 300000,
+     "distance": 5000
+    },
+    {
+     "date": 1788213600000,
+     "hippodrome": "WAREGEM",
+     "nomPrix": "ING GRAND STEEPLE-CHASE DES FLANDRES",
+     "discipline": "STEEPLECHASE",
+     "allocation": 100000,
+     "distance": 4600
+    },
+    {
+     "date": 1786572000000,
+     "hippodrome": "LE LION D'ANGERS",
+     "nomPrix": "OSARUS - PRIX PIERRE PELTIER ET U MASTER",
+     "discipline": "STEEPLECHASE",
+     "allocation": 28000,
+     "distance": 3900
+    },
+    {
+     "date": 1783634400000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX REVENGE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 32000,
+     "distance": 3900
+    },
+    {
+     "date": 1765062000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX JEAN LAUMAIN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 69000,
+     "distance": 3500
+    }
+   ]
+  },
+  {
+   "numPmu": 10,
+   "nomCheval": "TUTTI BELLA",
+   "coursesCourues": [
+    {
+     "date": 1781733600000,
+     "hippodrome": "DIEPPE",
+     "nomPrix": "PRIX DU JARDIN DES POIVRIERS",
+     "discipline": "HAIE",
+     "allocation": 64000,
+     "distance": 3800
+    },
+    {
+     "date": 1778968800000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX RMC (PRIX TANERKO)",
+     "discipline": "HAIE",
+     "allocation": 60000,
+     "distance": 3900
+    },
+    {
+     "date": 1777845600000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX FILS DE REINE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 61000,
+     "distance": 3800
+    },
+    {
+     "date": 1774220400000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX ROBERT FOURNIER SARLOVEZE",
+     "discipline": "HAIE",
+     "allocation": 53000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 11,
+   "nomCheval": "HURRICK DES OBEAUX",
+   "coursesCourues": [
+    {
+     "date": 1790805600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX RECRUIT II",
+     "discipline": "STEEPLECHASE",
+     "allocation": 25000,
+     "distance": 3700
+    },
+    {
+     "date": 1788818400000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX MORTEMART",
+     "discipline": "HAIE",
+     "allocation": 60000,
+     "distance": 3600
+    },
+    {
+     "date": 1785448800000,
+     "hippodrome": "SENONNES-POUANCE",
+     "nomPrix": "PRIX CLAUDE ROUGET",
+     "discipline": "HAIE",
+     "allocation": 24000,
+     "distance": 3600
+    },
+    {
+     "date": 1780092000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX JEAN VICTOR",
+     "discipline": "STEEPLECHASE",
+     "allocation": 69000,
+     "distance": 3500
+    }
+   ]
+  },
+  {
+   "numPmu": 12,
+   "nomCheval": "KATE DES GENIEVRES",
+   "coursesCourues": [
+    {
+     "date": 1790719200000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DE SALERS",
+     "discipline": "STEEPLECHASE",
+     "allocation": 61000,
+     "distance": 3900
+    },
+    {
+     "date": 1788904800000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX WORLD CITIZEN (CHMPT PARIS TURF DES APPRENTIS & JEUNES JOCKEYS)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 61000,
+     "distance": 3850
+    },
+    {
+     "date": 1772838000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX LILIUM",
+     "discipline": "HAIE",
+     "allocation": 60000,
+     "distance": 3900
+    },
+    {
+     "date": 1771023600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX BOUGIE",
+     "discipline": "HAIE",
+     "allocation": 60000,
+     "distance": 3600
+    },
+    {
+     "date": 1766617200000,
+     "hippodrome": "CAGNES-SUR-MER",
+     "nomPrix": "PRIX DE L'ESTERON",
+     "discipline": "HAIE",
+     "allocation": 32000,
+     "distance": 4000
+    }
+   ]
+  },
+  {
+   "numPmu": 13,
+   "nomCheval": "KING S BOUM",
+   "coursesCourues": [
+    {
+     "date": 1772319600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX CHINCO",
+     "discipline": "STEEPLECHASE",
+     "allocation": 60000,
+     "distance": 4400
+    },
+    {
+     "date": 1769554800000,
+     "hippodrome": "PAU",
+     "nomPrix": "PRIX DES AMBASSADEURS DU BEARN (PRIX D'URT)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 34000,
+     "distance": 4700
+    },
+    {
+     "date": 1767394800000,
+     "hippodrome": "PAU",
+     "nomPrix": "PRIX JEAN LANTA",
+     "discipline": "STEEPLECHASE",
+     "allocation": 34000,
+     "distance": 3900
+    },
+    {
+     "date": 1764457200000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX RS EVENTS-MD EVENEMENTS (PRIX DE L'HIPPODROME DE TOURS)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 24000,
+     "distance": 3700
+    },
+    {
+     "date": 1742598000000,
+     "hippodrome": "ANGERS",
+     "nomPrix": "PRIX DE MAUREPART",
+     "discipline": "STEEPLECHASE",
+     "allocation": 25000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 14,
+   "nomCheval": "FILIPPINO",
+   "coursesCourues": [
+    {
+     "date": 1790978400000,
+     "hippodrome": "FONTAINEBLEAU",
+     "nomPrix": "PRIX EXPOSITION PAUL TAVERNIER",
+     "discipline": "STEEPLECHASE",
+     "allocation": 24000,
+     "distance": 3850
+    },
+    {
+     "date": 1789250400000,
+     "hippodrome": "SEGRE",
+     "nomPrix": "PRIX MON AUDITION (PRIX MID DANCER)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 14000,
+     "distance": 3800
+    },
+    {
+     "date": 1769122800000,
+     "hippodrome": "PAU",
+     "nomPrix": "PRIX ROBERT LABOUCHE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 34000,
+     "distance": 3800
+    },
+    {
+     "date": 1765580400000,
+     "hippodrome": "MOULINS",
+     "nomPrix": "PRIX CYRIL AMELAINE-ENLEVEMENT FUMIER (PRIX MAURICE DE DAMPIERRE)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 23000,
+     "distance": 3800
+    },
+    {
+     "date": 1763766000000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "PRIX PATRICK DE SLANE",
+     "discipline": "HAIE",
+     "allocation": 28000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 15,
+   "nomCheval": "HOKUSAI VALLIS",
+   "coursesCourues": [
+    {
+     "date": 1790373600000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX DUC D'ALBUQUERQUE - CHALLENGE DE L'OBSTACLE EQUINAXY",
+     "discipline": "STEEPLECHASE",
+     "allocation": 61000,
+     "distance": 4400
+    },
+    {
+     "date": 1759356000000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DE SALERS",
+     "discipline": "STEEPLECHASE",
+     "allocation": 25000,
+     "distance": 3900
+    },
+    {
+     "date": 1758578400000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX MANDARIN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 69000,
+     "distance": 4400
+    },
+    {
+     "date": 1757196000000,
+     "hippodrome": "CRAON",
+     "nomPrix": "PRIX FEDE. DES EL. DU G. - CHALL. DE L'OBS. EQUINAXY (PX RENE COUETIL)",
+     "discipline": "STEEPLECHASE",
+     "allocation": 26000,
+     "distance": 4000
+    },
+    {
+     "date": 1746568800000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX FILS DE REINE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 63000,
+     "distance": 3800
+    }
+   ]
+  },
+  {
+   "numPmu": 16,
+   "nomCheval": "ITIEPY",
+   "coursesCourues": [
+    {
+     "date": 1792188000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX FERDINAND RIANT",
+     "discipline": "STEEPLECHASE",
+     "allocation": 55000,
+     "distance": 4400
+    },
+    {
+     "date": 1789596000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX LANISTE",
+     "discipline": "STEEPLECHASE",
+     "allocation": 53000,
+     "distance": 4400
+    },
+    {
+     "date": 1778882400000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX SAINT-SAUVEUR",
+     "discipline": "STEEPLECHASE",
+     "allocation": 98000,
+     "distance": 4400
+    },
+    {
+     "date": 1777068000000,
+     "hippodrome": "AUTEUIL",
+     "nomPrix": "PRIX JEAN-CLAUDE EVAIN",
+     "discipline": "STEEPLECHASE",
+     "allocation": 55000,
+     "distance": 4400
+    }
+   ]
+  }
+ ]
+}

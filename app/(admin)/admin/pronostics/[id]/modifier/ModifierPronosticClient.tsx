@@ -7,6 +7,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import SelectionRolesEditor, { type SelectionRolesValue } from "@/components/admin/SelectionRolesEditor";
 import { buildSelectionDetail, parseSelectionRoles } from "@/lib/pronostics/selection-detail";
+import { ANALYSE_COURTE_MAX } from "@/lib/pronostics/analyse-courte";
 
 type CourseOption = {
   id: string;
@@ -266,14 +267,14 @@ export default function ModifierPronosticClient({ pronostic, courses }: Props) {
           <label className="block text-text-secondary text-sm font-medium mb-2">
             Analyse courte (aperçu public) <span className="text-status-loss">*</span>
           </label>
-          <input
-            type="text"
+          <textarea
             value={form.analyse_courte}
             onChange={(e) => setForm({ ...form, analyse_courte: e.target.value })}
-            maxLength={160}
+            maxLength={ANALYSE_COURTE_MAX}
+            rows={3}
             className="w-full px-4 py-3 bg-bg-elevated border border-border rounded-xl text-text-primary placeholder-text-muted text-sm"
           />
-          <p className="mt-1 text-text-muted text-xs">{form.analyse_courte.length}/160</p>
+          <p className="mt-1 text-text-muted text-xs">{form.analyse_courte.length}/{ANALYSE_COURTE_MAX}</p>
         </div>
 
         {/* Analyse complète */}

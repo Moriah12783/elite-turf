@@ -27,6 +27,14 @@ export interface ParticipantPmu {
   age: number | null;
   /** Distance du partant, recul compris (m). */
   distance: number | null;
+  /** Ferrure PMU (`deferre`) : DEFERRE_ANTERIEURS_POSTERIEURS, PROTEGE_ANTERIEURS… ; null = ferré ou inconnu. */
+  deferre: string | null;
+  /** Poids porté (kg) en plat et en obstacle ; null au trot attelé ou si inconnu. */
+  poids: number | null;
+  /** Place à la corde (stalles) en plat ; null sinon. */
+  corde: number | null;
+  /** Valeur de handicap ; null hors handicap. */
+  valeurHandicap: number | null;
 }
 
 export interface CoursePmu {
@@ -40,6 +48,14 @@ export interface CoursePmu {
   heureDepart: number | null;
   /** Allocation totale de la course (euros). */
   allocation: number | null;
+  /** CORDE_DROITE ou CORDE_GAUCHE. */
+  corde: string | null;
+  /** `categorieParticularite` : EUROPEENNE, NATIONALE_AUTOSTART, HANDICAP_DIVISE… */
+  categorie: string | null;
+  /** État du terrain (pénétromètre) : « Très souple », « Bon », « PSF »… */
+  terrain: string | null;
+  /** Parcours : « GRANDE PISTE », « 1800 M. PISTE EN SABLE FIBRE »… */
+  parcours: string | null;
 }
 
 /**
@@ -56,6 +72,19 @@ function positif(v: unknown): number | null {
 
 function texte(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+/** Le PMU écrit le poids en hectogrammes (620 = 62 kg). */
+function poidsKg(v: unknown): number | null {
+  const n = positif(v);
+  if (n === null) return null;
+  return n >= 200 ? Math.round(n) / 10 : n;
+}
+
+/** Ferrure à signaler : « FERRE » (ou absente) ne dit rien. */
+function ferrureUtile(v: unknown): string | null {
+  const t = texte(v);
+  return t && t.toUpperCase() !== "FERRE" ? t.toUpperCase() : null;
 }
 
 /** PUR : réponse `/participants` du PMU → chevaux, non-partants compris. */
@@ -79,22 +108,42 @@ export function lireParticipantsPmu(json: unknown): ParticipantPmu[] {
       sexe: texte(brut?.sexe),
       age: positif(brut?.age),
       distance: positif(brut?.handicapDistance),
+      deferre: ferrureUtile(brut?.deferre),
+      poids: poidsKg(brut?.handicapPoids ?? brut?.poidsConditionMonte),
+      corde: positif(brut?.placeCorde),
+      valeurHandicap: positif(brut?.handicapValeur),
     });
   }
   return out;
 }
 
 /** PUR : réponse « course » du PMU → infos utiles ; null si rien d'exploitable. */
+/**
+ * Le PMU range haies, steeple-chase et cross sous la spécialité « OBSTACLE » :
+ * la discipline précise est dans `discipline` (Quinté+ d'Auteuil du 22/10/2026 :
+ * specialite OBSTACLE, discipline STEEPLECHASE).
+ */
+function specialitePmu(c: Record<string, unknown>): string | null {
+  const s = texte(c.specialite);
+  const d = texte(c.discipline);
+  if (s === "OBSTACLE" && d && ["HAIES", "STEEPLECHASE", "CROSS"].indexOf(d) !== -1) return d;
+  return s;
+}
+
 export function lireCoursePmu(json: unknown): CoursePmu | null {
   if (!json || typeof json !== "object") return null;
   const c = json as Record<string, unknown>;
   const out: CoursePmu = {
     libelle: texte(c.libelle),
-    specialite: texte(c.specialite),
+    specialite: specialitePmu(c),
     distance: positif(c.distance),
     conditionSexe: texte(c.conditionSexe),
     heureDepart: positif(c.heureDepart),
     allocation: positif(c.montantPrix),
+    corde: texte(c.corde),
+    categorie: texte(c.categorieParticularite),
+    terrain: texte((c.penetrometre as { intitule?: unknown } | null | undefined)?.intitule),
+    parcours: texte(c.parcours),
   };
   return out.specialite || out.distance || out.heureDepart ? out : null;
 }
