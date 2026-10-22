@@ -361,15 +361,22 @@ describe("planRadarAbonne — les rôles restent réservés aux abonnés", () =>
 });
 
 describe("tiersDuPlan — les niveaux affichés, dans un ordre unique", () => {
-  it("couplé, base, associés, value, coup, champ — les niveaux vides sont omis", () => {
+  it("plan de jeu Elite (Toulouse, 21/10/2026) : la base, puis les values, puis les associés", () => {
+    const plan: PlanRadar = {
+      pivot: 13, base: [12, 10, 13, 1], value: [4, 5], coup: null, associes: [7, 6], couple: [], champ: [], source: "roles",
+    };
+    expect(tiersDuPlan(plan).map((t) => t.cle)).toEqual(["base", "value", "associes"]);
+  });
+
+  it("couplé, base, value, associés, coup, champ — les niveaux vides sont omis", () => {
     const plan: PlanRadar = {
       pivot: 7, base: [7, 2, 11], value: [5], coup: 9, associes: [14, 3], couple: [7, 2], champ: [1], source: "roles",
     };
     expect(tiersDuPlan(plan)).toEqual([
       { cle: "couple",   numeros: [7, 2] },
       { cle: "base",     numeros: [7, 2, 11] },
-      { cle: "associes", numeros: [14, 3] },
       { cle: "value",    numeros: [5] },
+      { cle: "associes", numeros: [14, 3] },
       { cle: "coup",     numeros: [9] },
       { cle: "champ",    numeros: [1] },
     ]);

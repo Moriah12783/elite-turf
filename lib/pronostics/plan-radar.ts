@@ -262,13 +262,15 @@ export type CleNiveau = "couple" | "base" | "associes" | "value" | "coup" | "cha
  * Les niveaux non vides du plan, dans l'ordre d'affichage — le même sur tous
  * les écrans, pour que l'abonné retrouve ses repères. Le couplé vient en tête
  * mais double ses chevaux, qui figurent aussi dans leur niveau.
+ * Ordre du plan de jeu (décision de Steph du 22/10/2026) : la base, puis les
+ * values, puis les associés — l'ordre de la sélection et des textes.
  */
 export function tiersDuPlan(plan: PlanRadar): Array<{ cle: CleNiveau; numeros: number[] }> {
   const niveaux: Array<{ cle: CleNiveau; numeros: number[] }> = [
     { cle: "couple",   numeros: plan.couple },
     { cle: "base",     numeros: plan.base },
-    { cle: "associes", numeros: plan.associes },
     { cle: "value",    numeros: plan.value },
+    { cle: "associes", numeros: plan.associes },
     { cle: "coup",     numeros: plan.coup !== null ? [plan.coup] : [] },
     { cle: "champ",    numeros: plan.champ },
   ];
