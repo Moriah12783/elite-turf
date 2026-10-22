@@ -6,8 +6,8 @@ import { ROLE_CHOICES, roleChoiceOf, COUPLE_MAX } from "@/lib/pronostics/selecti
 
 /**
  * Saisie de la sélection ET de sa hiérarchie (base / value / associé / coup +
- * pivot + couplé). Plan de jeu Elite (02/10/2026) : 8 chevaux, le couplé
- * (2 chevaux), la base de 3, les values et les associés.
+ * pivot + couplé). Plan de jeu Elite (16/10/2026) : 8 chevaux, la base de 4,
+ * les values et les associés ; le couplé (2 chevaux) au choix de Steph.
  *
  * Pourquoi : jusqu'ici l'admin ne capturait qu'une liste de numéros. L'abonné
  * payant ne pouvait donc recevoir qu'une ligne de dossards, là où le visiteur

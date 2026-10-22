@@ -34,9 +34,10 @@ export const ROLE_COUP = "COUP";
 export const ROLE_CHAMP = "CHAMP";
 
 /**
- * Plan de jeu Elite (décision de Steph du 01/10/2026, en vigueur le 02/10) :
- * 8 chevaux, le couplé (2 chevaux), la base de 3 pour le champ réduit ou
- * total, les values et les associés.
+ * Plan de jeu Elite (décision de Steph du 16/10/2026, brouillons Argon) :
+ * 8 chevaux, la base de 4 pour le champ réduit ou total, les values et les
+ * associés ; le couplé (2 chevaux) reste au choix de Steph, course par course.
+ * (Du 02/10 au 16/10/2026 : base de 3.)
  *
  * Associé : joué AVEC la base dans le champ réduit. Rôle exclusif, comme
  * base / value / coup.

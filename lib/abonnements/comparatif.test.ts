@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { fichesFormules, prixParJour, type IdFormule } from "./comparatif";
+import { PLAN_DE_JEU_ELITE } from "../pricing";
 
 const FORMULES: IdFormule[] = ["free", "starter", "pro", "elite"];
 const lignes = (offre: string | null = null) =>
@@ -36,32 +37,33 @@ describe("fiches à cases des formules", () => {
     expect(elite.cases.starter).toBe("Offert jusqu'au 27 août");
   });
 
-  it("offre du 06/10/2026 (soir) : 6 chevaux pour tous, plan de jeu Elite en 6 (base de 3 + values)", () => {
+  it("offre du 16/10/2026 : pronostic expert en 6 chevaux, plan de jeu Elite en 8 (base de 4, values, associés)", () => {
     // Décisions de Steph : Starter et Pro restent annoncés en 6 chevaux (son
-    // public africain préfère 6 à 8) ; le plan de jeu Elite = ce qui est publié
-    // au niveau ELITE : 6 chevaux, 3 en base + les values.
+    // public africain préfère 6 à 8) ; le plan de jeu Elite = ce que préparent
+    // les brouillons Argon au niveau ELITE : 8 chevaux, la base de 4, les
+    // values et les associés.
     const expert = lignes().find((l) => l.id === "pronostic-expert")!;
     expect(expert.detail).toContain("6 chevaux");
     expect(expert.detail).not.toContain("8 chevaux");
     const plan = lignes().find((l) => l.id === "plan-de-jeu-elite")!;
     expect(plan.libelle).toBe("Le plan de jeu Elite");
-    for (const element of ["6 chevaux", "base de 3", "champ réduit ou total", "values"]) {
+    expect(plan.detail).toBe(PLAN_DE_JEU_ELITE);
+    for (const element of ["8 chevaux", "base de 4", "champ réduit ou total", "values", "associés"]) {
       expect(plan.detail).toContain(element);
     }
-    // Pro et Elite comptent tous deux 6 chevaux : « resserrés » ferait croire
-    // que le plan de jeu en compte moins que le pronostic expert.
+    expect(plan.detail).not.toContain("base de 3");
     expect(plan.detail).not.toContain("resserr");
     // Le plan de jeu n'est annoncé nulle part ailleurs que sur sa propre ligne.
     const autres = lignes().filter((l) => l.id !== "plan-de-jeu-elite").map((l) => `${l.libelle} ${l.detail}`).join(" ").toLowerCase();
     expect(autres).not.toContain("plan de jeu");
+    expect(autres).not.toContain("associé");
   });
 
-  it("garde-fou : rien d'annoncé qui ne soit publié (ni couplé, ni associés)", () => {
-    // Décision de Steph du 06/10/2026 : jamais cochés dans un pronostic publié,
-    // donc retirés de l'offre. À remettre seulement quand ils seront publiés.
+  it("garde-fou : le couplé n'est jamais promis", () => {
+    // Décision de Steph du 16/10/2026 : il l'indique course par course, les
+    // brouillons Argon ne le posent jamais.
     const tout = lignes().map((l) => `${l.libelle} ${l.detail}`).join(" ").toLowerCase();
     expect(tout).not.toContain("couplé");
-    expect(tout).not.toContain("associé");
   });
 });
 

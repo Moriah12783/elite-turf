@@ -11,6 +11,7 @@ import FaqJsonLd, { FaqSection } from "@/components/seo/FaqJsonLd";
 import TrackPageView from "@/components/analytics/TrackPageView";
 import { canAccess } from "@/lib/auth/access";
 import { resolveUserSubscription } from "@/lib/auth/subscription";
+import { PLAN_DE_JEU_ELITE } from "@/lib/pricing";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.elite-turf.fr");
 
@@ -32,7 +33,7 @@ const PRONOSTICS_FAQ = [
   {
     question: "Qu'est-ce qu'un Quinté+ et comment le jouer ?",
     answer:
-      "Le Quinté+ est le pari star du PMU : il consiste à trouver les 5 premiers chevaux d'une course de référence dans l'ordre (gain maximum) ou dans le désordre. Notre pronostic expert vous propose 6 chevaux classés par ordre de confiance ; les abonnés Elite reçoivent en plus le plan de jeu : 6 chevaux, avec la base de 3 chevaux et les values.",
+      `Le Quinté+ est le pari star du PMU : il consiste à trouver les 5 premiers chevaux d'une course de référence dans l'ordre (gain maximum) ou dans le désordre. Notre pronostic expert vous propose 6 chevaux classés par ordre de confiance ; les abonnés Elite reçoivent en plus le plan de jeu : ${PLAN_DE_JEU_ELITE}.`,
   },
   {
     question: "Comment lire un pronostic Elite Turf ?",

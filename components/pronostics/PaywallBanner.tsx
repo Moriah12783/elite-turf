@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Lock, Zap, Star, ArrowRight } from "lucide-react";
+import { PLAN_DE_JEU_ELITE } from "@/lib/pricing";
 
 interface PaywallBannerProps {
   niveau: "STARTER" | "PRO" | "ELITE";
@@ -48,7 +49,7 @@ export default function PaywallBanner({ niveau, compact = false }: PaywallBanner
       </h3>
       <p className="text-text-secondary text-sm mb-5 max-w-xs mx-auto">
         {isVip
-          ? "Ce plan de jeu est réservé aux membres du Plan Elite : 6 chevaux, avec la base de 3 chevaux et les values."
+          ? `Ce plan de jeu est réservé aux membres du Plan Elite : ${PLAN_DE_JEU_ELITE}.`
           : "Abonnez-vous à partir de 65€ pour accéder à l'analyse complète et à la sélection."}
       </p>
 

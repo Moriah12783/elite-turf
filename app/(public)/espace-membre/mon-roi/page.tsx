@@ -8,6 +8,7 @@
  * en suivant Elite Turf, ce qui réduit le churn.
  */
 
+import { PLAN_DE_JEU_ELITE } from "@/lib/pricing";
 import { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -287,7 +288,7 @@ export default async function MonRoiPage() {
         {statut === "PRO" && (
           <UpgradeCTA
             title="Devenez membre Elite"
-            text="Le pack Elite ajoute chaque jour le plan de jeu : 6 chevaux, avec la base de 3 chevaux et les values, + WhatsApp direct avec nos experts. Réservé aux passionnés."
+            text={`Le pack Elite ajoute chaque jour le plan de jeu (${PLAN_DE_JEU_ELITE}) et WhatsApp direct avec nos experts. Réservé aux passionnés.`}
             href="/abonnements#elite"
             cta="Découvrir le pack Elite"
           />

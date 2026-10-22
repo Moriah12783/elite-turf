@@ -43,9 +43,10 @@ cote, non-partant, arrivée, rapport, ni analyse.
 4. **Collecter & croiser** : partants, non-partants, forme (musique),
    driver/jockey + entraîneur, terrain/corde/distance, cotes indicatives.
 5. **Hiérarchiser** une sélection de **8 chevaux** par ordre de confiance sur la
-   course vedette → les **6 premiers** font le pronostic Starter/Pro ; le plan
-   de jeu Elite = la **base de 3** (les 3 premiers) + **3 values choisies parmi
-   les 4e à 8e** (voir *Structure du livrable*).
+   course vedette → la **base de 4** = les 4 premiers (le n°1 = pivot) ; les
+   **6 premiers** font le pronostic Starter/Pro (base de 4 + 2 values) ; le plan
+   de jeu Elite = les **8** : base de 4 + **values** + **associés** parmi les
+   5e à 8e (voir *Structure du livrable*).
 6. **Décliner par tier** (tableau ci-dessous) + attribuer un **indice de confiance**.
 7. **Rendre** : analyse détaillée puis blocs copier-coller par tier.
 8. Données insuffisantes → **fallback prudent**, jamais de sélection forcée.
@@ -59,9 +60,10 @@ cote, non-partant, arrivée, rapport, ni analyse.
 
 ## Structure du livrable (conforme aux formules d'abonnement)
 À partir d'**une** sélection hiérarchisée de **8 chevaux** sur la course vedette,
-produire **deux blocs de 6 chevaux** (offre en vigueur depuis le 06/10/2026,
-décisions de Steph du 06 et du 07/10/2026 ; page /abonnements alignée par les
-PR #375 à #377).
+produire **un bloc Pro de 6 chevaux et un bloc Elite de 8 chevaux** (offre en
+vigueur depuis le 16/10/2026, décision de Steph, alignée sur les brouillons que
+le robot prépare à T-90 à partir d'Argon ; avant : deux blocs de 6 avec la base
+de 3).
 
 > ⚠️ **Pas de bloc « Free ».** La formule Free, c'est **« Notre sélection »** —
 > une fonctionnalité **automatique du site** affichée sur **chaque** course
@@ -71,22 +73,26 @@ PR #375 à #377).
 
 | Tier | Ce que tu produis |
 |------|-------------------|
-| **STARTER & PRO** — *Le pronostic expert du jour* | **6 chevaux** classés par confiance = les **6 premiers des 8** : **★ base** = les 3 premiers (le n°1 = le **pivot ⭐**), **◇ values** = les 4e, 5e et 6e. Tiercé, Quarté+, **Quinté+**. Starter = Pro sur 7 jours : **même bloc**. |
-| **ELITE** — *Le plan de jeu* | **6 chevaux** : **★ la base de 3** (les mêmes 3 premiers, pivot ⭐ compris) pour le champ réduit ou total, + **◇ 3 values choisies parmi les 4e à 8e** pour leur cote (*value*). Une value Elite peut donc être un cheval classé 7e ou 8e, absent du bloc Pro : c'est ce qui distingue l'Elite. |
+| **STARTER & PRO** — *Le pronostic expert du jour* | **6 chevaux** classés par confiance = les **6 premiers des 8** : **★ base** = les 4 premiers (le n°1 = le **pivot ⭐**), **◇ values** = les 5e et 6e. Tiercé, Quarté+, **Quinté+**. Starter = Pro sur 7 jours : **même bloc**. |
+| **ELITE** — *Le plan de jeu* | **8 chevaux** : **★ la base de 4** (les mêmes 4 premiers, pivot ⭐ compris) pour le champ réduit ou total, puis, parmi les 5e à 8e : **◇ 2 ou 3 values** (les meilleures *values* : 3 si au moins 3 le méritent, sinon 2) et **◆ les associés** (les autres). |
 
-Pas de couplé ni d'associés : retirés de l'offre le 06/10/2026, faute d'avoir
-jamais été publiés. Les boutons existent encore dans l'admin : ne pas les
-proposer sans décision de Steph.
+Le couplé n'est pas promis : Steph l'indique lui-même, course par course (bouton
+« couplé » de l'admin, 2 chevaux). Ne pas le proposer sans sa décision.
 
-Emboîtement : **Pro = les 6 premiers des 8 ; Elite = base de 3 + 3 values pris
-parmi les 8.** Elite reçoit AUSSI le bloc Pro.
+Emboîtement : **Pro = les 6 premiers des 8 ; Elite = les 8 (base de 4 + values
++ associés).** Elite reçoit AUSSI le bloc Pro.
 
 **Saisie sur le site** : Admin → Pronostics → **« Nouveau pronostic »**
 (`/admin/pronostics/nouveau`), **deux saisies** sur la course vedette :
 1. **Pro** : niveau ⭐ Pro, les 6 numéros dans l'ordre ; bouton **Base** sur les
-   3 premiers, **★** sur le pivot, **Value** sur les 3 autres.
-2. **Elite** : niveau 👑 Elite, les 6 numéros (base de 3 puis les 3 values) ;
-   **Base** sur les 3 de base, **★** sur le pivot, **Value** sur les 3 values.
+   4 premiers, **★** sur le pivot, **Value** sur les 2 autres.
+2. **Elite** : niveau 👑 Elite, les 8 numéros (base de 4, puis les values, puis
+   les associés) ; **Base** sur les 4 de base, **★** sur le pivot, **Value** sur
+   les values, **Associé** sur les associés.
+
+Les jours où le robot a préparé les brouillons à partir d'Argon (e-mail
+« Brouillons du Quinté+ prêts »), il suffit de les relire et de les ajuster dans
+l'admin avant de publier.
 
 « Publier le pronostic » envoie un e-mail aux abonnés du niveau (Starter, Pro et
 Elite pour le Pro ; Elite seuls pour l'Elite). Le consensus presse, lui, ne
@@ -130,14 +136,15 @@ TOUJOURS les fournir, segmentés STARTER & PRO / ELITE. Modèle :
 ✅ [Validation LONACI / Afrique corroborée]
 
 STARTER & PRO — Le pronostic expert (6 chevaux)
-★ Base : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM]
-◇ Values : [n°] [NOM], [n°] [NOM], [n°] [NOM]
+★ Base : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM], [n°] [NOM]
+◇ Values : [n°] [NOM], [n°] [NOM]
 🎯 Jeux : Tiercé, Quarté+, Quinté+
 Confiance : ◆◆◆
 
-ELITE — Le plan de jeu (6 chevaux)
-★ Base de 3 : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM]   (champ réduit ou total)
-◇ Values : [n°] [NOM], [n°] [NOM], [n°] [NOM]   (choisies parmi nos 8 chevaux)
+ELITE — Le plan de jeu (8 chevaux)
+★ Base de 4 : [n°] [NOM] ⭐ pivot, [n°] [NOM], [n°] [NOM], [n°] [NOM]   (champ réduit ou total)
+◇ Values : [n°] [NOM], [n°] [NOM] (, [n°] [NOM])
+◆ Associés : [n°] [NOM] (, [n°] [NOM])
 Confiance : ◆◆◆
 ⚠️ Cotes indicatives · le jeu comporte des risques, jouez responsable
 ```

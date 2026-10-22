@@ -1,3 +1,5 @@
+import { PLAN_DE_JEU_ELITE } from "../pricing";
+
 /**
  * Fiches « à cases » des formules (demande de Steph du 01/10/2026) : Free,
  * Starter, Pro et Elite listent les MÊMES lignes, cochées ou non, pour se
@@ -8,14 +10,17 @@
  *   - Starter, Pro et Elite : le pronostic expert du jour en 6 chevaux. Son
  *     public africain préfère 6 chevaux à 8 (le PRO publié ce jour-là en
  *     comptait 8, que la fiche a brièvement annoncés : PR #375) ;
- *   - Elite en plus : le PLAN DE JEU = ce qui est publié au niveau ELITE —
- *     6 chevaux, la base de 3 pour le champ réduit ou total, et les values.
+ *   - Elite en plus : le PLAN DE JEU = ce qui est publié au niveau ELITE.
+ *     Depuis le 16/10/2026 (brouillons préparés par Argon) : 8 chevaux, la base
+ *     de 4 pour le champ réduit ou total, les values et les associés
+ *     (PLAN_DE_JEU_ELITE, lib/pricing.ts). Du 06/10 au 16/10 : 6 chevaux, la
+ *     base de 3 et les values.
  * Starter accède au niveau PRO (lib/auth/access.ts) : Starter = Pro sur 7 jours.
  *
  * Du 02/10 au 06/10/2026, les fiches annonçaient un plan de jeu Elite en
- * 8 chevaux avec le couplé et les associés. Jamais publié sous cette forme :
- * aucun couplé ni associé coché. Ne les remettre qu'une fois publiés
- * (garde-fou dans comparatif.test.ts).
+ * 8 chevaux avec le couplé et les associés, jamais publié sous cette forme.
+ * Les associés reviennent avec les brouillons Argon, qui les posent ; le
+ * couplé reste hors de l'offre (garde-fou dans comparatif.test.ts).
  *
  * PUR, ES5-safe, testé.
  */
@@ -72,7 +77,7 @@ export function fichesFormules(offreEliteJusquau: string | null = null): GroupeF
         {
           id: "plan-de-jeu-elite",
           libelle: "Le plan de jeu Elite",
-          detail: "6 chevaux : la base de 3 pour le champ réduit ou total, et les values",
+          detail: PLAN_DE_JEU_ELITE,
           cases: {
             free: false,
             starter: offreEliteJusquau ? `Offert jusqu'au ${offreEliteJusquau}` : false,
