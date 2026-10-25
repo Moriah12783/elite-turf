@@ -25,11 +25,32 @@ const PMU_DIRECT = "https://online.turfinfo.api.pmu.fr";
 const PMU_PROXY  = (process.env.PMU_PROXY_URL || "https://pmu-proxy.manuel-conti2008.workers.dev").replace(/\/$/, "");
 const PMU_BASE   = `${PMU_PROXY}/rest/client/1`;
 
+/**
+ * Une réunion PMU. Deux endpoints programme coexistent et ne renvoient PAS la
+ * même forme (vérifié en direct le 2026-07-25) :
+ *
+ *  - `/programmeComplet` (celui que cible `fetchPmuProgramme` — répond HTTP 420
+ *    sur proxy ET direct, clients 1/2/7/61) : `numOrdre`, `hippodrome.pays.code`,
+ *    `dateReunion.date` = [année, mois, jour] ;
+ *  - `/programme` (vivant, déjà utilisé par `lib/sync/pmu-distance.ts`) :
+ *    `numExterne`, `pays.code` porté par la RÉUNION, `dateReunion` = timestamp ms.
+ *
+ * Les champs propres à une seule forme sont donc optionnels, et les accesseurs
+ * (`reunionNumero`, `reunionPaysCode`, `reunionDateISO`) gèrent les deux.
+ */
 export interface PmuReunion {
-  numOrdre:       number;
-  hippodrome:     { libelleCourt: string; libelleLong: string; pays: { code: string } };
-  dateReunion:    { date: number[] };    // [year, month, day]
-  courses:        PmuCourse[];
+  /** `/programmeComplet` uniquement. */
+  numOrdre?:       number;
+  /** `/programme` uniquement. */
+  numExterne?:     number;
+  hippodrome:      { libelleCourt?: string; libelleLong?: string; pays?: { code: string } };
+  /** `/programme` : le pays est porté par la réunion, pas par l'hippodrome. */
+  pays?:           { code: string };
+  /** `{ date: [a, m, j] }` (/programmeComplet) ou timestamp ms (/programme). */
+  dateReunion?:    { date: number[] } | number;
+  /** Décalage du fuseau de la réunion, en ms (`/programme`). */
+  timezoneOffset?: number;
+  courses:         PmuCourse[];
 }
 
 export interface PmuPari {
@@ -38,13 +59,15 @@ export interface PmuPari {
 }
 
 export interface PmuCourse {
-  numOrdre:          number;
-  libelle:           string;
-  heureDepart:       number;             // timestamp ms
-  distance:          number;             // mètres
-  nombreDeclaresPartants: number;
-  discipline:        string;             // "PLAT" | "TROT_ATTELE" | "OBSTACLE"
-  conditions:        string;
+  numOrdre?:         number;
+  libelle?:          string;
+  heureDepart?:      number;             // timestamp ms
+  distance?:         number;             // mètres
+  nombreDeclaresPartants?: number;
+  discipline?:       string;             // "PLAT" | "TROT_ATTELE" | "ATTELE" | "MONTE" | "OBSTACLE"
+  /** `/programme` : discipline détaillée ("TROT_ATTELE") quand `discipline` est abrégée ("ATTELE"). */
+  specialite?:       string;
+  conditions?:       string;
   paris?:            PmuPari[];          // types de paris disponibles
   typesParis?:       string[];           // variante selon version API
 }
@@ -68,19 +91,59 @@ function pmuDateToISO(arr: number[]): string {
   return `${arr[0]}-${String(arr[1]).padStart(2, "0")}-${String(arr[2]).padStart(2, "0")}`;
 }
 
-/** Timestamp ms → "HH:MM:SS" */
-function tsToTime(ts: number): string {
+/** Timestamp ms → "HH:MM:SS" ; null si le timestamp est inexploitable. */
+function tsToTime(ts?: number): string | null {
+  if (typeof ts !== "number" || !isFinite(ts)) return null;
   const d = new Date(ts);
   const h = String(d.getUTCHours()).padStart(2, "0");
   const m = String(d.getUTCMinutes()).padStart(2, "0");
   return `${h}:${m}:00`;
 }
 
-/** Discipline PMU → CourseCategory */
-function toCategorie(discipline: string): "PLAT" | "TROT" | "OBSTACLE" {
-  if (discipline?.includes("TROT")) return "TROT";
-  if (discipline?.includes("OBSTACLE") || discipline?.includes("HAIE") || discipline?.includes("STEEPLE")) return "OBSTACLE";
+/**
+ * Discipline/spécialité PMU → CourseCategory.
+ * `/programme` abrège la discipline ("ATTELE", "MONTE") là où `/programmeComplet`
+ * la donnait en clair ("TROT_ATTELE") : sans reconnaître les deux formes, tout le
+ * trot retomberait en PLAT — l'incident « tout en Plat » corrigé par la PR #288.
+ */
+function toCategorie(discipline?: string): "PLAT" | "TROT" | "OBSTACLE" {
+  const d = discipline || "";
+  if (d.includes("TROT") || d.includes("ATTELE") || d.includes("MONTE")) return "TROT";
+  if (d.includes("OBSTACLE") || d.includes("HAIE") || d.includes("STEEPLE")) return "OBSTACLE";
   return "PLAT";
+}
+
+/** Numéro de réunion : `numExterne` (/programme) ou `numOrdre` (/programmeComplet). */
+function reunionNumero(r: PmuReunion): number | null {
+  const n = r.numExterne ?? r.numOrdre;
+  return typeof n === "number" && isFinite(n) ? n : null;
+}
+
+/** Code pays : porté par la réunion (/programme) ou par l'hippodrome (/programmeComplet). */
+function reunionPaysCode(r: PmuReunion): string {
+  return r.pays?.code || r.hippodrome?.pays?.code || "";
+}
+
+const JOUR_MS = 86_400_000;
+
+/**
+ * Date "YYYY-MM-DD" de la réunion, quelle que soit la forme ; null si illisible.
+ *
+ * `/programme` renvoie le timestamp de MINUIT LOCAL : lu tel quel en UTC il tombe
+ * la VEILLE (minuit à Paris le 25/07 = 2026-07-24T22:00:00Z). On le recale avec
+ * `timezoneOffset`, puis on arrondit au jour UTC le plus proche — ce qui reste
+ * juste même si le décalage venait à manquer.
+ */
+function reunionDateISO(r: PmuReunion): string | null {
+  const d = r.dateReunion;
+  if (typeof d === "number" && isFinite(d)) {
+    const jour = new Date(Math.round((d + (r.timezoneOffset || 0)) / JOUR_MS) * JOUR_MS);
+    const mo = String(jour.getUTCMonth() + 1).padStart(2, "0");
+    const da = String(jour.getUTCDate()).padStart(2, "0");
+    return `${jour.getUTCFullYear()}-${mo}-${da}`;
+  }
+  const arr = d && typeof d === "object" ? d.date : null;
+  return Array.isArray(arr) && arr.length >= 3 ? pmuDateToISO(arr) : null;
 }
 
 // ── API calls ────────────────────────────────────────────────────────────
@@ -371,12 +434,25 @@ export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[]
 
   for (const reunion of reunions) {
     // ── Filtre 1 : pays autorisé (France + Maroc uniquement) ──
-    const paysCode = reunion.hippodrome?.pays?.code || "";
-    const hipPays  = PAYS_AUTORISES[paysCode];
+    const hipPays = PAYS_AUTORISES[reunionPaysCode(reunion)];
     if (!hipPays) continue;
 
-    const dateCourse = pmuDateToISO(reunion.dateReunion.date);
-    const hipNom     = reunion.hippodrome?.libelleLong || reunion.hippodrome?.libelleCourt || "Inconnu";
+    // ── Anti-fabrication : on n'invente ni numéro de réunion, ni date, ni nom
+    //    d'hippodrome. Une réunion illisible est ignorée — jamais insérée avec
+    //    une valeur par défaut (un `numero_reunion` absent violerait de toute
+    //    façon la contrainte NOT NULL, et un hippodrome « Inconnu » polluerait
+    //    la table).
+    const numeroReunion = reunionNumero(reunion);
+    if (numeroReunion === null) continue;
+
+    const dateCourse = reunionDateISO(reunion);
+    if (dateCourse === null) continue;
+
+    // `libelleCourt` d'abord : « ENGHIEN » se rapproche du nom en base
+    // (« Enghien ») via `canonicalHippodrome`, là où `libelleLong`
+    // (« HIPPODROME D'ENGHIEN SOISY ») créerait un hippodrome en DOUBLON.
+    const hipNom = reunion.hippodrome?.libelleCourt || reunion.hippodrome?.libelleLong || "";
+    if (!hipNom) continue;
 
     for (const c of reunion.courses ?? []) {
       const nbPartants = c.nombreDeclaresPartants || 0;
@@ -384,16 +460,23 @@ export function normalizePmuReunions(reunions: PmuReunion[]): NormalizedCourse[]
       // ── Filtre 2 : minimum 8 partants (Tiercé viable) ──
       if (nbPartants < MIN_PARTANTS) continue;
 
+      const numeroCourse = typeof c.numOrdre === "number" && isFinite(c.numOrdre) ? c.numOrdre : null;
+      if (numeroCourse === null) continue;
+
+      const heureDepart = tsToTime(c.heureDepart);
+      if (heureDepart === null) continue;
+
       courses.push({
         hippodromeName:   hipNom,
         hippodromePays:   hipPays,
         dateCourse,
-        heureDepart:      tsToTime(c.heureDepart),
-        numeroReunion:    reunion.numOrdre,
-        numeroCourse:     c.numOrdre,
-        libelle:          decodeHtmlEntities(c.libelle || `Course R${reunion.numOrdre}C${c.numOrdre}`),
+        heureDepart,
+        numeroReunion,
+        numeroCourse,
+        libelle:          decodeHtmlEntities(c.libelle || `Course R${numeroReunion}C${numeroCourse}`),
         distanceMetres:   c.distance || 0,
-        categorie:        toCategorie(c.discipline),
+        // `specialite` d'abord : sur `/programme`, `discipline` vaut "ATTELE".
+        categorie:        toCategorie(c.specialite || c.discipline),
         nbPartants,
         parisDisponibles: extractParisDisponibles(c),
       });
