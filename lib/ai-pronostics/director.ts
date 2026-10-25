@@ -315,8 +315,37 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
   const drafts:            AiPronosticDraft[]            = [];
   const validatorReports:  QualityValidatorResult[]      = [];
 
-  for (const pkg of packages) {
+  // ── PARALLÉLISATION (fix sous-production 2026-05-31) ────────────────────
+  //
+  // 🔴 Avant : cette boucle était SÉQUENTIELLE (`for...of` + await). Or chaque
+  //    package appelle AnalyseWriter (Haiku, ~22-30s). Un jour complet (5
+  //    packages) prenait Sonnet(~12s) + 5×~25s = ~120-130s, BIEN au-delà du
+  //    budget d'exécution Worker. La requête était tuée en cours de boucle
+  //    APRÈS avoir persisté le 1er package seulement (toujours ELITE, premier
+  //    dans flattenSelectedCourses) → "1 seul ELITE/jour". `cronLog.finish()`
+  //    n'était jamais atteint (aucune ligne cron_logs = signature du kill).
+  //
+  // ✅ Maintenant : les packages sont INDÉPENDANTS (course, field, sélection,
+  //    rédaction propres à chacun) → on les traite en parallèle via
+  //    Promise.all. Wall-clock ≈ Sonnet + max(1 AnalyseWriter) ≈ ~35-50s,
+  //    quel que soit le nombre de niveaux. Chaque package est isolé
+  //    (best-effort) : une erreur sur l'un (ex. JSON tronqué) n'empêche PAS
+  //    les autres de se persister. L'agrégation finale reste déterministe
+  //    (Promise.all préserve l'ordre des packages).
+  interface PackageOutcome {
+    draft?:           AiPronosticDraft;        // à publier en notif + persisté
+    validatorReport?: QualityValidatorResult;
+    inc?:             "saved" | "needs_review" | "blocked";
+    errors:           DirectorRunResult["errors"];
+    tokens:           DirectorRunResult["tokens_used"];
+  }
+
+  const processPackage = async (pkg: CoursePackage): Promise<PackageOutcome> => {
     const courseId = pkg.selected_course.course_id;
+    const tokens: DirectorRunResult["tokens_used"] =
+      { sonnet_input: 0, sonnet_output: 0, haiku_input: 0, haiku_output: 0 };
+    const errors: DirectorRunResult["errors"] = [];
+    let validatorReport: QualityValidatorResult | undefined;
 
     try {
       // 2a. FieldAnalyzer
@@ -326,12 +355,12 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
       });
 
       if (fieldResult.status === "REJECTED") {
-        result.errors.push({
+        errors.push({
           agent: "FieldAnalyzer",
           course_id: courseId,
           message: `Course rejetée : ${fieldResult.red_flags[0] ?? "field invalide"}`,
         });
-        continue;
+        return { errors, tokens };
       }
 
       // 2b. SelectionBuilder
@@ -342,35 +371,29 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
         course_libelle:    pkg.selected_course.race_name,
         course_hippodrome: extractHippodromeFromCourse(selectorResult, pkg.selected_course.course_id),
       });
-      result.tokens_used.sonnet_input  += selOut.tokens_input;
-      result.tokens_used.sonnet_output += selOut.tokens_output;
+      tokens.sonnet_input  += selOut.tokens_input;
+      tokens.sonnet_output += selOut.tokens_output;
       const selectionResult = selOut.result;
 
       if (selectionResult.status === "REJECTED") {
-        result.errors.push({
+        errors.push({
           agent: "SelectionBuilder",
           course_id: courseId,
           message: selectionResult.self_critique.main_risk,
         });
-        continue;
+        return { errors, tokens };
       }
 
-      // 🛡️ Garde-fou anti-cascade : si SelectionBuilder n'a pas réussi à
-      // remplir la sélection au nombre attendu (typiquement quand le field
-      // est trop fragile : trop de chevaux INSUFFICIENT_DATA ou A_EVITER),
-      // on N'APPELLE PAS AnalyseWriter (économie LLM) ni QualityValidator
-      // (qui rejetterait sur "X attend N chevaux, 0 reçus").
-      //
-      // Cette condition se déclenche typiquement quand status =
-      // NEEDS_HUMAN_REVIEW + selected_runners vide, suite à
-      // `eligible.length < expectedSize` dans SelectionBuilder.
+      // 🛡️ Garde-fou anti-cascade : sélection vide (field trop fragile :
+      // trop de chevaux INSUFFICIENT_DATA/A_EVITER, ou eligible < expectedSize)
+      // → on n'appelle PAS AnalyseWriter ni QualityValidator.
       if (selectionResult.selected_runners.length === 0) {
-        result.errors.push({
+        errors.push({
           agent: "SelectionBuilder",
           course_id: courseId,
           message: `Sélection vide pour ${pkg.access_level} : field insuffisant (${fieldResult.runners_analysis.length} partants, ${fieldResult.data_completeness_score}/100 complétude). ${selectionResult.self_critique.main_risk}`,
         });
-        continue;
+        return { errors, tokens };
       }
 
       // 2c. AnalyseWriter
@@ -386,8 +409,8 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
         start_time_paris:   pkg.selected_course.start_time_paris,
         start_time_abidjan: pkg.selected_course.start_time_abidjan,
       });
-      result.tokens_used.haiku_input  += writerOut.tokens_input;
-      result.tokens_used.haiku_output += writerOut.tokens_output;
+      tokens.haiku_input  += writerOut.tokens_input;
+      tokens.haiku_output += writerOut.tokens_output;
       const writerResult = writerOut.result;
 
       // 2d. QualityValidator (TS, déterministe)
@@ -396,7 +419,7 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
       );
       const { discipline, confirmed_by } = inferDiscipline(pkg, courseEvidence);
 
-      // Construit un draft "temporaire" pour le validator (id sera assigné après upsert)
+      // Draft "temporaire" pour le validator (id assigné après upsert)
       const tempDraft = buildDraft({
         pkg, date, selectorResult, fieldResult, selectionResult, writerResult,
         validatorResult: {} as QualityValidatorResult,  // placeholder
@@ -417,58 +440,67 @@ export async function runDirector(opts: DirectorOptions = {}): Promise<DirectorR
         discipline,
         discipline_confirmed_by: confirmed_by,
       });
+      validatorReport = validatorResult;
 
-      validatorReports.push(validatorResult);
-
-      // 3. Décide si on persiste
       const finalDraft = buildDraft({
         pkg, date, selectorResult, fieldResult, selectionResult, writerResult,
         validatorResult, africa_course_score: pkg.selected_course.africa_course_score,
       });
 
       if (validatorResult.status === "REJECTED") {
-        result.drafts_blocked += 1;
-        // On peut quand même persister pour audit (debug pourquoi rejected)
-        // mais on évite de polluer la table. Décision produit : on
-        // log dans `errors` et on N'INSÈRE PAS.
-        result.errors.push({
+        // Décision produit : on log dans `errors` et on N'INSÈRE PAS (le draft
+        // est gardé en mémoire pour la notif uniquement).
+        errors.push({
           agent: "QualityValidator",
           course_id: courseId,
           message: `REJECTED ${pkg.access_level} : ${validatorResult.blocking_issues[0]?.message ?? "blocking issue"}`,
         });
-        drafts.push(finalDraft);  // garde en mémoire pour la notif
-        continue;
+        return { draft: finalDraft, validatorReport, inc: "blocked", errors, tokens };
       }
 
       // 3.b INSERT BDD (sauf dryRun)
       if (!dryRun) {
         const persisted = await persistDraft(finalDraft);
         if (!persisted.ok) {
-          result.errors.push({
+          errors.push({
             agent: "Director",
             course_id: courseId,
             message: `Échec persist : ${persisted.error}`,
           });
-          continue;
+          return { validatorReport, errors, tokens };
         }
         finalDraft.id = persisted.id ?? "";
       }
 
-      drafts.push(finalDraft);
-
-      if (validatorResult.status === "APPROVED_FOR_ADMIN_REVIEW") {
-        result.drafts_saved += 1;
-      } else {
-        result.drafts_needs_review += 1;
-      }
+      return {
+        draft: finalDraft,
+        validatorReport,
+        inc: validatorResult.status === "APPROVED_FOR_ADMIN_REVIEW" ? "saved" : "needs_review",
+        errors,
+        tokens,
+      };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      result.errors.push({
-        agent: "Director",
-        course_id: courseId,
-        message: msg,
-      });
+      errors.push({ agent: "Director", course_id: courseId, message: msg });
+      return { validatorReport, errors, tokens };
     }
+  };
+
+  // Exécution parallèle (best-effort : processPackage ne throw jamais).
+  const outcomes = await Promise.all(packages.map(processPackage));
+
+  // Agrégation déterministe (ordre des packages préservé par Promise.all).
+  for (const o of outcomes) {
+    result.errors.push(...o.errors);
+    result.tokens_used.sonnet_input  += o.tokens.sonnet_input;
+    result.tokens_used.sonnet_output += o.tokens.sonnet_output;
+    result.tokens_used.haiku_input   += o.tokens.haiku_input;
+    result.tokens_used.haiku_output  += o.tokens.haiku_output;
+    if (o.validatorReport) validatorReports.push(o.validatorReport);
+    if (o.draft)           drafts.push(o.draft);
+    if (o.inc === "saved")             result.drafts_saved        += 1;
+    else if (o.inc === "needs_review") result.drafts_needs_review += 1;
+    else if (o.inc === "blocked")      result.drafts_blocked      += 1;
   }
 
   // ── ÉTAPE 6 : NotificationBuilder ──────────────────────────────────────
