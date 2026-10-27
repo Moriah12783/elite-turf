@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { journaliserEmail, TYPES_JOURNAL } from "./journal";
+import { journaliserEmail, TYPES_JOURNAL, typeRappelExpiration } from "./journal";
 
 /** Faux client : capture l'appel `from(table).upsert(ligne, options)`. */
 function fauxClient(reponse: { error: { message: string } | null } | Error) {
@@ -65,5 +65,13 @@ describe("journal des e-mails envoyés (email_sent_log)", () => {
       CONFIRMATION_PAIEMENT_CARTE: "CONFIRMATION_PAIEMENT_CARTE",
       CONFIRMATION_RENOUVELLEMENT_CARTE: "CONFIRMATION_RENOUVELLEMENT_CARTE",
     });
+  });
+});
+
+describe("type des rappels d'expiration", () => {
+  it("un type par abonnement et par échéance", () => {
+    expect(typeRappelExpiration("abo-1", 3)).toBe("RAPPEL_EXPIRATION_J3_abo-1");
+    expect(typeRappelExpiration("abo-1", 1)).not.toBe(typeRappelExpiration("abo-1", 2));
+    expect(typeRappelExpiration("abo-1", 1)).not.toBe(typeRappelExpiration("abo-2", 1));
   });
 });

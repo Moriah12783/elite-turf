@@ -1,13 +1,49 @@
 import { emailBase, emailButton, emailDivider } from "../base";
 import { renderHeaderBanner, BANNER_RAPPEL_EXPIRATION } from "./banners/header-banner";
+import { formatPrice } from "@/lib/geo/countries";
+import { PLAN_DE_JEU_ELITE, PRO_OFFRE_LABEL, STARTER_OFFRE_LABEL } from "@/lib/pricing";
+import type { Plan } from "@/types";
 
 interface RappelExpirationData {
   nomComplet: string;
   email: string;
-  planNom: string;
+  /**
+   * Formule de l'abonnement (PLAN_CONFIG). null si elle est inconnue : l'e-mail
+   * ne cite alors ni formule ni prix. Avant le 27/10/2026, le cron ne retrouvait
+   * jamais la formule (UUID de la table `plans` comparé aux ids de PLAN_CONFIG)
+   * et tout abonné lisait « Plan Pro — 9,90 €/mois ».
+   */
+  plan: Plan | null;
   dateFin: string;
   joursRestants: number;
-  prixEur: number;
+}
+
+/** « Pack Elite » ; null si la formule est inconnue. */
+export function nomPackRappel(plan: Plan | null): string | null {
+  return plan ? `Pack ${plan.nom}` : null;
+}
+
+/** « 208 € / 30 jours (136 500 FCFA) », d'après PLAN_CONFIG ; null si la formule est inconnue. */
+export function prixRappel(plan: Plan | null): string | null {
+  if (!plan) return null;
+  return `${formatPrice(plan.prix_eur, "EUR")} / ${plan.duree_jours} jours (${formatPrice(plan.prix_eur, "XOF")})`;
+}
+
+/** Ce que l'abonné perd à l'expiration : l'offre de SA formule (lib/pricing.ts), puis le commun. */
+export function pertesRappel(plan: Plan | null): string[] {
+  const offre =
+    plan?.id === "elite"
+      ? [`Le plan de jeu Elite chaque jour : ${PLAN_DE_JEU_ELITE}`, `Tout le Pack Pro : ${PRO_OFFRE_LABEL}`]
+      : plan?.id === "pro"
+        ? [`Votre pronostic expert : ${PRO_OFFRE_LABEL}`]
+        : plan?.id === "starter"
+          ? [`Votre pronostic expert : ${STARTER_OFFRE_LABEL}`]
+          : ["Vos pronostics experts du jour"];
+  return offre.concat([
+    "Analyses complètes d'expert",
+    "Alertes avant le départ des courses",
+    "Historique de performances complet",
+  ]);
 }
 
 export function templateRappelExpiration(data: RappelExpirationData): {
@@ -15,6 +51,8 @@ export function templateRappelExpiration(data: RappelExpirationData): {
   html: string;
 } {
   const prenom = data.nomComplet.split(" ")[0] || data.nomComplet;
+  const pack = nomPackRappel(data.plan);
+  const prix = prixRappel(data.plan);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://elite-turf.fr";
 
   const fmtDate = (iso: string) =>
@@ -40,7 +78,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
     </div>
 
     <p style="margin:0 0 20px 0;color:#1F2937;font-size:14px;line-height:1.6;">
-      Bonjour ${prenom}, votre abonnement <strong style="color:#C9A84C;">Plan ${data.planNom}</strong>
+      Bonjour ${prenom}, votre abonnement${pack ? ` <strong style="color:#C9A84C;">${pack}</strong>` : ""}
       expire le <strong style="color:#1E3A5F;">${fmtDate(data.dateFin)}</strong>.
     </p>
 
@@ -65,11 +103,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
       Sans renouvellement, vous perdrez l'accès à :
     </p>
 
-    ${["Pronostics Pro & Elite exclusifs",
-       "Analyses complètes d'expert",
-       "Alertes avant le départ des courses",
-       "Historique de performances complet"
-      ].map(f => `
+    ${pertesRappel(data.plan).map(f => `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #F3F4F6;">
       <tr>
         <td style="padding:8px 0;color:#1F2937;font-size:14px;line-height:1.5;">
@@ -84,7 +118,9 @@ export function templateRappelExpiration(data: RappelExpirationData): {
       Continuez sans interruption
     </p>
     <p style="margin:0 0 4px 0;color:#6B7280;font-size:13px;text-align:center;">
-      Renouvelez votre Plan ${data.planNom} — <strong style="color:#C9A84C;">${data.prixEur.toFixed(2).replace(".", ",")} €/mois</strong>
+      ${pack && prix
+        ? `Renouvelez votre ${pack} — <strong style="color:#C9A84C;">${prix}</strong>`
+        : "Renouvelez votre abonnement en quelques clics"}
     </p>
 
     ${emailButton(`${appUrl}/abonnements`, "Renouveler mon abonnement")}
@@ -99,7 +135,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
 
   const subjects: Record<number, string> = {
     3: `🔔 Votre abonnement Elite Turf expire dans 3 jours`,
-    2: `⏰ Plus que 2 jours — Renouvelez votre accès Pro`,
+    2: `⏰ Plus que 2 jours — Renouvelez votre ${pack ?? "accès Elite Turf"}`,
     1: `⚠ Dernier jour ! Votre accès Elite Turf expire ce soir`,
   };
 
@@ -107,7 +143,7 @@ export function templateRappelExpiration(data: RappelExpirationData): {
     subject: subjects[data.joursRestants] ?? `🔔 Votre abonnement Elite Turf expire bientôt`,
     html: emailBase(
       content,
-      `Votre abonnement Plan ${data.planNom} expire dans ${data.joursRestants} jour${data.joursRestants > 1 ? "s" : ""}. Renouvelez maintenant.`
+      `Votre abonnement${pack ? ` ${pack}` : ""} expire dans ${data.joursRestants} jour${data.joursRestants > 1 ? "s" : ""}. Renouvelez maintenant.`
     ),
   };
 }

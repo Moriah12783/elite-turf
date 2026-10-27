@@ -28,7 +28,17 @@ export const TYPES_JOURNAL = {
   CONFIRMATION_RENOUVELLEMENT_CARTE: "CONFIRMATION_RENOUVELLEMENT_CARTE",
 } as const;
 
-export type TypeJournal = (typeof TYPES_JOURNAL)[keyof typeof TYPES_JOURNAL];
+/**
+ * Rappel avant expiration (cron rappel-expiration) : un type par abonnement et
+ * par échéance (J-3, J-2, J-1), pour tracer chaque envoi et ne jamais le doubler.
+ */
+export type TypeRappelExpiration = `RAPPEL_EXPIRATION_J${number}_${string}`;
+
+export function typeRappelExpiration(abonnementId: string, joursRestants: number): TypeRappelExpiration {
+  return `RAPPEL_EXPIRATION_J${joursRestants}_${abonnementId}`;
+}
+
+export type TypeJournal = (typeof TYPES_JOURNAL)[keyof typeof TYPES_JOURNAL] | TypeRappelExpiration;
 
 export interface EntreeJournal {
   userId: string;
