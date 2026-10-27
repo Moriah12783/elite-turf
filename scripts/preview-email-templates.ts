@@ -30,6 +30,7 @@ import { templateRappelExpiration } from "../lib/email/templates/rappel-expirati
 import { templateNouveauPronostic } from "../lib/email/templates/nouveau-pronostic";
 import { templateNewsletter } from "../lib/email/templates/newsletter";
 import { templateNewsletterLancement } from "../lib/email/templates/newsletter-lancement";
+import { PLAN_CONFIG } from "../types";
 
 // Dossier de sortie
 const OUT_DIR = join(process.cwd(), "tmp", "email-previews");
@@ -84,10 +85,9 @@ const previews: Array<{ slug: string; subject: string; html: string }> = [
     ...templateRappelExpiration({
       nomComplet: NOM_COMPLET,
       email: EMAIL,
-      planNom: "Pro",
+      plan: PLAN_CONFIG.find((p) => p.id === "elite") ?? null,
       dateFin: "2026-05-12",
       joursRestants: 2,
-      prixEur: 65,
     }),
   },
   {

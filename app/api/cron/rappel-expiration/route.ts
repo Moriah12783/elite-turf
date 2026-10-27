@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmailBatch, type BulkEmailRequest } from "@/lib/email";
 import { templateRappelExpiration } from "@/lib/email/templates/rappel-expiration";
-import { PLAN_CONFIG } from "@/types";
+import { journaliserEmail, typeRappelExpiration, type TypeRappelExpiration } from "@/lib/email/journal";
+import { planDepuisNomTable } from "@/lib/plans/noms";
 
 /**
  * Cron job — Rappels d'expiration d'abonnement
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
         plan_id,
         date_fin,
         user_id,
+        plans:plan_id ( nom ),
         profiles:user_id (
           nom_complet,
           email:id
@@ -64,7 +66,21 @@ export async function GET(req: NextRequest) {
     }
     if (!abonnements?.length) continue;
 
+    // Idempotence : un rappel (abonnement, J-n) déjà parti n'est jamais renvoyé.
+    const types = abonnements.map((a) => typeRappelExpiration(a.id, joursRestants));
+    const { data: dejaEnvoyes } = await supabase
+      .from("email_sent_log")
+      .select("type")
+      .in("type", types)
+      .eq("status", "SENT");
+    const deja = new Set((dejaEnvoyes ?? []).map((l: { type: string }) => l.type));
+
     for (const abo of abonnements) {
+      const type = typeRappelExpiration(abo.id, joursRestants);
+      if (deja.has(type)) {
+        skipped++;
+        continue;
+      }
       try {
         const { data: userData } = await supabase.auth.admin.getUserById(abo.user_id);
         const email = userData?.user?.email;
@@ -76,17 +92,19 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        const plan = PLAN_CONFIG.find((p) => p.id === abo.plan_id);
+        // `abonnements.plan_id` est l'UUID de la table `plans` : on passe par son nom
+        // (« Performance » → Pro). Formule inconnue : ni nom ni prix dans l'e-mail.
+        const planTable = (Array.isArray(abo.plans) ? abo.plans[0] : abo.plans) as { nom?: string } | null;
+        const plan = planDepuisNomTable(planTable?.nom);
         const { subject, html } = templateRappelExpiration({
           nomComplet,
           email,
-          planNom: plan?.nom     ?? "Pro",
+          plan,
           dateFin: abo.date_fin,
           joursRestants,
-          prixEur: plan?.prix_eur ?? 9.90,
         });
 
-        payloads.push({ to: email, subject, html, meta: { joursRestants, user_id: abo.user_id } });
+        payloads.push({ to: email, subject, html, meta: { joursRestants, user_id: abo.user_id, type } });
       } catch (err) {
         console.error(`[cron/rappel] Prep J-${joursRestants} échouée pour ${abo.user_id}:`, err);
         skipped++;
@@ -96,6 +114,17 @@ export async function GET(req: NextRequest) {
 
   // ── Étape 2 : envoi en batch avec throttling unifié ──────────────────────
   const result = await sendEmailBatch(payloads);
+
+  // Journal (email_sent_log) : chaque rappel parti ou refusé laisse une trace.
+  for (const d of result.details) {
+    const userId = d.meta?.user_id;
+    const type = d.meta?.type;
+    if (typeof userId !== "string" || typeof type !== "string" || !type.startsWith("RAPPEL_EXPIRATION_J")) continue;
+    const erreur = await journaliserEmail(supabase, {
+      userId, email: d.email, type: type as TypeRappelExpiration, ok: d.ok, erreur: d.error ?? null,
+    });
+    if (erreur) console.error(`[cron/rappel] journal ${type} :`, erreur);
+  }
 
   // Log des échecs pour debug
   const echecs = result.details.filter((d) => !d.ok);

@@ -34,6 +34,7 @@ import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronosti
 import { templateNewsletter } from "@/lib/email/templates/newsletter";
 import { templateNewsletterLancement } from "@/lib/email/templates/newsletter-lancement";
 import { templatePaiementEchoue } from "@/lib/email/templates/paiement-echoue";
+import { PLAN_CONFIG } from "@/types";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 30;
@@ -59,8 +60,8 @@ const TEMPLATES: Record<string, (email: string) => { subject: string; html: stri
   }),
   "rappel-expiration":      (email) => templateRappelExpiration({
     nomComplet: NOM_COMPLET, email,
-    planNom: "Pro", dateFin: "2026-05-12",
-    joursRestants: 2, prixEur: 65,
+    plan: PLAN_CONFIG.find((p) => p.id === "elite") ?? null, dateFin: "2026-05-12",
+    joursRestants: 2,
   }),
   "paiement-echoue":        (email) => templatePaiementEchoue({
     nomComplet: NOM_COMPLET, email, planNom: "Elite", montantEur: 65,

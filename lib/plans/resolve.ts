@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { PLAN_NOM_TO_PLANS_NOM } from "./noms";
 
 /**
  * Résout l'UUID de la table `plans` (DB) à partir d'un plan de PLAN_CONFIG (code).
@@ -15,11 +16,6 @@ import { createServiceClient } from "@/lib/supabase/server";
  *             `abonnements` est alors simplement sautée, SANS bloquer
  *             l'activation de l'accès (qui vit dans `profiles`).
  */
-const PLAN_NOM_TO_PLANS_NOM: Record<string, string> = {
-  Starter: "Découverte",
-  Pro: "Performance",
-  Elite: "Elite",
-};
 
 export async function resolvePlanUuid(plan: { nom: string }): Promise<string | null> {
   const plansNom = PLAN_NOM_TO_PLANS_NOM[plan.nom];

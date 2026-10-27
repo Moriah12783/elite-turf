@@ -62,6 +62,7 @@ import { templateRappelExpiration } from "../lib/email/templates/rappel-expirati
 import { templateNouveauPronostic } from "../lib/email/templates/nouveau-pronostic";
 import { templateNewsletter } from "../lib/email/templates/newsletter";
 import { templateNewsletterLancement } from "../lib/email/templates/newsletter-lancement";
+import { PLAN_CONFIG } from "../types";
 
 // ── CLI args ─────────────────────────────────────────────────────────────
 const [, , templateName, emailDest] = process.argv;
@@ -91,8 +92,8 @@ const TEMPLATES: Record<string, () => { subject: string; html: string }> = {
   }),
   "rappel-expiration":      () => templateRappelExpiration({
     nomComplet: NOM_COMPLET, email: emailDest,
-    planNom: "Pro", dateFin: "2026-05-12",
-    joursRestants: 2, prixEur: 65,
+    plan: PLAN_CONFIG.find((p) => p.id === "elite") ?? null, dateFin: "2026-05-12",
+    joursRestants: 2,
   }),
   "nouveau-pronostic":      () => templateNouveauPronostic({
     nomComplet: NOM_COMPLET,
