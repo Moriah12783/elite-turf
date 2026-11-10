@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { createServiceClient } from "@/lib/supabase/server";
+import BoutonRecu from "@/components/admin/recu/BoutonRecu";
 import {
   CreditCard, CheckCircle2, XCircle, Clock3,
   TrendingUp, Download, AlertCircle,
@@ -272,6 +273,10 @@ export default async function PaiementsPage({ searchParams }: Props) {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1.5 items-start">
+                          {/* Reçu JPG : paiements Orange Money / Wave enregistrés par le formulaire d'activation */}
+                          {tx.statut === "SUCCES" &&
+                            (tx.metadata as any)?.source === "admin_mobile_money" &&
+                            tx.reference_operateur && <BoutonRecu reference={tx.reference_operateur} compact />}
                           {tx.statut === "EN_ATTENTE" && !isCardTx(tx) && (
                             <form action="/api/admin/paiements/valider" method="POST">
                               <input type="hidden" name="id" value={tx.id} />
@@ -315,7 +320,9 @@ export default async function PaiementsPage({ searchParams }: Props) {
             formule enregistrée avec le paiement : transaction (→ Validé), abonnement (→ Actif), profil de l&apos;abonné
             (→ STARTER, PRO ou ELITE) et e-mail de confirmation. Un abonné encore actif garde ses jours restants ; si la
             formule n&apos;est pas connue, rien n&apos;est modifié. Les paiements Orange Money / Wave reçus sur WhatsApp
-            s&apos;activent avec « Activer un paiement Orange Money / Wave » dans Gérer les membres. Les paiements carte{" "}
+            s&apos;activent avec « Activer un paiement Orange Money / Wave » dans Gérer les membres ;{" "}
+            <strong className="text-text-secondary">Reçu JPG</strong> télécharge ensuite leur reçu, à envoyer
+            soi-même à l&apos;abonné sur WhatsApp. Les paiements carte{" "}
             <strong className="text-text-secondary">« Non finalisé »</strong> sont des checkouts{" "}
             <strong className="text-text-secondary">abandonnés</strong> — aucun montant n&apos;a été reçu, il n&apos;y a
             rien à valider.
