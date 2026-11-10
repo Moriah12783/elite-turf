@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
 import RenvoyerConfirmationButton from "@/components/admin/RenvoyerConfirmationButton";
-import ActiverMobileMoney from "@/components/admin/ActiverMobileMoney";
+import AbonnesMobileMoney from "@/components/admin/AbonnesMobileMoney";
 import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 import { Users, Search, Crown, Star } from "lucide-react";
 
@@ -86,8 +86,9 @@ export default async function AdminUtilisateursPage() {
         ))}
       </div>
 
-      {/* Activation à la main d'un paiement Orange Money / Wave (06/10/2026) */}
-      <ActiverMobileMoney />
+      {/* Activation à la main d'un paiement Orange Money / Wave (06/10/2026)
+          et inscription d'un abonné sans e-mail (10/11/2026) */}
+      <AbonnesMobileMoney />
 
       {/* Le tableau n'affiche que les plus récents : le dire explicitement pour
           qu'on ne le reprenne jamais pour un total (cause du bug initial). */}
