@@ -4,6 +4,7 @@ import { sendEmailBatch, type BulkEmailRequest } from "@/lib/email";
 import { templateRappelExpiration } from "@/lib/email/templates/rappel-expiration";
 import { journaliserEmail, typeRappelExpiration, type TypeRappelExpiration } from "@/lib/email/journal";
 import { planDepuisNomTable } from "@/lib/plans/noms";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 /**
  * Cron job — Rappels d'expiration d'abonnement
@@ -87,7 +88,8 @@ export async function GET(req: NextRequest) {
         const profile = abo.profiles as { nom_complet?: string } | null;
         const nomComplet = profile?.nom_complet || "Champion";
 
-        if (!email) {
+        // Abonné sans e-mail (adresse technique) : Steph le relance sur WhatsApp.
+        if (!email || estAdresseTechnique(email)) {
           skipped++;
           continue;
         }

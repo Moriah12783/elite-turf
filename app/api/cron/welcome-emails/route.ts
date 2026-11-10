@@ -27,6 +27,7 @@ import { logger } from "@/lib/observability/logger";
 import { templateWelcomeJ1 } from "@/lib/email/templates/welcome-series-j1";
 import { templateWelcomeJ3 } from "@/lib/email/templates/welcome-series-j3";
 import { templateWelcomeJ7 } from "@/lib/email/templates/welcome-series-j7";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 export const dynamic     = "force-dynamic";
 export const maxDuration = 60;
@@ -97,6 +98,12 @@ export async function GET(req: NextRequest) {
     for (const profile of list) {
       stats.processed++;
       if (!profile.email) continue;
+      // Abonné sans e-mail (adresse technique, décision de Steph du 10/11/2026) :
+      // suivi sur WhatsApp, aucun e-mail automatique.
+      if (estAdresseTechnique(profile.email)) {
+        stats.skipped++;
+        continue;
+      }
 
       const ageHours = (now - new Date(profile.date_inscription).getTime()) / 3600000;
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { templateNewsletter } from "@/lib/email/templates/newsletter";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 /**
  * POST /api/newsletter/send
@@ -55,8 +56,9 @@ export async function POST(req: NextRequest) {
       .from("profiles").select("email, nom_complet")
       .in("statut_abonnement", ["STARTER", "PRO"]);
     if (actifs) {
+      // Adresses techniques (abonnés sans e-mail) exclues : suivis sur WhatsApp.
       for (const a of actifs) {
-        if (a.email) {
+        if (a.email && !estAdresseTechnique(a.email)) {
           const prenom = a.nom_complet?.split(" ")[0] || "Membre";
           destinataires.push({ email: a.email, prenom, seg: "actifs" });
         }
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
       .eq("statut_abonnement", "ELITE");
     if (elites) {
       for (const e of elites) {
-        if (e.email) {
+        if (e.email && !estAdresseTechnique(e.email)) {
           const prenom = e.nom_complet?.split(" ")[0] || "Membre Elite";
           destinataires.push({ email: e.email, prenom, seg: "elite" });
         }
