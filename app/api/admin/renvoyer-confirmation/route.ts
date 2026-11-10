@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { envoyerConfirmationAbonnement } from "@/lib/abonnements/confirmation";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 /**
  * POST /api/admin/renvoyer-confirmation   { "email": "client@exemple.com" }
@@ -48,6 +49,14 @@ export async function POST(req: NextRequest) {
     .single();
   if (error || !profil) {
     return NextResponse.json({ error: `Aucun profil pour ${email}` }, { status: 404 });
+  }
+
+  // Abonné sans e-mail (adresse technique) : la confirmation passe par WhatsApp.
+  if (estAdresseTechnique(profil.email)) {
+    return NextResponse.json(
+      { error: "Adresse technique (abonné sans e-mail) : aucun e-mail envoyé. Envoyez-lui la confirmation sur WhatsApp." },
+      { status: 409 },
+    );
   }
 
   // Refus explicite plutôt qu'un e-mail mensonger.

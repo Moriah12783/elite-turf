@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendEmailBatch } from "@/lib/email";
 import { templateNewsletterLancement } from "@/lib/email/templates/newsletter-lancement";
 import { PROMO } from "@/lib/promo";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 async function isAdmin(): Promise<boolean> {
   const supabase = await createClient();
@@ -29,8 +30,9 @@ async function collectDestinataires(): Promise<Destinataire[]> {
   const { data: actifs } = await supabase
     .from("profiles").select("email, nom_complet")
     .in("statut_abonnement", ["STARTER", "PRO"]);
+  // Adresses techniques (abonnés sans e-mail) exclues : suivis sur WhatsApp.
   for (const a of actifs ?? []) {
-    if (a.email && !map.has(a.email.toLowerCase()))
+    if (a.email && !estAdresseTechnique(a.email) && !map.has(a.email.toLowerCase()))
       map.set(a.email.toLowerCase(), { email: a.email, prenom: a.nom_complet?.split(" ")[0] || "Membre" });
   }
 
@@ -38,7 +40,7 @@ async function collectDestinataires(): Promise<Destinataire[]> {
     .from("profiles").select("email, nom_complet")
     .eq("statut_abonnement", "ELITE");
   for (const e of elites ?? []) {
-    if (e.email && !map.has(e.email.toLowerCase()))
+    if (e.email && !estAdresseTechnique(e.email) && !map.has(e.email.toLowerCase()))
       map.set(e.email.toLowerCase(), { email: e.email, prenom: e.nom_complet?.split(" ")[0] || "Membre Élite" });
   }
 

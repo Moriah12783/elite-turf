@@ -1,7 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
 import RenvoyerConfirmationButton from "@/components/admin/RenvoyerConfirmationButton";
-import ActiverMobileMoney from "@/components/admin/ActiverMobileMoney";
+import AbonnesMobileMoney from "@/components/admin/AbonnesMobileMoney";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 import { Users, Search, Crown, Star } from "lucide-react";
 
 export const metadata = { title: "Utilisateurs — Admin" };
@@ -85,8 +86,9 @@ export default async function AdminUtilisateursPage() {
         ))}
       </div>
 
-      {/* Activation à la main d'un paiement Orange Money / Wave (06/10/2026) */}
-      <ActiverMobileMoney />
+      {/* Activation à la main d'un paiement Orange Money / Wave (06/10/2026)
+          et inscription d'un abonné sans e-mail (10/11/2026) */}
+      <AbonnesMobileMoney />
 
       {/* Le tableau n'affiche que les plus récents : le dire explicitement pour
           qu'on ne le reprenne jamais pour un total (cause du bug initial). */}
@@ -121,6 +123,10 @@ export default async function AdminUtilisateursPage() {
                       <div>
                         <p className="text-text-primary text-sm font-medium">{user.nom_complet || "—"}</p>
                         <p className="text-text-muted text-xs">{user.email}</p>
+                        {/* Abonné sans e-mail (adresse technique) : suivi sur WhatsApp. */}
+                        {estAdresseTechnique(user.email) && (
+                          <p className="text-gold-light text-xs">Sans e-mail · WhatsApp {user.phone || "—"}</p>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -140,9 +146,11 @@ export default async function AdminUtilisateursPage() {
                   </td>
                   <td className="px-5 py-4">
                     {/* Bouton affiché UNIQUEMENT sur les profils réellement
-                        activés — même règle que la route, qui refuse (409) les
-                        autres. Inutile de proposer une action vouée à échouer. */}
-                    {["STARTER", "PRO", "ELITE"].indexOf(user.statut_abonnement) !== -1 && (
+                        activés et joignables par e-mail — même règle que la
+                        route, qui refuse (409) les autres. Inutile de proposer
+                        une action vouée à échouer. */}
+                    {["STARTER", "PRO", "ELITE"].indexOf(user.statut_abonnement) !== -1 &&
+                      !estAdresseTechnique(user.email) && (
                       <RenvoyerConfirmationButton
                         email={user.email}
                         nom={user.nom_complet || user.email}

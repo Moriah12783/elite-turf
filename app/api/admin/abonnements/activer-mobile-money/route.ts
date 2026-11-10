@@ -13,8 +13,12 @@ import {
   dateLongue,
   referenceMobileMoney,
   motifEmailExact,
+  niveauAccorde,
+  dernierJourAcces,
+  type Debut,
 } from "@/lib/paiement/activation-mobile-money";
 import { envoyerConfirmationAbonnement } from "@/lib/abonnements/confirmation";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 /** Un second paiement enregistré moins de 10 min après le premier = doublon probable. */
 const DELAI_DOUBLON_MS = 10 * 60 * 1000;
@@ -23,12 +27,23 @@ const DELAI_DOUBLON_MS = 10 * 60 * 1000;
  * POST /api/admin/abonnements/activer-mobile-money
  * { email, formule: "starter"|"pro"|"elite", operateur: "ORANGE_MONEY"|"WAVE",
  *   pays?, reference?, envoyerEmail?: boolean (défaut true),
+ *   niveau?: "STARTER"|"PRO"|"ELITE" (accès accordé, défaut = formule payée),
+ *   debut?: "maintenant"|"demain" (défaut maintenant),
  *   apercu?: boolean, doublonConfirme?: boolean }
  *
  * Bouton « Activer » de /admin/utilisateurs (demande de Steph du 06/10/2026) :
  * après un paiement Orange Money / Wave reçu sur WhatsApp, active l'accès,
  * enregistre le paiement et envoie l'e-mail de confirmation. Règles pures et
  * décisions de Steph : lib/paiement/activation-mobile-money.ts.
+ *
+ * Depuis le 10/11/2026 (décisions de Steph) :
+ *   - `niveau` : accès supérieur à la formule payée (promo « payé Starter,
+ *     reçoit Elite ») ; montant, durée et ligne `abonnements` restent ceux de la
+ *     formule payée, le niveau accordé est noté dans le paiement ;
+ *   - `debut: "demain"` : période comptée à partir de demain 00h UTC, accès
+ *     ouvert dès maintenant ;
+ *   - adresse technique d'un abonné sans e-mail (lib/abonnements/sans-email.ts) :
+ *     l'e-mail de confirmation n'est jamais envoyé.
  *
  * `apercu: true` → ne modifie RIEN : renvoie ce qui va se passer (affiché à
  * l'admin avant qu'il confirme). Mêmes calculs que l'activation réelle.
@@ -64,7 +79,8 @@ export async function POST(req: NextRequest) {
   const operateur: Operateur | null = body.operateur === "ORANGE_MONEY" || body.operateur === "WAVE" ? body.operateur : null;
   const pays = paysMobileMoney(typeof body.pays === "string" ? body.pays : null);
   const referenceSaisie = typeof body.reference === "string" ? body.reference.trim().slice(0, 100) : "";
-  const envoyerEmail = body.envoyerEmail !== false;
+  const emailDemande = body.envoyerEmail !== false;
+  const debut: Debut = body.debut === "demain" ? "demain" : "maintenant";
   const apercu = body.apercu === true;
   const doublonConfirme = body.doublonConfirme === true;
 
@@ -73,6 +89,19 @@ export async function POST(req: NextRequest) {
   if (!email || !plan || !palier || !operateur) {
     return NextResponse.json(
       { error: "Champs manquants : e-mail du compte, formule (Starter, Pro, Elite) et opérateur (Orange Money, Wave)." },
+      { status: 400 },
+    );
+  }
+  // Niveau d'accès accordé : celui de la formule payée, ou un niveau supérieur.
+  const niveau = niveauAccorde(palier, body.niveau);
+  if (typeof niveau !== "string") {
+    return NextResponse.json(
+      {
+        error:
+          niveau.erreur === "INFERIEUR"
+            ? `Le niveau accordé ne peut pas être inférieur à la formule payée (${plan.nom}).`
+            : "Niveau d'accès inconnu : Starter, Pro ou Elite.",
+      },
       { status: 400 },
     );
   }
@@ -98,7 +127,7 @@ export async function POST(req: NextRequest) {
   if (profils.length === 0) {
     return NextResponse.json(
       {
-        error: `Aucun compte Elite Turf avec l'e-mail ${email}. L'abonné doit d'abord créer son compte (il peut le faire après avoir payé), puis vous l'activez.`,
+        error: `Aucun compte Elite Turf avec l'e-mail ${email}. L'abonné doit d'abord créer son compte (il peut le faire après avoir payé), puis vous l'activez. Sans e-mail : inscrivez-le avec « Inscrire un abonné sans e-mail ».`,
       },
       { status: 404 },
     );
@@ -141,7 +170,7 @@ export async function POST(req: NextRequest) {
   // ── Période ──────────────────────────────────────────────────────────────
   const maintenant = new Date();
   const etat = { statut: profil.statut_abonnement ?? null, expiration: profil.date_expiration_abonnement ?? null };
-  const periode = calculerPeriode(etat, plan.duree_jours, maintenant);
+  const periode = calculerPeriode(etat, plan.duree_jours, maintenant, debut);
   if ("erreur" in periode) {
     return NextResponse.json(
       {
@@ -152,6 +181,9 @@ export async function POST(req: NextRequest) {
   }
 
   const montant = montantFcfa(plan);
+  // Abonné sans e-mail (adresse technique) : aucun e-mail, quelle que soit la case.
+  const emailTechnique = estAdresseTechnique(profil.email);
+  const envoyerEmail = emailDemande && !emailTechnique;
   const resume = {
     membre: { nom: profil.nom_complet ?? null, email: profil.email },
     actuel: {
@@ -160,9 +192,15 @@ export async function POST(req: NextRequest) {
       expirationLisible: etat.expiration ? dateLongue(etat.expiration) : null,
     },
     nouveau: {
-      statut: palier,
+      /** Niveau d'accès ouvert (= formule payée, sauf niveau accordé supérieur) */
+      statut: niveau,
+      palierFormule: palier,
+      surclasse: niveau !== palier,
       formule: plan.nom,
       dureeJours: plan.duree_jours,
+      debut: periode.debut,
+      debutLisible: dateLongue(periode.debut),
+      differe: periode.differe,
       fin: periode.fin,
       finLisible: dateLongue(periode.fin),
       prolongation: periode.prolongation,
@@ -175,7 +213,8 @@ export async function POST(req: NextRequest) {
       reference: referenceSaisie || null,
     },
     envoyerEmail,
-    avertissements: avertissements(etat, palier, maintenant),
+    emailTechnique,
+    avertissements: avertissements(etat, niveau, maintenant, debut),
   };
 
   if (apercu) return NextResponse.json({ apercu: true, ...resume });
@@ -242,12 +281,15 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 1. Le profil : c'est lui qui ouvre l'accès ───────────────────────────
+  // Statut = niveau ACCORDÉ (c'est lui qui gate l'accès) ; plan_id = formule
+  // PAYÉE. date_debut_abonnement = maintenant même avec « demain » : l'accès
+  // s'ouvre dès l'activation (et le contrôle des doublons s'appuie dessus).
   const { error: errAcces } = await admin
     .from("profiles")
     .update({
-      statut_abonnement:          palier,
+      statut_abonnement:          niveau,
       date_expiration_abonnement: periode.fin,
-      date_debut_abonnement:      periode.debut,
+      date_debut_abonnement:      maintenant.toISOString(),
       plan_id:                    plan.id,
     })
     .eq("id", profil.id);
@@ -263,6 +305,8 @@ export async function POST(req: NextRequest) {
   // échouait, aucune ancienne ligne ne ferait expirer le profil trop tôt (le
   // cron expire-abonnements remet le profil à EXPIRE quand il ne reste plus de
   // ligne ACTIF ; sans ligne, l'accès reste réglé par la date du profil).
+  // Formule PAYÉE (le rappel d'expiration cite ce qui a été payé) ; date_fin =
+  // dernier jour d'accès (le cron coupe à 01h UTC le lendemain).
   const { error: errCloture } = await admin
     .from("abonnements")
     .update({ statut: "EXPIRE" })
@@ -274,7 +318,7 @@ export async function POST(req: NextRequest) {
       user_id:             profil.id,
       plan_id:             planUuid,
       date_debut:          periode.debut.slice(0, 10),
-      date_fin:            periode.fin.slice(0, 10),
+      date_fin:            dernierJourAcces(periode.fin),
       statut:              "ACTIF",
       auto_renouvellement: false,
     })
@@ -293,7 +337,7 @@ export async function POST(req: NextRequest) {
       methode:             operateur,
       statut:              "SUCCES",
       reference_operateur: reference,
-      date_transaction:    periode.debut,
+      date_transaction:    maintenant.toISOString(),
       metadata: {
         source:              "admin_mobile_money",
         formule:             plan.id,
@@ -302,6 +346,9 @@ export async function POST(req: NextRequest) {
         prolongation:        periode.prolongation,
         ancienne_expiration: etat.expiration,
         active_par:          user.id,
+        // Promo : accès supérieur à la formule payée (null = celui de la formule)
+        niveau_accorde:      niveau !== palier ? niveau : null,
+        debut_differe:       periode.differe,
       },
     })
     .select("id")
@@ -316,7 +363,7 @@ export async function POST(req: NextRequest) {
         id:         profil.id,
         email:      profil.email,
         nomComplet: profil.nom_complet ?? null,
-        palier,
+        palier:     niveau,
         expiration: periode.fin,
       })
     : null;
@@ -343,7 +390,7 @@ export async function POST(req: NextRequest) {
       abonnement: etapeAbonnement,
       paiement:   errTx ? { ok: false, erreur: errTx.message } : { ok: true },
       email: !envoi
-        ? { ok: true, nonDemande: true }
+        ? { ok: true, nonDemande: true, adresseTechnique: emailTechnique }
         : {
             ok: envoi.ok,
             erreur: envoi.erreur ?? null,

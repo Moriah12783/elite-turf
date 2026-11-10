@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendEmailBatch } from "@/lib/email";
 import { templateNouveauPronostic } from "@/lib/email/templates/nouveau-pronostic";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 const CRON_SECRET = process.env.CRON_SECRET || "";
 
@@ -139,8 +140,9 @@ export async function POST(req: NextRequest) {
     // ── 3. Envoyer les emails avec throttling unifié (sendEmailBatch) ───────
     // Avant : séquentiel + pause 200ms toutes les 10 emails = burst risk + inégal
     // Maintenant : sendEmailBatch garantit exactement 5 emails/sec (default)
+    // Adresses techniques (abonnés sans e-mail) exclues : suivis sur WhatsApp.
     const payloads = abonnes
-      .filter((a) => a.email)
+      .filter((a) => a.email && !estAdresseTechnique(a.email))
       .map((a) => {
         const { subject, html } = templateNouveauPronostic({
           nomComplet:    a.nom_complet ?? a.email,

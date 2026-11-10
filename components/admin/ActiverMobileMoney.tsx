@@ -7,14 +7,38 @@
  * route en APERÇU (rien n'est écrit) et affiche ce qui va se passer ;
  * « Confirmer » active l'accès, enregistre le paiement et envoie l'e-mail.
  * Route : POST /api/admin/abonnements/activer-mobile-money.
+ *
+ * Depuis le 10/11/2026 : niveau d'accès accordé (promo), début « demain », et
+ * pré-remplissage par la carte « Inscrire un abonné sans e-mail » (adresse
+ * technique : aucun e-mail envoyé).
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Smartphone, Loader2, Check, AlertTriangle } from "lucide-react";
 import { formulesMobileMoney, montantMobileMoney, PAYS_MOBILE_MONEY } from "@/lib/paiement/mobile-money";
-import { OPERATEURS, type Operateur } from "@/lib/paiement/activation-mobile-money";
+import {
+  OPERATEURS,
+  palierDeFormule,
+  type Debut,
+  type Operateur,
+  type Palier,
+} from "@/lib/paiement/activation-mobile-money";
+import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
 
 type Phase = "saisie" | "envoi" | "apercu" | "fait";
+
+const PALIERS: { valeur: Palier; libelle: string }[] = [
+  { valeur: "STARTER", libelle: "Starter" },
+  { valeur: "PRO", libelle: "Pro" },
+  { valeur: "ELITE", libelle: "Elite" },
+];
+
+/** Niveaux accordables : strictement au-dessus de la formule payée. */
+function niveauxSuperieurs(formule: string): { valeur: Palier; libelle: string }[] {
+  const palier = palierDeFormule(formule);
+  const rang = PALIERS.findIndex((p) => p.valeur === palier);
+  return rang === -1 ? [] : PALIERS.slice(rang + 1);
+}
 
 interface Etape {
   ok: boolean;
@@ -33,14 +57,27 @@ interface Saisie {
   pays: string | null;
   reference: string;
   envoyerEmail: boolean;
+  /** Niveau d'accès accordé ; "" = celui de la formule payée */
+  niveau: string;
+  debut: Debut;
 }
 
 interface Resume {
   membre: { nom: string | null; email: string };
   actuel: { statut: string | null; expirationLisible: string | null };
-  nouveau: { statut: string; formule: string; dureeJours: number; finLisible: string; prolongation: boolean };
+  nouveau: {
+    statut: string;
+    surclasse: boolean;
+    formule: string;
+    dureeJours: number;
+    debutLisible: string;
+    differe: boolean;
+    finLisible: string;
+    prolongation: boolean;
+  };
   paiement: { montantFcfa: number; operateurLibelle: string; pays: string | null; reference: string | null };
   envoyerEmail: boolean;
+  emailTechnique: boolean;
   avertissements: string[];
   reference?: string;
   etapes?: { acces: Etape; abonnement: Etape; paiement: Etape; email: Etape };
@@ -57,9 +94,16 @@ function nomPays(code: string | null): string | null {
   return PAYS_MOBILE_MONEY.find((p) => p.code === code)?.nom ?? null;
 }
 
-export default function ActiverMobileMoney() {
+/** Adresse envoyée par la carte « Inscrire un abonné sans e-mail » (jeton = nouvel envoi). */
+export interface Prerempli {
+  email: string;
+  jeton: number;
+}
+
+export default function ActiverMobileMoney({ prerempli = null }: { prerempli?: Prerempli | null }) {
   const router = useRouter();
   const formules = formulesMobileMoney();
+  const section = useRef<HTMLElement>(null);
 
   const [email, setEmail] = useState("");
   const [formule, setFormule] = useState("pro");
@@ -67,12 +111,36 @@ export default function ActiverMobileMoney() {
   const [pays, setPays] = useState("");
   const [reference, setReference] = useState("");
   const [envoyerEmail, setEnvoyerEmail] = useState(true);
+  const [niveau, setNiveau] = useState("");
+  const [debut, setDebut] = useState<Debut>("maintenant");
 
   const [phase, setPhase] = useState<Phase>("saisie");
   const [resume, setResume] = useState<Resume | null>(null);
   const [verifie, setVerifie] = useState<Saisie | null>(null);
   const [erreur, setErreur] = useState("");
   const [doublon, setDoublon] = useState(false);
+
+  // Adresse technique : aucun e-mail ne part (la route l'impose aussi).
+  const technique = estAdresseTechnique(email);
+  const niveaux = niveauxSuperieurs(formule);
+
+  // Compte tout juste créé par la carte « sans e-mail » : on reprend sa saisie ici.
+  useEffect(() => {
+    if (!prerempli) return;
+    setEmail(prerempli.email);
+    setPhase("saisie");
+    setErreur("");
+    setDoublon(false);
+    setResume(null);
+    setVerifie(null);
+    section.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [prerempli]);
+
+  function choisirFormule(id: string) {
+    setFormule(id);
+    // Un niveau accordé n'est jamais inférieur ou égal à la formule payée.
+    if (!niveauxSuperieurs(id).some((n) => n.valeur === niveau)) setNiveau("");
+  }
 
   async function appeler(saisie: Saisie, extra: Record<string, boolean>) {
     const res = await fetch("/api/admin/abonnements/activer-mobile-money", {
@@ -86,7 +154,16 @@ export default function ActiverMobileMoney() {
 
   async function verifier(e: React.FormEvent) {
     e.preventDefault();
-    const saisie: Saisie = { email, formule, operateur, pays: pays || null, reference, envoyerEmail };
+    const saisie: Saisie = {
+      email,
+      formule,
+      operateur,
+      pays: pays || null,
+      reference,
+      envoyerEmail: envoyerEmail && !technique,
+      niveau,
+      debut,
+    };
     setErreur("");
     setDoublon(false);
     setPhase("envoi");
@@ -150,13 +227,15 @@ export default function ActiverMobileMoney() {
   function recommencer() {
     setEmail("");
     setReference("");
+    setNiveau("");
+    setDebut("maintenant");
     modifier();
   }
 
   const occupe = phase === "envoi";
 
   return (
-    <section className="card-base p-5" aria-labelledby="activer-mobile-money">
+    <section ref={section} className="card-base p-5 scroll-mt-4" aria-labelledby="activer-mobile-money">
       <div className="flex items-start gap-3 mb-4">
         <Smartphone className="w-5 h-5 text-gold-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div>
@@ -181,7 +260,7 @@ export default function ActiverMobileMoney() {
           </label>
           <label className="block">
             <span className="block text-text-secondary text-xs mb-1">Formule payée</span>
-            <select value={formule} onChange={(e) => setFormule(e.target.value)} className={champ}>
+            <select value={formule} onChange={(e) => choisirFormule(e.target.value)} className={champ}>
               {formules.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nom} — {montantMobileMoney(p)} · {p.duree_jours} jours
@@ -231,15 +310,57 @@ export default function ActiverMobileMoney() {
               className={champ}
             />
           </label>
-          <label className="flex items-center gap-2 text-text-secondary text-sm sm:col-span-2 lg:col-span-1 self-end pb-2">
-            <input
-              type="checkbox"
-              checked={envoyerEmail}
-              onChange={(e) => setEnvoyerEmail(e.target.checked)}
-              className="w-4 h-4 accent-gold-primary"
-            />
-            Envoyer l&apos;e-mail de confirmation
+          <label className="block">
+            <span className="block text-text-secondary text-xs mb-1">Niveau d&apos;accès accordé</span>
+            <select value={niveau} onChange={(e) => setNiveau(e.target.value)} className={champ}>
+              <option value="">Celui de la formule payée</option>
+              {niveaux.map((n) => (
+                <option key={n.valeur} value={n.valeur}>
+                  {n.libelle} (offert, promo)
+                </option>
+              ))}
+            </select>
           </label>
+          <fieldset className="block">
+            <legend className="block text-text-secondary text-xs mb-1">Début de la période</legend>
+            <div className="flex gap-2">
+              {(
+                [
+                  ["maintenant", "Maintenant"],
+                  ["demain", "Demain (00h)"],
+                ] as const
+              ).map(([valeur, libelle]) => (
+                <label key={valeur} className="flex-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="debut"
+                    value={valeur}
+                    checked={debut === valeur}
+                    onChange={() => setDebut(valeur)}
+                    className="peer sr-only"
+                  />
+                  <span className="block rounded-lg border border-border bg-bg-elevated px-3 py-2 text-center text-sm text-text-secondary peer-checked:border-gold-primary peer-checked:bg-gold-faint peer-checked:text-gold-light peer-focus-visible:ring-2 peer-focus-visible:ring-gold-primary/60">
+                    {libelle}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {technique ? (
+            <p className="text-text-muted text-xs sm:col-span-2 lg:col-span-1 self-end pb-2">
+              Adresse technique (abonné sans e-mail) : aucun e-mail envoyé, suivi sur WhatsApp.
+            </p>
+          ) : (
+            <label className="flex items-center gap-2 text-text-secondary text-sm sm:col-span-2 lg:col-span-1 self-end pb-2">
+              <input
+                type="checkbox"
+                checked={envoyerEmail}
+                onChange={(e) => setEnvoyerEmail(e.target.checked)}
+                className="w-4 h-4 accent-gold-primary"
+              />
+              Envoyer l&apos;e-mail de confirmation
+            </label>
+          )}
           <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-3">
             <button
               type="submit"
@@ -280,18 +401,31 @@ export default function ActiverMobileMoney() {
               </span>
               {resume.nouveau.prolongation
                 ? ` (${resume.nouveau.dureeJours} jours ajoutés après sa date de fin actuelle)`
-                : ` (${resume.nouveau.dureeJours} jours à partir de maintenant)`}
+                : resume.nouveau.differe
+                  ? ` (${resume.nouveau.dureeJours} jours à partir du ${resume.nouveau.debutLisible} ; accès ouvert dès maintenant)`
+                  : ` (${resume.nouveau.dureeJours} jours à partir de maintenant)`}
             </li>
+            {resume.nouveau.surclasse && (
+              <li>
+                Niveau accordé :{" "}
+                <span className="text-text-primary font-semibold">{resume.nouveau.statut}</span> (formule payée :{" "}
+                {resume.nouveau.formule}, noté dans le paiement)
+              </li>
+            )}
             <li>
-              Paiement {phase === "fait" ? "" : "à enregistrer "}: {fcfa(resume.paiement.montantFcfa)} ·{" "}
-              {resume.paiement.operateurLibelle}
+              Paiement {phase === "fait" ? "" : "à enregistrer "}: {resume.nouveau.formule} ·{" "}
+              {fcfa(resume.paiement.montantFcfa)} · {resume.paiement.operateurLibelle}
               {nomPays(resume.paiement.pays) ? ` · ${nomPays(resume.paiement.pays)}` : ""}
               {resume.paiement.reference ? ` · réf. ${resume.paiement.reference}` : ""}
             </li>
             {phase !== "fait" && (
               <li>
                 E-mail de confirmation :{" "}
-                {resume.envoyerEmail ? `sera envoyé à ${resume.membre.email}` : "non envoyé (case décochée)"}
+                {resume.emailTechnique
+                  ? "non envoyé (adresse technique : abonné sans e-mail)"
+                  : resume.envoyerEmail
+                    ? `sera envoyé à ${resume.membre.email}`
+                    : "non envoyé (case décochée)"}
               </li>
             )}
           </ul>
