@@ -9,6 +9,8 @@ import {
   motifEmailExact,
   formuleDeTransaction,
   estPaiementCarte,
+  niveauAccorde,
+  dernierJourAcces,
 } from "./activation-mobile-money";
 
 describe("« Valider » (Admin → Paiements) : la formule enregistrée avec le paiement", () => {
@@ -52,11 +54,11 @@ describe("palier et montant d'une formule", () => {
 describe("période activée (décision de Steph du 06/10 : prolonger depuis la fin)", () => {
   it("abonné encore actif : les jours s'ajoutent après sa date de fin", () => {
     const p = calculerPeriode({ statut: "PRO", expiration: "2026-10-20T00:00:00+00:00" }, 30, MAINTENANT);
-    expect(p).toEqual({ debut: "2026-10-15T10:00:00.000Z", fin: "2026-11-19T00:00:00.000Z", prolongation: true });
+    expect(p).toEqual({ debut: "2026-10-15T10:00:00.000Z", fin: "2026-11-19T00:00:00.000Z", prolongation: true, differe: false });
   });
 
   it("abonné expiré, gratuit ou sans date : à partir de maintenant", () => {
-    const attendu = { debut: "2026-10-15T10:00:00.000Z", fin: "2026-10-22T10:00:00.000Z", prolongation: false };
+    const attendu = { debut: "2026-10-15T10:00:00.000Z", fin: "2026-10-22T10:00:00.000Z", prolongation: false, differe: false };
     expect(calculerPeriode({ statut: "PRO", expiration: "2026-10-01T00:00:00+00:00" }, 7, MAINTENANT)).toEqual(attendu);
     expect(calculerPeriode({ statut: "EXPIRE", expiration: null }, 7, MAINTENANT)).toEqual(attendu);
     expect(calculerPeriode({ statut: "GRATUIT", expiration: null }, 7, MAINTENANT)).toEqual(attendu);
@@ -70,6 +72,64 @@ describe("période activée (décision de Steph du 06/10 : prolonger depuis la f
 
   it("accès payant SANS date de fin (permanent) : refus, l'activation lui en donnerait une", () => {
     expect(calculerPeriode({ statut: "ELITE", expiration: null }, 30, MAINTENANT)).toEqual({ erreur: "PERMANENT" });
+    expect(calculerPeriode({ statut: "ELITE", expiration: null }, 30, MAINTENANT, "demain")).toEqual({ erreur: "PERMANENT" });
+  });
+});
+
+describe("début « à partir de demain » (décision de Steph du 10/11/2026)", () => {
+  it("les N jours se comptent à partir de demain 00h UTC (minuit à Abidjan) : N journées pleines", () => {
+    const p = calculerPeriode({ statut: "GRATUIT", expiration: null }, 7, MAINTENANT, "demain");
+    expect(p).toEqual({ debut: "2026-10-16T00:00:00.000Z", fin: "2026-10-23T00:00:00.000Z", prolongation: false, differe: true });
+  });
+
+  it("activation juste avant minuit : demain = le jour qui suit", () => {
+    const p = calculerPeriode({ statut: "EXPIRE", expiration: null }, 7, new Date("2026-10-15T23:59:00.000Z"), "demain");
+    expect(p).toMatchObject({ debut: "2026-10-16T00:00:00.000Z", fin: "2026-10-23T00:00:00.000Z" });
+  });
+
+  it("abonné encore actif : « demain » sans effet, la période part de sa date de fin", () => {
+    const p = calculerPeriode({ statut: "PRO", expiration: "2026-10-20T00:00:00+00:00" }, 30, MAINTENANT, "demain");
+    expect(p).toEqual({ debut: "2026-10-15T10:00:00.000Z", fin: "2026-11-19T00:00:00.000Z", prolongation: true, differe: false });
+    expect(avertissements({ statut: "PRO", expiration: "2026-10-20T00:00:00+00:00" }, "PRO", MAINTENANT, "demain")).toEqual([
+      expect.stringContaining("demain"),
+    ]);
+  });
+});
+
+describe("dernier jour d'accès (abonnements.date_fin, lu par le cron d'expiration)", () => {
+  // Le cron coupe à 01h UTC le LENDEMAIN de date_fin (constaté en base le 10/11/2026).
+  it("fin à minuit pile : le dernier jour est la veille", () => {
+    expect(dernierJourAcces("2026-10-23T00:00:00.000Z")).toBe("2026-10-22");
+  });
+
+  it("fin en cours de journée : ce jour-là (comportement inchangé)", () => {
+    expect(dernierJourAcces("2026-10-22T10:00:00.000Z")).toBe("2026-10-22");
+    expect(dernierJourAcces("2026-11-19T00:00:00.001Z")).toBe("2026-11-19");
+  });
+});
+
+describe("niveau d'accès accordé (promo : payé Starter, reçoit Elite)", () => {
+  it("absent ou vide : le niveau de la formule payée", () => {
+    expect(niveauAccorde("STARTER", undefined)).toBe("STARTER");
+    expect(niveauAccorde("STARTER", "")).toBe("STARTER");
+    expect(niveauAccorde("PRO", null)).toBe("PRO");
+  });
+
+  it("niveau égal ou supérieur : accordé", () => {
+    expect(niveauAccorde("STARTER", "ELITE")).toBe("ELITE");
+    expect(niveauAccorde("STARTER", "PRO")).toBe("PRO");
+    expect(niveauAccorde("ELITE", "ELITE")).toBe("ELITE");
+  });
+
+  it("niveau inférieur à la formule payée : refus (jamais moins que ce qui est payé)", () => {
+    expect(niveauAccorde("ELITE", "STARTER")).toEqual({ erreur: "INFERIEUR" });
+    expect(niveauAccorde("PRO", "STARTER")).toEqual({ erreur: "INFERIEUR" });
+  });
+
+  it("valeur inconnue : refus, on ne devine pas", () => {
+    expect(niveauAccorde("STARTER", "GRATUIT")).toEqual({ erreur: "INCONNU" });
+    expect(niveauAccorde("STARTER", "elite")).toEqual({ erreur: "INCONNU" });
+    expect(niveauAccorde("STARTER", 3)).toEqual({ erreur: "INCONNU" });
   });
 });
 

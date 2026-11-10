@@ -10,6 +10,13 @@
  *
  * « Encore actif » = même règle que effectiveSubscription (lib/auth/subscription.ts) :
  * statut payant ET date de fin strictement dans le futur.
+ *
+ * Ajouts du 10/11/2026 (abonnés WhatsApp sans e-mail, décisions de Steph) :
+ *   - « niveau accordé » : l'accès peut être SUPÉRIEUR à la formule payée
+ *     (promo : payé Starter, reçoit Elite 7 jours). Chiffre d'affaires, durée et
+ *     ligne `abonnements` restent ceux de la formule payée ;
+ *   - début « demain » : les N jours se comptent à partir de demain 00h UTC
+ *     (minuit à Abidjan), l'accès s'ouvre tout de suite (reste du jour offert).
  */
 import type { Plan } from "@/types";
 import { convertPrice } from "@/lib/geo/countries";
@@ -28,6 +35,16 @@ export function palierDeFormule(formule: string): Palier | null {
   return PALIER_PAR_FORMULE[formule] ?? null;
 }
 
+/**
+ * Niveau d'accès accordé. Absent ou vide : celui de la formule payée. Jamais
+ * inférieur à ce qui est payé ; valeur inconnue → refus (on ne devine pas).
+ */
+export function niveauAccorde(paye: Palier, demande: unknown): Palier | { erreur: "INCONNU" | "INFERIEUR" } {
+  if (demande === undefined || demande === null || demande === "") return paye;
+  if (demande !== "STARTER" && demande !== "PRO" && demande !== "ELITE") return { erreur: "INCONNU" };
+  return RANG[demande] < RANG[paye] ? { erreur: "INFERIEUR" } : demande;
+}
+
 /** Montant payé en francs CFA, entier : celui affiché sur le site (arrondi à 500). */
 export function montantFcfa(plan: Plan): number {
   return convertPrice(plan.prix_eur, "XOF").value;
@@ -39,11 +56,17 @@ export interface EtatAbonne {
   expiration: string | null;
 }
 
+/** Début de la période : maintenant, ou demain 00h UTC (minuit à Abidjan). */
+export type Debut = "maintenant" | "demain";
+
 export interface Periode {
+  /** Début de la période payée (demain 00h UTC si `differe`) */
   debut: string;
   fin: string;
   /** true = abonné encore actif, période ajoutée après sa date de fin */
   prolongation: boolean;
+  /** true = période comptée à partir de demain 00h UTC */
+  differe: boolean;
 }
 
 function estPayant(statut: string | null): statut is Palier {
@@ -58,20 +81,37 @@ function estActif(etat: EtatAbonne, maintenant: Date): boolean {
  * Nouvelle période. Refus « PERMANENT » : un accès payant sans date de fin
  * (offert à vie, compte de Steph) en recevrait une — on ne le fait jamais en
  * silence.
+ *
+ * `debut = "demain"` : les jours se comptent à partir de demain 00h UTC (N
+ * journées pleines). Sans effet pour un abonné encore actif : sa période
+ * s'ajoute déjà après sa date de fin.
  */
 export function calculerPeriode(
   etat: EtatAbonne,
   dureeJours: number,
   maintenant: Date,
+  debut: Debut = "maintenant",
 ): Periode | { erreur: "PERMANENT" } {
   if (estPayant(etat.statut) && !etat.expiration) return { erreur: "PERMANENT" };
   const prolongation = estActif(etat, maintenant);
-  const base = prolongation ? Date.parse(etat.expiration as string) : maintenant.getTime();
+  const differe = !prolongation && debut === "demain";
+  const demain = Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), maintenant.getUTCDate() + 1);
+  const base = prolongation ? Date.parse(etat.expiration as string) : differe ? demain : maintenant.getTime();
   return {
-    debut: maintenant.toISOString(),
+    debut: differe ? new Date(demain).toISOString() : maintenant.toISOString(),
     fin: new Date(base + dureeJours * JOUR_MS).toISOString(),
     prolongation,
+    differe,
   };
+}
+
+/**
+ * Dernier jour d'accès (YYYY-MM-DD), pour `abonnements.date_fin` : le cron
+ * expire-abonnements coupe à 01h UTC le LENDEMAIN de cette date (constaté en
+ * base le 10/11/2026). Fin à minuit pile → la veille ; sinon le jour même.
+ */
+export function dernierJourAcces(fin: string): string {
+  return new Date(Date.parse(fin) - 1).toISOString().slice(0, 10);
 }
 
 /** « 20 octobre 2026 » (date UTC = heure d'Abidjan). */
@@ -79,13 +119,17 @@ export function dateLongue(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-/** Ce que l'admin doit voir AVANT de confirmer. */
-export function avertissements(etat: EtatAbonne, nouveau: Palier, maintenant: Date): string[] {
+/** Ce que l'admin doit voir AVANT de confirmer. `nouveau` = niveau d'accès accordé. */
+export function avertissements(etat: EtatAbonne, nouveau: Palier, maintenant: Date, debut: Debut = "maintenant"): string[] {
   const liste: string[] = [];
-  if (estActif(etat, maintenant) && estPayant(etat.statut) && RANG[nouveau] < RANG[etat.statut]) {
+  const actif = estActif(etat, maintenant);
+  if (actif && estPayant(etat.statut) && RANG[nouveau] < RANG[etat.statut]) {
     liste.push(
       `Il est actuellement ${etat.statut} jusqu'au ${dateLongue(etat.expiration as string)} : il passera ${nouveau} dès l'activation.`,
     );
+  }
+  if (actif && debut === "demain") {
+    liste.push("« À partir de demain » est sans effet : il est encore actif, la période s'ajoute après sa date de fin.");
   }
   return liste;
 }
