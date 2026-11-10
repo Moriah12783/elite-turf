@@ -24,6 +24,7 @@ import {
   type Palier,
 } from "@/lib/paiement/activation-mobile-money";
 import { estAdresseTechnique } from "@/lib/abonnements/sans-email";
+import BoutonRecu from "@/components/admin/recu/BoutonRecu";
 
 type Phase = "saisie" | "envoi" | "apercu" | "fait";
 
@@ -497,13 +498,17 @@ export default function ActiverMobileMoney({ prerempli = null }: { prerempli?: P
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={recommencer}
-                className="px-4 py-2 rounded-lg border border-border text-text-secondary text-sm hover:text-text-primary transition-colors"
-              >
-                Nouvelle activation
-              </button>
+              <>
+                {/* Reçu à envoyer soi-même sur WhatsApp : seulement si le paiement est bien enregistré. */}
+                {resume.reference && resume.etapes?.paiement.ok && <BoutonRecu reference={resume.reference} />}
+                <button
+                  type="button"
+                  onClick={recommencer}
+                  className="px-4 py-2 rounded-lg border border-border text-text-secondary text-sm hover:text-text-primary transition-colors"
+                >
+                  Nouvelle activation
+                </button>
+              </>
             )}
           </div>
         </div>
