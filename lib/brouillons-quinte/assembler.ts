@@ -11,7 +11,7 @@ import type { AllocationsPmu, ParticipantPmu } from "./pmu";
 import { SOURCE_BROUILLON } from "./fenetre";
 import { TAILLE_SELECTION, type Confiance } from "./selection";
 import type { CourseArgon } from "./argon";
-import { composerArgon, confianceArgon, type CompositionArgon } from "./composition-argon";
+import { composerArgon, confianceBrouillon, type CompositionArgon } from "./composition-argon";
 import { analyseCourte, analyseComplete, heureGmt, type AvisArgon, type ChevalCommente, type ContexteCourse } from "./commentaires";
 import type { RaisonEchec, ResumeBrouillons, ChevalResume, LigneMusique } from "./email";
 import { dernieresPlaces, estFaute } from "./musique";
@@ -182,7 +182,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
     if (maj !== null && (releveCotes === null || maj > releveCotes)) releveCotes = maj;
   }
   const ctx: ContexteCourse = { ...e.ctx, releveCotes, allocations: e.allocations ?? null };
-  const confiance = confianceArgon(e.argon.etoiles);
+  const confiance = confianceBrouillon(e.argon.t90.indice, e.argon.etoiles);
   const nbElite = comp.bases.length + comp.valuesElite.length + comp.associes.length;
   const courte = analyseCourte(ctx, commente(comp.pivot), nbElite);
   // Plan de jeu Elite : couplé maître et sniper de l'édition T-90 scellée ; à défaut, le sniper du moment.
@@ -240,6 +240,7 @@ export function assemblerBrouillons(e: EntreeAssemblage): ResultatAssemblage {
         lockGmt: e.argon.t90.lockGmt,
         argon8: e.argon.t90.argon8.map(resume),
         etoiles: e.argon.etoiles,
+        indice: e.argon.t90.indice,
         deconseillee: e.argon.deconseillee,
         decision: e.argon.decision,
         nonPartants: comp.nonPartants.map(resume),

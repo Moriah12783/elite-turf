@@ -25,6 +25,7 @@ const R: ResumeBrouillons = {
     lockGmt: "16:45",
     argon8: [3, 6, 12, 13, 7, 4, 11, 14].map((numero) => ({ numero, nom: `CHEVAL ${numero}` })),
     etoiles: 5,
+    indice: null,
     deconseillee: false,
     decision: "⭐ COUPLE MAITRE: 3 - 6 · 🎯 SNIPER: N°12 (9.3/1)",
     nonPartants: [],
@@ -245,6 +246,15 @@ describe("brouillons Argon (spec du 16/10/2026, §11)", () => {
     expect(html).toContain("1 étoile");
     expect(html).not.toContain("1 étoiles");
     expect(html).toContain("Édition T-90 scellée : 3 · 6");
+  });
+
+  it("indice de confiance scellé : il remplace les étoiles, avec sa lecture et la part du marché", () => {
+    const html = emailBrouillons({ ...R, argon: { ...R.argon, indice: { niveau: 3, masse8Pct: 91.4 } } }, LIENS).html;
+    expect(html).toContain("Indice de confiance 3/4 · course lisible (les 8 tiennent 91 % des chances du marché)");
+    expect(html).not.toContain("5 étoiles");
+    const sansPart = emailBrouillons({ ...R, argon: { ...R.argon, indice: { niveau: 1, masse8Pct: null } } }, LIENS).html;
+    expect(sansPart).toContain("Indice de confiance 1/4 · course très ouverte");
+    expect(sansPart).not.toContain("chances du marché");
   });
 
   it("un non-partant : alerte en tête, Elite à 7 chevaux", () => {

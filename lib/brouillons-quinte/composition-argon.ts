@@ -61,6 +61,25 @@ export function composerArgon(
   };
 }
 
+/** Lecture de chaque niveau de l'indice de confiance d'Argon (mêmes mots que le moteur). */
+export const LIBELLE_INDICE: Record<1 | 2 | 3 | 4, string> = {
+  1: "course très ouverte",
+  2: "course ouverte",
+  3: "course lisible",
+  4: "course très lisible",
+};
+
+/**
+ * PUR : confiance proposée selon l'indice scellé d'Argon (1 à 4), mesuré sur les
+ * arrivées ; à défaut d'indice (ancien format, moins de 9 partants), les étoiles.
+ */
+export function confianceBrouillon(indice: { niveau: 1 | 2 | 3 | 4 } | null, etoiles: number): Confiance {
+  if (!indice) return confianceArgon(etoiles);
+  if (indice.niveau === 4) return "ELEVE";
+  if (indice.niveau === 3) return "MOYEN";
+  return "FAIBLE";
+}
+
 /** PUR : confiance proposée selon les étoiles d'Argon (1 à 5). */
 export function confianceArgon(etoiles: number): Confiance {
   if (etoiles >= 4) return "ELEVE";
