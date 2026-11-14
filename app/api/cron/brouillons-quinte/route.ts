@@ -220,7 +220,7 @@ export async function GET(req: NextRequest) {
       const email = await envoyerUneFois(supabase, jour, "blanc", emailBrouillons(resultat.resume, null));
       await cronLog.finish("success", {
         dry_run: true, email, pro: resultat.pro.selection, elite: resultat.elite.selection,
-        argon8: argon.t90.argon8, etoiles: argon.etoiles, minutes, jour,
+        argon8: argon.t90.argon8, etoiles: argon.etoiles, indice: argon.t90.indice ? argon.t90.indice.niveau : null, minutes, jour,
       });
       return NextResponse.json({ ok: true, dryRun: true, email });
     }
@@ -235,7 +235,7 @@ export async function GET(req: NextRequest) {
     const idPro = lignes.find((l) => l.niveau_acces === "PRO")?.id ?? null;
     const idElite = lignes.find((l) => l.niveau_acces === "ELITE")?.id ?? null;
     const email = await envoyerUneFois(supabase, jour, "prets", emailBrouillons(resultat.resume, liensVers(idPro, idElite)));
-    await cronLog.finish("success", { drafts_created: [idPro, idElite], email, argon8: argon.t90.argon8, etoiles: argon.etoiles, minutes, jour });
+    await cronLog.finish("success", { drafts_created: [idPro, idElite], email, argon8: argon.t90.argon8, etoiles: argon.etoiles, indice: argon.t90.indice ? argon.t90.indice.niveau : null, minutes, jour });
     return NextResponse.json({ ok: true, brouillons: [idPro, idElite], email });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

@@ -5,6 +5,7 @@
  */
 import type { Confiance } from "./selection";
 import type { RaisonArgon } from "./argon";
+import { LIBELLE_INDICE } from "./composition-argon";
 
 export type RaisonEchec =
   | RaisonArgon
@@ -76,6 +77,8 @@ export interface ResumeBrouillons {
     lockGmt: string | null;
     argon8: ChevalResume[];
     etoiles: number;
+    /** Indice de confiance scellé à T-90 (1 à 4) ; null si Argon ne l'a pas donné. */
+    indice: { niveau: 1 | 2 | 3 | 4; masse8Pct: number | null } | null;
     /** Argon déconseille de jouer la course. */
     deconseillee: boolean;
     decision: string | null;
@@ -145,7 +148,11 @@ function alerteNonPartants(r: ResumeBrouillons): string {
 /** Avis d'Argon, pour information : Steph choisit le couplé lui-même. */
 function blocAvisArgon(a: ResumeBrouillons["argon"]): string {
   const scellee = a.lockGmt ? `Édition T-90 scellée à ${echapper(a.lockGmt)} GMT` : "Édition T-90 scellée";
-  const etoiles = `${a.etoiles} ${a.etoiles > 1 ? "étoiles" : "étoile"}`;
+  // L'indice (mesuré) remplace les étoiles dès qu'Argon le scelle ; sinon les étoiles, comme avant.
+  const etoiles = a.indice
+    ? `Indice de confiance ${a.indice.niveau}/4 · ${LIBELLE_INDICE[a.indice.niveau]}`
+      + (a.indice.masse8Pct !== null ? ` (les 8 tiennent ${coteFr(Math.round(a.indice.masse8Pct))} % des chances du marché)` : "")
+    : `${a.etoiles} ${a.etoiles > 1 ? "étoiles" : "étoile"}`;
   return `<h3 style="margin:16px 0 4px">Avis d'Argon (pour information)</h3>`
     + `<p style="margin:0">${scellee} : ${a.argon8.map((c) => c.numero).join(" · ")}<br>${etoiles}`
     + (a.decision ? ` · ${echapper(a.decision)}` : "")

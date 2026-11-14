@@ -26,7 +26,7 @@ function courseLue(j: unknown = ARGON_JSON): CourseArgon {
 describe("trouverCourseArgon — vraie réponse d'Argon du 16/10/2026", () => {
   it("trouve le Prix Thémis : T-90 scellée à 16:45, 8 chevaux, 5 étoiles, course jouable", () => {
     const c = courseLue();
-    expect(c.t90).toEqual({ argon8: [3, 6, 12, 13, 7, 4, 11, 14], sealed: true, lockGmt: "16:45", statut: null, prono: null });
+    expect(c.t90).toEqual({ argon8: [3, 6, 12, 13, 7, 4, 11, 14], sealed: true, lockGmt: "16:45", statut: null, prono: null, indice: null });
     expect(c.etoiles).toBe(5);
     expect(c.deconseillee).toBe(false);
     expect(c.sniper).toEqual({ numero: 12, cote: 11 });
@@ -131,7 +131,7 @@ describe("nouveau format d'Argon : statut des éditions (vraie réponse du 20/10
 
   it("T-90 SCELLEE : lue, rien à attendre", () => {
     const c = lue(SABLES);
-    expect(c.t90).toEqual({ argon8: [9, 10, 13, 11, 2, 12, 7, 15], sealed: true, lockGmt: "17:00", statut: "SCELLEE", prono: null });
+    expect(c.t90).toEqual({ argon8: [9, 10, 13, 11, 2, 12, 7, 15], sealed: true, lockGmt: "17:00", statut: "SCELLEE", prono: null, indice: null });
     expect(raisonT90(c)).toBeNull();
   });
 
@@ -140,6 +140,16 @@ describe("nouveau format d'Argon : statut des éditions (vraie réponse du 20/10
       t.prono = { bases: [9, 10], trio: [9, 10, 13], sniper_num: 13, sniper_odds: 6.9, sniper_ev_win: 0.12, outsider_num: 7, solidite: "A", is_master: true, recommended_k: 2 };
     });
     expect(c.t90.prono).toEqual({ bases: [9, 10], coupleMaitre: true, sniper: 13, sniperCote: 6.9 });
+  });
+
+  it("indice de confiance scellé (Argon V4.6) : niveau et part du marché lus ; absent ou mal formé = null, jamais bloquant", () => {
+    const c = lue(SABLES, (t) => { t.indice = { masse8_pct: 91.4, niveau: 3 }; t.source = "ARGON"; });
+    expect(c.t90.indice).toEqual({ niveau: 3, masse8Pct: 91.4 });
+    expect(lue(SABLES, (t) => { t.indice = { niveau: 4 }; }).t90.indice).toEqual({ niveau: 4, masse8Pct: null });
+    expect(lue(SABLES, (t) => { t.indice = { niveau: 5, masse8_pct: 90 }; }).t90.indice).toBeNull();
+    expect(lue(SABLES, (t) => { t.indice = "3"; }).t90.indice).toBeNull();
+    expect(lue(SABLES, (t) => { t.indice = null; }).t90.indice).toBeNull();
+    expect(lue(SABLES, (t) => { t.indice = { niveau: 2, masse8_pct: "x" }; }).t90.indice).toEqual({ niveau: 2, masse8Pct: null });
   });
 
   it("pronostic sans couplé maître, sniper sans cote, champs mal typés ignorés", () => {

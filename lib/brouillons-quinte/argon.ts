@@ -26,7 +26,7 @@ export interface CourseArgon {
    * EN_ATTENTE_COTES, PARTIELLE (depuis le 19/10 au soir) ; null pour l'ancien format.
    * `argon8` n'a ses 8 chevaux garantis que si `sealed`.
    */
-  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null; prono: PronoArgon | null };
+  t90: { argon8: number[]; sealed: boolean; lockGmt: string | null; statut: string | null; prono: PronoArgon | null; indice: IndiceArgon | null };
   coureurs: CoureurArgon[];
   /** 1 à 5. */
   etoiles: number;
@@ -47,6 +47,18 @@ export interface PronoArgon {
   coupleMaitre: boolean;
   sniper: number | null;
   sniperCote: number | null;
+}
+
+/**
+ * Indice de confiance scellé avec l'édition T-90 (Argon V4.6, depuis le 14/11/2026) :
+ * part des chances du marché tenue par les 8 chevaux, rangée en 4 niveaux
+ * (1 = course très ouverte … 4 = très lisible). Lecture SOUPLE : absent ou mal
+ * formé = null (Argon ne le calcule pas sous 9 partants), jamais bloquant.
+ */
+export interface IndiceArgon {
+  niveau: 1 | 2 | 3 | 4;
+  /** Part des chances du marché tenue par les 8, en % ; null si absente. */
+  masse8Pct: number | null;
 }
 
 export type RaisonArgon =
@@ -108,6 +120,15 @@ function lirePronoArgon(p: any): PronoArgon | null {
   return { bases: bases.slice(0, 2), coupleMaitre: p.is_master === true && bases.length >= 2, sniper, sniperCote: cote === undefined ? null : cote };
 }
 
+/** PUR : indice de confiance scellé, lu souplement ; null si absent ou inexploitable. */
+export function lireIndiceArgon(i: any): IndiceArgon | null {
+  if (!i || typeof i !== "object") return null;
+  const niveau = i.niveau;
+  if (niveau !== 1 && niveau !== 2 && niveau !== 3 && niveau !== 4) return null;
+  const masse = nombreOuNul(i.masse8_pct);
+  return { niveau, masse8Pct: masse === undefined || masse === null || masse <= 0 || masse > 100 ? null : masse };
+}
+
 /** PUR : la course retenue, lue strictement ; null si un champ n'a pas le format attendu. */
 function lireCourse(r: any): CourseArgon | null {
   const t90 = r?.editions_schedule?.T90;
@@ -149,7 +170,7 @@ function lireCourse(r: any): CourseArgon | null {
     reunion: r.reunion,
     course: r.course_num,
     hippodrome: r.hippodrome,
-    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt, statut, prono: t90.sealed ? lirePronoArgon(t90.prono) : null },
+    t90: { argon8: argon8.slice(), sealed: t90.sealed, lockGmt, statut, prono: t90.sealed ? lirePronoArgon(t90.prono) : null, indice: t90.sealed ? lireIndiceArgon(t90.indice) : null },
     coureurs,
     etoiles,
     deconseillee: r.is_no_bet,

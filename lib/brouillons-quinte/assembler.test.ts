@@ -106,6 +106,7 @@ describe("assemblerBrouillons — Prix Thémis du 16/10/2026 (édition T-90 d'Ar
         { numero: 11, nom: "READLY LAVEC" }, { numero: 14, nom: "KAMEHAMEHA" },
       ],
       etoiles: 5,
+      indice: null,
       deconseillee: false,
       decision: "⭐ COUPLE MAITRE: 3 (NC) - 6 (4e 🔵) · 🎯 SNIPER: N°12 (NC)",
       nonPartants: [],
@@ -158,5 +159,15 @@ describe("assemblerBrouillons — Prix Thémis du 16/10/2026 (édition T-90 d'Ar
     if (!d.ok) throw new Error(d.raison);
     expect(d.resume.argon.deconseillee).toBe(true);
     expect(d.pro.confiance).toBe("MOYEN");
+  });
+
+  it("indice de confiance scellé à T-90 : il fixe la confiance des deux brouillons, devant les étoiles, et passe dans le résumé", () => {
+    const a = argonThemis();
+    const d = assembler({ argon: { ...a, etoiles: 5, t90: { ...a.t90, indice: { niveau: 2, masse8Pct: 86 } } } });
+    if (!d.ok) throw new Error(d.raison);
+    expect(d.pro.confiance).toBe("FAIBLE");
+    expect(d.elite.confiance).toBe("FAIBLE");
+    expect(d.resume.confiance).toBe("FAIBLE");
+    expect(d.resume.argon.indice).toEqual({ niveau: 2, masse8Pct: 86 });
   });
 });

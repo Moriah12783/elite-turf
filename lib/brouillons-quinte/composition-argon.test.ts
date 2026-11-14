@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { composerArgon, confianceArgon } from "./composition-argon";
+import { composerArgon, confianceArgon, confianceBrouillon } from "./composition-argon";
 
 // Prix Thémis du 16/10/2026 : édition T-90 scellée d'Argon.
 const ARGON8 = [3, 6, 12, 13, 7, 4, 11, 14];
@@ -69,5 +69,15 @@ describe("composerArgon", () => {
 describe("confianceArgon", () => {
   it("5 et 4 étoiles → ELEVE, 3 → MOYEN, 2 et 1 → FAIBLE", () => {
     expect([5, 4, 3, 2, 1].map(confianceArgon)).toEqual(["ELEVE", "ELEVE", "MOYEN", "FAIBLE", "FAIBLE"]);
+  });
+});
+
+describe("confianceBrouillon", () => {
+  it("l'indice scellé d'Argon décide : 4 = élevée, 3 = moyenne, 1 et 2 = faible, quelles que soient les étoiles", () => {
+    expect(([4, 3, 2, 1] as const).map((niveau) => confianceBrouillon({ niveau }, 5))).toEqual(["ELEVE", "MOYEN", "FAIBLE", "FAIBLE"]);
+    expect(confianceBrouillon({ niveau: 4 }, 1)).toBe("ELEVE");
+  });
+  it("sans indice (ancien format, moins de 9 partants) : les étoiles, comme avant", () => {
+    expect([5, 3, 1].map((e) => confianceBrouillon(null, e))).toEqual(["ELEVE", "MOYEN", "FAIBLE"]);
   });
 });
